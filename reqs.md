@@ -4,7 +4,7 @@ The game is about running a theme park business. Teachers will set up the scenar
 
 # Setup Overview
 There are 2 main stages of setup.
-1. Setup - This is done on the teacher side, and they can set a variety of attributes about the park.
+1. Setup - This is done on the teacher side, and they can set a variety of attributes about the park. They can also pick pre-loaded setups to get the kids started with stuff like staffing more easily.
 2. Layout - Using their starting budget, students build out their park and hire initial staff, taking into account budget, wages, running reports on estimated utilites, and reports on estimated income from guest visits.
 After that The game starts, each round playing out turn-based, advancing a week at a time.
 
@@ -12,7 +12,24 @@ Rounds
 There are multiple steps to each round made up of several things to do, review, plan, and act on. Many things take time to implement.
 See 
 
-Surveys
+# Staffing
+Managing staffing is an important part of the game.
+Ride Operator - Manages an individual ride. Too few and the rides run slower or riskier.
+Security
+Concessions Worker
+Merchandise Attendant
+Ticket Booth Attendant
+Janitor - Cleans up trash and puke.
+Engineer - Repairs rides when they break.
+Business Analyst? - Runs Research
+? - Runs Surveys/Interviews
+? - Marketing Team
+
+# Layout Management
+Managing the park boundaries, rides, walkways, parking, bathrooms, emergency services, and food/toy attractions.
+
+# Surveys + Interviews
+The player
 
 # Awards
 Awards phase happens each round normally, but it also happens now. Each player gets an award if they qualify. This can be used for marketing.
@@ -27,6 +44,10 @@ Biggest Parking Lot. Most Bathrooms.
 # Research
 If you have Business Analysts, you can have them perform market research which will unlock new options for actions and demographics and details and such. More skilled hire will prioritize useful stuff, but newbies may unlock weird ideas like a bathroom price.
 
+# Reputation
+The Reputation system manages how the park is viewed on several criteria. Each guest generates rep events that are accumulated and adjust your overall reputation. But also gives individual feedback should the player do an interview or survey.
+Really liked/disliked a ride? Upset about how much something cost? Too many old rides. Dirty, unsafe, whatever.
+
 
 # Park Price Actions
 Choices the player can make about how the park prices things and makes money.
@@ -40,12 +61,20 @@ These can be changed freely, but we track how long something has been in effect 
 - Toy Upcharge
 - Drink Upcharge
 - Free Water
+- Ride Photo Charge
 
 
 ## Price  Programs
 Coupons (Broad distribution, or for prior customers, or for )
 Discount Events (New Price, Demigraphic, Day/Time)
 Membership Plans (Price, Frequency, # Guests allowed, Gate/Parking/Food/Other)
+
+# Merchandise
+You need locations and staff to sell merchandise. Too many locations and people get uninterested. Too few staff/security and theft becomes a problem.
+Let people pick what the will sell? Stuffed Animal, Umbrella, Fidget Spinner, Silly String, Bouncey Balls, Maps
+Some things have specific qualities, like an Umbrella selling for more when it's rainy. Or Silly String increasing the messiness of the park.
+
+# Food
 
 
 # Marketing Campaigns
@@ -60,6 +89,10 @@ Mention price changes.
 Mention price programs.
 Wording, styling, coloring? Might need teacher to grade that on how well it works.
 
+
+
+# Events
+The crazy and unique fluff. Things that pop up periodically that are scripted and you have to decide how to resolve them, when direct action is required. Or it could be something that changes a major statistic that you now need to handle.
 
 
 
