@@ -8,9 +8,10 @@ There are 2 main stages of setup.
 2. Layout - Using their starting budget, students build out their park and hire initial staff, taking into account budget, wages, running reports on estimated utilites, and reports on estimated income from guest visits.
 After that The game starts, each round playing out turn-based, advancing a week at a time.
 
-Rounds
-There are multiple steps to each round made up of several things to do, review, plan, and act on. Many things take time to implement.
-See 
+# Rounds
+There are multiple steps to each round made up of several things to do, review, plan, and act on. Many things take time to implement. Each round is meant to emulate what took place over the course of a week.
+First steps are the reports for how much you made and how many guests you had. A simple graph of attendance, take, and overall profit/loss. You unlock more and more detailed reports as you continue.
+You can take a variety of actions on your turn to try to improve your park.
 
 # Staffing
 Managing staffing is an important part of the game.
@@ -25,8 +26,10 @@ Business Analyst? - Runs Research
 ? - Runs Surveys/Interviews
 ? - Marketing Team
 
-# Layout Management
+# Projects + Layout Management
 Managing the park boundaries, rides, walkways, parking, bathrooms, emergency services, and food/toy attractions.
+Outside of the initial setup stage, building or demolishing anything takes time. The bigger, the more time. A bathroom is a quick one. Whereas a large roller coaster may take months.
+Projects are these various construction/demolition efforts. You can track them as see their progress with your current staff as well as projections for when it will be complete. Maybe even project with additional employees. You can also see if problems arise that set it back or cause additional work. You can even cancel a construction and quickly demolish it if you change your mind, but you don't get your money back. You can also see how much it has cost to build so far. The cost is paid out over time as you buy the materials and pay for labor. The buying parts is automatic as long as you have money.
 
 # Surveys + Interviews
 The player
