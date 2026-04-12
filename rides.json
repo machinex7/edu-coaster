@@ -1,0 +1,161 @@
+[
+  {
+    "id": "carousel",
+    "name": "Carousel",
+    "footprint": [
+      [1, 1],
+      [1, 1]
+    ],
+    "buildCost": 75000,
+    "buildWeeks": 2,
+    "rideDuration": 180,
+    "intensity": "low",
+    "ridesPerHour": 15
+  },
+  {
+    "id": "ferris_wheel",
+    "name": "Ferris Wheel",
+    "footprint": [
+      [0, 1, 0],
+      [1, 1, 1],
+      [0, 1, 0]
+    ],
+    "buildCost": 225000,
+    "buildWeeks": 5,
+    "rideDuration": 300,
+    "intensity": "low",
+    "ridesPerHour": 10
+  },
+  {
+    "id": "tea_cups",
+    "name": "Tea Cups",
+    "footprint": [
+      [1, 1, 1],
+      [1, 1, 1],
+      [1, 1, 1]
+    ],
+    "buildCost": 55000,
+    "buildWeeks": 2,
+    "rideDuration": 120,
+    "intensity": "low",
+    "ridesPerHour": 22
+  },
+  {
+    "id": "tower_swings",
+    "name": "Tower Swings",
+    "footprint": [
+      [0, 1, 1, 0],
+      [1, 1, 1, 1],
+      [1, 1, 1, 1],
+      [0, 1, 1, 0]
+    ],
+    "buildCost": 375000,
+    "buildWeeks": 7,
+    "rideDuration": 150,
+    "intensity": "medium",
+    "ridesPerHour": 18
+  },
+  {
+    "id": "tilt_a_whirl",
+    "name": "Tilt-A-Whirl",
+    "footprint": [
+      [1, 1, 1],
+      [1, 1, 1],
+      [1, 1, 1]
+    ],
+    "buildCost": 120000,
+    "buildWeeks": 3,
+    "rideDuration": 150,
+    "intensity": "medium",
+    "ridesPerHour": 18
+  },
+  {
+    "id": "bumper_cars",
+    "name": "Bumper Cars",
+    "footprint": [
+      [1, 1, 1, 1],
+      [1, 1, 1, 1],
+      [1, 1, 1, 1]
+    ],
+    "buildCost": 175000,
+    "buildWeeks": 4,
+    "rideDuration": 300,
+    "intensity": "low",
+    "ridesPerHour": 10
+  },
+  {
+    "id": "drop_tower",
+    "name": "Drop Tower",
+    "footprint": [
+      [1, 1],
+      [1, 1]
+    ],
+    "buildCost": 450000,
+    "buildWeeks": 9,
+    "rideDuration": 60,
+    "intensity": "high",
+    "ridesPerHour": 30
+  },
+  {
+    "id": "haunted_house",
+    "name": "Haunted House",
+    "footprint": [
+      [1, 1, 1, 1],
+      [1, 1, 1, 1],
+      [1, 1, 1, 1]
+    ],
+    "buildCost": 300000,
+    "buildWeeks": 8,
+    "rideDuration": 600,
+    "intensity": "low",
+    "ridesPerHour": 6
+  },
+  {
+    "id": "log_flume",
+    "name": "Log Flume",
+    "footprint": [
+      [1, 1, 0, 0],
+      [1, 1, 0, 0],
+      [0, 1, 1, 0],
+      [0, 0, 1, 1],
+      [0, 0, 1, 1]
+    ],
+    "buildCost": 850000,
+    "buildWeeks": 14,
+    "rideDuration": 360,
+    "intensity": "medium",
+    "ridesPerHour": 8
+  },
+  {
+    "id": "boomerang_coaster",
+    "name": "Boomerang Coaster",
+    "footprint": [
+      [1, 1, 1, 1],
+      [1, 0, 0, 1],
+      [1, 0, 0, 1],
+      [1, 1, 1, 1]
+    ],
+    "buildCost": 2000000,
+    "buildWeeks": 20,
+    "rideDuration": 90,
+    "intensity": "high",
+    "ridesPerHour": 24
+  },
+  {
+    "id": "mega_coaster",
+    "name": "Mega Coaster",
+    "footprint": [
+      [0, 1, 1, 1, 1, 0],
+      [1, 1, 0, 0, 1, 1],
+      [1, 0, 0, 0, 0, 1],
+      [1, 0, 0, 0, 0, 1],
+      [1, 1, 0, 0, 1, 1],
+      [0, 1, 1, 1, 1, 0]
+    ],
+    "buildCost": 6500000,
+    "buildWeeks": 36,
+    "rideDuration": 120,
+    "intensity": "extreme",
+    "ridesPerHour": 20
+  }
+]
