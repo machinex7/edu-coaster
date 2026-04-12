@@ -4,7 +4,7 @@ The game is about running a theme park business. Teachers will set up the scenar
 
 # Setup Overview
 There are 2 main stages of setup.
-1. Setup - This is done on the teacher side, and they can set a variety of attributes about the park. They can also pick pre-loaded setups to get the kids started with stuff like staffing more easily.
+1. Setup - This is done on the teacher side, and they can set a variety of attributes about the park. They can also pick pre-loaded setups to get the kids started with stuff like staffing more easily. Starting attributes for now are park size in tiles (x by y) and starting money.
 2. Layout - Using their starting budget, students build out their park and hire initial staff, taking into account budget, wages, running reports on estimated utilites, and reports on estimated income from guest visits.
 After that The game starts, each round playing out turn-based, advancing a week at a time.
 
