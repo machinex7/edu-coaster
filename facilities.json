@@ -1,0 +1,31 @@
+[
+  {
+    "id": "park_entrance",
+    "name": "Park Entrance",
+    "color": "#fbbf24",
+    "footprint": [[1]],
+    "buildCost": 5000,
+    "buildWeeks": 1,
+    "limit": 1,
+    "edgeOnly": true
+  },
+  {
+    "id": "path",
+    "name": "Path",
+    "color": "#d6d3d1",
+    "footprint": [[1]],
+    "buildCost": 100,
+    "buildWeeks": 0,
+    "limit": null,
+    "mustBeAdjacentTo": ["path", "park_entrance"]
+  },
+  {
+    "id": "bathroom",
+    "name": "Bathroom",
+    "color": "#7dd3fc",
+    "footprint": [[1, 1], [1, 1]],
+    "buildCost": 3500,
+    "buildWeeks": 1,
+    "limit": null
+  }
+]
