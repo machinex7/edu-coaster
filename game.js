@@ -96,6 +96,14 @@ function createRideCard(ride) {
     </div>
   `;
 
+  card.addEventListener('touchstart', (e) => {
+    e.preventDefault(); // prevent scroll interference while placing
+    dragging = { ride };
+    document.addEventListener('touchmove',   onTouchMove,   { passive: false });
+    document.addEventListener('touchend',    onTouchEnd);
+    document.addEventListener('touchcancel', onTouchCancel);
+  }, { passive: false });
+
   card.addEventListener('dragstart', (e) => {
     dragging = { ride };
     e.dataTransfer.effectAllowed = 'copy';
@@ -140,30 +148,37 @@ function buildFootprintPreview(footprint, color) {
   return html;
 }
 
-// ── Drag & Drop Handlers ───────────────────────────────────────────────────
-function onGridDragOver(e) {
-  e.preventDefault();
-  if (!dragging) return;
+// ── Shared Placement Helper ────────────────────────────────────────────────
+// Called by both mouse-drag and touch handlers with a viewport coordinate.
+function updatePlacementFromPoint(clientX, clientY) {
+  const grid = document.getElementById('grid');
+  const rect = grid.getBoundingClientRect();
+  const col = Math.floor((clientX - rect.left) / CELL_STEP);
+  const row = Math.floor((clientY - rect.top)  / CELL_STEP);
 
-  const rect = e.currentTarget.getBoundingClientRect();
-  const col = Math.floor((e.clientX - rect.left) / CELL_STEP);
-  const row = Math.floor((e.clientY - rect.top)  / CELL_STEP);
-
-  if (col < 0 || col >= GRID_COLS || row < 0 || row >= GRID_ROWS) return;
+  if (col < 0 || col >= GRID_COLS || row < 0 || row >= GRID_ROWS) {
+    clearHighlights();
+    currentPlacement = null;
+    return;
+  }
 
   const fp = dragging.ride.footprint;
-  // Anchor the center of the footprint's bounding box to the cursor cell
   const anchorRow = Math.floor(fp.length    / 2);
   const anchorCol = Math.floor(fp[0].length / 2);
+  const startRow  = row - anchorRow;
+  const startCol  = col - anchorCol;
 
-  const startRow = row - anchorRow;
-  const startCol = col - anchorCol;
-
-  // Skip re-render if the placement position hasn't changed
   if (currentPlacement?.startRow === startRow &&
       currentPlacement?.startCol === startCol) return;
 
   highlightPlacement(dragging.ride, startRow, startCol);
+}
+
+// ── Mouse Drag & Drop Handlers ─────────────────────────────────────────────
+function onGridDragOver(e) {
+  e.preventDefault();
+  if (!dragging) return;
+  updatePlacementFromPoint(e.clientX, e.clientY);
 }
 
 function onGridDragLeave(e) {
@@ -183,6 +198,37 @@ function onGridDrop(e) {
   clearHighlights();
   dragging = null;
   currentPlacement = null;
+}
+
+// ── Touch Handlers ─────────────────────────────────────────────────────────
+function onTouchMove(e) {
+  e.preventDefault(); // prevent page scroll while dragging a ride
+  if (!dragging) return;
+  const touch = e.touches[0];
+  updatePlacementFromPoint(touch.clientX, touch.clientY);
+}
+
+function onTouchEnd(e) {
+  const touch = e.changedTouches[0];
+  // Re-evaluate placement at lift point in case touchmove didn't fire last
+  if (dragging) updatePlacementFromPoint(touch.clientX, touch.clientY);
+  if (currentPlacement?.valid) {
+    placeRide(dragging.ride, currentPlacement.startRow, currentPlacement.startCol);
+  }
+  endTouch();
+}
+
+function onTouchCancel() {
+  endTouch();
+}
+
+function endTouch() {
+  clearHighlights();
+  dragging = null;
+  currentPlacement = null;
+  document.removeEventListener('touchmove',   onTouchMove);
+  document.removeEventListener('touchend',    onTouchEnd);
+  document.removeEventListener('touchcancel', onTouchCancel);
 }
 
 // ── Placement Logic ────────────────────────────────────────────────────────
