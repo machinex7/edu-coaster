@@ -77,30 +77,53 @@ header h1 {
   flex-shrink: 0;
 }
 
-#tabs {
+#sidebar-header {
+  padding: 8px 12px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #6b7280;
+  border-bottom: 1px solid #374151;
+  flex-shrink: 0;
+}
+
+#sub-tabs {
   display: flex;
   border-bottom: 2px solid #374151;
   flex-shrink: 0;
 }
 
-.tab-btn {
+.sub-tab-btn {
   flex: 1;
-  padding: 11px 12px;
+  padding: 9px 6px;
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
   margin-bottom: -2px;
   color: #6b7280;
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 700;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.05em;
   text-transform: uppercase;
   cursor: pointer;
 }
 
-.tab-btn.active {
+.sub-tab-btn.active {
   color: #f3f4f6;
   border-bottom-color: #fbbf24;
+}
+
+.tab-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.tab-panel.hidden {
+  display: none;
 }
 
 #ride-list {

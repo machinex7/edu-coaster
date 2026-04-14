@@ -16,10 +16,17 @@
         <div id="grid"></div>
       </div>
       <aside id="sidebar">
-        <div id="tabs">
-          <button class="tab-btn active">Construction</button>
+        <div id="sidebar-header">Construction</div>
+        <div id="sub-tabs">
+          <button class="sub-tab-btn active" data-tab="attractions">Attractions</button>
+          <button class="sub-tab-btn" data-tab="shopping">Shopping</button>
+          <button class="sub-tab-btn" data-tab="facilities">Facilities</button>
         </div>
-        <div id="ride-list"></div>
+        <div id="attractions-panel" class="tab-panel">
+          <div id="ride-list"></div>
+        </div>
+        <div id="shopping-panel" class="tab-panel hidden"></div>
+        <div id="facilities-panel" class="tab-panel hidden"></div>
       </aside>
     </div>
   </div>
