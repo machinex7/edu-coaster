@@ -1,0 +1,208 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: system-ui, -apple-system, sans-serif;
+  background: #111827;
+  color: #e5e7eb;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  background: #1f2937;
+  padding: 10px 20px;
+  border-bottom: 2px solid #374151;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+header h1 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #fbbf24;
+  letter-spacing: 0.05em;
+}
+
+#main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+/* ── Park View ── */
+#park-view {
+  flex: 1;
+  overflow: auto;
+  background: #14532d;
+  padding: 20px;
+}
+
+#grid {
+  display: grid;
+  gap: 1px;
+  background: #166534;
+  width: fit-content;
+  user-select: none;
+}
+
+.grid-cell {
+  width: 40px;
+  height: 40px;
+  background: #15803d;
+}
+
+.grid-cell.highlight-valid {
+  background: #86efac !important;
+}
+
+.grid-cell.highlight-invalid {
+  background: #f87171 !important;
+}
+
+/* ── Sidebar ── */
+#sidebar {
+  width: 275px;
+  background: #1f2937;
+  border-left: 2px solid #374151;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+#sidebar-header {
+  padding: 8px 12px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #6b7280;
+  border-bottom: 1px solid #374151;
+  flex-shrink: 0;
+}
+
+#sub-tabs {
+  display: flex;
+  border-bottom: 2px solid #374151;
+  flex-shrink: 0;
+}
+
+.sub-tab-btn {
+  flex: 1;
+  padding: 9px 6px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  color: #6b7280;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.sub-tab-btn.active {
+  color: #f3f4f6;
+  border-bottom-color: #fbbf24;
+}
+
+.tab-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.tab-panel.hidden {
+  display: none;
+}
+
+#ride-list,
+#facility-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ── Item Cards (rides & facilities) ── */
+.item-card {
+  background: #111827;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  padding: 10px;
+  cursor: pointer;
+  transition: border-color 0.12s, box-shadow 0.12s;
+}
+
+.item-card:hover {
+  border-color: #fbbf24;
+  box-shadow: 0 0 0 1px rgba(251,191,36,0.2);
+}
+
+.item-card.selected {
+  border-color: #fbbf24;
+  box-shadow: 0 0 0 2px rgba(251,191,36,0.35);
+  background: #1c2d4a;
+}
+
+.item-card-name {
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: #f3f4f6;
+  margin-bottom: 8px;
+}
+
+.item-card-body {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.item-preview {
+  flex-shrink: 0;
+  line-height: 0;
+}
+
+.item-stats {
+  font-size: 0.73rem;
+  color: #9ca3af;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.rule-note {
+  color: #6b7280;
+  font-style: italic;
+}
+
+#grid.has-selection {
+  cursor: crosshair;
+}
+
+.intensity-badge {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.intensity-low     { background: #14532d; color: #86efac; }
+.intensity-medium  { background: #78350f; color: #fde68a; }
+.intensity-high    { background: #7f1d1d; color: #fca5a5; }
+.intensity-extreme { background: #4c1d95; color: #c4b5fd; }

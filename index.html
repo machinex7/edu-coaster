@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EduCoaster</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <header>
+      <h1>EduCoaster</h1>
+    </header>
+    <div id="main">
+      <div id="park-view">
+        <div id="grid"></div>
+      </div>
+      <aside id="sidebar">
+        <div id="sidebar-header">Construction</div>
+        <div id="sub-tabs">
+          <button class="sub-tab-btn active" data-tab="attractions">Attractions</button>
+          <button class="sub-tab-btn" data-tab="shopping">Shopping</button>
+          <button class="sub-tab-btn" data-tab="facilities">Facilities</button>
+        </div>
+        <div id="attractions-panel" class="tab-panel">
+          <div id="ride-list"></div>
+        </div>
+        <div id="shopping-panel" class="tab-panel hidden"></div>
+        <div id="facilities-panel" class="tab-panel hidden">
+          <div id="facility-list"></div>
+        </div>
+      </aside>
+    </div>
+  </div>
+  <script src="game.js"></script>
+</body>
+</html>
