@@ -24,6 +24,11 @@ const STARTING_MONEY        = 2_000_000;
 const STARTING_YEAR         = 2024;
 const STARTING_WEEK_OF_YEAR = 27; // week 27 = first week of Q3
 
+// ── Stage Constants ────────────────────────────────────────────────────────
+// Stage 1 (login) is a future placeholder; game starts at setup for now.
+const STAGE_SETUP = 'setup';
+const STAGE_PLAY  = 'play';
+
 // ── Game State ─────────────────────────────────────────────────────────────
 let rides      = [];  // from rides.json (with _color added)
 let facilities = [];  // from facilities.json
@@ -32,20 +37,26 @@ let gridCells = [];   // [row][col] → <div>
 let gridState = [];   // [row][col] → instanceId string, or null
 
 // Economy & time
-let money = STARTING_MONEY;
-let round = 1; // increments on each Next Round press
+let gameStage = STAGE_SETUP;
+let money     = STARTING_MONEY;
+let round     = 1;
 
-// The canonical records of everything built in the park.
-// Each ride entry:     { instanceId, rideId, name, color, row, col, footprint }
-// Each facility entry: { instanceId, facilityId, name, color, row, col, footprint }
+// The canonical records of everything placed in the park.
+// status: 'active' | 'under_construction'
+// ride entry:     { instanceId, rideId, name, color, row, col, footprint, status }
+// facility entry: { instanceId, facilityId, name, color, row, col, footprint, status }
 let installedRides      = [];
 let installedFacilities = [];
 
-// Maps "row,col" → facilityId for fast adjacency lookups (e.g. path placement).
+// Items currently being built (play stage only).
+// Each entry: { instanceId, category, row, col, footprint,
+//               weeksTotal, weeksCompleted, weeklyPayment }
+let underConstruction = [];
+
+// Maps "row,col" → facilityId for fast adjacency lookups.
 const facilityTypeAtCell = {};
 
 // ── Selection State ────────────────────────────────────────────────────────
-// set while a card is selected; cleared on Escape, tab-switch, or re-click
 let selected         = null;  // { item, category: 'ride'|'facility', cardEl }
 let currentPlacement = null;  // { startRow, startCol, valid }
 
@@ -88,7 +99,6 @@ function buildGrid() {
   grid.addEventListener('click',      onGridClick);
   grid.addEventListener('mousemove',  onGridMouseMove);
   grid.addEventListener('mouseleave', onGridMouseLeave);
-  // Touch: preview as the finger moves, place on lift
   grid.addEventListener('touchstart', onGridTouchStart, { passive: false });
   grid.addEventListener('touchmove',  onGridTouchMove,  { passive: false });
   grid.addEventListener('touchend',   onGridTouchEnd);
@@ -125,9 +135,9 @@ function createItemCard(item, category) {
     statsHtml = `
       <span>$${item.buildCost.toLocaleString()}</span>
       <span>${dur}</span>
-      ${item.limit != null ? `<span>Limit: ${item.limit}</span>` : ''}
-      ${item.edgeOnly         ? `<span class="rule-note">Edge only</span>` : ''}
-      ${item.mustBeAdjacentTo ? `<span class="rule-note">Needs adjacency</span>` : ''}`;
+      ${item.limit != null      ? `<span>Limit: ${item.limit}</span>`        : ''}
+      ${item.edgeOnly           ? `<span class="rule-note">Edge only</span>` : ''}
+      ${item.mustBeAdjacentTo   ? `<span class="rule-note">Needs adjacency</span>` : ''}`;
   }
 
   card.innerHTML = `
@@ -145,12 +155,10 @@ function createItemCard(item, category) {
   return card;
 }
 
-// Renders a miniature footprint grid for a card.
 function buildFootprintPreview(footprint, color) {
   const rows = footprint.length;
   const cols = footprint[0].length;
   const maxDim = Math.max(rows, cols);
-  // Scale cell size so tiny footprints aren't invisible
   const size = maxDim <= 2 ? 18 : maxDim <= 4 ? 13 : 11;
 
   let html = `<div style="display:grid;grid-template-columns:repeat(${cols},${size}px);gap:1px;">`;
@@ -277,12 +285,18 @@ function clearHighlights() {
 }
 
 function canPlaceItem(item, category, startRow, startCol) {
+  // Affordability: setup pays full cost; play pays the first weekly instalment.
+  // Instant items (buildWeeks === 0) always pay in full regardless of stage.
+  const firstPayment = (gameStage === STAGE_SETUP || item.buildWeeks === 0)
+    ? item.buildCost
+    : Math.ceil(item.buildCost / item.buildWeeks);
+  if (firstPayment > money) return false;
+
   return category === 'ride'
     ? canPlaceRide(item, startRow, startCol)
     : canPlaceFacility(item, startRow, startCol);
 }
 
-// Every occupied cell must be in-bounds and unoccupied.
 function canPlaceFootprint(footprint, startRow, startCol) {
   for (let r = 0; r < footprint.length; r++) {
     for (let c = 0; c < footprint[r].length; c++) {
@@ -303,13 +317,11 @@ function canPlaceRide(ride, startRow, startCol) {
 function canPlaceFacility(facility, startRow, startCol) {
   if (!canPlaceFootprint(facility.footprint, startRow, startCol)) return false;
 
-  // Enforce per-type limit
   if (facility.limit != null) {
     const placed = installedFacilities.filter(f => f.facilityId === facility.id).length;
     if (placed >= facility.limit) return false;
   }
 
-  // Park Entrance: at least one occupied cell must touch the grid boundary
   if (facility.edgeOnly) {
     let onEdge = false;
     outer: for (let r = 0; r < facility.footprint.length; r++) {
@@ -326,8 +338,6 @@ function canPlaceFacility(facility, startRow, startCol) {
     if (!onEdge) return false;
   }
 
-  // Path: at least one occupied cell must be orthogonally adjacent to a
-  // facility of an allowed type (e.g. another path or the park entrance)
   if (facility.mustBeAdjacentTo?.length) {
     let found = false;
     outer: for (let r = 0; r < facility.footprint.length; r++) {
@@ -352,61 +362,75 @@ function canPlaceFacility(facility, startRow, startCol) {
 
 // ── Placing items ──────────────────────────────────────────────────────────
 function placeItem(item, category, startRow, startCol) {
-  if (category === 'ride') {
-    placeRide(item, startRow, startCol);
+  const instant = gameStage === STAGE_SETUP || item.buildWeeks === 0;
+
+  if (instant) {
+    // Pay in full; item is immediately active.
+    money -= item.buildCost;
+    _commitPlace(item, category, startRow, startCol, 'active');
   } else {
-    placeFacility(item, startRow, startCol);
-    // Auto-deselect once a limited item hits its cap
-    if (item.limit != null) {
-      const placed = installedFacilities.filter(f => f.facilityId === item.id).length;
-      if (placed >= item.limit) deselectItem();
-    }
+    // Pay the first week's instalment; item enters the construction queue.
+    const weeklyPayment = Math.ceil(item.buildCost / item.buildWeeks);
+    money -= weeklyPayment;
+    const record = _commitPlace(item, category, startRow, startCol, 'under_construction');
+    underConstruction.push({
+      instanceId:     record.instanceId,
+      category,
+      row:            startRow,
+      col:            startCol,
+      footprint:      item.footprint,
+      weeksTotal:     item.buildWeeks,
+      weeksCompleted: 1,
+      weeklyPayment,
+    });
+  }
+
+  updateHUD();
+
+  // Auto-deselect if a limited facility just hit its cap.
+  if (category === 'facility' && item.limit != null) {
+    const placed = installedFacilities.filter(f => f.facilityId === item.id).length;
+    if (placed >= item.limit) deselectItem();
   }
 }
 
-function placeRide(ride, startRow, startCol) {
-  const instanceId = `ride_${ride.id}_${Date.now()}`;
-  installedRides.push({
-    instanceId,
-    rideId:    ride.id,
-    name:      ride.name,
-    color:     ride._color,
-    row:       startRow,
-    col:       startCol,
-    footprint: ride.footprint,
-  });
-  paintCells(ride.footprint, startRow, startCol, ride._color, instanceId, ride.name);
-  console.log(`Placed ride "${ride.name}" @ (${startRow}, ${startCol})`);
-}
+// Shared commit: records the placement and paints the cells.
+// Returns the pushed record so callers can grab the instanceId.
+function _commitPlace(item, category, startRow, startCol, status) {
+  const instanceId = `${category}_${item.id}_${Date.now()}`;
+  const color      = item._color ?? item.color ?? '#888';
 
-function placeFacility(facility, startRow, startCol) {
-  const instanceId = `facility_${facility.id}_${Date.now()}`;
-  const color = facility.color ?? '#888';
-  installedFacilities.push({
+  const record = {
     instanceId,
-    facilityId: facility.id,
-    name:       facility.name,
-    color,
-    row:        startRow,
-    col:        startCol,
-    footprint:  facility.footprint,
-  });
+    row: startRow, col: startCol,
+    footprint: item.footprint,
+    color, status,
+  };
 
-  // Register each occupied cell so adjacency checks can find it
-  for (let r = 0; r < facility.footprint.length; r++) {
-    for (let c = 0; c < facility.footprint[r].length; c++) {
-      if (facility.footprint[r][c] === 1) {
-        facilityTypeAtCell[`${startRow + r},${startCol + c}`] = facility.id;
+  if (category === 'ride') {
+    record.rideId = item.id;
+    record.name   = item.name;
+    installedRides.push(record);
+  } else {
+    record.facilityId = item.id;
+    record.name       = item.name;
+    installedFacilities.push(record);
+    // Register cells for adjacency lookups.
+    for (let r = 0; r < item.footprint.length; r++) {
+      for (let c = 0; c < item.footprint[r].length; c++) {
+        if (item.footprint[r][c] === 1)
+          facilityTypeAtCell[`${startRow + r},${startCol + c}`] = item.id;
       }
     }
   }
 
-  paintCells(facility.footprint, startRow, startCol, color, instanceId, facility.name);
-  console.log(`Placed facility "${facility.name}" @ (${startRow}, ${startCol})`);
+  paintCells(item.footprint, startRow, startCol, color, instanceId, item.name, status);
+  console.log(`[${status}] "${item.name}" @ (${startRow}, ${startCol})`);
+  return record;
 }
 
-// Shared helper: update gridState and colour the DOM cells.
-function paintCells(footprint, startRow, startCol, color, instanceId, label) {
+// Update gridState and colour DOM cells. Adds .under-construction when needed.
+function paintCells(footprint, startRow, startCol, color, instanceId, label, status = 'active') {
   for (let r = 0; r < footprint.length; r++) {
     for (let c = 0; c < footprint[r].length; c++) {
       if (footprint[r][c] !== 1) continue;
@@ -417,23 +441,68 @@ function paintCells(footprint, startRow, startCol, color, instanceId, label) {
       cell.style.backgroundColor = color;
       cell.classList.add('occupied');
       cell.title = label;
+      cell.classList.toggle('under-construction', status === 'under_construction');
     }
   }
 }
 
-// ── HUD ────────────────────────────────────────────────────────────────────
+// ── Construction queue (play stage) ───────────────────────────────────────
+function processConstruction() {
+  const finished = [];
+
+  for (const entry of underConstruction) {
+    money -= entry.weeklyPayment;
+    entry.weeksCompleted++;
+
+    if (entry.weeksCompleted >= entry.weeksTotal) {
+      completeConstruction(entry);
+      finished.push(entry);
+    }
+  }
+
+  for (const entry of finished) {
+    underConstruction.splice(underConstruction.indexOf(entry), 1);
+  }
+}
+
+function completeConstruction(entry) {
+  // Update the status on the installed record.
+  const records = entry.category === 'ride' ? installedRides : installedFacilities;
+  const record  = records.find(r => r.instanceId === entry.instanceId);
+  if (record) record.status = 'active';
+
+  // Remove the construction-stripe overlay from every cell.
+  for (let r = 0; r < entry.footprint.length; r++) {
+    for (let c = 0; c < entry.footprint[r].length; c++) {
+      if (entry.footprint[r][c] === 1)
+        gridCells[entry.row + r][entry.col + c].classList.remove('under-construction');
+    }
+  }
+
+  console.log(`Construction complete: "${record?.name}"`);
+}
+
+// ── HUD & stage management ─────────────────────────────────────────────────
 function initHUD() {
   updateHUD();
+  document.getElementById('open-park-btn').addEventListener('click', openPark);
   document.getElementById('next-round-btn').addEventListener('click', advanceRound);
+}
+
+function openPark() {
+  gameStage = STAGE_PLAY;
+  document.getElementById('open-park-btn').classList.add('hidden');
+  document.getElementById('next-round-btn').classList.remove('hidden');
+  updateHUD();
+  console.log('Park is now open — simulation started.');
 }
 
 function advanceRound() {
   round++;
+  processConstruction();
   updateHUD();
 }
 
-// Converts the current round number into a calendar-style label.
-// Weeks 1–13 = Q1, 14–26 = Q2, 27–39 = Q3, 40–52 = Q4.
 function getDateLabel() {
   const weekOfYear    = STARTING_WEEK_OF_YEAR + round - 1;
   const yearsElapsed  = Math.floor((weekOfYear - 1) / 52);
@@ -446,6 +515,9 @@ function getDateLabel() {
 function updateHUD() {
   document.getElementById('money-display').textContent = `$${money.toLocaleString()}`;
   document.getElementById('date-display').textContent  = getDateLabel();
+  const badge = document.getElementById('stage-badge');
+  badge.textContent = gameStage === STAGE_SETUP ? 'Setup' : 'Open';
+  badge.className   = `stage-badge ${gameStage}`;
 }
 
 // ── Sidebar sub-tabs ───────────────────────────────────────────────────────
@@ -456,7 +528,7 @@ function initSubTabs() {
       document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
       btn.classList.add('active');
       document.getElementById(`${btn.dataset.tab}-panel`).classList.remove('hidden');
-      deselectItem(); // selected card may no longer be visible
+      deselectItem();
     });
   });
 }

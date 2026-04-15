@@ -31,6 +31,10 @@ header h1 {
   letter-spacing: 0.05em;
 }
 
+.hidden {
+  display: none !important;
+}
+
 /* ── HUD ── */
 #hud {
   display: flex;
@@ -67,9 +71,21 @@ header h1 {
   color: #4ade80;
 }
 
+.stage-badge {
+  padding: 3px 10px;
+  border-radius: 99px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.stage-badge.setup { background: #78350f; color: #fde68a; }
+.stage-badge.play  { background: #14532d; color: #86efac; }
+
+#open-park-btn,
 #next-round-btn {
-  background: #1d4ed8;
-  color: #fff;
   border: none;
   border-radius: 6px;
   padding: 7px 16px;
@@ -79,10 +95,23 @@ header h1 {
   cursor: pointer;
   transition: background 0.12s;
   white-space: nowrap;
+  color: #fff;
 }
 
-#next-round-btn:hover {
-  background: #2563eb;
+#open-park-btn             { background: #b45309; }
+#open-park-btn:hover       { background: #d97706; }
+#next-round-btn            { background: #1d4ed8; }
+#next-round-btn:hover      { background: #2563eb; }
+
+/* ── Under-construction grid cells ── */
+.grid-cell.under-construction {
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(0, 0, 0, 0.18) 0px,
+    rgba(0, 0, 0, 0.18) 5px,
+    transparent        5px,
+    transparent        10px
+  );
 }
 
 #main {
