@@ -19,12 +19,21 @@ const RIDE_COLORS = [
   '#38bdf8', // sky
 ];
 
+// ── Economy & Time Constants ───────────────────────────────────────────────
+const STARTING_MONEY        = 2_000_000;
+const STARTING_YEAR         = 2024;
+const STARTING_WEEK_OF_YEAR = 27; // week 27 = first week of Q3
+
 // ── Game State ─────────────────────────────────────────────────────────────
 let rides      = [];  // from rides.json (with _color added)
 let facilities = [];  // from facilities.json
 
 let gridCells = [];   // [row][col] → <div>
 let gridState = [];   // [row][col] → instanceId string, or null
+
+// Economy & time
+let money = STARTING_MONEY;
+let round = 1; // increments on each Next Round press
 
 // The canonical records of everything built in the park.
 // Each ride entry:     { instanceId, rideId, name, color, row, col, footprint }
@@ -57,6 +66,7 @@ async function init() {
   buildRideList();
   buildFacilityList();
   initSubTabs();
+  initHUD();
 }
 
 // ── Grid ───────────────────────────────────────────────────────────────────
@@ -409,6 +419,33 @@ function paintCells(footprint, startRow, startCol, color, instanceId, label) {
       cell.title = label;
     }
   }
+}
+
+// ── HUD ────────────────────────────────────────────────────────────────────
+function initHUD() {
+  updateHUD();
+  document.getElementById('next-round-btn').addEventListener('click', advanceRound);
+}
+
+function advanceRound() {
+  round++;
+  updateHUD();
+}
+
+// Converts the current round number into a calendar-style label.
+// Weeks 1–13 = Q1, 14–26 = Q2, 27–39 = Q3, 40–52 = Q4.
+function getDateLabel() {
+  const weekOfYear    = STARTING_WEEK_OF_YEAR + round - 1;
+  const yearsElapsed  = Math.floor((weekOfYear - 1) / 52);
+  const weekInYear    = ((weekOfYear - 1) % 52) + 1;
+  const quarter       = Math.ceil(weekInYear / 13);
+  const weekInQuarter = weekInYear - (quarter - 1) * 13;
+  return `Week ${weekInQuarter}, Q${quarter}, ${STARTING_YEAR + yearsElapsed}`;
+}
+
+function updateHUD() {
+  document.getElementById('money-display').textContent = `$${money.toLocaleString()}`;
+  document.getElementById('date-display').textContent  = getDateLabel();
 }
 
 // ── Sidebar sub-tabs ───────────────────────────────────────────────────────
