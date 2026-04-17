@@ -240,6 +240,20 @@ function canPlaceFacility(facility, startRow, startCol) {
   return true;
 }
 
+function isRideConnected(record) {
+  for (let r = 0; r < record.footprint.length; r++) {
+    for (let c = 0; c < record.footprint[r].length; c++) {
+      if (record.footprint[r][c] !== 1) continue;
+      const gr = record.row + r;
+      const gc = record.col + c;
+      for (const [dr, dc] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+        if (facilityTypeAtCell[`${gr+dr},${gc+dc}`] === 'path') return true;
+      }
+    }
+  }
+  return false;
+}
+
 // ── Placing items ──────────────────────────────────────────────────────────
 function placeItem(item, category, startRow, startCol) {
   const instant = gameStage === STAGE_SETUP || item.buildWeeks === 0;
@@ -257,6 +271,7 @@ function placeItem(item, category, startRow, startCol) {
   }
 
   updateHUD();
+  refreshRidesPanel();
 
   if (category === 'facility' && item.limit != null) {
     const placed = installedFacilities.filter(f => f.facilityId === item.id).length;

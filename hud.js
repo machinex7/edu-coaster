@@ -8,7 +8,14 @@ function initHUD() {
   initPanelBtns();
 }
 
+function canOpenPark() {
+  const hasEntrance     = installedFacilities.some(f => f.facilityId === 'park_entrance' && f.status === 'active');
+  const hasConnectedRide = installedRides.some(r => r.status === 'active' && isRideConnected(r));
+  return hasEntrance && hasConnectedRide;
+}
+
 function openPark() {
+  if (!canOpenPark()) return;
   gameStage = STAGE_PLAY;
   document.getElementById('open-park-btn').classList.add('hidden');
   document.getElementById('next-round-btn').classList.remove('hidden');
@@ -37,9 +44,19 @@ function getDateLabel() {
 function updateHUD() {
   document.getElementById('money-display').textContent = `$${money.toLocaleString()}`;
   document.getElementById('date-display').textContent  = getDateLabel();
-  const badge     = document.getElementById('stage-badge');
+  const badge = document.getElementById('stage-badge');
   badge.textContent = gameStage === STAGE_SETUP ? 'Setup' : 'Open';
   badge.className   = `stage-badge ${gameStage}`;
+
+  if (gameStage === STAGE_SETUP) {
+    const openBtn = document.getElementById('open-park-btn');
+    const ready   = canOpenPark();
+    openBtn.disabled = !ready;
+    const hasEntrance = installedFacilities.some(f => f.facilityId === 'park_entrance' && f.status === 'active');
+    openBtn.title = ready            ? ''
+      : !hasEntrance                 ? 'Place a Park Entrance first'
+      : 'Connect at least one ride to a path';
+  }
 }
 
 // ── Panel management ───────────────────────────────────────────────────────
@@ -89,9 +106,12 @@ function buildRidesPanel() {
 
 function getRideCondition(record) {
   switch (record.status) {
-    case 'under_construction': return { label: 'Under Construction', cls: 'cond-building' };
-    case 'active':             return { label: 'Running',            cls: 'cond-running'  };
-    default:                   return { label: record.status,        cls: '' };
+    case 'under_construction': return { label: 'Under Construction', cls: 'cond-building'     };
+    case 'active':
+      return isRideConnected(record)
+        ? { label: 'Running',     cls: 'cond-running'     }
+        : { label: 'Unconnected', cls: 'cond-unconnected' };
+    default: return { label: record.status, cls: '' };
   }
 }
 

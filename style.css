@@ -98,8 +98,9 @@ header h1 {
   color: #fff;
 }
 
-#open-park-btn       { background: #b45309; }
-#open-park-btn:hover { background: #d97706; }
+#open-park-btn              { background: #b45309; }
+#open-park-btn:hover        { background: #d97706; }
+#open-park-btn:disabled     { background: #374151; color: #6b7280; cursor: not-allowed; }
 #next-round-btn      { background: #1d4ed8; }
 #next-round-btn:hover{ background: #2563eb; }
 
@@ -363,11 +364,12 @@ header h1 {
   letter-spacing: 0.04em;
 }
 
-.cond-running  { background: #14532d; color: #86efac; }
-.cond-building { background: #78350f; color: #fde68a; }
-.cond-closed   { background: #374151; color: #9ca3af; }
-.cond-broken   { background: #7f1d1d; color: #fca5a5; }
-.cond-repair   { background: #4c1d95; color: #c4b5fd; }
+.cond-running      { background: #14532d; color: #86efac; }
+.cond-building     { background: #78350f; color: #fde68a; }
+.cond-unconnected  { background: #164e63; color: #67e8f9; }
+.cond-closed       { background: #374151; color: #9ca3af; }
+.cond-broken       { background: #7f1d1d; color: #fca5a5; }
+.cond-repair       { background: #4c1d95; color: #c4b5fd; }
 
 .empty-note {
   padding: 16px 12px;
