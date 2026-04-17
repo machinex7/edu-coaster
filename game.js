@@ -48,11 +48,6 @@ let round     = 1;
 let installedRides      = [];
 let installedFacilities = [];
 
-// Items currently being built (play stage only).
-// Each entry: { instanceId, category, row, col, footprint,
-//               weeksTotal, weeksCompleted, weeklyPayment }
-let underConstruction = [];
-
 // Maps "row,col" → facilityId for fast adjacency lookups.
 const facilityTypeAtCell = {};
 
@@ -256,16 +251,9 @@ function placeItem(item, category, startRow, startCol) {
     const weeklyPayment = Math.ceil(item.buildCost / item.buildWeeks);
     money -= weeklyPayment;
     const record = _commitPlace(item, category, startRow, startCol, 'under_construction');
-    underConstruction.push({
-      instanceId:     record.instanceId,
-      category,
-      row:            startRow,
-      col:            startCol,
-      footprint:      item.footprint,
-      weeksTotal:     item.buildWeeks,
-      weeksCompleted: 1,
-      weeklyPayment,
-    });
+    record.weeksTotal     = item.buildWeeks;
+    record.weeksCompleted = 1;
+    record.weeklyPayment  = weeklyPayment;
   }
 
   updateHUD();
@@ -312,34 +300,23 @@ function _commitPlace(item, category, startRow, startCol, status) {
 
 // ── Construction queue ─────────────────────────────────────────────────────
 function processConstruction() {
-  const finished = [];
-
-  for (const entry of underConstruction) {
-    money -= entry.weeklyPayment;
-    entry.weeksCompleted++;
-    if (entry.weeksCompleted >= entry.weeksTotal) {
-      completeConstruction(entry);
-      finished.push(entry);
-    }
+  for (const record of [...installedRides, ...installedFacilities]) {
+    if (record.status !== 'under_construction') continue;
+    money -= record.weeklyPayment;
+    record.weeksCompleted++;
+    if (record.weeksCompleted >= record.weeksTotal) completeConstruction(record);
   }
-
-  for (const entry of finished)
-    underConstruction.splice(underConstruction.indexOf(entry), 1);
 }
 
-function completeConstruction(entry) {
-  const records = entry.category === 'ride' ? installedRides : installedFacilities;
-  const record  = records.find(r => r.instanceId === entry.instanceId);
-  if (record) record.status = 'active';
-
-  for (let r = 0; r < entry.footprint.length; r++) {
-    for (let c = 0; c < entry.footprint[r].length; c++) {
-      if (entry.footprint[r][c] === 1)
-        gridCells[entry.row + r][entry.col + c].classList.remove('under-construction');
+function completeConstruction(record) {
+  record.status = 'active';
+  for (let r = 0; r < record.footprint.length; r++) {
+    for (let c = 0; c < record.footprint[r].length; c++) {
+      if (record.footprint[r][c] === 1)
+        gridCells[record.row + r][record.col + c].classList.remove('under-construction');
     }
   }
-
-  console.log(`Construction complete: "${record?.name}"`);
+  console.log(`Construction complete: "${record.name}"`);
 }
 
 // ── Keyboard ───────────────────────────────────────────────────────────────
