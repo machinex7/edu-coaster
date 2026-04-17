@@ -98,10 +98,10 @@ header h1 {
   color: #fff;
 }
 
-#open-park-btn             { background: #b45309; }
-#open-park-btn:hover       { background: #d97706; }
-#next-round-btn            { background: #1d4ed8; }
-#next-round-btn:hover      { background: #2563eb; }
+#open-park-btn       { background: #b45309; }
+#open-park-btn:hover { background: #d97706; }
+#next-round-btn      { background: #1d4ed8; }
+#next-round-btn:hover{ background: #2563eb; }
 
 /* ── Under-construction grid cells ── */
 .grid-cell.under-construction {
@@ -114,53 +114,72 @@ header h1 {
   );
 }
 
+/* ── Main layout ── */
 #main {
   display: flex;
   flex: 1;
   overflow: hidden;
 }
 
-/* ── Park View ── */
-#park-view {
-  flex: 1;
-  overflow: auto;
-  background: #14532d;
-  padding: 20px;
-}
-
-#grid {
-  display: grid;
-  gap: 1px;
-  background: #166534;
-  width: fit-content;
-  user-select: none;
-}
-
-.grid-cell {
-  width: 40px;
-  height: 40px;
-  background: #15803d;
-}
-
-.grid-cell.highlight-valid {
-  background: #86efac !important;
-}
-
-.grid-cell.highlight-invalid {
-  background: #f87171 !important;
-}
-
-/* ── Sidebar ── */
-#sidebar {
-  width: 275px;
-  background: #1f2937;
-  border-left: 2px solid #374151;
+/* ── Tool button bar ── */
+#btn-bar {
   display: flex;
   flex-direction: column;
+  background: #1f2937;
+  border-right: 1px solid #374151;
   flex-shrink: 0;
+  padding: 6px 0;
 }
 
-#sidebar-header {
+.tool-btn {
+  display: block;
+  padding: 10px 16px;
+  background: none;
+  border: none;
+  border-left: 3px solid transparent;
+  color: #6b7280;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.12s, background 0.12s, border-color 0.12s;
+}
+
+.tool-btn:hover {
+  color: #f3f4f6;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.tool-btn.active {
+  color: #fbbf24;
+  border-left-color: #fbbf24;
+  background: rgba(251, 191, 36, 0.08);
+}
+
+/* ── Slide panels ── */
+.side-panel {
+  flex-shrink: 0;
+  width: 275px;
+  overflow: hidden;
+  transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.side-panel.closed {
+  width: 0;
+}
+
+.side-panel-inner {
+  width: 275px;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: #1f2937;
+  border-right: 2px solid #374151;
+  overflow: hidden;
+}
+
+.panel-header {
   padding: 8px 12px;
   font-size: 0.68rem;
   font-weight: 700;
@@ -171,6 +190,7 @@ header h1 {
   flex-shrink: 0;
 }
 
+/* ── Construction panel internals ── */
 #sub-tabs {
   display: flex;
   border-bottom: 2px solid #374151;
@@ -271,10 +291,6 @@ header h1 {
   font-style: italic;
 }
 
-#grid.has-selection {
-  cursor: crosshair;
-}
-
 .intensity-badge {
   display: inline-block;
   padding: 1px 5px;
@@ -289,3 +305,96 @@ header h1 {
 .intensity-medium  { background: #78350f; color: #fde68a; }
 .intensity-high    { background: #7f1d1d; color: #fca5a5; }
 .intensity-extreme { background: #4c1d95; color: #c4b5fd; }
+
+/* ── Rides overview panel ── */
+#rides-overview {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.rides-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+.rides-table th {
+  text-align: left;
+  padding: 7px 12px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #6b7280;
+  border-bottom: 1px solid #374151;
+  position: sticky;
+  top: 0;
+  background: #1f2937;
+}
+
+.rides-table td {
+  padding: 7px 12px;
+  border-bottom: 1px solid #1e2535;
+  color: #e5e7eb;
+}
+
+.rides-table tr:last-child td {
+  border-bottom: none;
+}
+
+.cond-badge {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.cond-running  { background: #14532d; color: #86efac; }
+.cond-building { background: #78350f; color: #fde68a; }
+.cond-closed   { background: #374151; color: #9ca3af; }
+.cond-broken   { background: #7f1d1d; color: #fca5a5; }
+.cond-repair   { background: #4c1d95; color: #c4b5fd; }
+
+.empty-note {
+  padding: 16px 12px;
+  color: #6b7280;
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+/* ── Park View ── */
+#park-view {
+  flex: 1;
+  overflow: auto;
+  background: #14532d;
+  padding: 20px;
+}
+
+#grid {
+  display: grid;
+  gap: 1px;
+  background: #166534;
+  width: fit-content;
+  user-select: none;
+}
+
+.grid-cell {
+  width: 40px;
+  height: 40px;
+  background: #15803d;
+}
+
+.grid-cell.highlight-valid {
+  background: #86efac !important;
+}
+
+.grid-cell.highlight-invalid {
+  background: #f87171 !important;
+}
+
+#grid.has-selection {
+  cursor: crosshair;
+}

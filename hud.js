@@ -1,8 +1,11 @@
 // ── HUD & stage management ─────────────────────────────────────────────────
+let activePanel = null;
+
 function initHUD() {
   updateHUD();
   document.getElementById('open-park-btn').addEventListener('click', openPark);
   document.getElementById('next-round-btn').addEventListener('click', advanceRound);
+  initPanelBtns();
 }
 
 function openPark() {
@@ -17,6 +20,7 @@ function advanceRound() {
   round++;
   processConstruction();
   updateHUD();
+  refreshRidesPanel();
 }
 
 // Converts the current round into "Week W, QN, YYYY".
@@ -36,6 +40,63 @@ function updateHUD() {
   const badge     = document.getElementById('stage-badge');
   badge.textContent = gameStage === STAGE_SETUP ? 'Setup' : 'Open';
   badge.className   = `stage-badge ${gameStage}`;
+}
+
+// ── Panel management ───────────────────────────────────────────────────────
+function initPanelBtns() {
+  document.querySelectorAll('.tool-btn').forEach(btn => {
+    btn.addEventListener('click', () => togglePanel(btn.dataset.panel));
+  });
+}
+
+function togglePanel(panelId) {
+  if (activePanel === panelId) closePanels();
+  else openPanel(panelId);
+}
+
+function openPanel(panelId) {
+  if (activePanel && activePanel !== panelId) {
+    document.getElementById(`panel-${activePanel}`).classList.add('closed');
+    document.querySelector(`.tool-btn[data-panel="${activePanel}"]`)?.classList.remove('active');
+    deselectItem();
+  }
+  activePanel = panelId;
+  document.getElementById(`panel-${panelId}`).classList.remove('closed');
+  document.querySelector(`.tool-btn[data-panel="${panelId}"]`)?.classList.add('active');
+  if (panelId === 'rides') buildRidesPanel();
+}
+
+function closePanels() {
+  if (!activePanel) return;
+  document.getElementById(`panel-${activePanel}`).classList.add('closed');
+  document.querySelector(`.tool-btn[data-panel="${activePanel}"]`)?.classList.remove('active');
+  activePanel = null;
+  deselectItem();
+}
+
+function buildRidesPanel() {
+  const container = document.getElementById('rides-overview');
+  if (installedRides.length === 0) {
+    container.innerHTML = '<p class="empty-note">No rides placed yet.</p>';
+    return;
+  }
+  const rows = installedRides.map(record => {
+    const { label, cls } = getRideCondition(record);
+    return `<tr><td>${record.name}</td><td><span class="cond-badge ${cls}">${label}</span></td></tr>`;
+  }).join('');
+  container.innerHTML = `<table class="rides-table"><thead><tr><th>Name</th><th>Condition</th></tr></thead><tbody>${rows}</tbody></table>`;
+}
+
+function getRideCondition(record) {
+  switch (record.status) {
+    case 'under_construction': return { label: 'Under Construction', cls: 'cond-building' };
+    case 'active':             return { label: 'Running',            cls: 'cond-running'  };
+    default:                   return { label: record.status,        cls: '' };
+  }
+}
+
+function refreshRidesPanel() {
+  if (activePanel === 'rides') buildRidesPanel();
 }
 
 // ── Sidebar sub-tabs ───────────────────────────────────────────────────────
