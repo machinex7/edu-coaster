@@ -157,11 +157,22 @@ header h1 {
   background: rgba(251, 191, 36, 0.08);
 }
 
-/* ── Slide panels ── */
-.side-panel {
+/* ── Left nav (btn-bar + overlay panels) ── */
+#left-nav {
+  position: relative;
+  display: flex;
   flex-shrink: 0;
+}
+
+/* ── Slide panels (overlay — don't push the grid) ── */
+.side-panel {
+  position: absolute;
+  left: 100%;
+  top: 0;
+  height: 100%;
   width: 275px;
   overflow: hidden;
+  z-index: 10;
   transition: width 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -371,6 +382,9 @@ header h1 {
   overflow: auto;
   background: #14532d;
   padding: 20px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 #grid {

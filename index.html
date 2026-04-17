@@ -26,36 +26,38 @@
     </header>
     <div id="main">
 
-      <!-- Tool button bar -->
-      <nav id="btn-bar">
-        <button class="tool-btn" data-panel="construction">Construction</button>
-        <button class="tool-btn" data-panel="rides">Rides</button>
-      </nav>
+      <div id="left-nav">
+        <!-- Tool button bar -->
+        <nav id="btn-bar">
+          <button class="tool-btn" data-panel="construction">Construction</button>
+          <button class="tool-btn" data-panel="rides">Rides</button>
+        </nav>
 
-      <!-- Construction slide panel -->
-      <div id="panel-construction" class="side-panel closed">
-        <div class="side-panel-inner">
-          <div class="panel-header">Construction</div>
-          <div id="sub-tabs">
-            <button class="sub-tab-btn active" data-tab="attractions">Attractions</button>
-            <button class="sub-tab-btn" data-tab="shopping">Shopping</button>
-            <button class="sub-tab-btn" data-tab="facilities">Facilities</button>
-          </div>
-          <div id="attractions-panel" class="tab-panel">
-            <div id="ride-list"></div>
-          </div>
-          <div id="shopping-panel" class="tab-panel hidden"></div>
-          <div id="facilities-panel" class="tab-panel hidden">
-            <div id="facility-list"></div>
+        <!-- Construction slide panel -->
+        <div id="panel-construction" class="side-panel closed">
+          <div class="side-panel-inner">
+            <div class="panel-header">Construction</div>
+            <div id="sub-tabs">
+              <button class="sub-tab-btn active" data-tab="attractions">Attractions</button>
+              <button class="sub-tab-btn" data-tab="shopping">Shopping</button>
+              <button class="sub-tab-btn" data-tab="facilities">Facilities</button>
+            </div>
+            <div id="attractions-panel" class="tab-panel">
+              <div id="ride-list"></div>
+            </div>
+            <div id="shopping-panel" class="tab-panel hidden"></div>
+            <div id="facilities-panel" class="tab-panel hidden">
+              <div id="facility-list"></div>
+            </div>
           </div>
         </div>
-      </div>
 
-      <!-- Rides overview slide panel -->
-      <div id="panel-rides" class="side-panel closed">
-        <div class="side-panel-inner">
-          <div class="panel-header">Rides</div>
-          <div id="rides-overview"></div>
+        <!-- Rides overview slide panel -->
+        <div id="panel-rides" class="side-panel closed">
+          <div class="side-panel-inner">
+            <div class="panel-header">Rides</div>
+            <div id="rides-overview"></div>
+          </div>
         </div>
       </div>
 
