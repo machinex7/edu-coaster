@@ -25,7 +25,7 @@ function openPark() {
 
 function advanceRound() {
   round++;
-  processConstruction();
+  processRound();
   updateHUD();
   refreshRidesPanel();
 }
