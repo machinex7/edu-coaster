@@ -27,5 +27,36 @@
     "buildCost": 3500,
     "buildWeeks": 1,
     "limit": null
+  },
+  {
+    "id": "statue",
+    "name": "Statue",
+    "color": "#cbd5e1",
+    "footprint": [[1]],
+    "buildCost": 500,
+    "buildWeeks": 0,
+    "limit": null
+  },
+  {
+    "id": "garden",
+    "name": "Garden",
+    "color": "#86efac",
+    "footprint": [[1, 1]],
+    "buildCost": 1000,
+    "buildWeeks": 0,
+    "limit": null
+  },
+  {
+    "id": "fountain",
+    "name": "Fountain",
+    "color": "#93c5fd",
+    "footprint": [
+      [0, 1, 0],
+      [1, 1, 1],
+      [0, 1, 0]
+    ],
+    "buildCost": 3000,
+    "buildWeeks": 1,
+    "limit": null
   }
 ]

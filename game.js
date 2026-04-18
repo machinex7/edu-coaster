@@ -19,6 +19,16 @@ const RIDE_COLORS = [
   '#38bdf8', // sky
 ];
 
+// ── Economy & Time Constants ───────────────────────────────────────────────
+const STARTING_MONEY        = 2_000_000;
+const STARTING_YEAR         = 2024;
+const STARTING_WEEK_OF_YEAR = 27; // week 27 = first week of Q3
+
+// ── Stage Constants ────────────────────────────────────────────────────────
+// Stage 1 (login) is a future placeholder; game starts at setup for now.
+const STAGE_SETUP = 'setup';
+const STAGE_PLAY  = 'play';
+
 // ── Game State ─────────────────────────────────────────────────────────────
 let rides      = [];  // from rides.json (with _color added)
 let facilities = [];  // from facilities.json
@@ -26,17 +36,22 @@ let facilities = [];  // from facilities.json
 let gridCells = [];   // [row][col] → <div>
 let gridState = [];   // [row][col] → instanceId string, or null
 
-// The canonical records of everything built in the park.
-// Each ride entry:     { instanceId, rideId, name, color, row, col, footprint }
-// Each facility entry: { instanceId, facilityId, name, color, row, col, footprint }
+// Economy & time
+let gameStage = STAGE_SETUP;
+let money     = STARTING_MONEY;
+let round     = 1;
+
+// The canonical records of everything placed in the park.
+// status: 'active' | 'under_construction'
+// ride entry:     { instanceId, rideId, name, color, row, col, footprint, status }
+// facility entry: { instanceId, facilityId, name, color, row, col, footprint, status }
 let installedRides      = [];
 let installedFacilities = [];
 
-// Maps "row,col" → facilityId for fast adjacency lookups (e.g. path placement).
+// Maps "row,col" → facilityId for fast adjacency lookups.
 const facilityTypeAtCell = {};
 
 // ── Selection State ────────────────────────────────────────────────────────
-// set while a card is selected; cleared on Escape, tab-switch, or re-click
 let selected         = null;  // { item, category: 'ride'|'facility', cardEl }
 let currentPlacement = null;  // { startRow, startCol, valid }
 
@@ -56,32 +71,9 @@ async function init() {
   buildGrid();
   buildRideList();
   buildFacilityList();
+  initStaff();
   initSubTabs();
-}
-
-// ── Grid ───────────────────────────────────────────────────────────────────
-function buildGrid() {
-  const grid = document.getElementById('grid');
-  grid.style.gridTemplateColumns = `repeat(${GRID_COLS}, ${CELL_SIZE}px)`;
-  grid.style.gridTemplateRows    = `repeat(${GRID_ROWS}, ${CELL_SIZE}px)`;
-
-  for (let r = 0; r < GRID_ROWS; r++) {
-    gridCells[r] = [];
-    for (let c = 0; c < GRID_COLS; c++) {
-      const cell = document.createElement('div');
-      cell.className = 'grid-cell';
-      grid.appendChild(cell);
-      gridCells[r][c] = cell;
-    }
-  }
-
-  grid.addEventListener('click',      onGridClick);
-  grid.addEventListener('mousemove',  onGridMouseMove);
-  grid.addEventListener('mouseleave', onGridMouseLeave);
-  // Touch: preview as the finger moves, place on lift
-  grid.addEventListener('touchstart', onGridTouchStart, { passive: false });
-  grid.addEventListener('touchmove',  onGridTouchMove,  { passive: false });
-  grid.addEventListener('touchend',   onGridTouchEnd);
+  initHUD();
 }
 
 // ── Sidebar lists ──────────────────────────────────────────────────────────
@@ -115,8 +107,8 @@ function createItemCard(item, category) {
     statsHtml = `
       <span>$${item.buildCost.toLocaleString()}</span>
       <span>${dur}</span>
-      ${item.limit != null ? `<span>Limit: ${item.limit}</span>` : ''}
-      ${item.edgeOnly         ? `<span class="rule-note">Edge only</span>` : ''}
+      ${item.limit != null    ? `<span>Limit: ${item.limit}</span>`            : ''}
+      ${item.edgeOnly         ? `<span class="rule-note">Edge only</span>`     : ''}
       ${item.mustBeAdjacentTo ? `<span class="rule-note">Needs adjacency</span>` : ''}`;
   }
 
@@ -135,12 +127,10 @@ function createItemCard(item, category) {
   return card;
 }
 
-// Renders a miniature footprint grid for a card.
 function buildFootprintPreview(footprint, color) {
   const rows = footprint.length;
   const cols = footprint[0].length;
   const maxDim = Math.max(rows, cols);
-  // Scale cell size so tiny footprints aren't invisible
   const size = maxDim <= 2 ? 18 : maxDim <= 4 ? 13 : 11;
 
   let html = `<div style="display:grid;grid-template-columns:repeat(${cols},${size}px);gap:1px;">`;
@@ -174,105 +164,20 @@ function deselectItem() {
   currentPlacement = null;
 }
 
-// ── Shared position → placement helper ────────────────────────────────────
-function updatePlacementFromPoint(clientX, clientY) {
-  if (!selected) return;
-
-  const grid = document.getElementById('grid');
-  const rect = grid.getBoundingClientRect();
-  const col = Math.floor((clientX - rect.left) / CELL_STEP);
-  const row = Math.floor((clientY - rect.top)  / CELL_STEP);
-
-  if (col < 0 || col >= GRID_COLS || row < 0 || row >= GRID_ROWS) {
-    clearHighlights();
-    currentPlacement = null;
-    return;
-  }
-
-  const fp = selected.item.footprint;
-  const startRow = row - Math.floor(fp.length    / 2);
-  const startCol = col - Math.floor(fp[0].length / 2);
-
-  if (currentPlacement?.startRow === startRow &&
-      currentPlacement?.startCol === startCol) return;
-
-  highlightPlacement(selected.item, selected.category, startRow, startCol);
-}
-
-// ── Grid event handlers ────────────────────────────────────────────────────
-function onGridClick(e) {
-  if (!selected || !currentPlacement?.valid) return;
-  placeItem(selected.item, selected.category,
-            currentPlacement.startRow, currentPlacement.startCol);
-}
-
-function onGridMouseMove(e) {
-  if (!selected) return;
-  updatePlacementFromPoint(e.clientX, e.clientY);
-}
-
-function onGridMouseLeave() {
-  if (!selected) return;
-  clearHighlights();
-  currentPlacement = null;
-}
-
-function onGridTouchStart(e) {
-  if (!selected) return;
-  e.preventDefault();
-  const t = e.touches[0];
-  updatePlacementFromPoint(t.clientX, t.clientY);
-}
-
-function onGridTouchMove(e) {
-  if (!selected) return;
-  e.preventDefault();
-  const t = e.touches[0];
-  updatePlacementFromPoint(t.clientX, t.clientY);
-}
-
-function onGridTouchEnd(e) {
-  if (!selected) return;
-  const t = e.changedTouches[0];
-  updatePlacementFromPoint(t.clientX, t.clientY);
-  if (currentPlacement?.valid) {
-    placeItem(selected.item, selected.category,
-              currentPlacement.startRow, currentPlacement.startCol);
-  }
-}
-
 // ── Placement validation ───────────────────────────────────────────────────
-function highlightPlacement(item, category, startRow, startCol) {
-  clearHighlights();
-  const fp = item.footprint;
-  const valid = canPlaceItem(item, category, startRow, startCol);
-
-  for (let r = 0; r < fp.length; r++) {
-    for (let c = 0; c < fp[r].length; c++) {
-      if (fp[r][c] !== 1) continue;
-      const gr = startRow + r;
-      const gc = startCol + c;
-      if (gr >= 0 && gr < GRID_ROWS && gc >= 0 && gc < GRID_COLS) {
-        gridCells[gr][gc].classList.add(valid ? 'highlight-valid' : 'highlight-invalid');
-      }
-    }
-  }
-
-  currentPlacement = { startRow, startCol, valid };
-}
-
-function clearHighlights() {
-  document.querySelectorAll('.highlight-valid, .highlight-invalid').forEach(el =>
-    el.classList.remove('highlight-valid', 'highlight-invalid'));
-}
-
 function canPlaceItem(item, category, startRow, startCol) {
+  // Affordability: setup pays full cost; play pays the first weekly instalment.
+  // Instant items (buildWeeks === 0) always pay in full regardless of stage.
+  const firstPayment = (gameStage === STAGE_SETUP || item.buildWeeks === 0)
+    ? item.buildCost
+    : Math.ceil(item.buildCost / item.buildWeeks);
+  if (firstPayment > money) return false;
+
   return category === 'ride'
     ? canPlaceRide(item, startRow, startCol)
     : canPlaceFacility(item, startRow, startCol);
 }
 
-// Every occupied cell must be in-bounds and unoccupied.
 function canPlaceFootprint(footprint, startRow, startCol) {
   for (let r = 0; r < footprint.length; r++) {
     for (let c = 0; c < footprint[r].length; c++) {
@@ -293,13 +198,11 @@ function canPlaceRide(ride, startRow, startCol) {
 function canPlaceFacility(facility, startRow, startCol) {
   if (!canPlaceFootprint(facility.footprint, startRow, startCol)) return false;
 
-  // Enforce per-type limit
   if (facility.limit != null) {
     const placed = installedFacilities.filter(f => f.facilityId === facility.id).length;
     if (placed >= facility.limit) return false;
   }
 
-  // Park Entrance: at least one occupied cell must touch the grid boundary
   if (facility.edgeOnly) {
     let onEdge = false;
     outer: for (let r = 0; r < facility.footprint.length; r++) {
@@ -316,8 +219,6 @@ function canPlaceFacility(facility, startRow, startCol) {
     if (!onEdge) return false;
   }
 
-  // Path: at least one occupied cell must be orthogonally adjacent to a
-  // facility of an allowed type (e.g. another path or the park entrance)
   if (facility.mustBeAdjacentTo?.length) {
     let found = false;
     outer: for (let r = 0; r < facility.footprint.length; r++) {
@@ -340,88 +241,98 @@ function canPlaceFacility(facility, startRow, startCol) {
   return true;
 }
 
+function isRideConnected(record) {
+  for (let r = 0; r < record.footprint.length; r++) {
+    for (let c = 0; c < record.footprint[r].length; c++) {
+      if (record.footprint[r][c] !== 1) continue;
+      const gr = record.row + r;
+      const gc = record.col + c;
+      for (const [dr, dc] of [[-1,0],[1,0],[0,-1],[0,1]]) {
+        if (facilityTypeAtCell[`${gr+dr},${gc+dc}`] === 'path') return true;
+      }
+    }
+  }
+  return false;
+}
+
 // ── Placing items ──────────────────────────────────────────────────────────
 function placeItem(item, category, startRow, startCol) {
-  if (category === 'ride') {
-    placeRide(item, startRow, startCol);
+  const instant = gameStage === STAGE_SETUP || item.buildWeeks === 0;
+
+  if (instant) {
+    money -= item.buildCost;
+    _commitPlace(item, category, startRow, startCol, 'active');
   } else {
-    placeFacility(item, startRow, startCol);
-    // Auto-deselect once a limited item hits its cap
-    if (item.limit != null) {
-      const placed = installedFacilities.filter(f => f.facilityId === item.id).length;
-      if (placed >= item.limit) deselectItem();
-    }
+    const weeklyPayment = Math.ceil(item.buildCost / item.buildWeeks);
+    money -= weeklyPayment;
+    const record = _commitPlace(item, category, startRow, startCol, 'under_construction');
+    record.weeksTotal     = item.buildWeeks;
+    record.weeksCompleted = 1;
+    record.weeklyPayment  = weeklyPayment;
+  }
+
+  updateHUD();
+  refreshRidesPanel();
+
+  if (category === 'facility' && item.limit != null) {
+    const placed = installedFacilities.filter(f => f.facilityId === item.id).length;
+    if (placed >= item.limit) deselectItem();
   }
 }
 
-function placeRide(ride, startRow, startCol) {
-  const instanceId = `ride_${ride.id}_${Date.now()}`;
-  installedRides.push({
-    instanceId,
-    rideId:    ride.id,
-    name:      ride.name,
-    color:     ride._color,
-    row:       startRow,
-    col:       startCol,
-    footprint: ride.footprint,
-  });
-  paintCells(ride.footprint, startRow, startCol, ride._color, instanceId, ride.name);
-  console.log(`Placed ride "${ride.name}" @ (${startRow}, ${startCol})`);
-}
+// Records the placement in the installed array and paints the grid cells.
+// Returns the pushed record so callers can grab the instanceId.
+function _commitPlace(item, category, startRow, startCol, status) {
+  const instanceId = `${category}_${item.id}_${Date.now()}`;
+  const color      = item._color ?? item.color ?? '#888';
 
-function placeFacility(facility, startRow, startCol) {
-  const instanceId = `facility_${facility.id}_${Date.now()}`;
-  const color = facility.color ?? '#888';
-  installedFacilities.push({
+  const record = {
     instanceId,
-    facilityId: facility.id,
-    name:       facility.name,
-    color,
-    row:        startRow,
-    col:        startCol,
-    footprint:  facility.footprint,
-  });
+    row: startRow, col: startCol,
+    footprint: item.footprint,
+    color, status,
+  };
 
-  // Register each occupied cell so adjacency checks can find it
-  for (let r = 0; r < facility.footprint.length; r++) {
-    for (let c = 0; c < facility.footprint[r].length; c++) {
-      if (facility.footprint[r][c] === 1) {
-        facilityTypeAtCell[`${startRow + r},${startCol + c}`] = facility.id;
+  if (category === 'ride') {
+    record.rideId = item.id;
+    record.name   = item.name;
+    installedRides.push(record);
+  } else {
+    record.facilityId = item.id;
+    record.name       = item.name;
+    installedFacilities.push(record);
+    for (let r = 0; r < item.footprint.length; r++) {
+      for (let c = 0; c < item.footprint[r].length; c++) {
+        if (item.footprint[r][c] === 1)
+          facilityTypeAtCell[`${startRow + r},${startCol + c}`] = item.id;
       }
     }
   }
 
-  paintCells(facility.footprint, startRow, startCol, color, instanceId, facility.name);
-  console.log(`Placed facility "${facility.name}" @ (${startRow}, ${startCol})`);
+  paintCells(item.footprint, startRow, startCol, color, instanceId, item.name, status);
+  console.log(`[${status}] "${item.name}" @ (${startRow}, ${startCol})`);
+  return record;
 }
 
-// Shared helper: update gridState and colour the DOM cells.
-function paintCells(footprint, startRow, startCol, color, instanceId, label) {
-  for (let r = 0; r < footprint.length; r++) {
-    for (let c = 0; c < footprint[r].length; c++) {
-      if (footprint[r][c] !== 1) continue;
-      const gr = startRow + r;
-      const gc = startCol + c;
-      gridState[gr][gc] = instanceId;
-      const cell = gridCells[gr][gc];
-      cell.style.backgroundColor = color;
-      cell.classList.add('occupied');
-      cell.title = label;
-    }
+// ── Construction queue ─────────────────────────────────────────────────────
+function processConstruction() {
+  for (const record of [...installedRides, ...installedFacilities]) {
+    if (record.status !== 'under_construction') continue;
+    money -= record.weeklyPayment;
+    record.weeksCompleted++;
+    if (record.weeksCompleted >= record.weeksTotal) completeConstruction(record);
   }
 }
 
-// ── Sidebar sub-tabs ───────────────────────────────────────────────────────
-function initSubTabs() {
-  document.querySelectorAll('.sub-tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
-      btn.classList.add('active');
-      document.getElementById(`${btn.dataset.tab}-panel`).classList.remove('hidden');
-      deselectItem(); // selected card may no longer be visible
-    });
-  });
+function completeConstruction(record) {
+  record.status = 'active';
+  for (let r = 0; r < record.footprint.length; r++) {
+    for (let c = 0; c < record.footprint[r].length; c++) {
+      if (record.footprint[r][c] === 1)
+        gridCells[record.row + r][record.col + c].classList.remove('under-construction');
+    }
+  }
+  console.log(`Construction complete: "${record.name}"`);
 }
 
 // ── Keyboard ───────────────────────────────────────────────────────────────

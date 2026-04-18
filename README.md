@@ -8,7 +8,7 @@ See `reqs.md` for the full game design document.
 
 ## Running locally
 
-Requires a local HTTP server (fetch() won't work over file://).
+Requires a local HTTP server (`fetch()` won't work over `file://`).
 
 ```bash
 python3 -m http.server
@@ -23,164 +23,252 @@ python3 -m http.server
 |---|---|
 | `index.html` | Shell — layout structure only, no logic |
 | `style.css` | All styles |
-| `game.js` | All game logic (single file for now) |
+| `game.js` | Core state, constants, placement logic, construction queue |
+| `grid.js` | Grid DOM, cell painting, mouse/touch event handlers |
+| `finance.js` | Attendance model, park metrics, round financial processing |
+| `staff.js` | Job type registry, staff state, staffing requirements, panel rendering |
+| `history.js` | Append-only per-round data log for future reports/graphs |
+| `hud.js` | HUD display, stage transitions, panel management, round summary modal |
 | `rides.json` | Ride catalogue |
-| `facilities.json` | Facility catalogue (entrance, paths, bathrooms) |
-| `reqs.md` | Full game design document — read this before adding features |
+| `facilities.json` | Facility catalogue |
+| `reqs.md` | Full game design document — read before adding features |
+
+Script load order matters: `game.js → grid.js → finance.js → staff.js → history.js → hud.js`. All cross-file calls happen at runtime (not parse time), so function declarations are always available.
 
 ---
 
-## Data file schemas
+## Game stages
 
-### `rides.json`
-Array of ride definitions. Example:
-```json
-{
-  "id": "carousel",
-  "name": "Carousel",
-  "footprint": [[1,1],[1,1]],
-  "buildCost": 75000,
-  "buildWeeks": 2,
-  "rideDuration": 180,
-  "intensity": "low",
-  "ridesPerHour": 15
-}
-```
-
-| Field | Type | Notes |
+| Stage | Constant | Behaviour |
 |---|---|---|
-| `id` | string | Unique key, snake_case |
-| `name` | string | Display name |
-| `footprint` | `number[][]` | 2D grid; `1` = occupied cell, `0` = empty. Irregular shapes supported. |
-| `buildCost` | number | Dollars |
-| `buildWeeks` | number | Construction time |
-| `rideDuration` | number | Seconds per ride cycle |
-| `intensity` | string | `"low"` / `"medium"` / `"high"` / `"extreme"` |
-| `ridesPerHour` | number | Ride cycles per hour (not total rider throughput) |
-
-Ride colors are assigned at runtime from `RIDE_COLORS` in `game.js` based on array index — they are not stored in the JSON.
-
-### `facilities.json`
-Array of facility definitions. Example:
-```json
-{
-  "id": "path",
-  "name": "Path",
-  "color": "#d6d3d1",
-  "footprint": [[1]],
-  "buildCost": 100,
-  "buildWeeks": 0,
-  "limit": null,
-  "mustBeAdjacentTo": ["path", "park_entrance"]
-}
-```
-
-| Field | Type | Notes |
-|---|---|---|
-| `id` | string | Unique key, snake_case |
-| `name` | string | Display name |
-| `color` | string | Hex color — facilities define their own colors in the JSON |
-| `footprint` | `number[][]` | Same format as rides |
-| `buildCost` | number | Dollars |
-| `buildWeeks` | number | `0` = instant |
-| `limit` | number \| null | Max allowed in the park; `null` = unlimited |
-| `edgeOnly` | boolean? | If true, at least one occupied cell must be on the grid boundary (used for Park Entrance) |
-| `mustBeAdjacentTo` | string[]? | List of facility `id`s; at least one neighbor cell must contain one of these (used for Path) |
+| Setup | `STAGE_SETUP` | Items placed instantly at full cost. No income. Park can be opened once a Park Entrance and at least one connected ride exist. |
+| Play | `STAGE_PLAY` | Items under construction pay `buildCost / buildWeeks` per round. Income and expenses process on each round advance. |
 
 ---
 
-## Architecture
+## UI layout
 
-### Grid
-
-- **Size:** `GRID_COLS × GRID_ROWS` (currently 20×20), each cell `CELL_SIZE`px (40px) with `CELL_GAP`px (1px) between.
-- **`gridCells[r][c]`** — 2D array of `<div>` DOM elements, built once in `buildGrid()`.
-- **`gridState[r][c]`** — parallel 2D array of `instanceId` strings (or `null`). This is the source of truth for collision detection. Both rides and facilities write to it.
-
-### Placed item records
-
-```js
-// installedRides[] — one entry per placed ride
-{ instanceId, rideId, name, color, row, col, footprint }
-
-// installedFacilities[] — one entry per placed facility
-{ instanceId, facilityId, name, color, row, col, footprint }
+```
+<header>           — HUD: budget, date, stage badge, Open Park / Next Round buttons
+<div id="main">
+  <div id="left-nav">            — position:relative container
+    <nav id="btn-bar">           — narrow vertical button bar; always visible
+    <div class="side-panel">     — Construction panel (position:absolute overlay, z-index 10)
+    <div class="side-panel">     — Rides panel
+    <div class="side-panel">     — Staffing panel
+  <div id="park-view">           — flex:1, centers the grid
+    <div id="grid">              — CSS grid of 20×20 cells
+<div id="round-modal">           — fixed overlay, shown after each round
 ```
 
-`instanceId` format: `"ride_{id}_{timestamp}"` or `"facility_{id}_{timestamp}"`.
+Panels slide open at `left: 100%` of `#btn-bar` (overlaying the park, never pushing it). Width transitions 0 ↔ 275px via CSS. Only one panel is open at a time; clicking the active button closes it.
 
-### Facility adjacency lookup
+---
 
-`facilityTypeAtCell` is a plain object used as a map:
+## Grid
+
+- **Size:** 20 × 20, cells 40 px with 1 px gap (`CELL_STEP = 41 px`).
+- **`gridCells[r][c]`** — 2D array of `<div>` elements, built once in `buildGrid()`.
+- **`gridState[r][c]`** — parallel 2D array of `instanceId | null`. Source of truth for collision detection.
+- **`facilityTypeAtCell["row,col"]`** — fast lookup map from cell coordinate to `facilityId`. Written on every facility placement; read by adjacency checks and connectivity tests.
+
+---
+
+## Placed item records
+
 ```js
-facilityTypeAtCell["row,col"] = facilityId  // e.g. "3,7" → "path"
+// installedRides[]
+{
+  instanceId,   // "ride_{id}_{timestamp}"
+  rideId, name, color,
+  row, col, footprint,
+  status,       // 'active' | 'under_construction'
+  // if under_construction:
+  weeksTotal, weeksCompleted, weeklyPayment,
+}
+
+// installedFacilities[]
+{
+  instanceId,   // "facility_{id}_{timestamp}"
+  facilityId, name, color,
+  row, col, footprint,
+  status,
+  // if under_construction: same fields as above
+}
 ```
-Written on every `placeFacility()` call. Read by `canPlaceFacility()` to enforce `mustBeAdjacentTo` rules without scanning `installedFacilities`.
 
 ---
 
 ## Interaction model
 
-**Tap/click-to-select, hover/move-to-preview, tap/click-to-place.**
+**Tap/click-to-select → hover-to-preview → tap/click-to-place.**
 
-1. Click a sidebar card → `selectItem()` sets `selected = { item, category, cardEl }` and adds `.selected` to the card and `.has-selection` to `#grid`.
-2. Mousemove / touch over the grid → `updatePlacementFromPoint()` computes the footprint anchor (centered on cursor cell) and calls `highlightPlacement()`.
-3. `highlightPlacement()` runs `canPlaceItem()` and adds `.highlight-valid` (green) or `.highlight-invalid` (red) classes to the relevant cells. Stores result in `currentPlacement`.
-4. Click/tap the grid → `onGridClick()` / `onGridTouchEnd()` calls `placeItem()` if `currentPlacement.valid`.
-5. Escape, re-clicking the active card, or switching sidebar tabs calls `deselectItem()`.
-
-The flow is unified for rides and facilities. Touch events are attached to `#grid` (not the document), so they only fire when the user is actually over the grid.
+1. Click a sidebar card → `selectItem()` stores `selected` and marks the grid with `.has-selection`.
+2. Mousemove / touchmove over the grid → `updatePlacementFromPoint()` calls `highlightPlacement()`, which runs `canPlaceItem()` and applies `.highlight-valid` (green) or `.highlight-invalid` (red).
+3. Click/tap grid → `placeItem()` if `currentPlacement.valid`.
+4. Escape, re-clicking the active card, or switching tabs → `deselectItem()`.
 
 ---
 
 ## Placement validation
 
-`canPlaceItem(item, category, startRow, startCol)` dispatches to:
+`canPlaceItem()` checks affordability then dispatches:
 
-- **`canPlaceRide()`** — calls `canPlaceFootprint()` only (bounds + collision).
-- **`canPlaceFacility()`** — calls `canPlaceFootprint()`, then checks:
+- **Rides** — `canPlaceFootprint()` only (bounds + collision).
+- **Facilities** — `canPlaceFootprint()`, then:
   - **`limit`** — counts matching entries in `installedFacilities`.
-  - **`edgeOnly`** — at least one occupied cell has `row === 0`, `row === GRID_ROWS-1`, `col === 0`, or `col === GRID_COLS-1`.
-  - **`mustBeAdjacentTo`** — at least one of the four orthogonal neighbors of any occupied cell exists in `facilityTypeAtCell` with a matching id.
+  - **`edgeOnly`** — at least one occupied cell must touch the grid boundary.
+  - **`mustBeAdjacentTo`** — at least one orthogonal neighbor of any occupied cell must be a listed facility type (read from `facilityTypeAtCell`).
 
-Adding a new placement rule to a facility type: add the field to `facilities.json` and add a corresponding check in `canPlaceFacility()` in `game.js`.
+To add a new placement rule: add a field to `facilities.json` and a corresponding check in `canPlaceFacility()` in `game.js`.
 
 ---
 
-## Sidebar structure
+## Ride connectivity
 
-The sidebar has one section ("Construction") with three sub-tabs driven by `data-tab` attributes:
+`isRideConnected(record)` — returns `true` if any occupied cell of the ride's footprint has a `path` tile as an orthogonal neighbor (checked via `facilityTypeAtCell`). Used for:
+
+- Ride condition display (Running vs Unconnected)
+- Park-open prerequisite (at least one connected ride required)
+- Finance calculations (only connected rides count toward excitement and staffing)
+
+---
+
+## Finance system (`finance.js`)
+
+### Park metrics
+
+| Variable | Description |
+|---|---|
+| `parkExcitement` | `runningRideCount × rideOpinion`. Drives daily demand. |
+| `rideOpinion` | Smoothed 0–1 score of how well rides serve the crowd. Starts at 1.0. |
+
+### Attendance model
 
 ```
-#sidebar
-  #sidebar-header        — "Construction" label
-  #sub-tabs
-    [data-tab="attractions"]  → #attractions-panel  (rides)
-    [data-tab="shopping"]     → #shopping-panel     (empty)
-    [data-tab="facilities"]   → #facilities-panel   (facilities)
+dailyDemand      = parkExcitement × 20
+gateThroughput   = boothAttendantCount × 500 × moodMultiplier  (moodMultiplier: 0.8–1.2)
+dailyAttendance  = min(dailyDemand, gateThroughput)
+weeklyAttendance = dailyAttendance × 7
 ```
 
-`initSubTabs()` wires the buttons. Switching tabs calls `deselectItem()`. To add a new tab: add a `<button class="sub-tab-btn" data-tab="foo">` and a `<div id="foo-panel" class="tab-panel hidden">` — the handler finds the panel by id automatically.
+### Ride opinion
+
+Each round: `staffRatio = min(1, actualOperators / neededOperators)`. Daily ride capacity = `sum(ridesPerHour for Running rides) × staffRatio`. Score = `min(1, rideCapacity / dailyAttendance)`. `rideOpinion = (rideOpinion + score) / 2` (gradual shift).
+
+### Round processing order (`processRound`)
+
+1. `recalcExcitement()` — uses previous round's `rideOpinion`
+2. `calcDailyAttendance()` — demand vs gate throughput
+3. `computeRideOpinion(daily)` — updates `rideOpinion` for next round
+4. Gate revenue added to `money`
+5. Staff wages deducted
+6. `processConstruction()` — deducts weekly payments, completes finished builds
+
+Returns `{ weeklyAttendance, gateRevenue, staffCosts, constructionCosts, totalExpenses, rideEfficiency }`.
+
+---
+
+## Staffing system (`staff.js`)
+
+### Job type registry
+
+`JOB_TYPES` array — add new careers here. Fields: `id`, `label`, `plural`, `weeklySalary`.
+
+Current jobs: Ride Operator · Security · Janitor · Engineer · Booth Attendant · Business Analyst.
+
+### Staff state
+
+`staff[]` — array of `{ instanceId, jobId, salary, mood }`. Mood is 0–100 (≥70 Happy, 40–69 Neutral, <40 Unhappy). `hireStaff(jobId)` is the single entry point.
+
+Starting staff: 2 Ride Operators, 1 Security, 1 Janitor, 1 Engineer, 2 Booth Attendants.
+
+### Staffing requirements
+
+`operatorsNeededForRide(record)` — maps occupied tile count to required operators: ≤4 tiles → 2, 5–9 → 3, ≥10 → 4.
+
+`rideOperatorsNeeded()` — sums requirements across all Running rides.
+
+---
+
+## History tracking (`history.js`)
+
+`roundHistory` is an append-only array. `recordRound(report)` is called after each round. Each entry:
+
+```js
+{
+  round, date,
+  attendance, gateIncome,
+  staffExpense, constructionExpense,
+  rideEfficiency,       // 0–1
+  staffCount, staffMood,  // staffMood is rounded integer 0–100
+  runningRides,
+}
+```
+
+---
+
+## Data schemas
+
+### `rides.json`
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | string | Unique, snake_case |
+| `name` | string | Display name |
+| `footprint` | `number[][]` | 2D grid; `1` = occupied, `0` = empty |
+| `buildCost` | number | Dollars |
+| `buildWeeks` | number | Construction time |
+| `rideDuration` | number | Seconds per cycle |
+| `intensity` | string | `low` / `medium` / `high` / `extreme` |
+| `ridesPerHour` | number | Used for ride capacity and `rideOpinion` calculations |
+
+Colors assigned at runtime from `RIDE_COLORS` in `game.js` by array index — not stored in JSON.
+
+### `facilities.json`
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | string | Unique, snake_case |
+| `name` | string | Display name |
+| `color` | string | Hex — facilities define their own color |
+| `footprint` | `number[][]` | Same format as rides |
+| `buildCost` | number | Dollars |
+| `buildWeeks` | number | `0` = instant |
+| `limit` | number \| null | Max allowed in park; `null` = unlimited |
+| `edgeOnly` | boolean? | Occupied cell must touch grid boundary |
+| `mustBeAdjacentTo` | string[]? | Neighbor must contain one of these facility ids |
 
 ---
 
 ## What's implemented
 
-- Park grid (20×20) with collision detection
-- Ride catalogue loaded from `rides.json` with footprint previews
-- Facility catalogue loaded from `facilities.json` (Park Entrance, Path, Bathroom)
-- Special placement rules: edge-only, adjacency, per-type limits
-- Tap/click-to-select placement flow (desktop + mobile)
-- `installedRides` and `installedFacilities` arrays tracking everything placed
+- 20×20 park grid with collision detection and irregular footprint support
+- Ride and facility catalogues loaded from JSON with footprint previews
+- Placement rules: edge-only, adjacency, per-type limits, affordability
+- Tap/click-to-select placement flow (desktop + mobile touch)
+- Two-stage game: Setup (instant builds) → Play (weekly construction payments)
+- Park-open prerequisites: Park Entrance built + at least one connected ride
+- Ride connectivity via path adjacency (`isRideConnected`)
+- Ride conditions: Running, Unconnected, Under Construction
+- Overlay slide panels: Construction, Rides, Staffing
+- HUD: budget, date (Week W, QN, YYYY), stage badge
+- Finance: attendance model, gate revenue, staff wages, round summary modal
+- Park metrics: `parkExcitement`, `rideOpinion` (smoothed staffing quality score)
+- Staffing panel: employees grouped by job with salary and mood
+- Per-round history log for future reports and graphs
 
 ## What's not yet implemented (see `reqs.md`)
 
-- Budget / cost enforcement
-- Turn-based weekly rounds
-- Staffing system
-- Income / attendance simulation
+- Hiring / firing / wage adjustment UI
+- Staff mood dynamics (events that change mood)
+- Ride breakdown / repair system
+- Login stage and teacher configuration
+- Income beyond gate admission (food, merchandise, parking)
 - Reputation system
-- Research, surveys, marketing
+- Research and surveys
+- Marketing campaigns
 - Shopping tab contents
-- Reports and graphs
+- Reports, graphs, and awards
 - Events system
+- Demographics

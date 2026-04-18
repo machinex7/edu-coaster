@@ -10,28 +10,116 @@
   <div id="app">
     <header>
       <h1>EduCoaster</h1>
+      <div id="hud">
+        <span id="stage-badge" class="stage-badge setup">Setup</span>
+        <div class="hud-stat">
+          <span class="hud-label">Budget</span>
+          <span class="hud-value" id="money-display">$2,000,000</span>
+        </div>
+        <div class="hud-stat">
+          <span class="hud-label">Date</span>
+          <span class="hud-value" id="date-display">Week 1, Q3, 2024</span>
+        </div>
+        <button id="open-park-btn">Open Park &rsaquo;</button>
+        <button id="next-round-btn" class="hidden">Next Round &rsaquo;</button>
+      </div>
     </header>
     <div id="main">
+
+      <div id="left-nav">
+        <!-- Tool button bar -->
+        <nav id="btn-bar">
+          <button class="tool-btn" data-panel="construction">Construction</button>
+          <button class="tool-btn" data-panel="rides">Rides</button>
+          <button class="tool-btn" data-panel="staffing">Staffing</button>
+        </nav>
+
+        <!-- Construction slide panel -->
+        <div id="panel-construction" class="side-panel closed">
+          <div class="side-panel-inner">
+            <div class="panel-header">Construction</div>
+            <div id="sub-tabs">
+              <button class="sub-tab-btn active" data-tab="attractions">Attractions</button>
+              <button class="sub-tab-btn" data-tab="shopping">Shopping</button>
+              <button class="sub-tab-btn" data-tab="facilities">Facilities</button>
+            </div>
+            <div id="attractions-panel" class="tab-panel">
+              <div id="ride-list"></div>
+            </div>
+            <div id="shopping-panel" class="tab-panel hidden"></div>
+            <div id="facilities-panel" class="tab-panel hidden">
+              <div id="facility-list"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Rides overview slide panel -->
+        <div id="panel-rides" class="side-panel closed">
+          <div class="side-panel-inner">
+            <div class="panel-header">Rides</div>
+            <div id="rides-overview"></div>
+          </div>
+        </div>
+
+        <!-- Staffing slide panel -->
+        <div id="panel-staffing" class="side-panel closed">
+          <div class="side-panel-inner">
+            <div class="panel-header">Staffing</div>
+            <div id="staff-action-btns">
+              <button class="staff-action-btn" data-view="postings">Postings</button>
+              <button class="staff-action-btn" data-view="candidates">Candidates</button>
+            </div>
+            <div id="staff-roster-view" class="staff-view">
+              <div id="staff-overview"></div>
+            </div>
+            <div id="staff-postings-view" class="staff-view hidden"></div>
+            <div id="staff-candidates-view" class="staff-view hidden">
+              <p class="empty-note">Candidates will appear here once postings attract applicants.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div id="park-view">
         <div id="grid"></div>
       </div>
-      <aside id="sidebar">
-        <div id="sidebar-header">Construction</div>
-        <div id="sub-tabs">
-          <button class="sub-tab-btn active" data-tab="attractions">Attractions</button>
-          <button class="sub-tab-btn" data-tab="shopping">Shopping</button>
-          <button class="sub-tab-btn" data-tab="facilities">Facilities</button>
-        </div>
-        <div id="attractions-panel" class="tab-panel">
-          <div id="ride-list"></div>
-        </div>
-        <div id="shopping-panel" class="tab-panel hidden"></div>
-        <div id="facilities-panel" class="tab-panel hidden">
-          <div id="facility-list"></div>
-        </div>
-      </aside>
+
     </div>
   </div>
+
+  <!-- Round summary modal -->
+  <div id="round-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-title">Round Complete</div>
+      <div class="modal-date" id="summary-date"></div>
+      <div class="modal-stats">
+        <div class="modal-stat-row">
+          <span class="modal-stat-label">Attendance</span>
+          <span class="modal-stat-value" id="summary-attendance"></span>
+        </div>
+        <div class="modal-stat-row">
+          <span class="modal-stat-label">Gate Revenue</span>
+          <span class="modal-stat-value income" id="summary-income"></span>
+        </div>
+        <div class="modal-stat-row">
+          <span class="modal-stat-label">Total Expenses</span>
+          <span class="modal-stat-value expense" id="summary-expenses"></span>
+        </div>
+        <div class="modal-divider"></div>
+        <div class="modal-stat-row modal-net-row">
+          <span class="modal-stat-label">Net</span>
+          <span class="modal-stat-value" id="summary-net"></span>
+        </div>
+      </div>
+      <button id="modal-close-btn">Continue &rsaquo;</button>
+    </div>
+  </div>
+
   <script src="game.js"></script>
+  <script src="grid.js"></script>
+  <script src="finance.js"></script>
+  <script src="staff.js"></script>
+  <script src="history.js"></script>
+  <script src="hud.js"></script>
 </body>
 </html>
