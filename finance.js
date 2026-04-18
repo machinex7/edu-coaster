@@ -20,8 +20,25 @@ function recalcExcitement() {
 }
 
 // ── Attendance ─────────────────────────────────────────────────────────────
-function calcDailyAttendance() {
+
+// How many people want to visit based on park appeal.
+function calcDailyDemand() {
   return parkExcitement * 20;
+}
+
+// How many people can actually enter: booth attendants are the bottleneck.
+// Mood scales throughput between 0.8× (miserable) and 1.2× (happy).
+function calcGateThroughput() {
+  const attendants = staff.filter(s => s.jobId === 'booth_attendant');
+  if (attendants.length === 0) return 0;
+  const avgMood       = attendants.reduce((sum, s) => sum + s.mood, 0) / attendants.length;
+  const moodMultiplier = 0.8 + (avgMood / 100) * 0.4;
+  return attendants.length * 500 * moodMultiplier;
+}
+
+// Actual daily attendance is whichever is smaller: demand or gate capacity.
+function calcDailyAttendance() {
+  return Math.min(calcDailyDemand(), calcGateThroughput());
 }
 
 // ── Income sources ─────────────────────────────────────────────────────────

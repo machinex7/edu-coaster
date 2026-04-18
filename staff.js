@@ -33,6 +33,8 @@ function initStaff() {
   hireStaff('security');
   hireStaff('janitor');
   hireStaff('engineer');
+  hireStaff('booth_attendant');
+  hireStaff('booth_attendant');
 }
 
 function totalWeeklySalary() {
