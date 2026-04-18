@@ -31,9 +31,14 @@ function calcGateRevenue(dailyAttendance) {
   return GATE_ADMISSION * dailyAttendance * 7; // 7 days per round
 }
 
+// ── Cost sources ───────────────────────────────────────────────────────────
+function calcStaffCosts() {
+  return totalWeeklySalary();
+}
+
 // ── Round processing ───────────────────────────────────────────────────────
 // Called once per round advancement. Order matters: collect income before
-// deducting construction costs so the budget display reflects net change.
+// deducting costs so the budget display reflects net change.
 function processRound() {
   recalcExcitement();
 
@@ -43,5 +48,6 @@ function processRound() {
   money += calcGateRevenue(daily);
 
   // Costs
+  money -= calcStaffCosts();
   processConstruction();
 }

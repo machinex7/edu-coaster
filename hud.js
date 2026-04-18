@@ -28,6 +28,7 @@ function advanceRound() {
   processRound();
   updateHUD();
   refreshRidesPanel();
+  refreshStaffPanel();
 }
 
 // Converts the current round into "Week W, QN, YYYY".
@@ -80,7 +81,8 @@ function openPanel(panelId) {
   activePanel = panelId;
   document.getElementById(`panel-${panelId}`).classList.remove('closed');
   document.querySelector(`.tool-btn[data-panel="${panelId}"]`)?.classList.add('active');
-  if (panelId === 'rides') buildRidesPanel();
+  if (panelId === 'rides')    buildRidesPanel();
+  if (panelId === 'staffing') buildStaffPanel();
 }
 
 function closePanels() {

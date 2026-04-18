@@ -378,6 +378,76 @@ header h1 {
   font-style: italic;
 }
 
+/* ── Staff panel ── */
+#staff-overview {
+  flex: 1;
+  overflow-y: auto;
+}
+
+.staff-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.78rem;
+}
+
+.staff-table th {
+  text-align: left;
+  padding: 7px 12px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #6b7280;
+  border-bottom: 1px solid #374151;
+  position: sticky;
+  top: 0;
+  background: #1f2937;
+}
+
+.staff-table td {
+  padding: 5px 12px;
+  border-bottom: 1px solid #1e2535;
+  color: #e5e7eb;
+}
+
+.job-group-header td {
+  padding: 8px 12px 4px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6b7280;
+  background: #111827;
+  border-bottom: none;
+}
+
+.group-count {
+  font-weight: 400;
+  opacity: 0.7;
+}
+
+.job-empty-row td {
+  padding: 3px 12px 6px;
+  color: #4b5563;
+  font-style: italic;
+  font-size: 0.75rem;
+  border-bottom: none;
+}
+
+.mood-badge {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.mood-happy   { background: #14532d; color: #86efac; }
+.mood-neutral { background: #374151; color: #9ca3af; }
+.mood-unhappy { background: #78350f; color: #fde68a; }
+
 /* ── Park View ── */
 #park-view {
   flex: 1;

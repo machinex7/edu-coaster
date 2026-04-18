@@ -71,6 +71,7 @@ async function init() {
   buildGrid();
   buildRideList();
   buildFacilityList();
+  initStaff();
   initSubTabs();
   initHUD();
 }
