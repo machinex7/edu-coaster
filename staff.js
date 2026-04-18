@@ -78,13 +78,12 @@ const POSTING_WEEKLY_COST = 75;
 let postings = [];
 let _postingIdSeq = 0;
 
-function createPosting(jobId, minYearsExperience, salaryMin, salaryMax) {
+function createPosting(jobId, minYearsExperience, salary) {
   postings.push({
     instanceId: `posting_${jobId}_${++_postingIdSeq}`,
     jobId,
     minYearsExperience,
-    salaryMin,
-    salaryMax,
+    salary,
     weeksActive: 0,
   });
 }
@@ -186,7 +185,7 @@ function buildPostingsView() {
           <div class="posting-job">${job.label}</div>
           <div class="posting-details">
             <span>${expStr}</span>
-            <span>$${p.salaryMin.toLocaleString()} – $${p.salaryMax.toLocaleString()}/wk</span>
+            <span>$${p.salary.toLocaleString()}/wk</span>
             <span class="posting-meta">${p.weeksActive} wk active &middot; $${POSTING_WEEKLY_COST}/wk cost</span>
           </div>
           <button class="cancel-posting-btn" data-id="${p.instanceId}">Cancel Posting</button>
@@ -207,14 +206,8 @@ function buildPostingsView() {
         <input type="number" id="pf-exp" min="0" max="30" value="0">
       </div>
       <div class="form-field">
-        <label>Weekly Salary Range</label>
-        <div class="form-row">
-          <input type="number" id="pf-sal-min" min="0" placeholder="Min"
-                 value="${defaultJob.weeklySalary}">
-          <span>–</span>
-          <input type="number" id="pf-sal-max" min="0" placeholder="Max"
-                 value="${Math.round(defaultJob.weeklySalary * 1.25)}">
-        </div>
+        <label>Weekly Salary</label>
+        <input type="number" id="pf-salary" min="0" value="${defaultJob.weeklySalary}">
       </div>
       <p id="pf-error" class="form-error hidden"></p>
       <div class="form-actions">
@@ -229,32 +222,25 @@ function buildPostingsView() {
     document.getElementById('posting-form').classList.toggle('hidden')
   );
 
-  // Update salary defaults when job type changes
+  // Update salary default when job type changes
   document.getElementById('pf-job').addEventListener('change', e => {
     const job = JOB_TYPES.find(j => j.id === e.target.value);
-    document.getElementById('pf-sal-min').value = job.weeklySalary;
-    document.getElementById('pf-sal-max').value = Math.round(job.weeklySalary * 1.25);
+    document.getElementById('pf-salary').value = job.weeklySalary;
   });
 
   // Submit
   document.getElementById('pf-post-btn').addEventListener('click', () => {
     const jobId  = document.getElementById('pf-job').value;
     const minExp = parseInt(document.getElementById('pf-exp').value)    || 0;
-    const salMin = parseInt(document.getElementById('pf-sal-min').value) || 0;
-    const salMax = parseInt(document.getElementById('pf-sal-max').value) || 0;
+    const salary = parseInt(document.getElementById('pf-salary').value) || 0;
     const errEl  = document.getElementById('pf-error');
 
-    if (salMin <= 0 || salMax <= 0) {
-      errEl.textContent = 'Enter a salary range.';
+    if (salary <= 0) {
+      errEl.textContent = 'Enter a salary.';
       errEl.classList.remove('hidden');
       return;
     }
-    if (salMin > salMax) {
-      errEl.textContent = 'Max must be ≥ min.';
-      errEl.classList.remove('hidden');
-      return;
-    }
-    createPosting(jobId, minExp, salMin, salMax);
+    createPosting(jobId, minExp, salary);
     buildPostingsView();
   });
 

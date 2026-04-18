@@ -476,15 +476,6 @@ header h1 {
   box-sizing: border-box;
 }
 
-.form-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.form-row input { flex: 1; }
-.form-row span  { color: #6b7280; font-size: 0.82rem; }
-
 .form-error {
   font-size: 0.72rem;
   color: #fca5a5;
@@ -559,7 +550,7 @@ header h1 {
 
 .cancel-posting-btn:hover { background: rgba(127, 29, 29, 0.3); }
 
-#staff-overview {
+#staff-overview { }
 
 .staff-table {
   width: 100%;
