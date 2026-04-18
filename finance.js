@@ -53,13 +53,15 @@ function calcDailyDemand() {
 }
 
 // How many people can actually enter: booth attendants are the bottleneck.
-// Mood scales throughput between 0.8× (miserable) and 1.2× (happy).
+// Per attendant: base 500 × mood multiplier (0.8–1.2) × experience multiplier.
 function calcGateThroughput() {
   const attendants = staff.filter(s => s.jobId === 'booth_attendant');
   if (attendants.length === 0) return 0;
-  const avgMood       = attendants.reduce((sum, s) => sum + s.mood, 0) / attendants.length;
-  const moodMultiplier = 0.8 + (avgMood / 100) * 0.4;
-  return attendants.length * 500 * moodMultiplier;
+  return attendants.reduce((sum, s) => {
+    const moodMult = 0.8 + (s.mood / 100) * 0.4;
+    const { multiplier: expMult } = getExperienceTier(s.weeksEmployed);
+    return sum + 500 * moodMult * expMult;
+  }, 0);
 }
 
 // Actual daily attendance is whichever is smaller: demand or gate capacity.
@@ -102,6 +104,8 @@ function processRound() {
   // Costs
   money -= staffCosts;
   processConstruction();  // deducts constructionCosts and advances build progress
+
+  advanceExperience();    // increment weeksEmployed for all staff
 
   return {
     weeklyAttendance,

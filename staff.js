@@ -13,7 +13,7 @@ const JOB_TYPES = [
   { id: 'business_analyst', label: 'Business Analyst', plural: 'Business Analysts', weeklySalary: 1400 },
 ];
 
-// staff entries: { instanceId, jobId, salary, mood (0–100) }
+// staff entries: { instanceId, jobId, salary, mood (0–100), weeksEmployed }
 let staff = [];
 let _staffIdSeq = 0;
 
@@ -24,6 +24,7 @@ function hireStaff(jobId, salaryOverride) {
     jobId,
     salary: salaryOverride ?? job.weeklySalary,
     mood: 80,
+    weeksEmployed: 0,
   });
 }
 
@@ -39,6 +40,20 @@ function initStaff() {
 
 function totalWeeklySalary() {
   return staff.reduce((sum, s) => sum + s.salary, 0);
+}
+
+// ── Experience ─────────────────────────────────────────────────────────────
+// < 52 weeks  → Junior  (0.75×)
+// 52–156 weeks → Normal  (1.0×)
+// > 156 weeks → Senior  (1.25×)
+function getExperienceTier(weeksEmployed) {
+  if (weeksEmployed < 52)  return { label: 'Junior', multiplier: 0.75 };
+  if (weeksEmployed > 156) return { label: 'Senior', multiplier: 1.25 };
+  return                          { label: null,      multiplier: 1.0  };
+}
+
+function advanceExperience() {
+  staff.forEach(s => s.weeksEmployed++);
 }
 
 // ── Staffing requirements ──────────────────────────────────────────────────
@@ -74,11 +89,15 @@ function buildStaffPanel() {
       return [header, `<tr class="job-empty-row"><td colspan="3">None hired</td></tr>`];
     }
     return [header, ...members.map((s, i) => {
-      const { label, cls } = getMoodInfo(s.mood);
+      const { label: moodLabel, cls: moodCls } = getMoodInfo(s.mood);
+      const { label: expLabel }                = getExperienceTier(s.weeksEmployed);
+      const expBadge = expLabel
+        ? `<span class="exp-badge exp-${expLabel.toLowerCase()}">${expLabel}</span>`
+        : '';
       return `<tr>
-        <td>${job.label} ${i + 1}</td>
+        <td>${job.label} ${i + 1} ${expBadge}</td>
         <td>$${s.salary.toLocaleString()}/wk</td>
-        <td><span class="mood-badge ${cls}">${label}</span></td>
+        <td><span class="mood-badge ${moodCls}">${moodLabel}</span></td>
       </tr>`;
     })];
   });
