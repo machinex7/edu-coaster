@@ -41,6 +41,20 @@ function totalWeeklySalary() {
   return staff.reduce((sum, s) => sum + s.salary, 0);
 }
 
+// ── Staffing requirements ──────────────────────────────────────────────────
+
+function operatorsNeededForRide(record) {
+  const tiles = record.footprint.flat().filter(v => v === 1).length;
+  return tiles >= 10 ? 4 : tiles >= 5 ? 3 : 2;
+}
+
+// Total ride operators needed to fully staff every Running ride.
+function rideOperatorsNeeded() {
+  return installedRides
+    .filter(r => r.status === 'active' && isRideConnected(r))
+    .reduce((total, r) => total + operatorsNeededForRide(r), 0);
+}
+
 // ── Staff panel ────────────────────────────────────────────────────────────
 function getMoodInfo(mood) {
   if (mood >= 70) return { label: 'Happy',   cls: 'mood-happy'   };
