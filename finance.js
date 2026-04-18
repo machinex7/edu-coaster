@@ -78,7 +78,7 @@ function calcGateRevenue(dailyAttendance) {
 
 // ── Cost sources ───────────────────────────────────────────────────────────
 function calcStaffCosts() {
-  return totalWeeklySalary();
+  return totalWeeklySalary() + totalPostingCosts();
 }
 
 // ── Round processing ───────────────────────────────────────────────────────
@@ -106,6 +106,7 @@ function processRound() {
   processConstruction();  // deducts constructionCosts and advances build progress
 
   advanceExperience();    // increment weeksEmployed for all staff
+  advancePostings();      // increment weeksActive for all postings
 
   return {
     weeklyAttendance,

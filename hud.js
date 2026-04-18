@@ -6,6 +6,7 @@ function initHUD() {
   document.getElementById('open-park-btn').addEventListener('click', openPark);
   document.getElementById('next-round-btn').addEventListener('click', advanceRound);
   document.getElementById('modal-close-btn').addEventListener('click', hideRoundSummary);
+  initStaffPanel();
   initPanelBtns();
 }
 
@@ -101,7 +102,7 @@ function openPanel(panelId) {
   document.getElementById(`panel-${panelId}`).classList.remove('closed');
   document.querySelector(`.tool-btn[data-panel="${panelId}"]`)?.classList.add('active');
   if (panelId === 'rides')    buildRidesPanel();
-  if (panelId === 'staffing') buildStaffPanel();
+  if (panelId === 'staffing') openStaffPanel();
 }
 
 function closePanels() {
