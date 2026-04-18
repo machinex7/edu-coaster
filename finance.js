@@ -11,12 +11,38 @@
 // ── Park metrics ───────────────────────────────────────────────────────────
 let parkExcitement = 0;
 
-// Count of fully-built rides that are reachable via path.
-// Re-run whenever round advances; other systems read parkExcitement directly.
+// Smoothed 0–1 score of how well rides are serving current crowds.
+// Starts at 1.0 (perfect); degrades when operators can't keep up with demand.
+let rideOpinion = 1.0;
+
+// How well-staffed running rides are vs the crowd trying to ride them.
+// staffRatio = actual operators / needed operators (capped at 1).
+// dailyRideCapacity = sum(ridesPerHour for Running rides) * staffRatio.
+// score = min(1, dailyRideCapacity / dailyAttendance).
+// rideOpinion is averaged with the new score so it shifts gradually.
+function computeRideOpinion(dailyAttendance) {
+  const runningRides = installedRides.filter(r => r.status === 'active' && isRideConnected(r));
+  if (runningRides.length === 0) return;
+
+  const needed     = rideOperatorsNeeded();
+  const actual     = staff.filter(s => s.jobId === 'ride_operator').length;
+  const staffRatio = needed > 0 ? Math.min(1, actual / needed) : 1;
+
+  const dailyRideCapacity = runningRides.reduce((sum, record) => {
+    const ride = rides.find(r => r.id === record.rideId);
+    return sum + (ride?.ridesPerHour ?? 0);
+  }, 0) * staffRatio;
+
+  const score = dailyAttendance > 0 ? Math.min(1, dailyRideCapacity / dailyAttendance) : 1;
+  rideOpinion = (rideOpinion + score) / 2;
+}
+
+// Running ride count, pulled down by rideOpinion when rides are underserved.
 function recalcExcitement() {
-  parkExcitement = installedRides.filter(
+  const runningCount = installedRides.filter(
     r => r.status === 'active' && isRideConnected(r)
   ).length;
+  parkExcitement = runningCount * rideOpinion;
 }
 
 // ── Attendance ─────────────────────────────────────────────────────────────
@@ -57,9 +83,11 @@ function calcStaffCosts() {
 // Called once per round advancement. Order matters: collect income before
 // deducting costs so the budget display reflects net change.
 function processRound() {
-  recalcExcitement();
+  recalcExcitement();           // uses last round's rideOpinion
 
   const daily = calcDailyAttendance();
+
+  computeRideOpinion(daily);    // updates rideOpinion for next round
 
   // Income
   money += calcGateRevenue(daily);
