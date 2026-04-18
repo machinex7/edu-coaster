@@ -106,6 +106,9 @@ function processRound() {
   return {
     weeklyAttendance,
     gateRevenue,
+    staffCosts,
+    constructionCosts,
     totalExpenses: staffCosts + constructionCosts,
+    rideEfficiency: rideOpinion,
   };
 }

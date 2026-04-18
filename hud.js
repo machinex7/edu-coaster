@@ -27,6 +27,7 @@ function openPark() {
 function advanceRound() {
   round++;
   const report = processRound();
+  recordRound(report);
   updateHUD();
   refreshRidesPanel();
   refreshStaffPanel();
