@@ -5,6 +5,7 @@ function initHUD() {
   updateHUD();
   document.getElementById('open-park-btn').addEventListener('click', openPark);
   document.getElementById('next-round-btn').addEventListener('click', advanceRound);
+  document.getElementById('modal-close-btn').addEventListener('click', hideRoundSummary);
   initPanelBtns();
 }
 
@@ -25,10 +26,27 @@ function openPark() {
 
 function advanceRound() {
   round++;
-  processRound();
+  const report = processRound();
   updateHUD();
   refreshRidesPanel();
   refreshStaffPanel();
+  showRoundSummary(report);
+}
+
+function showRoundSummary(report) {
+  const net = report.gateRevenue - report.totalExpenses;
+  document.getElementById('summary-date').textContent       = getDateLabel();
+  document.getElementById('summary-attendance').textContent = report.weeklyAttendance.toLocaleString();
+  document.getElementById('summary-income').textContent     = `$${report.gateRevenue.toLocaleString()}`;
+  document.getElementById('summary-expenses').textContent   = `$${report.totalExpenses.toLocaleString()}`;
+  const netEl = document.getElementById('summary-net');
+  netEl.textContent = (net >= 0 ? '+' : '\u2212') + `$${Math.abs(net).toLocaleString()}`;
+  netEl.className   = net >= 0 ? 'summary-pos' : 'summary-neg';
+  document.getElementById('round-modal').classList.remove('hidden');
+}
+
+function hideRoundSummary() {
+  document.getElementById('round-modal').classList.add('hidden');
 }
 
 // Converts the current round into "Week W, QN, YYYY".

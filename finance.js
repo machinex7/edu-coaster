@@ -89,10 +89,23 @@ function processRound() {
 
   computeRideOpinion(daily);    // updates rideOpinion for next round
 
+  const weeklyAttendance  = Math.round(daily * 7);
+  const gateRevenue       = calcGateRevenue(daily);
+  const staffCosts        = calcStaffCosts();
+  const constructionCosts = [...installedRides, ...installedFacilities]
+    .filter(r => r.status === 'under_construction')
+    .reduce((sum, r) => sum + r.weeklyPayment, 0);
+
   // Income
-  money += calcGateRevenue(daily);
+  money += gateRevenue;
 
   // Costs
-  money -= calcStaffCosts();
-  processConstruction();
+  money -= staffCosts;
+  processConstruction();  // deducts constructionCosts and advances build progress
+
+  return {
+    weeklyAttendance,
+    gateRevenue,
+    totalExpenses: staffCosts + constructionCosts,
+  };
 }

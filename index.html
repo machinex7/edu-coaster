@@ -76,6 +76,35 @@
 
     </div>
   </div>
+
+  <!-- Round summary modal -->
+  <div id="round-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-title">Round Complete</div>
+      <div class="modal-date" id="summary-date"></div>
+      <div class="modal-stats">
+        <div class="modal-stat-row">
+          <span class="modal-stat-label">Attendance</span>
+          <span class="modal-stat-value" id="summary-attendance"></span>
+        </div>
+        <div class="modal-stat-row">
+          <span class="modal-stat-label">Gate Revenue</span>
+          <span class="modal-stat-value income" id="summary-income"></span>
+        </div>
+        <div class="modal-stat-row">
+          <span class="modal-stat-label">Total Expenses</span>
+          <span class="modal-stat-value expense" id="summary-expenses"></span>
+        </div>
+        <div class="modal-divider"></div>
+        <div class="modal-stat-row modal-net-row">
+          <span class="modal-stat-label">Net</span>
+          <span class="modal-stat-value" id="summary-net"></span>
+        </div>
+      </div>
+      <button id="modal-close-btn">Continue &rsaquo;</button>
+    </div>
+  </div>
+
   <script src="game.js"></script>
   <script src="grid.js"></script>
   <script src="finance.js"></script>
