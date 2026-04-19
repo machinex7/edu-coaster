@@ -69,11 +69,21 @@ function calcDailyAttendance() {
   return Math.min(calcDailyDemand(), calcGateThroughput());
 }
 
-// ── Income sources ─────────────────────────────────────────────────────────
-const GATE_ADMISSION = 20; // $ per visitor per entry
+// ── Pricing ────────────────────────────────────────────────────────────────
+let gatePrice        = 20;  // $ per visitor
+let parkingPrice     = 10;  // $ per vehicle
+let foodUpcharge     = 0;   // $ added per food item sold
 
+// Cumulative visitor price fatigue. Rises when prices increase, decays 1/round.
+let priceExhaustion  = 0;
+
+function advancePriceExhaustion() {
+  priceExhaustion = Math.max(0, priceExhaustion - 1);
+}
+
+// ── Income sources ─────────────────────────────────────────────────────────
 function calcGateRevenue(dailyAttendance) {
-  return GATE_ADMISSION * dailyAttendance * 7; // 7 days per round
+  return gatePrice * dailyAttendance * 7; // 7 days per round
 }
 
 // ── Cost sources ───────────────────────────────────────────────────────────
@@ -107,8 +117,9 @@ function processRound() {
 
   advanceExperience();         // increment weeksEmployed for all staff
   advancePostings();           // increment weeksActive for all postings
-  generateCandidates();  // 4 new applicants per round when postings exist
-  advanceCandidates();   // withdrawal check, then increment weeksAsCandidate
+  generateCandidates();       // 4 new applicants per round when postings exist
+  advanceCandidates();        // withdrawal check, then increment weeksAsCandidate
+  advancePriceExhaustion();   // decay price fatigue by 1
 
   return {
     weeklyAttendance,

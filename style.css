@@ -706,6 +706,62 @@ header h1 {
 .exp-senior { background: #3b1f6e; color: #c4b5fd; }
 .exp-lead   { background: #3d1a1a; color: #fca5a5; }
 
+/* ── Pricing panel ── */
+.price-exhaustion-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: #111827;
+  border-bottom: 1px solid #374151;
+  margin-bottom: 8px;
+}
+.price-exhaustion-label { font-size: 0.78rem; color: #9ca3af; }
+.price-exhaustion-value { font-size: 0.9rem; font-weight: 700; color: #fbbf24; }
+
+.price-list { padding: 0 10px 10px; display: flex; flex-direction: column; gap: 10px; }
+
+.price-row {
+  background: #111827;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  padding: 10px;
+}
+.price-label { font-size: 0.85rem; font-weight: 600; color: #e5e7eb; margin-bottom: 2px; }
+.price-unit  { font-size: 0.72rem; color: #6b7280; margin-bottom: 8px; }
+
+.price-controls { display: flex; align-items: center; gap: 6px; }
+
+.price-current {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #86efac;
+  min-width: 36px;
+}
+
+.price-input {
+  width: 64px;
+  padding: 4px 6px;
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 4px;
+  color: #e5e7eb;
+  font-size: 0.8rem;
+}
+
+.price-apply-btn {
+  padding: 4px 10px;
+  background: none;
+  border: 1px solid #374151;
+  border-radius: 4px;
+  color: #d1d5db;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.price-apply-btn:hover { background: #374151; }
+
 /* ── Park View ── */
 #park-view {
   flex: 1;

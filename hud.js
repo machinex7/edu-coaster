@@ -103,6 +103,7 @@ function openPanel(panelId) {
   document.querySelector(`.tool-btn[data-panel="${panelId}"]`)?.classList.add('active');
   if (panelId === 'rides')    buildRidesPanel();
   if (panelId === 'staffing') openStaffPanel();
+  if (panelId === 'pricing')  buildPricingPanel();
 }
 
 function closePanels() {
@@ -150,6 +151,72 @@ function initSubTabs() {
       btn.classList.add('active');
       document.getElementById(`${btn.dataset.tab}-panel`).classList.remove('hidden');
       deselectItem();
+    });
+  });
+}
+
+// ── Pricing panel ──────────────────────────────────────────────────────────
+const PRICE_ITEMS = [
+  {
+    key:       'gate',
+    label:     'Gate Admission',
+    unit:      '$/visitor',
+    getValue:  () => gatePrice,
+    setValue:  v => {
+      const delta = v - gatePrice;
+      if (delta > 0) priceExhaustion += 2 * delta;
+      gatePrice = v;
+    },
+  },
+  {
+    key:       'parking',
+    label:     'Parking',
+    unit:      '$/vehicle',
+    getValue:  () => parkingPrice,
+    setValue:  v => {
+      const delta = v - parkingPrice;
+      if (delta > 0) priceExhaustion += 1 * delta;
+      parkingPrice = v;
+    },
+  },
+  {
+    key:       'food',
+    label:     'Food Upcharge',
+    unit:      '$/item',
+    getValue:  () => foodUpcharge,
+    setValue:  v => { foodUpcharge = v; },
+  },
+];
+
+function buildPricingPanel() {
+  const rows = PRICE_ITEMS.map(item => `
+    <div class="price-row">
+      <div class="price-label">${item.label}</div>
+      <div class="price-unit">${item.unit}</div>
+      <div class="price-controls">
+        <span class="price-current" id="price-current-${item.key}">$${item.getValue()}</span>
+        <input class="price-input" id="price-input-${item.key}"
+               type="number" min="0" value="${item.getValue()}">
+        <button class="price-apply-btn" data-key="${item.key}">Apply</button>
+      </div>
+    </div>`).join('');
+
+  document.getElementById('pricing-panel-body').innerHTML = `
+    <div class="price-exhaustion-row">
+      <span class="price-exhaustion-label">Price Exhaustion</span>
+      <span class="price-exhaustion-value" id="price-exhaustion-display">${priceExhaustion}</span>
+    </div>
+    <div class="price-list">${rows}</div>`;
+
+  document.querySelectorAll('.price-apply-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const item   = PRICE_ITEMS.find(p => p.key === btn.dataset.key);
+      const input  = document.getElementById(`price-input-${item.key}`);
+      const newVal = Math.max(0, parseInt(input.value) || 0);
+      item.setValue(newVal);
+      document.getElementById(`price-current-${item.key}`).textContent = `$${item.getValue()}`;
+      input.value = item.getValue();
+      document.getElementById('price-exhaustion-display').textContent = priceExhaustion;
     });
   });
 }
