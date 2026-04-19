@@ -419,6 +419,12 @@ header h1 {
 
 .ride-detail-actions { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
 
+.ride-ridership { display: flex; flex-direction: column; gap: 4px; }
+.ride-ridership-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280; }
+.ride-ridership-bar-wrap { height: 6px; background: #374151; border-radius: 3px; overflow: hidden; }
+.ride-ridership-bar { height: 100%; background: #3b82f6; border-radius: 3px; transition: width 0.3s; }
+.ride-ridership-nums { font-size: 0.75rem; color: #9ca3af; }
+
 .ride-action-btn {
   padding: 7px 12px;
   border-radius: 5px;

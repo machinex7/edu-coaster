@@ -150,6 +150,23 @@ function buildRideDetail(record) {
   const container = document.getElementById('rides-overview');
   const { label, cls } = getRideCondition(record);
 
+  let ridership = '';
+  if (record.lastRoundCapacity != null) {
+    const pct = record.lastRoundCapacity > 0
+      ? Math.round(record.lastRoundRiders / record.lastRoundCapacity * 100)
+      : 0;
+    ridership = `
+      <div class="ride-ridership">
+        <div class="ride-ridership-label">Last Round Ridership</div>
+        <div class="ride-ridership-bar-wrap">
+          <div class="ride-ridership-bar" style="width:${pct}%"></div>
+        </div>
+        <div class="ride-ridership-nums">
+          ${record.lastRoundRiders.toLocaleString()} / ${record.lastRoundCapacity.toLocaleString()} riders (${pct}%)
+        </div>
+      </div>`;
+  }
+
   let actionsHtml = '';
   if (record.status === STATUS.UNDER_CONSTRUCTION) {
     const weeksLeft = record.weeksTotal - record.weeksCompleted;
@@ -172,6 +189,7 @@ function buildRideDetail(record) {
       <button class="ride-back-btn" id="rdx-back">← Rides</button>
       <div class="ride-detail-name">${record.name}</div>
       <span class="cond-badge ${cls}">${label}</span>
+      ${ridership}
       <div class="ride-detail-actions">${actionsHtml}</div>
     </div>`;
 

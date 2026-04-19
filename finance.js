@@ -28,12 +28,15 @@ function computeRideOpinion(dailyAttendance) {
   const actual     = staff.filter(s => s.jobId === JOB.RIDE_OPERATOR).length;
   const staffRatio = needed > 0 ? Math.min(1, actual / needed) : 1;
 
-  const dailyRideCapacity = runningRides.reduce((sum, record) => {
-    const ride = rides.find(r => r.id === record.rideId);
-    return sum + (ride?.ridesPerHour ?? 0);
-  }, 0) * staffRatio;
+  let totalDailyCapacity = 0;
+  runningRides.forEach(record => {
+    const rph = rides.find(r => r.id === record.rideId)?.ridesPerHour ?? 0;
+    totalDailyCapacity       += rph;
+    record.lastRoundCapacity  = Math.round(rph * 7);           // weekly at full staff
+    record.lastRoundRiders    = Math.round(rph * staffRatio * 7); // weekly actual
+  });
 
-  const score = dailyAttendance > 0 ? Math.min(1, dailyRideCapacity / dailyAttendance) : 1;
+  const score = dailyAttendance > 0 ? Math.min(1, totalDailyCapacity * staffRatio / dailyAttendance) : 1;
   rideOpinion = (rideOpinion + score) / 2;
 }
 
