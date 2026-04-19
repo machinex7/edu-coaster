@@ -202,10 +202,6 @@ function buildPricingPanel() {
     </div>`).join('');
 
   document.getElementById('pricing-panel-body').innerHTML = `
-    <div class="price-exhaustion-row">
-      <span class="price-exhaustion-label">Price Exhaustion</span>
-      <span class="price-exhaustion-value" id="price-exhaustion-display">${priceExhaustion}</span>
-    </div>
     <div class="price-list">${rows}</div>`;
 
   document.querySelectorAll('.price-apply-btn').forEach(btn => {
@@ -216,7 +212,6 @@ function buildPricingPanel() {
       item.setValue(newVal);
       document.getElementById(`price-current-${item.key}`).textContent = `$${item.getValue()}`;
       input.value = item.getValue();
-      document.getElementById('price-exhaustion-display').textContent = priceExhaustion;
     });
   });
 }

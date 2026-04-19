@@ -48,8 +48,10 @@ function recalcExcitement() {
 // ── Attendance ─────────────────────────────────────────────────────────────
 
 // How many people want to visit based on park appeal.
+// priceExhaustion cuts demand by 1% per point (10 exhaustion = −10%).
 function calcDailyDemand() {
-  return parkExcitement * 20;
+  const exhaustionFactor = Math.max(0, 1 - priceExhaustion / 100);
+  return parkExcitement * 20 * exhaustionFactor;
 }
 
 // How many people can actually enter: booth attendants are the bottleneck.
