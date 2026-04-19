@@ -19,6 +19,7 @@ const JOB_TYPES = [
   { id: JOB.ENGINEER,         label: 'Engineer',         plural: 'Engineers',         weeklySalary: 1200 },
   { id: JOB.BOOTH_ATTENDANT,  label: 'Booth Attendant',  plural: 'Booth Attendants',  weeklySalary: 480  },
   { id: JOB.BUSINESS_ANALYST, label: 'Business Analyst', plural: 'Business Analysts', weeklySalary: 1400 },
+  { id: JOB.HR,               label: 'HR',               plural: 'HR',                weeklySalary: 1600 },
 ];
 
 // staff entries: { instanceId, name, jobId, salary, skillModifier, salaryModifier, mood (0–100), weeksEmployed }
@@ -79,10 +80,10 @@ function totalWeeklySalary() {
 // 52–156 weeks → Normal  (1.0×)
 // > 156 weeks → Senior  (1.25×)
 function getExperienceTier(weeksEmployed) {
-  if (weeksEmployed < 52)  return { label: 'Junior', multiplier: 0.75 };
-  if (weeksEmployed > 260) return { label: 'Lead',   multiplier: 1.5  };
-  if (weeksEmployed > 156) return { label: 'Senior', multiplier: 1.25 };
-  return                          { label: null,      multiplier: 1.0  };
+  if (weeksEmployed < 52)  return { label: 'Junior', multiplier: 0.75, tier: 1 };
+  if (weeksEmployed > 260) return { label: 'Lead',   multiplier: 1.5,  tier: 4 };
+  if (weeksEmployed > 156) return { label: 'Senior', multiplier: 1.25, tier: 3 };
+  return                          { label: null,      multiplier: 1.0,  tier: 2 };
 }
 
 function advanceExperience() {
@@ -138,12 +139,22 @@ function advancePostings() {
 
 let candidates = [];
 
-// Generate 4 new candidates each round a posting exists.
-// Candidates with no matching posting are discarded immediately.
+// Generate candidates each round a posting exists.
+// Base: 4 candidates at quality 0.
+// Each HR employee adds (tier) extra candidates and (tier × 5) to quality.
 function generateCandidates() {
   if (postings.length === 0) return;
-  for (let i = 0; i < 4; i++) {
-    const emp = generateEmployee(0);
+
+  let count   = 4;
+  let quality = 0;
+  staff.filter(s => s.jobId === JOB.HR).forEach(s => {
+    const { tier } = getExperienceTier(s.weeksEmployed);
+    count   += tier;
+    quality += tier * 5;
+  });
+
+  for (let i = 0; i < count; i++) {
+    const emp = generateEmployee(quality);
     const candidate = { ...emp, weeksAsCandidate: 0 };
     if (findMatchingPosting(candidate)) candidates.push(candidate);
   }

@@ -23,6 +23,7 @@ const JOB = Object.freeze({
   ENGINEER:         'engineer',
   BOOTH_ATTENDANT:  'booth_attendant',
   BUSINESS_ANALYST: 'business_analyst',
+  HR:               'hr',
 });
 
 // IDs that match the "id" field in facilities.json.
