@@ -85,7 +85,7 @@ function advancePriceExhaustion() {
 
 // ── Income sources ─────────────────────────────────────────────────────────
 function calcGateRevenue(dailyAttendance) {
-  return gatePrice * dailyAttendance * 7; // 7 days per round
+  return Math.round(gatePrice * dailyAttendance * 7);
 }
 
 // ── Cost sources ───────────────────────────────────────────────────────────
