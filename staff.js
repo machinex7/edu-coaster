@@ -3,6 +3,14 @@
 // Adding a new job type: append an entry to JOB_TYPES. Everything else
 // (panel grouping, salary totals, hiring/firing when added) picks it up.
 
+// ── Name pool ──────────────────────────────────────────────────────────────
+const FIRST_NAMES = [
+  'Alex', 'Jordan', 'Taylor', 'Morgan', 'Casey', 'Riley', 'Jamie',
+  'Avery', 'Quinn', 'Peyton', 'Drew', 'Blake', 'Cameron', 'Hayden',
+  'Dakota', 'Reese', 'Skyler', 'Finley', 'Logan', 'Parker', 'Sidney',
+  'Kendall', 'Emerson', 'Rowan', 'Charlie', 'Sage', 'Harley', 'River',
+];
+
 // ── Job type registry ──────────────────────────────────────────────────────
 const JOB_TYPES = [
   { id: JOB.RIDE_OPERATOR,    label: 'Ride Operator',    plural: 'Ride Operators',    weeklySalary: 520  },
@@ -13,34 +21,53 @@ const JOB_TYPES = [
   { id: JOB.BUSINESS_ANALYST, label: 'Business Analyst', plural: 'Business Analysts', weeklySalary: 1400 },
 ];
 
-// staff entries: { instanceId, jobId, salary, mood (0–100), weeksEmployed }
+// staff entries: { instanceId, name, jobId, salary, skillModifier, salaryModifier, mood (0–100), weeksEmployed }
 let staff = [];
 let _staffIdSeq = 0;
 
-function hireStaff(jobId, salaryOverride) {
-  const job           = JOB_TYPES.find(j => j.id === jobId);
-  const skillModifier  = 0.75 + Math.random() * 0.5;   // 0.75–1.25
-  const salaryModifier = 0.90 + Math.random() * 0.20;  // 0.90–1.10
-  const baseSalary     = salaryOverride ?? job.weeklySalary;
-  staff.push({
-    instanceId: `staff_${jobId}_${++_staffIdSeq}`,
-    jobId,
-    salary: Math.round(baseSalary * salaryModifier),
+// quality 0–100: controls the ceiling of skillModifier and yearsExperience.
+// quality 0  → skillModifier always 0.75, yearsExp always 0.
+// quality 100 → skillModifier up to 1.25, yearsExp up to 5.
+function generateEmployee(quality) {
+  const q            = Math.max(0, Math.min(100, quality)) / 100;
+  const firstName    = FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)];
+  const lastName     = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+  const job          = JOB_TYPES[Math.floor(Math.random() * JOB_TYPES.length)];
+  const skillModifier  = 0.75 + Math.random() * 0.5 * q;
+  const salaryModifier = 0.90 + Math.random() * 0.20;
+  const maxYears       = Math.round(5 * q);
+  const yearsExp       = maxYears > 0 ? Math.floor(Math.random() * (maxYears + 1)) : 0;
+  return {
+    instanceId:    `staff_${++_staffIdSeq}`,
+    name:          `${firstName} ${lastName}.`,
+    jobId:         job.id,
+    salary:        Math.round(job.weeklySalary * salaryModifier),
     skillModifier,
     salaryModifier,
-    mood: 80,
-    weeksEmployed: 0,
-  });
+    mood:          80,
+    weeksEmployed: yearsExp * 52,
+  };
+}
+
+function hireStaff(jobId, salaryOverride) {
+  const emp = generateEmployee(0);
+  emp.jobId  = jobId;
+  emp.salary = salaryOverride
+    ?? Math.round(JOB_TYPES.find(j => j.id === jobId).weeklySalary * emp.salaryModifier);
+  staff.push(emp);
 }
 
 function initStaff() {
-  hireStaff(JOB.RIDE_OPERATOR);
-  hireStaff(JOB.RIDE_OPERATOR);
-  hireStaff(JOB.SECURITY);
-  hireStaff(JOB.JANITOR);
-  hireStaff(JOB.ENGINEER);
-  hireStaff(JOB.BOOTH_ATTENDANT);
-  hireStaff(JOB.BOOTH_ATTENDANT);
+  [
+    JOB.RIDE_OPERATOR, JOB.RIDE_OPERATOR,
+    JOB.SECURITY, JOB.JANITOR, JOB.ENGINEER,
+    JOB.BOOTH_ATTENDANT, JOB.BOOTH_ATTENDANT,
+  ].forEach(jobId => {
+    const emp  = generateEmployee(0);
+    emp.jobId  = jobId;
+    emp.salary = Math.round(JOB_TYPES.find(j => j.id === jobId).weeklySalary * emp.salaryModifier);
+    staff.push(emp);
+  });
 }
 
 function totalWeeklySalary() {
@@ -157,7 +184,7 @@ function buildStaffPanel() {
         ? `<span class="exp-badge exp-${expLabel.toLowerCase()}">${expLabel}</span>`
         : '';
       return `<tr>
-        <td>${job.label} ${i + 1} ${expBadge}</td>
+        <td>${s.name} ${expBadge}</td>
         <td>$${s.salary.toLocaleString()}/wk</td>
         <td><span class="mood-badge ${moodCls}">${moodLabel}</span></td>
       </tr>`;
