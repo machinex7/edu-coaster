@@ -3,39 +3,71 @@
 // Adding a new job type: append an entry to JOB_TYPES. Everything else
 // (panel grouping, salary totals, hiring/firing when added) picks it up.
 
-// ── Job type registry ──────────────────────────────────────────────────────
-const JOB_TYPES = [
-  { id: 'ride_operator',    label: 'Ride Operator',    plural: 'Ride Operators',    weeklySalary: 520  },
-  { id: 'security',         label: 'Security',         plural: 'Security',          weeklySalary: 640  },
-  { id: 'janitor',          label: 'Janitor',          plural: 'Janitors',          weeklySalary: 480  },
-  { id: 'engineer',         label: 'Engineer',         plural: 'Engineers',         weeklySalary: 1200 },
-  { id: 'booth_attendant',  label: 'Booth Attendant',  plural: 'Booth Attendants',  weeklySalary: 480  },
-  { id: 'business_analyst', label: 'Business Analyst', plural: 'Business Analysts', weeklySalary: 1400 },
+// ── Name pool ──────────────────────────────────────────────────────────────
+const FIRST_NAMES = [
+  'Alex', 'Jordan', 'Taylor', 'Morgan', 'Casey', 'Riley', 'Jamie',
+  'Avery', 'Quinn', 'Peyton', 'Drew', 'Blake', 'Cameron', 'Hayden',
+  'Dakota', 'Reese', 'Skyler', 'Finley', 'Logan', 'Parker', 'Sidney',
+  'Kendall', 'Emerson', 'Rowan', 'Charlie', 'Sage', 'Harley', 'River',
 ];
 
-// staff entries: { instanceId, jobId, salary, mood (0–100), weeksEmployed }
+// ── Job type registry ──────────────────────────────────────────────────────
+const JOB_TYPES = [
+  { id: JOB.RIDE_OPERATOR,    label: 'Ride Operator',    plural: 'Ride Operators',    weeklySalary: 520  },
+  { id: JOB.SECURITY,         label: 'Security',         plural: 'Security',          weeklySalary: 640  },
+  { id: JOB.JANITOR,          label: 'Janitor',          plural: 'Janitors',          weeklySalary: 480  },
+  { id: JOB.ENGINEER,         label: 'Engineer',         plural: 'Engineers',         weeklySalary: 1200 },
+  { id: JOB.BOOTH_ATTENDANT,  label: 'Booth Attendant',  plural: 'Booth Attendants',  weeklySalary: 480  },
+  { id: JOB.BUSINESS_ANALYST, label: 'Business Analyst', plural: 'Business Analysts', weeklySalary: 1400 },
+];
+
+// staff entries: { instanceId, name, jobId, salary, skillModifier, salaryModifier, mood (0–100), weeksEmployed }
 let staff = [];
 let _staffIdSeq = 0;
 
+// quality 0–100: controls the ceiling of skillModifier and yearsExperience.
+// quality 0  → skillModifier always 0.75, yearsExp always 0.
+// quality 100 → skillModifier up to 1.25, yearsExp up to 5.
+function generateEmployee(quality) {
+  const q            = Math.max(0, Math.min(100, quality)) / 100;
+  const firstName    = FIRST_NAMES[Math.floor(Math.random() * FIRST_NAMES.length)];
+  const lastName     = String.fromCharCode(65 + Math.floor(Math.random() * 26));
+  const job          = JOB_TYPES[Math.floor(Math.random() * JOB_TYPES.length)];
+  const skillModifier  = 0.75 + Math.random() * 0.5 * q;
+  const salaryModifier = 0.90 + Math.random() * 0.20;
+  const maxYears       = Math.round(5 * q);
+  const yearsExp       = maxYears > 0 ? Math.floor(Math.random() * (maxYears + 1)) : 0;
+  return {
+    instanceId:    `staff_${++_staffIdSeq}`,
+    name:          `${firstName} ${lastName}.`,
+    jobId:         job.id,
+    salary:        Math.round(job.weeklySalary * salaryModifier),
+    skillModifier,
+    salaryModifier,
+    mood:          80,
+    weeksEmployed: yearsExp * 52,
+  };
+}
+
 function hireStaff(jobId, salaryOverride) {
-  const job = JOB_TYPES.find(j => j.id === jobId);
-  staff.push({
-    instanceId: `staff_${jobId}_${++_staffIdSeq}`,
-    jobId,
-    salary: salaryOverride ?? job.weeklySalary,
-    mood: 80,
-    weeksEmployed: 0,
-  });
+  const emp = generateEmployee(0);
+  emp.jobId  = jobId;
+  emp.salary = salaryOverride
+    ?? Math.round(JOB_TYPES.find(j => j.id === jobId).weeklySalary * emp.salaryModifier);
+  staff.push(emp);
 }
 
 function initStaff() {
-  hireStaff('ride_operator');
-  hireStaff('ride_operator');
-  hireStaff('security');
-  hireStaff('janitor');
-  hireStaff('engineer');
-  hireStaff('booth_attendant');
-  hireStaff('booth_attendant');
+  [
+    JOB.RIDE_OPERATOR, JOB.RIDE_OPERATOR,
+    JOB.SECURITY, JOB.JANITOR, JOB.ENGINEER,
+    JOB.BOOTH_ATTENDANT, JOB.BOOTH_ATTENDANT,
+  ].forEach(jobId => {
+    const emp  = generateEmployee(0);
+    emp.jobId  = jobId;
+    emp.salary = Math.round(JOB_TYPES.find(j => j.id === jobId).weeklySalary * emp.salaryModifier);
+    staff.push(emp);
+  });
 }
 
 function totalWeeklySalary() {
@@ -66,7 +98,7 @@ function operatorsNeededForRide(record) {
 // Total ride operators needed to fully staff every Running ride.
 function rideOperatorsNeeded() {
   return installedRides
-    .filter(r => r.status === 'active' && isRideConnected(r))
+    .filter(r => r.status === STATUS.ACTIVE && isRideConnected(r))
     .reduce((total, r) => total + operatorsNeededForRide(r), 0);
 }
 
@@ -152,7 +184,7 @@ function buildStaffPanel() {
         ? `<span class="exp-badge exp-${expLabel.toLowerCase()}">${expLabel}</span>`
         : '';
       return `<tr>
-        <td>${job.label} ${i + 1} ${expBadge}</td>
+        <td>${s.name} ${expBadge}</td>
         <td>$${s.salary.toLocaleString()}/wk</td>
         <td><span class="mood-badge ${moodCls}">${moodLabel}</span></td>
       </tr>`;

@@ -26,8 +26,6 @@ const STARTING_WEEK_OF_YEAR = 27; // week 27 = first week of Q3
 
 // ── Stage Constants ────────────────────────────────────────────────────────
 // Stage 1 (login) is a future placeholder; game starts at setup for now.
-const STAGE_SETUP = 'setup';
-const STAGE_PLAY  = 'play';
 
 // ── Game State ─────────────────────────────────────────────────────────────
 let rides      = [];  // from rides.json (with _color added)
@@ -37,12 +35,12 @@ let gridCells = [];   // [row][col] → <div>
 let gridState = [];   // [row][col] → instanceId string, or null
 
 // Economy & time
-let gameStage = STAGE_SETUP;
+let gameStage = STAGE.SETUP;
 let money     = STARTING_MONEY;
 let round     = 1;
 
 // The canonical records of everything placed in the park.
-// status: 'active' | 'under_construction'
+// status: STATUS.ACTIVE | STATUS.UNDER_CONSTRUCTION
 // ride entry:     { instanceId, rideId, name, color, row, col, footprint, status }
 // facility entry: { instanceId, facilityId, name, color, row, col, footprint, status }
 let installedRides      = [];
@@ -168,12 +166,12 @@ function deselectItem() {
 function canPlaceItem(item, category, startRow, startCol) {
   // Affordability: setup pays full cost; play pays the first weekly instalment.
   // Instant items (buildWeeks === 0) always pay in full regardless of stage.
-  const firstPayment = (gameStage === STAGE_SETUP || item.buildWeeks === 0)
+  const firstPayment = (gameStage === STAGE.SETUP || item.buildWeeks === 0)
     ? item.buildCost
     : Math.ceil(item.buildCost / item.buildWeeks);
   if (firstPayment > money) return false;
 
-  return category === 'ride'
+  return category === CATEGORY.RIDE
     ? canPlaceRide(item, startRow, startCol)
     : canPlaceFacility(item, startRow, startCol);
 }
@@ -248,7 +246,7 @@ function isRideConnected(record) {
       const gr = record.row + r;
       const gc = record.col + c;
       for (const [dr, dc] of [[-1,0],[1,0],[0,-1],[0,1]]) {
-        if (facilityTypeAtCell[`${gr+dr},${gc+dc}`] === 'path') return true;
+        if (facilityTypeAtCell[`${gr+dr},${gc+dc}`] === FACILITY_ID.PATH) return true;
       }
     }
   }
@@ -257,15 +255,15 @@ function isRideConnected(record) {
 
 // ── Placing items ──────────────────────────────────────────────────────────
 function placeItem(item, category, startRow, startCol) {
-  const instant = gameStage === STAGE_SETUP || item.buildWeeks === 0;
+  const instant = gameStage === STAGE.SETUP || item.buildWeeks === 0;
 
   if (instant) {
     money -= item.buildCost;
-    _commitPlace(item, category, startRow, startCol, 'active');
+    _commitPlace(item, category, startRow, startCol, STATUS.ACTIVE);
   } else {
     const weeklyPayment = Math.ceil(item.buildCost / item.buildWeeks);
     money -= weeklyPayment;
-    const record = _commitPlace(item, category, startRow, startCol, 'under_construction');
+    const record = _commitPlace(item, category, startRow, startCol, STATUS.UNDER_CONSTRUCTION);
     record.weeksTotal     = item.buildWeeks;
     record.weeksCompleted = 1;
     record.weeklyPayment  = weeklyPayment;
@@ -274,7 +272,7 @@ function placeItem(item, category, startRow, startCol) {
   updateHUD();
   refreshRidesPanel();
 
-  if (category === 'facility' && item.limit != null) {
+  if (category === CATEGORY.FACILITY && item.limit != null) {
     const placed = installedFacilities.filter(f => f.facilityId === item.id).length;
     if (placed >= item.limit) deselectItem();
   }
@@ -293,7 +291,7 @@ function _commitPlace(item, category, startRow, startCol, status) {
     color, status,
   };
 
-  if (category === 'ride') {
+  if (category === CATEGORY.RIDE) {
     record.rideId = item.id;
     record.name   = item.name;
     installedRides.push(record);
@@ -317,7 +315,7 @@ function _commitPlace(item, category, startRow, startCol, status) {
 // ── Construction queue ─────────────────────────────────────────────────────
 function processConstruction() {
   for (const record of [...installedRides, ...installedFacilities]) {
-    if (record.status !== 'under_construction') continue;
+    if (record.status !== STATUS.UNDER_CONSTRUCTION) continue;
     money -= record.weeklyPayment;
     record.weeksCompleted++;
     if (record.weeksCompleted >= record.weeksTotal) completeConstruction(record);
@@ -325,7 +323,7 @@ function processConstruction() {
 }
 
 function completeConstruction(record) {
-  record.status = 'active';
+  record.status = STATUS.ACTIVE;
   for (let r = 0; r < record.footprint.length; r++) {
     for (let c = 0; c < record.footprint[r].length; c++) {
       if (record.footprint[r][c] === 1)

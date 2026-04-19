@@ -21,11 +21,11 @@ let rideOpinion = 1.0;
 // score = min(1, dailyRideCapacity / dailyAttendance).
 // rideOpinion is averaged with the new score so it shifts gradually.
 function computeRideOpinion(dailyAttendance) {
-  const runningRides = installedRides.filter(r => r.status === 'active' && isRideConnected(r));
+  const runningRides = installedRides.filter(r => r.status === STATUS.ACTIVE && isRideConnected(r));
   if (runningRides.length === 0) return;
 
   const needed     = rideOperatorsNeeded();
-  const actual     = staff.filter(s => s.jobId === 'ride_operator').length;
+  const actual     = staff.filter(s => s.jobId === JOB.RIDE_OPERATOR).length;
   const staffRatio = needed > 0 ? Math.min(1, actual / needed) : 1;
 
   const dailyRideCapacity = runningRides.reduce((sum, record) => {
@@ -40,7 +40,7 @@ function computeRideOpinion(dailyAttendance) {
 // Running ride count, pulled down by rideOpinion when rides are underserved.
 function recalcExcitement() {
   const runningCount = installedRides.filter(
-    r => r.status === 'active' && isRideConnected(r)
+    r => r.status === STATUS.ACTIVE && isRideConnected(r)
   ).length;
   parkExcitement = runningCount * rideOpinion;
 }
@@ -53,14 +53,14 @@ function calcDailyDemand() {
 }
 
 // How many people can actually enter: booth attendants are the bottleneck.
-// Per attendant: base 500 × mood multiplier (0.8–1.2) × experience multiplier.
+// Per attendant: base 500 × mood multiplier (0.8–1.2) × experience multiplier × skill modifier.
 function calcGateThroughput() {
-  const attendants = staff.filter(s => s.jobId === 'booth_attendant');
+  const attendants = staff.filter(s => s.jobId === JOB.BOOTH_ATTENDANT);
   if (attendants.length === 0) return 0;
   return attendants.reduce((sum, s) => {
     const moodMult = 0.8 + (s.mood / 100) * 0.4;
     const { multiplier: expMult } = getExperienceTier(s.weeksEmployed);
-    return sum + 500 * moodMult * expMult;
+    return sum + 500 * moodMult * expMult * s.skillModifier;
   }, 0);
 }
 
@@ -95,7 +95,7 @@ function processRound() {
   const gateRevenue       = calcGateRevenue(daily);
   const staffCosts        = calcStaffCosts();
   const constructionCosts = [...installedRides, ...installedFacilities]
-    .filter(r => r.status === 'under_construction')
+    .filter(r => r.status === STATUS.UNDER_CONSTRUCTION)
     .reduce((sum, r) => sum + r.weeklyPayment, 0);
 
   // Income
