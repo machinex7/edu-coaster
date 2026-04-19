@@ -139,11 +139,13 @@ function advancePostings() {
 let candidates = [];
 
 // Generate 4 new candidates each round a posting exists.
+// Candidates with no matching posting are discarded immediately.
 function generateCandidates() {
   if (postings.length === 0) return;
   for (let i = 0; i < 4; i++) {
     const emp = generateEmployee(0);
-    candidates.push({ ...emp, weeksAsCandidate: 0 });
+    const candidate = { ...emp, weeksAsCandidate: 0 };
+    if (findMatchingPosting(candidate)) candidates.push(candidate);
   }
 }
 
