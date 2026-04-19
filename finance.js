@@ -53,14 +53,14 @@ function calcDailyDemand() {
 }
 
 // How many people can actually enter: booth attendants are the bottleneck.
-// Per attendant: base 500 × mood multiplier (0.8–1.2) × experience multiplier.
+// Per attendant: base 500 × mood multiplier (0.8–1.2) × experience multiplier × skill modifier.
 function calcGateThroughput() {
   const attendants = staff.filter(s => s.jobId === JOB.BOOTH_ATTENDANT);
   if (attendants.length === 0) return 0;
   return attendants.reduce((sum, s) => {
     const moodMult = 0.8 + (s.mood / 100) * 0.4;
     const { multiplier: expMult } = getExperienceTier(s.weeksEmployed);
-    return sum + 500 * moodMult * expMult;
+    return sum + 500 * moodMult * expMult * s.skillModifier;
   }, 0);
 }
 
