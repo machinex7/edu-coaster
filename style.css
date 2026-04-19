@@ -109,8 +109,17 @@ header h1 {
 #open-park-btn              { background: #b45309; }
 #open-park-btn:hover        { background: #d97706; }
 #open-park-btn:disabled     { background: #374151; color: #6b7280; cursor: not-allowed; }
-#next-round-btn      { background: #1d4ed8; }
-#next-round-btn:hover{ background: #2563eb; }
+#next-round-btn {
+  background: #1d4ed8;
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 50;
+  padding: 10px 22px;
+  font-size: 0.9rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+#next-round-btn:hover { background: #2563eb; }
 
 /* ── Under-construction grid cells ── */
 .grid-cell.under-construction {
