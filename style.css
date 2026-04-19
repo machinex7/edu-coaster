@@ -94,32 +94,27 @@ header h1 {
 
 #open-park-btn,
 #next-round-btn {
+  position: fixed;
+  bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+  right: 1.5rem;
+  z-index: 50;
   border: none;
   border-radius: 6px;
-  padding: 7px 16px;
-  font-size: 0.82rem;
+  padding: 10px 22px;
+  font-size: 0.9rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   cursor: pointer;
   transition: background 0.12s;
   white-space: nowrap;
   color: #fff;
-}
-
-#open-park-btn              { background: #b45309; }
-#open-park-btn:hover        { background: #d97706; }
-#open-park-btn:disabled     { background: #374151; color: #6b7280; cursor: not-allowed; }
-#next-round-btn {
-  background: #1d4ed8;
-  position: fixed;
-  bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
-  right: 1.5rem;
-  z-index: 50;
-  padding: 10px 22px;
-  font-size: 0.9rem;
   box-shadow: 0 4px 12px rgba(0,0,0,0.5);
 }
-#next-round-btn:hover { background: #2563eb; }
+#open-park-btn          { background: #b45309; }
+#open-park-btn:hover    { background: #d97706; }
+#open-park-btn:disabled { background: #374151; color: #6b7280; cursor: not-allowed; box-shadow: none; }
+#next-round-btn         { background: #1d4ed8; }
+#next-round-btn:hover   { background: #2563eb; }
 
 /* ── Under-construction grid cells ── */
 .grid-cell.under-construction {
