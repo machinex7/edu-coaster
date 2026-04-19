@@ -105,8 +105,10 @@ function processRound() {
   money -= staffCosts;
   processConstruction();  // deducts constructionCosts and advances build progress
 
-  advanceExperience();    // increment weeksEmployed for all staff
-  advancePostings();      // increment weeksActive for all postings
+  advanceExperience();         // increment weeksEmployed for all staff
+  advancePostings();           // increment weeksActive for all postings
+  generateCandidates();  // 4 new applicants per round when postings exist
+  advanceCandidates();   // withdrawal check, then increment weeksAsCandidate
 
   return {
     weeklyAttendance,

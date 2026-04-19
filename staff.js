@@ -34,7 +34,7 @@ function generateEmployee(quality) {
   const lastName     = String.fromCharCode(65 + Math.floor(Math.random() * 26));
   const job          = JOB_TYPES[Math.floor(Math.random() * JOB_TYPES.length)];
   const skillModifier  = 0.75 + Math.random() * 0.5 * q;
-  const salaryModifier = 0.90 + Math.random() * 0.20;
+  const salaryModifier = 0.80 + Math.random() * 0.40;  // 0.80–1.20
   const maxYears       = Math.round(5 * q);
   const yearsExp       = maxYears > 0 ? Math.floor(Math.random() * (maxYears + 1)) : 0;
   return {
@@ -80,6 +80,7 @@ function totalWeeklySalary() {
 // > 156 weeks → Senior  (1.25×)
 function getExperienceTier(weeksEmployed) {
   if (weeksEmployed < 52)  return { label: 'Junior', multiplier: 0.75 };
+  if (weeksEmployed > 260) return { label: 'Lead',   multiplier: 1.5  };
   if (weeksEmployed > 156) return { label: 'Senior', multiplier: 1.25 };
   return                          { label: null,      multiplier: 1.0  };
 }
@@ -103,7 +104,7 @@ function rideOperatorsNeeded() {
 }
 
 // ── Postings ───────────────────────────────────────────────────────────────
-// posting entries: { instanceId, jobId, minYearsExperience, salaryMin, salaryMax, weeksActive }
+// posting entries: { instanceId, jobId, minYearsExperience, salary, weeksActive }
 
 const POSTING_WEEKLY_COST = 75;
 
@@ -132,6 +133,62 @@ function advancePostings() {
   postings.forEach(p => p.weeksActive++);
 }
 
+// ── Candidates ─────────────────────────────────────────────────────────────
+// candidate entries: same shape as a staff record, plus weeksAsCandidate.
+
+let candidates = [];
+
+// Generate 4 new candidates each round a posting exists.
+// Candidates with no matching posting are discarded immediately.
+function generateCandidates() {
+  if (postings.length === 0) return;
+  for (let i = 0; i < 4; i++) {
+    const emp = generateEmployee(0);
+    const candidate = { ...emp, weeksAsCandidate: 0 };
+    if (findMatchingPosting(candidate)) candidates.push(candidate);
+  }
+}
+
+// Returns the first open posting this candidate qualifies for, or null.
+function findMatchingPosting(candidate) {
+  const years = Math.floor(candidate.weeksEmployed / 52);
+  return postings.find(p =>
+    p.jobId === candidate.jobId &&
+    years >= p.minYearsExperience &&
+    candidate.salary <= p.salary
+  ) ?? null;
+}
+
+// Player-initiated hire: move candidate to staff and fill the matched posting.
+function hireCandidate(instanceId) {
+  const candidate = candidates.find(c => c.instanceId === instanceId);
+  if (!candidate) return;
+  const posting = findMatchingPosting(candidate);
+  if (!posting) return;
+
+  staff.push({ ...candidate });
+  postings   = postings.filter(p => p.instanceId !== posting.instanceId);
+  candidates = candidates.filter(c => c.instanceId !== instanceId);
+  buildCandidatesView();
+}
+
+// Player-initiated decline: remove candidate, posting stays open.
+function declineCandidate(instanceId) {
+  candidates = candidates.filter(c => c.instanceId !== instanceId);
+  buildCandidatesView();
+}
+
+// Check withdrawals then increment weeksAsCandidate.
+// Withdrawal chance: 20% at week 4, +20% for each additional week.
+function advanceCandidates() {
+  candidates = candidates.filter(c => {
+    if (c.weeksAsCandidate < 4) return true;
+    const withdrawChance = 0.20 + (c.weeksAsCandidate - 4) * 0.20;
+    return Math.random() >= withdrawChance;
+  });
+  candidates.forEach(c => c.weeksAsCandidate++);
+}
+
 // ── Staff panel sub-view switching ─────────────────────────────────────────
 let _activeStaffView = 'roster';
 
@@ -151,8 +208,9 @@ function setStaffView(viewName) {
   document.getElementById('staff-roster-view').classList.toggle('hidden',    viewName !== 'roster');
   document.getElementById('staff-postings-view').classList.toggle('hidden',  viewName !== 'postings');
   document.getElementById('staff-candidates-view').classList.toggle('hidden', viewName !== 'candidates');
-  if (viewName === 'postings') buildPostingsView();
-  if (viewName === 'roster')   buildStaffPanel();
+  if (viewName === 'postings')    buildPostingsView();
+  if (viewName === 'roster')     buildStaffPanel();
+  if (viewName === 'candidates') buildCandidatesView();
 }
 
 function openStaffPanel() {
@@ -292,6 +350,46 @@ function buildPostingsView() {
 
 function refreshStaffPanel() {
   if (activePanel !== 'staffing') return;
-  if (_activeStaffView === 'roster')   buildStaffPanel();
-  if (_activeStaffView === 'postings') buildPostingsView();
+  if (_activeStaffView === 'roster')     buildStaffPanel();
+  if (_activeStaffView === 'postings')   buildPostingsView();
+  if (_activeStaffView === 'candidates') buildCandidatesView();
+}
+
+// ── Candidates view ────────────────────────────────────────────────────────
+function buildCandidatesView() {
+  const container = document.getElementById('staff-candidates-view');
+  if (candidates.length === 0) {
+    container.innerHTML = '<p class="empty-note">No candidates yet. Post a job to attract applicants.</p>';
+    return;
+  }
+
+  const cards = candidates.map(c => {
+    const job      = JOB_TYPES.find(j => j.id === c.jobId);
+    const years    = Math.floor(c.weeksEmployed / 52);
+    const expStr   = years === 0 ? 'No exp.' : `${years} yr exp`;
+    const weeksStr = c.weeksAsCandidate === 0 ? 'Just applied' : `${c.weeksAsCandidate} wk ago`;
+    const matched  = findMatchingPosting(c) !== null;
+    return `<div class="candidate-card">
+      <div class="candidate-name">${c.name}</div>
+      <div class="candidate-details">
+        <span>${job?.label ?? c.jobId}</span>
+        <span>$${c.salary.toLocaleString()}/wk</span>
+        <span>${expStr}</span>
+        <span class="posting-meta">Applied ${weeksStr}</span>
+      </div>
+      <div class="candidate-actions">
+        <button class="hire-btn" data-id="${c.instanceId}" ${matched ? '' : 'disabled'}>Hire</button>
+        <button class="decline-btn" data-id="${c.instanceId}">Decline</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  container.innerHTML = cards;
+
+  container.querySelectorAll('.hire-btn').forEach(btn =>
+    btn.addEventListener('click', () => hireCandidate(btn.dataset.id))
+  );
+  container.querySelectorAll('.decline-btn').forEach(btn =>
+    btn.addEventListener('click', () => declineCandidate(btn.dataset.id))
+  );
 }

@@ -20,6 +20,8 @@ function recordRound(report) {
     rideEfficiency:      report.rideEfficiency,
     staffCount:          staff.length,
     staffMood:           Math.round(avgMood),
-    runningRides:        installedRides.filter(r => r.status === 'active' && isRideConnected(r)).length,
+    runningRides:        installedRides.filter(r => r.status === STATUS.ACTIVE && isRideConnected(r)).length,
+    jobPostings:         postings.length,
+    matchingCandidates:  candidates.filter(c => findMatchingPosting(c) !== null).length,
   });
 }

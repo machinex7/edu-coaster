@@ -94,23 +94,27 @@ header h1 {
 
 #open-park-btn,
 #next-round-btn {
+  position: fixed;
+  bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
+  right: 1.5rem;
+  z-index: 50;
   border: none;
   border-radius: 6px;
-  padding: 7px 16px;
-  font-size: 0.82rem;
+  padding: 10px 22px;
+  font-size: 0.9rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   cursor: pointer;
   transition: background 0.12s;
   white-space: nowrap;
   color: #fff;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
 }
-
-#open-park-btn              { background: #b45309; }
-#open-park-btn:hover        { background: #d97706; }
-#open-park-btn:disabled     { background: #374151; color: #6b7280; cursor: not-allowed; }
-#next-round-btn      { background: #1d4ed8; }
-#next-round-btn:hover{ background: #2563eb; }
+#open-park-btn          { background: #b45309; }
+#open-park-btn:hover    { background: #d97706; }
+#open-park-btn:disabled { background: #374151; color: #6b7280; cursor: not-allowed; box-shadow: none; }
+#next-round-btn         { background: #1d4ed8; }
+#next-round-btn:hover   { background: #2563eb; }
 
 /* ── Under-construction grid cells ── */
 .grid-cell.under-construction {
@@ -558,6 +562,69 @@ header h1 {
 
 .cancel-posting-btn:hover { background: rgba(127, 29, 29, 0.3); }
 
+/* ── Candidate cards ── */
+.candidate-card {
+  background: #111827;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  padding: 10px;
+  margin: 0 10px 8px;
+}
+
+.candidate-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #e5e7eb;
+  margin-bottom: 4px;
+}
+
+.candidate-details {
+  font-size: 0.73rem;
+  color: #9ca3af;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-bottom: 8px;
+}
+
+.candidate-actions { display: flex; gap: 6px; }
+
+.hire-btn {
+  flex: 1;
+  padding: 4px 8px;
+  background: none;
+  border: 1px solid #14532d;
+  border-radius: 4px;
+  color: #86efac;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.hire-btn:hover:not(:disabled) { background: rgba(20, 83, 45, 0.4); }
+
+.hire-btn:disabled {
+  border-color: #374151;
+  color: #4b5563;
+  cursor: default;
+}
+
+.decline-btn {
+  flex: 1;
+  padding: 4px 8px;
+  background: none;
+  border: 1px solid #7f1d1d;
+  border-radius: 4px;
+  color: #fca5a5;
+  font-size: 0.7rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.decline-btn:hover { background: rgba(127, 29, 29, 0.3); }
+
 #staff-overview { }
 
 .staff-table {
@@ -637,6 +704,7 @@ header h1 {
 
 .exp-junior { background: #1e3a5f; color: #93c5fd; }
 .exp-senior { background: #3b1f6e; color: #c4b5fd; }
+.exp-lead   { background: #3d1a1a; color: #fca5a5; }
 
 /* ── Park View ── */
 #park-view {
