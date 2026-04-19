@@ -18,11 +18,16 @@ let staff = [];
 let _staffIdSeq = 0;
 
 function hireStaff(jobId, salaryOverride) {
-  const job = JOB_TYPES.find(j => j.id === jobId);
+  const job           = JOB_TYPES.find(j => j.id === jobId);
+  const skillModifier  = 0.75 + Math.random() * 0.5;   // 0.75–1.25
+  const salaryModifier = 0.90 + Math.random() * 0.20;  // 0.90–1.10
+  const baseSalary     = salaryOverride ?? job.weeklySalary;
   staff.push({
     instanceId: `staff_${jobId}_${++_staffIdSeq}`,
     jobId,
-    salary: salaryOverride ?? job.weeklySalary,
+    salary: Math.round(baseSalary * salaryModifier),
+    skillModifier,
+    salaryModifier,
     mood: 80,
     weeksEmployed: 0,
   });
