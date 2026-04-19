@@ -25,7 +25,7 @@ function buildGrid() {
 // ── Cell painting ──────────────────────────────────────────────────────────
 
 // Updates gridState and colours DOM cells. Adds .under-construction when needed.
-function paintCells(footprint, startRow, startCol, color, instanceId, label, status = 'active') {
+function paintCells(footprint, startRow, startCol, color, instanceId, label, status = STATUS.ACTIVE) {
   for (let r = 0; r < footprint.length; r++) {
     for (let c = 0; c < footprint[r].length; c++) {
       if (footprint[r][c] !== 1) continue;
@@ -36,7 +36,7 @@ function paintCells(footprint, startRow, startCol, color, instanceId, label, sta
       cell.style.backgroundColor = color;
       cell.classList.add('occupied');
       cell.title = label;
-      cell.classList.toggle('under-construction', status === 'under_construction');
+      cell.classList.toggle('under-construction', status === STATUS.UNDER_CONSTRUCTION);
     }
   }
 }

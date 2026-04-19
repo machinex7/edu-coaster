@@ -5,12 +5,12 @@
 
 // ── Job type registry ──────────────────────────────────────────────────────
 const JOB_TYPES = [
-  { id: 'ride_operator',    label: 'Ride Operator',    plural: 'Ride Operators',    weeklySalary: 520  },
-  { id: 'security',         label: 'Security',         plural: 'Security',          weeklySalary: 640  },
-  { id: 'janitor',          label: 'Janitor',          plural: 'Janitors',          weeklySalary: 480  },
-  { id: 'engineer',         label: 'Engineer',         plural: 'Engineers',         weeklySalary: 1200 },
-  { id: 'booth_attendant',  label: 'Booth Attendant',  plural: 'Booth Attendants',  weeklySalary: 480  },
-  { id: 'business_analyst', label: 'Business Analyst', plural: 'Business Analysts', weeklySalary: 1400 },
+  { id: JOB.RIDE_OPERATOR,    label: 'Ride Operator',    plural: 'Ride Operators',    weeklySalary: 520  },
+  { id: JOB.SECURITY,         label: 'Security',         plural: 'Security',          weeklySalary: 640  },
+  { id: JOB.JANITOR,          label: 'Janitor',          plural: 'Janitors',          weeklySalary: 480  },
+  { id: JOB.ENGINEER,         label: 'Engineer',         plural: 'Engineers',         weeklySalary: 1200 },
+  { id: JOB.BOOTH_ATTENDANT,  label: 'Booth Attendant',  plural: 'Booth Attendants',  weeklySalary: 480  },
+  { id: JOB.BUSINESS_ANALYST, label: 'Business Analyst', plural: 'Business Analysts', weeklySalary: 1400 },
 ];
 
 // staff entries: { instanceId, jobId, salary, mood (0–100), weeksEmployed }
@@ -29,13 +29,13 @@ function hireStaff(jobId, salaryOverride) {
 }
 
 function initStaff() {
-  hireStaff('ride_operator');
-  hireStaff('ride_operator');
-  hireStaff('security');
-  hireStaff('janitor');
-  hireStaff('engineer');
-  hireStaff('booth_attendant');
-  hireStaff('booth_attendant');
+  hireStaff(JOB.RIDE_OPERATOR);
+  hireStaff(JOB.RIDE_OPERATOR);
+  hireStaff(JOB.SECURITY);
+  hireStaff(JOB.JANITOR);
+  hireStaff(JOB.ENGINEER);
+  hireStaff(JOB.BOOTH_ATTENDANT);
+  hireStaff(JOB.BOOTH_ATTENDANT);
 }
 
 function totalWeeklySalary() {
@@ -66,7 +66,7 @@ function operatorsNeededForRide(record) {
 // Total ride operators needed to fully staff every Running ride.
 function rideOperatorsNeeded() {
   return installedRides
-    .filter(r => r.status === 'active' && isRideConnected(r))
+    .filter(r => r.status === STATUS.ACTIVE && isRideConnected(r))
     .reduce((total, r) => total + operatorsNeededForRide(r), 0);
 }
 
