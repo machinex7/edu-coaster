@@ -7,8 +7,10 @@ const STAGE = Object.freeze({
 });
 
 const STATUS = Object.freeze({
-  ACTIVE:             'active',
-  UNDER_CONSTRUCTION: 'under_construction',
+  ACTIVE:               'active',
+  UNDER_CONSTRUCTION:   'under_construction',
+  PAUSED_CONSTRUCTION:  'paused_construction',
+  CLOSED:               'closed',
 });
 
 const CATEGORY = Object.freeze({

@@ -378,10 +378,63 @@ header h1 {
 
 .cond-running      { background: #14532d; color: #86efac; }
 .cond-building     { background: #78350f; color: #fde68a; }
+.cond-paused       { background: #44403c; color: #d6d3d1; }
 .cond-unconnected  { background: #164e63; color: #67e8f9; }
 .cond-closed       { background: #374151; color: #9ca3af; }
 .cond-broken       { background: #7f1d1d; color: #fca5a5; }
 .cond-repair       { background: #4c1d95; color: #c4b5fd; }
+
+/* ── Rides panel list + detail ── */
+.ride-list { display: flex; flex-direction: column; }
+
+.ride-list-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  border-bottom: 1px solid #1e2535;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.ride-list-row:hover { background: #1f2937; }
+
+.ride-list-name { font-size: 0.82rem; color: #e5e7eb; }
+
+.ride-detail { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+
+.ride-back-btn {
+  background: none;
+  border: none;
+  color: #6b7280;
+  font-size: 0.75rem;
+  cursor: pointer;
+  padding: 0;
+  text-align: left;
+}
+.ride-back-btn:hover { color: #d1d5db; }
+
+.ride-detail-name { font-size: 1rem; font-weight: 700; color: #f9fafb; }
+
+.ride-detail-weeks { font-size: 0.8rem; color: #9ca3af; margin: 0; }
+
+.ride-detail-actions { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+
+.ride-action-btn {
+  padding: 7px 12px;
+  border-radius: 5px;
+  border: 1px solid #374151;
+  background: none;
+  color: #d1d5db;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+.ride-action-btn:hover    { background: #374151; }
+.ride-action-resume       { border-color: #14532d; color: #86efac; }
+.ride-action-resume:hover { background: rgba(20,83,45,0.3); }
+.ride-action-danger       { border-color: #7f1d1d; color: #fca5a5; }
+.ride-action-danger:hover { background: rgba(127,29,29,0.3); }
 
 .empty-note {
   padding: 16px 12px;

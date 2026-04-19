@@ -330,7 +330,28 @@ function completeConstruction(record) {
         gridCells[record.row + r][record.col + c].classList.remove('under-construction');
     }
   }
-  console.log(`Construction complete: "${record.name}"`);
+}
+
+function pauseRideConstruction(instanceId) {
+  const record = installedRides.find(r => r.instanceId === instanceId);
+  if (record?.status === STATUS.UNDER_CONSTRUCTION)
+    record.status = STATUS.PAUSED_CONSTRUCTION;
+}
+
+function resumeRideConstruction(instanceId) {
+  const record = installedRides.find(r => r.instanceId === instanceId);
+  if (record?.status === STATUS.PAUSED_CONSTRUCTION)
+    record.status = STATUS.UNDER_CONSTRUCTION;
+}
+
+function closeRide(instanceId) {
+  const record = installedRides.find(r => r.instanceId === instanceId);
+  if (record?.status === STATUS.ACTIVE) record.status = STATUS.CLOSED;
+}
+
+function reopenRide(instanceId) {
+  const record = installedRides.find(r => r.instanceId === instanceId);
+  if (record?.status === STATUS.CLOSED) record.status = STATUS.ACTIVE;
 }
 
 // ── Keyboard ───────────────────────────────────────────────────────────────

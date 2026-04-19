@@ -114,7 +114,17 @@ function closePanels() {
   deselectItem();
 }
 
+let _selectedRideId = null;
+
 function buildRidesPanel() {
+  const record = _selectedRideId
+    ? installedRides.find(r => r.instanceId === _selectedRideId)
+    : null;
+  if (record) buildRideDetail(record);
+  else         buildRideList();
+}
+
+function buildRideList() {
   const container = document.getElementById('rides-overview');
   if (installedRides.length === 0) {
     container.innerHTML = '<p class="empty-note">No rides placed yet.</p>';
@@ -122,14 +132,64 @@ function buildRidesPanel() {
   }
   const rows = installedRides.map(record => {
     const { label, cls } = getRideCondition(record);
-    return `<tr><td>${record.name}</td><td><span class="cond-badge ${cls}">${label}</span></td></tr>`;
+    return `<div class="ride-list-row" data-id="${record.instanceId}">
+      <span class="ride-list-name">${record.name}</span>
+      <span class="cond-badge ${cls}">${label}</span>
+    </div>`;
   }).join('');
-  container.innerHTML = `<table class="rides-table"><thead><tr><th>Name</th><th>Condition</th></tr></thead><tbody>${rows}</tbody></table>`;
+  container.innerHTML = `<div class="ride-list">${rows}</div>`;
+  container.querySelectorAll('.ride-list-row').forEach(row =>
+    row.addEventListener('click', () => {
+      _selectedRideId = row.dataset.id;
+      buildRidesPanel();
+    })
+  );
+}
+
+function buildRideDetail(record) {
+  const container = document.getElementById('rides-overview');
+  const { label, cls } = getRideCondition(record);
+
+  let actionsHtml = '';
+  if (record.status === STATUS.UNDER_CONSTRUCTION) {
+    const weeksLeft = record.weeksTotal - record.weeksCompleted;
+    actionsHtml = `
+      <p class="ride-detail-weeks">${weeksLeft} week${weeksLeft !== 1 ? 's' : ''} remaining</p>
+      <button class="ride-action-btn" id="rdx-pause">Pause Construction</button>`;
+  } else if (record.status === STATUS.PAUSED_CONSTRUCTION) {
+    const weeksLeft = record.weeksTotal - record.weeksCompleted;
+    actionsHtml = `
+      <p class="ride-detail-weeks">${weeksLeft} week${weeksLeft !== 1 ? 's' : ''} remaining</p>
+      <button class="ride-action-btn ride-action-resume" id="rdx-resume">Resume Construction</button>`;
+  } else if (record.status === STATUS.ACTIVE) {
+    actionsHtml = `<button class="ride-action-btn ride-action-danger" id="rdx-close">Close Ride</button>`;
+  } else if (record.status === STATUS.CLOSED) {
+    actionsHtml = `<button class="ride-action-btn ride-action-resume" id="rdx-reopen">Re-open Ride</button>`;
+  }
+
+  container.innerHTML = `
+    <div class="ride-detail">
+      <button class="ride-back-btn" id="rdx-back">← Rides</button>
+      <div class="ride-detail-name">${record.name}</div>
+      <span class="cond-badge ${cls}">${label}</span>
+      <div class="ride-detail-actions">${actionsHtml}</div>
+    </div>`;
+
+  document.getElementById('rdx-back').addEventListener('click', () => {
+    _selectedRideId = null;
+    buildRideList();
+  });
+  document.getElementById('rdx-pause')?.addEventListener('click',  () => { pauseRideConstruction(record.instanceId);  buildRideDetail(record); });
+  document.getElementById('rdx-resume')?.addEventListener('click', () => { resumeRideConstruction(record.instanceId); buildRideDetail(record); });
+  document.getElementById('rdx-close')?.addEventListener('click',  () => { closeRide(record.instanceId);              buildRideDetail(record); });
+  document.getElementById('rdx-reopen')?.addEventListener('click', () => { reopenRide(record.instanceId);             buildRideDetail(record); });
 }
 
 function getRideCondition(record) {
   switch (record.status) {
-    case STATUS.UNDER_CONSTRUCTION: return { label: 'Under Construction', cls: 'cond-building'     };
+    case STATUS.UNDER_CONSTRUCTION:  return { label: 'Under Construction', cls: 'cond-building'     };
+    case STATUS.PAUSED_CONSTRUCTION: return { label: 'Paused',             cls: 'cond-paused'       };
+    case STATUS.CLOSED:              return { label: 'Closed',             cls: 'cond-closed'       };
     case STATUS.ACTIVE:
       return isRideConnected(record)
         ? { label: 'Running',     cls: 'cond-running'     }
