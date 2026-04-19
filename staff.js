@@ -103,7 +103,7 @@ function rideOperatorsNeeded() {
 }
 
 // ── Postings ───────────────────────────────────────────────────────────────
-// posting entries: { instanceId, jobId, minYearsExperience, salaryMin, salaryMax, weeksActive }
+// posting entries: { instanceId, jobId, minYearsExperience, salary, weeksActive }
 
 const POSTING_WEEKLY_COST = 75;
 
@@ -132,6 +132,57 @@ function advancePostings() {
   postings.forEach(p => p.weeksActive++);
 }
 
+// ── Candidates ─────────────────────────────────────────────────────────────
+// candidate entries: same shape as a staff record, plus weeksAsCandidate.
+
+let candidates = [];
+
+// Generate 4 new candidates each round a posting exists.
+function generateCandidates() {
+  if (postings.length === 0) return;
+  for (let i = 0; i < 4; i++) {
+    const emp = generateEmployee(0);
+    candidates.push({ ...emp, weeksAsCandidate: 0 });
+  }
+}
+
+// Match waiting candidates against open postings and hire on fit.
+// A candidate fits a posting when: same job type, salary expectation ≤ offer,
+// and years of experience meets the minimum.
+function matchCandidatesToPostings() {
+  const filledPostings  = new Set();
+  const hiredCandidates = new Set();
+
+  for (const candidate of candidates) {
+    const candidateYears = Math.floor(candidate.weeksEmployed / 52);
+    for (const posting of postings) {
+      if (filledPostings.has(posting.instanceId))   continue;
+      if (hiredCandidates.has(candidate.instanceId)) continue;
+      if (posting.jobId !== candidate.jobId)          continue;
+      if (candidateYears < posting.minYearsExperience) continue;
+      if (candidate.salary > posting.salary)           continue;
+
+      staff.push({ ...candidate });
+      filledPostings.add(posting.instanceId);
+      hiredCandidates.add(candidate.instanceId);
+    }
+  }
+
+  postings   = postings.filter(p => !filledPostings.has(p.instanceId));
+  candidates = candidates.filter(c => !hiredCandidates.has(c.instanceId));
+}
+
+// Check withdrawals then increment weeksAsCandidate.
+// Withdrawal chance: 20% at week 4, +20% for each additional week.
+function advanceCandidates() {
+  candidates = candidates.filter(c => {
+    if (c.weeksAsCandidate < 4) return true;
+    const withdrawChance = 0.20 + (c.weeksAsCandidate - 4) * 0.20;
+    return Math.random() >= withdrawChance;
+  });
+  candidates.forEach(c => c.weeksAsCandidate++);
+}
+
 // ── Staff panel sub-view switching ─────────────────────────────────────────
 let _activeStaffView = 'roster';
 
@@ -151,8 +202,9 @@ function setStaffView(viewName) {
   document.getElementById('staff-roster-view').classList.toggle('hidden',    viewName !== 'roster');
   document.getElementById('staff-postings-view').classList.toggle('hidden',  viewName !== 'postings');
   document.getElementById('staff-candidates-view').classList.toggle('hidden', viewName !== 'candidates');
-  if (viewName === 'postings') buildPostingsView();
-  if (viewName === 'roster')   buildStaffPanel();
+  if (viewName === 'postings')    buildPostingsView();
+  if (viewName === 'roster')     buildStaffPanel();
+  if (viewName === 'candidates') buildCandidatesView();
 }
 
 function openStaffPanel() {
@@ -292,6 +344,36 @@ function buildPostingsView() {
 
 function refreshStaffPanel() {
   if (activePanel !== 'staffing') return;
-  if (_activeStaffView === 'roster')   buildStaffPanel();
-  if (_activeStaffView === 'postings') buildPostingsView();
+  if (_activeStaffView === 'roster')     buildStaffPanel();
+  if (_activeStaffView === 'postings')   buildPostingsView();
+  if (_activeStaffView === 'candidates') buildCandidatesView();
+}
+
+// ── Candidates view ────────────────────────────────────────────────────────
+function buildCandidatesView() {
+  const container = document.getElementById('staff-candidates-view');
+  if (candidates.length === 0) {
+    container.innerHTML = '<p class="empty-note">No candidates yet. Post a job to attract applicants.</p>';
+    return;
+  }
+
+  const rows = candidates.map(c => {
+    const job      = JOB_TYPES.find(j => j.id === c.jobId);
+    const years    = Math.floor(c.weeksEmployed / 52);
+    const expStr   = years === 0 ? 'No exp.' : `${years} yr`;
+    const weeksStr = c.weeksAsCandidate === 0 ? 'Just applied' : `${c.weeksAsCandidate} wk`;
+    return `<tr>
+      <td>${c.name}</td>
+      <td>${job?.label ?? c.jobId}</td>
+      <td>$${c.salary.toLocaleString()}/wk</td>
+      <td>${expStr}</td>
+      <td>${weeksStr}</td>
+    </tr>`;
+  }).join('');
+
+  container.innerHTML = `
+    <table class="staff-table">
+      <thead><tr><th>Name</th><th>Role</th><th>Expects</th><th>Exp.</th><th>Applied</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
 }
