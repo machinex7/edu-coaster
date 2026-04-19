@@ -146,30 +146,33 @@ function generateCandidates() {
   }
 }
 
-// Match waiting candidates against open postings and hire on fit.
-// A candidate fits a posting when: same job type, salary expectation ≤ offer,
-// and years of experience meets the minimum.
-function matchCandidatesToPostings() {
-  const filledPostings  = new Set();
-  const hiredCandidates = new Set();
+// Returns the first open posting this candidate qualifies for, or null.
+function findMatchingPosting(candidate) {
+  const years = Math.floor(candidate.weeksEmployed / 52);
+  return postings.find(p =>
+    p.jobId === candidate.jobId &&
+    years >= p.minYearsExperience &&
+    candidate.salary <= p.salary
+  ) ?? null;
+}
 
-  for (const candidate of candidates) {
-    const candidateYears = Math.floor(candidate.weeksEmployed / 52);
-    for (const posting of postings) {
-      if (filledPostings.has(posting.instanceId))   continue;
-      if (hiredCandidates.has(candidate.instanceId)) continue;
-      if (posting.jobId !== candidate.jobId)          continue;
-      if (candidateYears < posting.minYearsExperience) continue;
-      if (candidate.salary > posting.salary)           continue;
+// Player-initiated hire: move candidate to staff and fill the matched posting.
+function hireCandidate(instanceId) {
+  const candidate = candidates.find(c => c.instanceId === instanceId);
+  if (!candidate) return;
+  const posting = findMatchingPosting(candidate);
+  if (!posting) return;
 
-      staff.push({ ...candidate });
-      filledPostings.add(posting.instanceId);
-      hiredCandidates.add(candidate.instanceId);
-    }
-  }
+  staff.push({ ...candidate });
+  postings   = postings.filter(p => p.instanceId !== posting.instanceId);
+  candidates = candidates.filter(c => c.instanceId !== instanceId);
+  buildCandidatesView();
+}
 
-  postings   = postings.filter(p => !filledPostings.has(p.instanceId));
-  candidates = candidates.filter(c => !hiredCandidates.has(c.instanceId));
+// Player-initiated decline: remove candidate, posting stays open.
+function declineCandidate(instanceId) {
+  candidates = candidates.filter(c => c.instanceId !== instanceId);
+  buildCandidatesView();
 }
 
 // Check withdrawals then increment weeksAsCandidate.
@@ -357,23 +360,33 @@ function buildCandidatesView() {
     return;
   }
 
-  const rows = candidates.map(c => {
+  const cards = candidates.map(c => {
     const job      = JOB_TYPES.find(j => j.id === c.jobId);
     const years    = Math.floor(c.weeksEmployed / 52);
-    const expStr   = years === 0 ? 'No exp.' : `${years} yr`;
-    const weeksStr = c.weeksAsCandidate === 0 ? 'Just applied' : `${c.weeksAsCandidate} wk`;
-    return `<tr>
-      <td>${c.name}</td>
-      <td>${job?.label ?? c.jobId}</td>
-      <td>$${c.salary.toLocaleString()}/wk</td>
-      <td>${expStr}</td>
-      <td>${weeksStr}</td>
-    </tr>`;
+    const expStr   = years === 0 ? 'No exp.' : `${years} yr exp`;
+    const weeksStr = c.weeksAsCandidate === 0 ? 'Just applied' : `${c.weeksAsCandidate} wk ago`;
+    const matched  = findMatchingPosting(c) !== null;
+    return `<div class="candidate-card">
+      <div class="candidate-name">${c.name}</div>
+      <div class="candidate-details">
+        <span>${job?.label ?? c.jobId}</span>
+        <span>$${c.salary.toLocaleString()}/wk</span>
+        <span>${expStr}</span>
+        <span class="posting-meta">Applied ${weeksStr}</span>
+      </div>
+      <div class="candidate-actions">
+        <button class="hire-btn" data-id="${c.instanceId}" ${matched ? '' : 'disabled'}>Hire</button>
+        <button class="decline-btn" data-id="${c.instanceId}">Decline</button>
+      </div>
+    </div>`;
   }).join('');
 
-  container.innerHTML = `
-    <table class="staff-table">
-      <thead><tr><th>Name</th><th>Role</th><th>Expects</th><th>Exp.</th><th>Applied</th></tr></thead>
-      <tbody>${rows}</tbody>
-    </table>`;
+  container.innerHTML = cards;
+
+  container.querySelectorAll('.hire-btn').forEach(btn =>
+    btn.addEventListener('click', () => hireCandidate(btn.dataset.id))
+  );
+  container.querySelectorAll('.decline-btn').forEach(btn =>
+    btn.addEventListener('click', () => declineCandidate(btn.dataset.id))
+  );
 }

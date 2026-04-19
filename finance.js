@@ -107,9 +107,8 @@ function processRound() {
 
   advanceExperience();         // increment weeksEmployed for all staff
   advancePostings();           // increment weeksActive for all postings
-  generateCandidates();        // 4 new applicants per round when postings exist
-  matchCandidatesToPostings(); // hire any candidates that fit open postings
-  advanceCandidates();         // withdrawal check, then increment weeksAsCandidate
+  generateCandidates();  // 4 new applicants per round when postings exist
+  advanceCandidates();   // withdrawal check, then increment weeksAsCandidate
 
   return {
     weeklyAttendance,
