@@ -112,7 +112,7 @@ header h1 {
 #next-round-btn {
   background: #1d4ed8;
   position: fixed;
-  bottom: 1.5rem;
+  bottom: calc(1.5rem + env(safe-area-inset-bottom, 0px));
   right: 1.5rem;
   z-index: 50;
   padding: 10px 22px;
