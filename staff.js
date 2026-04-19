@@ -34,7 +34,7 @@ function generateEmployee(quality) {
   const lastName     = String.fromCharCode(65 + Math.floor(Math.random() * 26));
   const job          = JOB_TYPES[Math.floor(Math.random() * JOB_TYPES.length)];
   const skillModifier  = 0.75 + Math.random() * 0.5 * q;
-  const salaryModifier = 0.90 + Math.random() * 0.20;
+  const salaryModifier = 0.80 + Math.random() * 0.40;  // 0.80–1.20
   const maxYears       = Math.round(5 * q);
   const yearsExp       = maxYears > 0 ? Math.floor(Math.random() * (maxYears + 1)) : 0;
   return {
@@ -80,6 +80,7 @@ function totalWeeklySalary() {
 // > 156 weeks → Senior  (1.25×)
 function getExperienceTier(weeksEmployed) {
   if (weeksEmployed < 52)  return { label: 'Junior', multiplier: 0.75 };
+  if (weeksEmployed > 260) return { label: 'Lead',   multiplier: 1.5  };
   if (weeksEmployed > 156) return { label: 'Senior', multiplier: 1.25 };
   return                          { label: null,      multiplier: 1.0  };
 }
