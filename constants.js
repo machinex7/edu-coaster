@@ -37,3 +37,9 @@ const FACILITY_ID = Object.freeze({
   GARDEN:        'garden',
   FOUNTAIN:      'fountain',
 });
+
+const SECURITY_FOCUS = Object.freeze({
+  PATROL: 'patrol',
+  GATE:   'gate',
+  SHOP:   'shop',
+});

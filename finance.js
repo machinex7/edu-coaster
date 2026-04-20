@@ -111,19 +111,20 @@ function calcStaffCosts() {
 // ── Security incidents ─────────────────────────────────────────────────────
 
 // Weekly incident capacity per guard: tier 1 → 28, tier 2 → 35, tier 3 → 42, tier 4 → 49.
-function calcSecurityCapacity() {
+function calcCapacityForFocus(focus) {
   return staff
-    .filter(s => s.jobId === JOB.SECURITY)
+    .filter(s => s.jobId === JOB.SECURITY && s.focus === focus)
     .reduce((sum, s) => {
       const { tier } = getExperienceTier(s.weeksEmployed);
       return sum + (3 + tier) * 7;
     }, 0);
 }
 
-// Three incident sources:
-//   1. Gate overflow: 5% of weekly visitors who couldn't enter.
-//   2. Unridden: 20% of attendees who didn't get on a ride.
-//   3. Random: 0.1% of all attendees.
+// Three incident sources. Each is handled only by guards with the matching focus:
+//   Gate overflow  → GATE guards
+//   Unridden       → PATROL guards (remaining patrol capacity then covers random)
+//   Random         → PATROL guards (leftover after unridden)
+//   Shop theft     → SHOP guards (no incidents yet; capacity tracked for future use)
 // Must be called after computeRideOpinion() so lastRoundRiders is current.
 function calcSecurityIncidents(weeklyAttendance, dailyDemand, dailyThroughput) {
   const weeklyOverflow  = Math.max(0, (dailyDemand - dailyThroughput) * 7);
@@ -136,13 +137,28 @@ function calcSecurityIncidents(weeklyAttendance, dailyDemand, dailyThroughput) {
   const fromUnridden    = Math.floor(unridden * 0.20);
 
   const fromRandom      = Math.floor(weeklyAttendance * 0.001);
+  const fromShop        = 0; // placeholder until shops are implemented
 
-  const total           = fromOverflow + fromUnridden + fromRandom;
-  const capacity        = calcSecurityCapacity();
-  const handled         = Math.min(total, capacity);
-  const unhandled       = total - handled;
+  const total           = fromOverflow + fromUnridden + fromRandom + fromShop;
 
-  return { fromOverflow, fromUnridden, fromRandom, total, capacity, handled, unhandled };
+  const gateCapacity    = calcCapacityForFocus(SECURITY_FOCUS.GATE);
+  const patrolCapacity  = calcCapacityForFocus(SECURITY_FOCUS.PATROL);
+  const shopCapacity    = calcCapacityForFocus(SECURITY_FOCUS.SHOP);
+
+  const overflowHandled  = Math.min(fromOverflow, gateCapacity);
+  const unriddenHandled  = Math.min(fromUnridden, patrolCapacity);
+  const randomHandled    = Math.min(fromRandom, Math.max(0, patrolCapacity - unriddenHandled));
+  const shopHandled      = Math.min(fromShop, shopCapacity);
+
+  const handled  = overflowHandled + unriddenHandled + randomHandled + shopHandled;
+  const unhandled = total - handled;
+
+  return {
+    fromOverflow, fromUnridden, fromRandom, fromShop, total,
+    gateCapacity, patrolCapacity, shopCapacity,
+    overflowHandled, unriddenHandled, randomHandled, shopHandled,
+    handled, unhandled,
+  };
 }
 
 // ── Round processing ───────────────────────────────────────────────────────

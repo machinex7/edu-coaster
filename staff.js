@@ -47,6 +47,7 @@ function generateEmployee(quality) {
     salaryModifier,
     mood:          80,
     weeksEmployed: yearsExp * 52,
+    focus:         SECURITY_FOCUS.PATROL,
   };
 }
 
