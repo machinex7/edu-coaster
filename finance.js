@@ -96,15 +96,54 @@ function calcStaffCosts() {
   return totalWeeklySalary() + totalPostingCosts();
 }
 
+// ── Security incidents ─────────────────────────────────────────────────────
+
+// Weekly incident capacity per guard: tier 1 → 28, tier 2 → 35, tier 3 → 42, tier 4 → 49.
+function calcSecurityCapacity() {
+  return staff
+    .filter(s => s.jobId === JOB.SECURITY)
+    .reduce((sum, s) => {
+      const { tier } = getExperienceTier(s.weeksEmployed);
+      return sum + (3 + tier) * 7;
+    }, 0);
+}
+
+// Three incident sources:
+//   1. Gate overflow: 5% of weekly visitors who couldn't enter.
+//   2. Unridden: 20% of attendees who didn't get on a ride.
+//   3. Random: 0.1% of all attendees.
+// Must be called after computeRideOpinion() so lastRoundRiders is current.
+function calcSecurityIncidents(weeklyAttendance, dailyDemand, dailyThroughput) {
+  const weeklyOverflow  = Math.max(0, (dailyDemand - dailyThroughput) * 7);
+  const fromOverflow    = Math.floor(weeklyOverflow * 0.05);
+
+  const weeklyRiders    = installedRides
+    .filter(r => r.status === STATUS.ACTIVE && isRideConnected(r))
+    .reduce((sum, r) => sum + (r.lastRoundRiders ?? 0), 0);
+  const unridden        = Math.max(0, weeklyAttendance - weeklyRiders);
+  const fromUnridden    = Math.floor(unridden * 0.20);
+
+  const fromRandom      = Math.floor(weeklyAttendance * 0.001);
+
+  const total           = fromOverflow + fromUnridden + fromRandom;
+  const capacity        = calcSecurityCapacity();
+  const handled         = Math.min(total, capacity);
+  const unhandled       = total - handled;
+
+  return { fromOverflow, fromUnridden, fromRandom, total, capacity, handled, unhandled };
+}
+
 // ── Round processing ───────────────────────────────────────────────────────
 // Called once per round advancement. Order matters: collect income before
 // deducting costs so the budget display reflects net change.
 function processRound() {
   recalcExcitement();           // uses last round's rideOpinion
 
-  const daily = calcDailyAttendance();
+  const dailyDemand     = calcDailyDemand();
+  const dailyThroughput = calcGateThroughput();
+  const daily           = Math.min(dailyDemand, dailyThroughput);
 
-  computeRideOpinion(daily);    // updates rideOpinion for next round
+  computeRideOpinion(daily);    // updates rideOpinion for next round; sets lastRoundRiders
 
   const weeklyAttendance  = Math.round(daily * 7);
   const gateRevenue       = calcGateRevenue(daily);
@@ -112,6 +151,8 @@ function processRound() {
   const constructionCosts = [...installedRides, ...installedFacilities]
     .filter(r => r.status === STATUS.UNDER_CONSTRUCTION)
     .reduce((sum, r) => sum + r.weeklyPayment, 0);
+
+  const security = calcSecurityIncidents(weeklyAttendance, dailyDemand, dailyThroughput);
 
   // Income
   money += gateRevenue;
@@ -133,5 +174,6 @@ function processRound() {
     constructionCosts,
     totalExpenses: staffCosts + constructionCosts,
     rideEfficiency: rideOpinion,
+    security,
   };
 }

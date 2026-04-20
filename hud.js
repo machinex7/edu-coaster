@@ -44,6 +44,18 @@ function showRoundSummary(report) {
   const netEl = document.getElementById('summary-net');
   netEl.textContent = (net >= 0 ? '+' : '\u2212') + `$${Math.abs(net).toLocaleString()}`;
   netEl.className   = net >= 0 ? 'summary-pos' : 'summary-neg';
+
+  const sec = report.security;
+  document.getElementById('summary-incidents').textContent    = sec.total.toLocaleString();
+  document.getElementById('summary-inc-overflow').textContent = sec.fromOverflow.toLocaleString();
+  document.getElementById('summary-inc-unridden').textContent = sec.fromUnridden.toLocaleString();
+  document.getElementById('summary-inc-random').textContent   = sec.fromRandom.toLocaleString();
+  document.getElementById('summary-sec-capacity').textContent = sec.capacity.toLocaleString();
+  document.getElementById('summary-sec-handled').textContent  = sec.handled.toLocaleString();
+  const unhandledEl = document.getElementById('summary-sec-unhandled');
+  unhandledEl.textContent = sec.unhandled.toLocaleString();
+  unhandledEl.className   = `modal-stat-value${sec.unhandled > 0 ? ' expense' : ''}`;
+
   document.getElementById('round-modal').classList.remove('hidden');
 }
 

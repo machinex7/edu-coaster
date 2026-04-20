@@ -932,6 +932,26 @@ header h1 {
 .modal-net-row .modal-stat-label { color: #e5e7eb; font-weight: 600; }
 .modal-net-row .modal-stat-value { font-size: 1.05rem; }
 
+.modal-section-header {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.modal-stat-sub .modal-stat-label {
+  padding-left: 12px;
+  color: #6b7280;
+  font-size: 0.78rem;
+}
+
+.modal-stat-sub .modal-stat-value {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #9ca3af;
+}
+
 .summary-pos { color: #4ade80; }
 .summary-neg { color: #f87171; }
 
