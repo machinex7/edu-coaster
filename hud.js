@@ -37,11 +37,12 @@ function advanceRound() {
 }
 
 function showRoundSummary(report) {
-  const net = report.gateRevenue - report.totalExpenses;
-  document.getElementById('summary-date').textContent       = getDateLabel();
-  document.getElementById('summary-attendance').textContent = report.weeklyAttendance.toLocaleString();
-  document.getElementById('summary-income').textContent     = `$${report.gateRevenue.toLocaleString()}`;
-  document.getElementById('summary-expenses').textContent   = `$${report.totalExpenses.toLocaleString()}`;
+  const net = report.totalIncome - report.totalExpenses;
+  document.getElementById('summary-date').textContent        = getDateLabel();
+  document.getElementById('summary-attendance').textContent  = report.weeklyAttendance.toLocaleString();
+  document.getElementById('summary-income').textContent      = `$${report.gateRevenue.toLocaleString()}`;
+  document.getElementById('summary-shop-income').textContent = `$${report.shopRevenue.toLocaleString()}`;
+  document.getElementById('summary-expenses').textContent    = `$${report.totalExpenses.toLocaleString()}`;
   const netEl = document.getElementById('summary-net');
   netEl.textContent = (net >= 0 ? '+' : '\u2212') + `$${Math.abs(net).toLocaleString()}`;
   netEl.className   = net >= 0 ? 'summary-pos' : 'summary-neg';
@@ -266,6 +267,13 @@ const PRICE_ITEMS = [
     unit:      '$/item',
     getValue:  () => Finance.foodUpcharge,
     setValue:  v => { Finance.foodUpcharge = v; },
+  },
+  {
+    key:       'merchandise',
+    label:     'Merchandise Upcharge',
+    unit:      '$/buyer',
+    getValue:  () => Finance.merchandiseUpcharge,
+    setValue:  v => { Finance.merchandiseUpcharge = v; },
   },
 ];
 

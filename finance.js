@@ -80,9 +80,10 @@ const Finance = {
   },
 
   // ── Pricing ─────────────────────────────────────────────────────────────────
-  gatePrice:       20,  // $ per visitor
-  parkingPrice:    10,  // $ per vehicle
-  foodUpcharge:     0,  // $ added per food item sold
+  gatePrice:            20,  // $ per visitor
+  parkingPrice:         10,  // $ per vehicle
+  foodUpcharge:          0,  // $ added per food item sold
+  merchandiseUpcharge:   0,  // $ added to the base $30 per merchandise buyer
 
   // Cumulative visitor price fatigue. Rises when prices increase, decays 1/round.
   priceExhaustion: 0,
@@ -94,6 +95,11 @@ const Finance = {
   // ── Income sources ───────────────────────────────────────────────────────────
   calcGateRevenue(dailyAttendance) {
     return Math.round(this.gatePrice * dailyAttendance * 7);
+  },
+
+  // 20% of weekly attendees buy merchandise at ($30 + upcharge) each.
+  calcShopRevenue(weeklyAttendance) {
+    return Math.round(weeklyAttendance * 0.20 * (30 + this.merchandiseUpcharge));
   },
 
   // ── Cost sources ─────────────────────────────────────────────────────────────
@@ -117,6 +123,7 @@ const Finance = {
 
     const weeklyAttendance  = Math.round(daily * 7);
     const gateRevenue       = this.calcGateRevenue(daily);
+    const shopRevenue       = this.calcShopRevenue(weeklyAttendance);
     const staffCosts        = this.calcStaffCosts();
     const constructionCosts = [...installedRides, ...installedFacilities, ...installedShops]
       .filter(r => r.status === STATUS.UNDER_CONSTRUCTION)
@@ -126,6 +133,7 @@ const Finance = {
 
     // Income
     money += gateRevenue;
+    money += shopRevenue;
 
     // Costs
     money -= staffCosts;
@@ -141,6 +149,8 @@ const Finance = {
     return {
       weeklyAttendance,
       gateRevenue,
+      shopRevenue,
+      totalIncome: gateRevenue + shopRevenue,
       staffCosts,
       constructionCosts,
       totalExpenses: staffCosts + constructionCosts,
