@@ -13,7 +13,7 @@ const Security = {
   FOCUS_META: [
     { focus: SECURITY_FOCUS.PATROL, label: 'Patrol', desc: 'Handles unridden visitor incidents' },
     { focus: SECURITY_FOCUS.GATE,   label: 'Gate',   desc: 'Handles gate overflow incidents'    },
-    { focus: SECURITY_FOCUS.SHOP,   label: 'Shop',   desc: 'Handles shop theft ($50/unhandled)' },
+    { focus: SECURITY_FOCUS.SHOP,   label: 'Shop',   desc: 'Handles shop theft'                 },
   ],
 
   // ── Incident calculation ──────────────────────────────────────────────────
@@ -95,8 +95,7 @@ const Security = {
     }
 
     const guardRows = guards.map(s => {
-      const { label: expLabel, tier } = Staff.getExperienceTier(s.weeksEmployed);
-      const weeklyCapacity = (3 + tier) * 7;
+      const { label: expLabel } = Staff.getExperienceTier(s.weeksEmployed);
       const expBadge = expLabel
         ? `<span class="exp-badge exp-${expLabel.toLowerCase()}">${expLabel}</span>`
         : '';
@@ -107,7 +106,6 @@ const Security = {
       return `<div class="security-guard-row">
         <div class="sec-guard-info">
           <span class="sec-guard-name">${s.name} ${expBadge}</span>
-          <span class="sec-guard-cap">${weeklyCapacity}/wk</span>
         </div>
         <div class="sec-focus-btns">${focusBtns}</div>
       </div>`;

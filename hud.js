@@ -44,7 +44,9 @@ function showRoundSummary(report) {
   document.getElementById('summary-parking-income').textContent = `$${report.parkingRevenue.toLocaleString()}`;
   document.getElementById('summary-shop-income').textContent    = `$${report.shopRevenue.toLocaleString()}`;
   document.getElementById('summary-expenses').textContent    = `$${(report.staffCosts + report.constructionCosts).toLocaleString()}`;
-  document.getElementById('summary-theft-loss').textContent  = `-$${report.theftLoss.toLocaleString()}`;
+  const theftRow = document.getElementById('summary-theft-loss').closest('.modal-stat-row');
+  theftRow.classList.toggle('hidden', report.theftLoss === 0);
+  document.getElementById('summary-theft-loss').textContent = `-$${report.theftLoss.toLocaleString()}`;
   const netEl = document.getElementById('summary-net');
   netEl.textContent = (net >= 0 ? '+' : '\u2212') + `$${Math.abs(net).toLocaleString()}`;
   netEl.className   = net >= 0 ? 'summary-pos' : 'summary-neg';
