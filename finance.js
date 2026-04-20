@@ -96,6 +96,11 @@ const Finance = {
     return Math.round(this.gatePrice * dailyAttendance * 7);
   },
 
+  // 1 vehicle per 3 visitors who want to come (based on demand, not throughput).
+  calcParkingRevenue(dailyDemand) {
+    return Math.floor(dailyDemand * 7 / 3) * this.parkingPrice;
+  },
+
   // ── Cost sources ─────────────────────────────────────────────────────────────
   calcStaffCosts() {
     return Staff.totalWeeklySalary() + Staff.totalPostingCosts();
@@ -117,6 +122,7 @@ const Finance = {
 
     const weeklyAttendance  = Math.round(daily * 7);
     const gateRevenue       = this.calcGateRevenue(daily);
+    const parkingRevenue    = this.calcParkingRevenue(dailyDemand);
     const shopRevenue       = Shopping.calcRevenue(weeklyAttendance);
     const staffCosts        = this.calcStaffCosts();
     const constructionCosts = [...installedRides, ...installedFacilities, ...Shopping.installed]
@@ -127,6 +133,7 @@ const Finance = {
 
     // Income
     money += gateRevenue;
+    money += parkingRevenue;
     money += shopRevenue;
 
     // Costs
@@ -144,8 +151,9 @@ const Finance = {
     return {
       weeklyAttendance,
       gateRevenue,
+      parkingRevenue,
       shopRevenue,
-      totalIncome: gateRevenue + shopRevenue,
+      totalIncome: gateRevenue + parkingRevenue + shopRevenue,
       staffCosts,
       constructionCosts,
       theftLoss:     security.theftLoss,

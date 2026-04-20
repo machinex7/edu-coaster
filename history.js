@@ -17,6 +17,7 @@ const History = {
       date:                getDateLabel(),
       attendance:          report.weeklyAttendance,
       gateIncome:          report.gateRevenue,
+      parkingIncome:       report.parkingRevenue,
       shopIncome:          report.shopRevenue,
       staffExpense:        report.staffCosts,
       constructionExpense: report.constructionCosts,

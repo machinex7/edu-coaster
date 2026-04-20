@@ -40,8 +40,9 @@ function showRoundSummary(report) {
   const net = report.totalIncome - report.totalExpenses;
   document.getElementById('summary-date').textContent        = getDateLabel();
   document.getElementById('summary-attendance').textContent  = report.weeklyAttendance.toLocaleString();
-  document.getElementById('summary-income').textContent      = `$${report.gateRevenue.toLocaleString()}`;
-  document.getElementById('summary-shop-income').textContent = `$${report.shopRevenue.toLocaleString()}`;
+  document.getElementById('summary-income').textContent         = `$${report.gateRevenue.toLocaleString()}`;
+  document.getElementById('summary-parking-income').textContent = `$${report.parkingRevenue.toLocaleString()}`;
+  document.getElementById('summary-shop-income').textContent    = `$${report.shopRevenue.toLocaleString()}`;
   document.getElementById('summary-expenses').textContent    = `$${(report.staffCosts + report.constructionCosts).toLocaleString()}`;
   document.getElementById('summary-theft-loss').textContent  = `-$${report.theftLoss.toLocaleString()}`;
   const netEl = document.getElementById('summary-net');
