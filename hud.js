@@ -103,6 +103,7 @@ function openPanel(panelId) {
   document.querySelector(`.tool-btn[data-panel="${panelId}"]`)?.classList.add('active');
   if (panelId === 'rides')    buildRidesPanel();
   if (panelId === 'staffing') openStaffPanel();
+  if (panelId === 'pricing')  buildPricingPanel();
 }
 
 function closePanels() {
@@ -113,7 +114,17 @@ function closePanels() {
   deselectItem();
 }
 
+let _selectedRideId = null;
+
 function buildRidesPanel() {
+  const record = _selectedRideId
+    ? installedRides.find(r => r.instanceId === _selectedRideId)
+    : null;
+  if (record) buildRideDetail(record);
+  else         buildRideList();
+}
+
+function buildRideList() {
   const container = document.getElementById('rides-overview');
   if (installedRides.length === 0) {
     container.innerHTML = '<p class="empty-note">No rides placed yet.</p>';
@@ -121,14 +132,82 @@ function buildRidesPanel() {
   }
   const rows = installedRides.map(record => {
     const { label, cls } = getRideCondition(record);
-    return `<tr><td>${record.name}</td><td><span class="cond-badge ${cls}">${label}</span></td></tr>`;
+    return `<div class="ride-list-row" data-id="${record.instanceId}">
+      <span class="ride-list-name">${record.name}</span>
+      <span class="cond-badge ${cls}">${label}</span>
+    </div>`;
   }).join('');
-  container.innerHTML = `<table class="rides-table"><thead><tr><th>Name</th><th>Condition</th></tr></thead><tbody>${rows}</tbody></table>`;
+  container.innerHTML = `<div class="ride-list">${rows}</div>`;
+  container.querySelectorAll('.ride-list-row').forEach(row =>
+    row.addEventListener('click', () => {
+      _selectedRideId = row.dataset.id;
+      buildRidesPanel();
+    })
+  );
+}
+
+function buildRideDetail(record) {
+  const container = document.getElementById('rides-overview');
+  const { label, cls } = getRideCondition(record);
+
+  let ridership = '';
+  if (record.lastRoundCapacity != null) {
+    const pct = record.lastRoundCapacity > 0
+      ? Math.round(record.lastRoundRiders / record.lastRoundCapacity * 100)
+      : 0;
+    ridership = `
+      <div class="ride-ridership">
+        <div class="ride-ridership-label">Last Round Ridership</div>
+        <div class="ride-ridership-bar-wrap">
+          <div class="ride-ridership-bar" style="width:${pct}%"></div>
+        </div>
+        <div class="ride-ridership-nums">
+          ${record.lastRoundRiders.toLocaleString()} / ${record.lastRoundCapacity.toLocaleString()} riders (${pct}%)
+        </div>
+      </div>`;
+  }
+
+  let actionsHtml = '';
+  if (record.status === STATUS.UNDER_CONSTRUCTION) {
+    const weeksLeft = record.weeksTotal - record.weeksCompleted;
+    actionsHtml = `
+      <p class="ride-detail-weeks">${weeksLeft} week${weeksLeft !== 1 ? 's' : ''} remaining</p>
+      <button class="ride-action-btn" id="rdx-pause">Pause Construction</button>`;
+  } else if (record.status === STATUS.PAUSED_CONSTRUCTION) {
+    const weeksLeft = record.weeksTotal - record.weeksCompleted;
+    actionsHtml = `
+      <p class="ride-detail-weeks">${weeksLeft} week${weeksLeft !== 1 ? 's' : ''} remaining</p>
+      <button class="ride-action-btn ride-action-resume" id="rdx-resume">Resume Construction</button>`;
+  } else if (record.status === STATUS.ACTIVE) {
+    actionsHtml = `<button class="ride-action-btn ride-action-danger" id="rdx-close">Close Ride</button>`;
+  } else if (record.status === STATUS.CLOSED) {
+    actionsHtml = `<button class="ride-action-btn ride-action-resume" id="rdx-reopen">Re-open Ride</button>`;
+  }
+
+  container.innerHTML = `
+    <div class="ride-detail">
+      <button class="ride-back-btn" id="rdx-back">← Rides</button>
+      <div class="ride-detail-name">${record.name}</div>
+      <span class="cond-badge ${cls}">${label}</span>
+      ${ridership}
+      <div class="ride-detail-actions">${actionsHtml}</div>
+    </div>`;
+
+  document.getElementById('rdx-back').addEventListener('click', () => {
+    _selectedRideId = null;
+    buildRideList();
+  });
+  document.getElementById('rdx-pause')?.addEventListener('click',  () => { pauseRideConstruction(record.instanceId);  buildRideDetail(record); });
+  document.getElementById('rdx-resume')?.addEventListener('click', () => { resumeRideConstruction(record.instanceId); buildRideDetail(record); });
+  document.getElementById('rdx-close')?.addEventListener('click',  () => { closeRide(record.instanceId);              buildRideDetail(record); });
+  document.getElementById('rdx-reopen')?.addEventListener('click', () => { reopenRide(record.instanceId);             buildRideDetail(record); });
 }
 
 function getRideCondition(record) {
   switch (record.status) {
-    case STATUS.UNDER_CONSTRUCTION: return { label: 'Under Construction', cls: 'cond-building'     };
+    case STATUS.UNDER_CONSTRUCTION:  return { label: 'Under Construction', cls: 'cond-building'     };
+    case STATUS.PAUSED_CONSTRUCTION: return { label: 'Paused',             cls: 'cond-paused'       };
+    case STATUS.CLOSED:              return { label: 'Closed',             cls: 'cond-closed'       };
     case STATUS.ACTIVE:
       return isRideConnected(record)
         ? { label: 'Running',     cls: 'cond-running'     }
@@ -150,6 +229,67 @@ function initSubTabs() {
       btn.classList.add('active');
       document.getElementById(`${btn.dataset.tab}-panel`).classList.remove('hidden');
       deselectItem();
+    });
+  });
+}
+
+// ── Pricing panel ──────────────────────────────────────────────────────────
+const PRICE_ITEMS = [
+  {
+    key:       'gate',
+    label:     'Gate Admission',
+    unit:      '$/visitor',
+    getValue:  () => gatePrice,
+    setValue:  v => {
+      const delta = v - gatePrice;
+      if (delta > 0) priceExhaustion += 2 * delta;
+      gatePrice = v;
+    },
+  },
+  {
+    key:       'parking',
+    label:     'Parking',
+    unit:      '$/vehicle',
+    getValue:  () => parkingPrice,
+    setValue:  v => {
+      const delta = v - parkingPrice;
+      if (delta > 0) priceExhaustion += 1 * delta;
+      parkingPrice = v;
+    },
+  },
+  {
+    key:       'food',
+    label:     'Food Upcharge',
+    unit:      '$/item',
+    getValue:  () => foodUpcharge,
+    setValue:  v => { foodUpcharge = v; },
+  },
+];
+
+function buildPricingPanel() {
+  const rows = PRICE_ITEMS.map(item => `
+    <div class="price-row">
+      <div class="price-label">${item.label}</div>
+      <div class="price-unit">${item.unit}</div>
+      <div class="price-controls">
+        <span class="price-current" id="price-current-${item.key}">$${item.getValue()}</span>
+        <input class="price-input" id="price-input-${item.key}"
+               type="number" min="0" value="${item.getValue()}">
+        <button class="price-apply-btn" data-key="${item.key}">Apply</button>
+      </div>
+    </div>`).join('');
+
+  document.getElementById('pricing-panel-body').innerHTML = `
+    <div class="price-list">${rows}</div>`;
+
+  document.querySelectorAll('.price-apply-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const item   = PRICE_ITEMS.find(p => p.key === btn.dataset.key);
+      const input  = document.getElementById(`price-input-${item.key}`);
+      const newVal = Math.max(0, parseInt(input.value) || 0);
+      item.setValue(newVal);
+      document.getElementById(`price-current-${item.key}`).textContent = `$${item.getValue()}`;
+      input.value = item.getValue();
     });
   });
 }

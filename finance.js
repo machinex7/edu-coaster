@@ -28,12 +28,15 @@ function computeRideOpinion(dailyAttendance) {
   const actual     = staff.filter(s => s.jobId === JOB.RIDE_OPERATOR).length;
   const staffRatio = needed > 0 ? Math.min(1, actual / needed) : 1;
 
-  const dailyRideCapacity = runningRides.reduce((sum, record) => {
-    const ride = rides.find(r => r.id === record.rideId);
-    return sum + (ride?.ridesPerHour ?? 0);
-  }, 0) * staffRatio;
+  let totalDailyCapacity = 0;
+  runningRides.forEach(record => {
+    const rph = rides.find(r => r.id === record.rideId)?.ridesPerHour ?? 0;
+    totalDailyCapacity       += rph;
+    record.lastRoundCapacity  = Math.round(rph * 7);           // weekly at full staff
+    record.lastRoundRiders    = Math.round(rph * staffRatio * 7); // weekly actual
+  });
 
-  const score = dailyAttendance > 0 ? Math.min(1, dailyRideCapacity / dailyAttendance) : 1;
+  const score = dailyAttendance > 0 ? Math.min(1, totalDailyCapacity * staffRatio / dailyAttendance) : 1;
   rideOpinion = (rideOpinion + score) / 2;
 }
 
@@ -48,8 +51,10 @@ function recalcExcitement() {
 // ── Attendance ─────────────────────────────────────────────────────────────
 
 // How many people want to visit based on park appeal.
+// priceExhaustion cuts demand by 1% per point (10 exhaustion = −10%).
 function calcDailyDemand() {
-  return parkExcitement * 20;
+  const exhaustionFactor = Math.max(0, 1 - priceExhaustion / 100);
+  return parkExcitement * 20 * exhaustionFactor;
 }
 
 // How many people can actually enter: booth attendants are the bottleneck.
@@ -69,11 +74,21 @@ function calcDailyAttendance() {
   return Math.min(calcDailyDemand(), calcGateThroughput());
 }
 
-// ── Income sources ─────────────────────────────────────────────────────────
-const GATE_ADMISSION = 20; // $ per visitor per entry
+// ── Pricing ────────────────────────────────────────────────────────────────
+let gatePrice        = 20;  // $ per visitor
+let parkingPrice     = 10;  // $ per vehicle
+let foodUpcharge     = 0;   // $ added per food item sold
 
+// Cumulative visitor price fatigue. Rises when prices increase, decays 1/round.
+let priceExhaustion  = 0;
+
+function advancePriceExhaustion() {
+  priceExhaustion = Math.max(0, priceExhaustion - 1);
+}
+
+// ── Income sources ─────────────────────────────────────────────────────────
 function calcGateRevenue(dailyAttendance) {
-  return GATE_ADMISSION * dailyAttendance * 7; // 7 days per round
+  return Math.round(gatePrice * dailyAttendance * 7);
 }
 
 // ── Cost sources ───────────────────────────────────────────────────────────
@@ -107,8 +122,9 @@ function processRound() {
 
   advanceExperience();         // increment weeksEmployed for all staff
   advancePostings();           // increment weeksActive for all postings
-  generateCandidates();  // 4 new applicants per round when postings exist
-  advanceCandidates();   // withdrawal check, then increment weeksAsCandidate
+  generateCandidates();       // 4 new applicants per round when postings exist
+  advanceCandidates();        // withdrawal check, then increment weeksAsCandidate
+  advancePriceExhaustion();   // decay price fatigue by 1
 
   return {
     weeklyAttendance,
