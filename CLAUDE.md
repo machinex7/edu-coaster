@@ -4,7 +4,6 @@ Educational theme park business simulation. Plain HTML/CSS/JS, no build tools, n
 
 **Full technical reference:** `README.md`  
 **Game design document:** `reqs.md`  
-**Active branch:** `claude/create-rides-data-0KgDq`
 
 ---
 
