@@ -4,6 +4,10 @@
 
 const Population = {
 
+  // ── Labor ─────────────────────────────────────────────────────────────────
+  MINIMUM_WAGE_HOURLY: 7.25,  // $ per hour
+  MINIMUM_WAGE_WEEKLY: 290,   // $ per week (7.25 × 40 hrs)
+
   // ── Visitor behavior ───────────────────────────────────────────────────────
   BUYER_RATE:             0.15,   // fraction of visitors who purchase merchandise
   THEFT_RATE:             0.008,  // fraction of non-buyers who attempt to shoplift
