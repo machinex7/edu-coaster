@@ -5,8 +5,8 @@
 const Population = {
 
   // ── Visitor behavior ───────────────────────────────────────────────────────
-  BUYER_RATE:             0.20,   // fraction of visitors who purchase merchandise
-  THEFT_RATE:             0.01,   // fraction of non-buyers who attempt to shoplift
+  BUYER_RATE:             0.15,   // fraction of visitors who purchase merchandise
+  THEFT_RATE:             0.008,  // fraction of non-buyers who attempt to shoplift
 
   // Incident rates: how often frustrated or bored visitors cause trouble.
   OVERFLOW_INCIDENT_RATE: 0.05,   // fraction of turned-away visitors who cause incidents

@@ -16,15 +16,30 @@ const Shopping = {
   BASE_SPEND:     30,  // $ base spend per buyer
   THEFT_LOSS_PER: 50,  // $ lost per unhandled shoplifter
 
+  // Total active tiles across all placed Merchandise stores.
+  // Used to scale revenue and theft: more floor space = more shoppers and more risk.
+  calcMerchandiseTiles() {
+    return this.installed
+      .filter(s => s.shopId === SHOP_ID.MERCHANDISE && s.status === STATUS.ACTIVE)
+      .reduce((sum, s) => sum + s.footprint.flat().filter(v => v === 1).length, 0);
+  },
+
   // ── Revenue ────────────────────────────────────────────────────────────────
+  // Scales with sqrt(tiles): no store = no revenue; each additional store adds
+  // diminishing returns.
   calcRevenue(weeklyAttendance) {
-    return Math.round(weeklyAttendance * Population.BUYER_RATE * (this.BASE_SPEND + this.merchandiseUpcharge));
+    const tiles = this.calcMerchandiseTiles();
+    if (tiles === 0) return 0;
+    return Math.round(weeklyAttendance * Population.BUYER_RATE * (this.BASE_SPEND + this.merchandiseUpcharge) * Math.sqrt(tiles));
   },
 
   // ── Theft ──────────────────────────────────────────────────────────────────
   // Called by Security.calcIncidents() to get the raw shoplifter count.
+  // Also scales with sqrt(tiles): no store = nothing to steal.
   calcTheftIncidents(weeklyAttendance) {
-    return Math.floor(weeklyAttendance * (1 - Population.BUYER_RATE) * Population.THEFT_RATE);
+    const tiles = this.calcMerchandiseTiles();
+    if (tiles === 0) return 0;
+    return Math.floor(weeklyAttendance * (1 - Population.BUYER_RATE) * Population.THEFT_RATE * Math.sqrt(tiles));
   },
 
   // Called by Security.calcIncidents() after determining how many went unhandled.
