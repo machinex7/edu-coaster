@@ -15,6 +15,8 @@ let parkExcitement = 0;
 // Starts at 1.0 (perfect); degrades when operators can't keep up with demand.
 let rideOpinion = 1.0;
 
+// securityOpinion is declared in security.js — read here by calcDailyDemand().
+
 // How well-staffed running rides are vs the crowd trying to ride them.
 // staffRatio = actual operators / needed operators (capped at 1).
 // dailyRideCapacity = sum(ridesPerHour for Running rides) * staffRatio.
@@ -52,9 +54,11 @@ function recalcExcitement() {
 
 // How many people want to visit based on park appeal.
 // priceExhaustion cuts demand by 1% per point (10 exhaustion = −10%).
+// securityOpinion reduces demand via sqrt curve: 1 − √opinion/100.
 function calcDailyDemand() {
   const exhaustionFactor = Math.max(0, 1 - priceExhaustion / 100);
-  return parkExcitement * 20 * exhaustionFactor;
+  const securityFactor   = Math.max(0, 1 - Math.sqrt(securityOpinion) / 100);
+  return parkExcitement * 20 * exhaustionFactor * securityFactor;
 }
 
 // How many people can actually enter: booth attendants are the bottleneck.
@@ -96,22 +100,28 @@ function calcStaffCosts() {
   return totalWeeklySalary() + totalPostingCosts();
 }
 
+// calcSecurityIncidents() and advanceSecurityOpinion() are in security.js.
+
 // ── Round processing ───────────────────────────────────────────────────────
 // Called once per round advancement. Order matters: collect income before
 // deducting costs so the budget display reflects net change.
 function processRound() {
   recalcExcitement();           // uses last round's rideOpinion
 
-  const daily = calcDailyAttendance();
+  const dailyDemand     = calcDailyDemand();
+  const dailyThroughput = calcGateThroughput();
+  const daily           = Math.min(dailyDemand, dailyThroughput);
 
-  computeRideOpinion(daily);    // updates rideOpinion for next round
+  computeRideOpinion(daily);    // updates rideOpinion for next round; sets lastRoundRiders
 
   const weeklyAttendance  = Math.round(daily * 7);
   const gateRevenue       = calcGateRevenue(daily);
   const staffCosts        = calcStaffCosts();
-  const constructionCosts = [...installedRides, ...installedFacilities]
+  const constructionCosts = [...installedRides, ...installedFacilities, ...installedShops]
     .filter(r => r.status === STATUS.UNDER_CONSTRUCTION)
     .reduce((sum, r) => sum + r.weeklyPayment, 0);
+
+  const security = calcSecurityIncidents(weeklyAttendance, dailyDemand, dailyThroughput);
 
   // Income
   money += gateRevenue;
@@ -120,11 +130,12 @@ function processRound() {
   money -= staffCosts;
   processConstruction();  // deducts constructionCosts and advances build progress
 
-  advanceExperience();         // increment weeksEmployed for all staff
-  advancePostings();           // increment weeksActive for all postings
-  generateCandidates();       // 4 new applicants per round when postings exist
-  advanceCandidates();        // withdrawal check, then increment weeksAsCandidate
-  advancePriceExhaustion();   // decay price fatigue by 1
+  advanceExperience();                            // increment weeksEmployed for all staff
+  advancePostings();                              // increment weeksActive for all postings
+  generateCandidates();                          // 4 new applicants per round when postings exist
+  advanceCandidates();                           // withdrawal check, then increment weeksAsCandidate
+  advancePriceExhaustion();                      // decay price fatigue by 1
+  advanceSecurityOpinion(security.unhandled);    // decay then add unhandled incidents
 
   return {
     weeklyAttendance,
@@ -133,5 +144,6 @@ function processRound() {
     constructionCosts,
     totalExpenses: staffCosts + constructionCosts,
     rideEfficiency: rideOpinion,
+    security: { ...security, opinionAfter: securityOpinion },
   };
 }

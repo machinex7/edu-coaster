@@ -23,5 +23,9 @@ function recordRound(report) {
     runningRides:        installedRides.filter(r => r.status === STATUS.ACTIVE && isRideConnected(r)).length,
     jobPostings:         postings.length,
     matchingCandidates:  candidates.filter(c => findMatchingPosting(c) !== null).length,
+    securityIncidents:   report.security.total,
+    securityHandled:     report.security.handled,
+    securityUnhandled:   report.security.unhandled,
+    securityOpinion:     report.security.opinionAfter,
   });
 }

@@ -32,6 +32,7 @@ function advanceRound() {
   updateHUD();
   refreshRidesPanel();
   refreshStaffPanel();
+  refreshSecurityPanel();
   showRoundSummary(report);
 }
 
@@ -44,6 +45,7 @@ function showRoundSummary(report) {
   const netEl = document.getElementById('summary-net');
   netEl.textContent = (net >= 0 ? '+' : '\u2212') + `$${Math.abs(net).toLocaleString()}`;
   netEl.className   = net >= 0 ? 'summary-pos' : 'summary-neg';
+
   document.getElementById('round-modal').classList.remove('hidden');
 }
 
@@ -103,6 +105,7 @@ function openPanel(panelId) {
   document.querySelector(`.tool-btn[data-panel="${panelId}"]`)?.classList.add('active');
   if (panelId === 'rides')    buildRidesPanel();
   if (panelId === 'staffing') openStaffPanel();
+  if (panelId === 'security') buildSecurityPanel();
   if (panelId === 'pricing')  buildPricingPanel();
 }
 

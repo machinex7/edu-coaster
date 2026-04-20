@@ -30,6 +30,7 @@ const STARTING_WEEK_OF_YEAR = 27; // week 27 = first week of Q3
 // ── Game State ─────────────────────────────────────────────────────────────
 let rides      = [];  // from rides.json (with _color added)
 let facilities = [];  // from facilities.json
+let shops      = [];  // from shops.json
 
 let gridCells = [];   // [row][col] → <div>
 let gridState = [];   // [row][col] → instanceId string, or null
@@ -45,6 +46,7 @@ let round     = 1;
 // facility entry: { instanceId, facilityId, name, color, row, col, footprint, status }
 let installedRides      = [];
 let installedFacilities = [];
+let installedShops      = [];
 
 // Maps "row,col" → facilityId for fast adjacency lookups.
 const facilityTypeAtCell = {};
@@ -55,9 +57,10 @@ let currentPlacement = null;  // { startRow, startCol, valid }
 
 // ── Init ───────────────────────────────────────────────────────────────────
 async function init() {
-  [rides, facilities] = await Promise.all([
+  [rides, facilities, shops] = await Promise.all([
     fetch('rides.json').then(r => r.json()),
     fetch('facilities.json').then(r => r.json()),
+    fetch('shops.json').then(r => r.json()),
   ]);
 
   rides.forEach((ride, i) => {
@@ -67,15 +70,16 @@ async function init() {
   gridState = Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS).fill(null));
 
   buildGrid();
-  buildRideList();
+  buildRideCatalog();
   buildFacilityList();
+  buildShopList();
   initStaff();
   initSubTabs();
   initHUD();
 }
 
 // ── Sidebar lists ──────────────────────────────────────────────────────────
-function buildRideList() {
+function buildRideCatalog() {
   const list = document.getElementById('ride-list');
   rides.forEach(ride => list.appendChild(createItemCard(ride, 'ride')));
 }
@@ -83,6 +87,11 @@ function buildRideList() {
 function buildFacilityList() {
   const list = document.getElementById('facility-list');
   facilities.forEach(facility => list.appendChild(createItemCard(facility, 'facility')));
+}
+
+function buildShopList() {
+  const list = document.getElementById('shop-list');
+  shops.forEach(shop => list.appendChild(createItemCard(shop, CATEGORY.SHOP)));
 }
 
 function createItemCard(item, category) {
@@ -295,6 +304,10 @@ function _commitPlace(item, category, startRow, startCol, status) {
     record.rideId = item.id;
     record.name   = item.name;
     installedRides.push(record);
+  } else if (category === CATEGORY.SHOP) {
+    record.shopId = item.id;
+    record.name   = item.name;
+    installedShops.push(record);
   } else {
     record.facilityId = item.id;
     record.name       = item.name;
@@ -314,7 +327,7 @@ function _commitPlace(item, category, startRow, startCol, status) {
 
 // ── Construction queue ─────────────────────────────────────────────────────
 function processConstruction() {
-  for (const record of [...installedRides, ...installedFacilities]) {
+  for (const record of [...installedRides, ...installedFacilities, ...installedShops]) {
     if (record.status !== STATUS.UNDER_CONSTRUCTION) continue;
     money -= record.weeklyPayment;
     record.weeksCompleted++;

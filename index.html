@@ -32,6 +32,7 @@
           <button class="tool-btn" data-panel="construction">Construction</button>
           <button class="tool-btn" data-panel="rides">Rides</button>
           <button class="tool-btn" data-panel="staffing">Staffing</button>
+          <button class="tool-btn" data-panel="security">Security</button>
           <button class="tool-btn" data-panel="pricing">Pricing</button>
         </nav>
 
@@ -47,7 +48,9 @@
             <div id="attractions-panel" class="tab-panel">
               <div id="ride-list"></div>
             </div>
-            <div id="shopping-panel" class="tab-panel hidden"></div>
+            <div id="shopping-panel" class="tab-panel hidden">
+              <div id="shop-list"></div>
+            </div>
             <div id="facilities-panel" class="tab-panel hidden">
               <div id="facility-list"></div>
             </div>
@@ -77,6 +80,14 @@
             <div id="staff-candidates-view" class="staff-view hidden">
               <p class="empty-note">Candidates will appear here once postings attract applicants.</p>
             </div>
+          </div>
+        </div>
+
+        <!-- Security slide panel -->
+        <div id="panel-security" class="side-panel closed">
+          <div class="side-panel-inner">
+            <div class="panel-header">Security</div>
+            <div id="security-overview"></div>
           </div>
         </div>
 
@@ -129,6 +140,7 @@
   <script src="grid.js"></script>
   <script src="finance.js"></script>
   <script src="staff.js"></script>
+  <script src="security.js"></script>
   <script src="history.js"></script>
   <script src="hud.js"></script>
 </body>
