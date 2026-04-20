@@ -15,9 +15,7 @@ let parkExcitement = 0;
 // Starts at 1.0 (perfect); degrades when operators can't keep up with demand.
 let rideOpinion = 1.0;
 
-// Accumulated perception of danger. Rises by unhandled incident count each
-// round; decays 20% per round (rounded up). Reduces demand via sqrt curve.
-let securityOpinion = 0;
+// securityOpinion is declared in security.js — read here by calcDailyDemand().
 
 // How well-staffed running rides are vs the crowd trying to ride them.
 // staffRatio = actual operators / needed operators (capped at 1).
@@ -92,12 +90,6 @@ function advancePriceExhaustion() {
   priceExhaustion = Math.max(0, priceExhaustion - 1);
 }
 
-// Decay securityOpinion by 20% (rounded up) then add new unhandled incidents.
-function advanceSecurityOpinion(unhandled) {
-  const decay     = Math.ceil(securityOpinion * 0.20);
-  securityOpinion = Math.max(0, securityOpinion - decay) + unhandled;
-}
-
 // ── Income sources ─────────────────────────────────────────────────────────
 function calcGateRevenue(dailyAttendance) {
   return Math.round(gatePrice * dailyAttendance * 7);
@@ -108,65 +100,7 @@ function calcStaffCosts() {
   return totalWeeklySalary() + totalPostingCosts();
 }
 
-// ── Security incidents ─────────────────────────────────────────────────────
-
-// Two-phase handling:
-//   Phase 1 — Focus bonus: each guard with a matching focus handles 3 extra
-//             incidents of that type, free (does not consume normal capacity).
-//   Phase 2 — Normal capacity: all guards' weekly quota (pooled) handles
-//             whatever incidents remain after bonuses.
-//
-// Weekly normal quota per guard: tier 1 → 28, tier 2 → 35, tier 3 → 42, tier 4 → 49.
-// Must be called after computeRideOpinion() so lastRoundRiders is current.
-
-const SECURITY_FOCUS_BONUS = 3; // extra incidents handled per focused guard
-
-function calcSecurityIncidents(weeklyAttendance, dailyDemand, dailyThroughput) {
-  // ── Incident sources ──────────────────────────────────────────────────────
-  const weeklyOverflow = Math.max(0, (dailyDemand - dailyThroughput) * 7);
-  const fromOverflow   = Math.floor(weeklyOverflow * 0.05);
-
-  const weeklyRiders   = installedRides
-    .filter(r => r.status === STATUS.ACTIVE && isRideConnected(r))
-    .reduce((sum, r) => sum + (r.lastRoundRiders ?? 0), 0);
-  const unridden       = Math.max(0, weeklyAttendance - weeklyRiders);
-  const fromUnridden   = Math.floor(unridden * 0.20);
-
-  const fromRandom     = Math.floor(weeklyAttendance * 0.001);
-  const fromShop       = 0; // placeholder until shops are implemented
-
-  const total = fromOverflow + fromUnridden + fromRandom + fromShop;
-
-  // ── Phase 1: focus bonuses ────────────────────────────────────────────────
-  const guards           = staff.filter(s => s.jobId === JOB.SECURITY);
-  const gateCount        = guards.filter(s => s.focus === SECURITY_FOCUS.GATE).length;
-  const patrolCount      = guards.filter(s => s.focus === SECURITY_FOCUS.PATROL).length;
-  const shopCount        = guards.filter(s => s.focus === SECURITY_FOCUS.SHOP).length;
-
-  const overflowBonus    = Math.min(fromOverflow, gateCount   * SECURITY_FOCUS_BONUS);
-  const unriddenBonus    = Math.min(fromUnridden, patrolCount * SECURITY_FOCUS_BONUS);
-  const shopBonus        = Math.min(fromShop,     shopCount   * SECURITY_FOCUS_BONUS);
-  const bonusHandled     = overflowBonus + unriddenBonus + shopBonus;
-
-  // ── Phase 2: normal capacity (pooled) ─────────────────────────────────────
-  const capacity         = guards.reduce((sum, s) => {
-    const { tier } = getExperienceTier(s.weeksEmployed);
-    return sum + (3 + tier) * 7;
-  }, 0);
-  const remaining        = total - bonusHandled;
-  const normalHandled    = Math.min(remaining, capacity);
-
-  const handled          = bonusHandled + normalHandled;
-  const unhandled        = total - handled;
-
-  return {
-    fromOverflow, fromUnridden, fromRandom, fromShop, total,
-    gateCount, patrolCount, shopCount,
-    overflowBonus, unriddenBonus, shopBonus, bonusHandled,
-    capacity, normalHandled,
-    handled, unhandled,
-  };
-}
+// calcSecurityIncidents() and advanceSecurityOpinion() are in security.js.
 
 // ── Round processing ───────────────────────────────────────────────────────
 // Called once per round advancement. Order matters: collect income before
