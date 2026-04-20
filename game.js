@@ -73,7 +73,7 @@ async function init() {
   buildRideCatalog();
   buildFacilityList();
   buildShopList();
-  initStaff();
+  Staff.init();
   initSubTabs();
   initHUD();
 }

@@ -40,7 +40,7 @@ const Security = {
 
     const total = fromOverflow + fromUnridden + fromRandom + fromShop;
 
-    const guards      = staff.filter(s => s.jobId === JOB.SECURITY);
+    const guards      = Staff.roster.filter(s => s.jobId === JOB.SECURITY);
     const gateCount   = guards.filter(s => s.focus === SECURITY_FOCUS.GATE).length;
     const patrolCount = guards.filter(s => s.focus === SECURITY_FOCUS.PATROL).length;
     const shopCount   = guards.filter(s => s.focus === SECURITY_FOCUS.SHOP).length;
@@ -51,7 +51,7 @@ const Security = {
     const bonusHandled  = overflowBonus + unriddenBonus + shopBonus;
 
     const capacity      = guards.reduce((sum, s) => {
-      const { tier } = getExperienceTier(s.weeksEmployed);
+      const { tier } = Staff.getExperienceTier(s.weeksEmployed);
       return sum + (3 + tier) * 7;
     }, 0);
     const remaining     = total - bonusHandled;
@@ -77,7 +77,7 @@ const Security = {
   // ── Panel UI ────────────────────────────────────────────────────────────────
   buildPanel() {
     const container = document.getElementById('security-overview');
-    const guards    = staff.filter(s => s.jobId === JOB.SECURITY);
+    const guards    = Staff.roster.filter(s => s.jobId === JOB.SECURITY);
 
     if (guards.length === 0) {
       container.innerHTML = '<p class="empty-note">No security guards hired. Visit Staffing to hire some.</p>';
@@ -85,7 +85,7 @@ const Security = {
     }
 
     const guardRows = guards.map(s => {
-      const { label: expLabel, tier } = getExperienceTier(s.weeksEmployed);
+      const { label: expLabel, tier } = Staff.getExperienceTier(s.weeksEmployed);
       const weeklyCapacity = (3 + tier) * 7;
       const expBadge = expLabel
         ? `<span class="exp-badge exp-${expLabel.toLowerCase()}">${expLabel}</span>`
@@ -112,7 +112,7 @@ const Security = {
 
     container.querySelectorAll('.sec-focus-btn').forEach(btn => {
       btn.addEventListener('click', () => {
-        const guard = staff.find(s => s.instanceId === btn.dataset.id);
+        const guard = Staff.roster.find(s => s.instanceId === btn.dataset.id);
         if (!guard) return;
         guard.focus = btn.dataset.focus;
         this.buildPanel();

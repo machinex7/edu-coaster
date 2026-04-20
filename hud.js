@@ -6,7 +6,7 @@ function initHUD() {
   document.getElementById('open-park-btn').addEventListener('click', openPark);
   document.getElementById('next-round-btn').addEventListener('click', advanceRound);
   document.getElementById('modal-close-btn').addEventListener('click', hideRoundSummary);
-  initStaffPanel();
+  Staff.initPanel();
   initPanelBtns();
 }
 
@@ -27,11 +27,11 @@ function openPark() {
 
 function advanceRound() {
   round++;
-  const report = processRound();
-  recordRound(report);
+  const report = Finance.processRound();
+  History.record(report);
   updateHUD();
   refreshRidesPanel();
-  refreshStaffPanel();
+  Staff.refreshPanel();
   Security.refreshPanel();
   showRoundSummary(report);
 }
@@ -104,7 +104,7 @@ function openPanel(panelId) {
   document.getElementById(`panel-${panelId}`).classList.remove('closed');
   document.querySelector(`.tool-btn[data-panel="${panelId}"]`)?.classList.add('active');
   if (panelId === 'rides')    buildRidesPanel();
-  if (panelId === 'staffing') openStaffPanel();
+  if (panelId === 'staffing') Staff.openPanel();
   if (panelId === 'security') Security.buildPanel();
   if (panelId === 'pricing')  buildPricingPanel();
 }
@@ -242,30 +242,30 @@ const PRICE_ITEMS = [
     key:       'gate',
     label:     'Gate Admission',
     unit:      '$/visitor',
-    getValue:  () => gatePrice,
+    getValue:  () => Finance.gatePrice,
     setValue:  v => {
-      const delta = v - gatePrice;
-      if (delta > 0) priceExhaustion += 2 * delta;
-      gatePrice = v;
+      const delta = v - Finance.gatePrice;
+      if (delta > 0) Finance.priceExhaustion += 2 * delta;
+      Finance.gatePrice = v;
     },
   },
   {
     key:       'parking',
     label:     'Parking',
     unit:      '$/vehicle',
-    getValue:  () => parkingPrice,
+    getValue:  () => Finance.parkingPrice,
     setValue:  v => {
-      const delta = v - parkingPrice;
-      if (delta > 0) priceExhaustion += 1 * delta;
-      parkingPrice = v;
+      const delta = v - Finance.parkingPrice;
+      if (delta > 0) Finance.priceExhaustion += 1 * delta;
+      Finance.parkingPrice = v;
     },
   },
   {
     key:       'food',
     label:     'Food Upcharge',
     unit:      '$/item',
-    getValue:  () => foodUpcharge,
-    setValue:  v => { foodUpcharge = v; },
+    getValue:  () => Finance.foodUpcharge,
+    setValue:  v => { Finance.foodUpcharge = v; },
   },
 ];
 
