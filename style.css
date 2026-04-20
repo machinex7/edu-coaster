@@ -416,6 +416,8 @@ header h1 {
 
 .ride-detail-name { font-size: 1rem; font-weight: 700; color: #f9fafb; }
 
+.ride-utility-cost { font-size: 0.75rem; color: #9ca3af; margin-top: 2px; }
+
 .ride-detail-weeks { font-size: 0.8rem; color: #9ca3af; margin: 0; }
 
 .ride-detail-actions { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }

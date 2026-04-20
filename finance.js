@@ -106,6 +106,15 @@ const Finance = {
     return Staff.totalWeeklySalary() + Staff.totalPostingCosts();
   },
 
+  calcUtilityCosts() {
+    return installedRides
+      .filter(r => r.status === STATUS.ACTIVE && isRideConnected(r))
+      .reduce((sum, r) => {
+        const def = rides.find(d => d.id === r.rideId);
+        return sum + (def?.utilityCost ?? 0);
+      }, 0);
+  },
+
   // Security.calcIncidents() and Security.advanceOpinion() are in security.js.
 
   // ── Round processing ─────────────────────────────────────────────────────────
@@ -125,6 +134,7 @@ const Finance = {
     const parkingRevenue    = this.calcParkingRevenue(dailyDemand);
     const shopRevenue       = Shopping.calcRevenue(weeklyAttendance);
     const staffCosts        = this.calcStaffCosts();
+    const utilityCosts      = this.calcUtilityCosts();
     const constructionCosts = [...installedRides, ...installedFacilities, ...Shopping.installed]
       .filter(r => r.status === STATUS.UNDER_CONSTRUCTION)
       .reduce((sum, r) => sum + r.weeklyPayment, 0);
@@ -138,6 +148,7 @@ const Finance = {
 
     // Costs
     money -= staffCosts;
+    money -= utilityCosts;
     money -= security.theftLoss;      // $50 per unhandled shoplifter
     processConstruction();            // deducts constructionCosts and advances build progress
 
@@ -155,9 +166,10 @@ const Finance = {
       shopRevenue,
       totalIncome: gateRevenue + parkingRevenue + shopRevenue,
       staffCosts,
+      utilityCosts,
       constructionCosts,
       theftLoss:     security.theftLoss,
-      totalExpenses: staffCosts + constructionCosts + security.theftLoss,
+      totalExpenses: staffCosts + utilityCosts + constructionCosts + security.theftLoss,
       rideEfficiency: this.rideOpinion,
       security: { ...security, opinionAfter: Security.opinion },
     };

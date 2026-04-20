@@ -20,6 +20,7 @@ const History = {
       parkingIncome:       report.parkingRevenue,
       shopIncome:          report.shopRevenue,
       staffExpense:        report.staffCosts,
+      utilityExpense:      report.utilityCosts,
       constructionExpense: report.constructionCosts,
       rideEfficiency:      report.rideEfficiency,
       staffCount:          Staff.roster.length,
