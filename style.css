@@ -254,7 +254,8 @@ header h1 {
 }
 
 #ride-list,
-#facility-list {
+#facility-list,
+#shop-list {
   flex: 1;
   overflow-y: auto;
   padding: 10px;

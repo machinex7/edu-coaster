@@ -183,7 +183,7 @@ function processRound() {
   const weeklyAttendance  = Math.round(daily * 7);
   const gateRevenue       = calcGateRevenue(daily);
   const staffCosts        = calcStaffCosts();
-  const constructionCosts = [...installedRides, ...installedFacilities]
+  const constructionCosts = [...installedRides, ...installedFacilities, ...installedShops]
     .filter(r => r.status === STATUS.UNDER_CONSTRUCTION)
     .reduce((sum, r) => sum + r.weeklyPayment, 0);
 

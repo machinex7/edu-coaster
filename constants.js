@@ -16,6 +16,11 @@ const STATUS = Object.freeze({
 const CATEGORY = Object.freeze({
   RIDE:     'ride',
   FACILITY: 'facility',
+  SHOP:     'shop',
+});
+
+const SHOP_ID = Object.freeze({
+  MERCHANDISE: 'merchandise',
 });
 
 const JOB = Object.freeze({
