@@ -32,7 +32,7 @@ function advanceRound() {
   updateHUD();
   refreshRidesPanel();
   refreshStaffPanel();
-  refreshSecurityPanel();
+  Security.refreshPanel();
   showRoundSummary(report);
 }
 
@@ -105,7 +105,7 @@ function openPanel(panelId) {
   document.querySelector(`.tool-btn[data-panel="${panelId}"]`)?.classList.add('active');
   if (panelId === 'rides')    buildRidesPanel();
   if (panelId === 'staffing') openStaffPanel();
-  if (panelId === 'security') buildSecurityPanel();
+  if (panelId === 'security') Security.buildPanel();
   if (panelId === 'pricing')  buildPricingPanel();
 }
 

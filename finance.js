@@ -15,7 +15,7 @@ let parkExcitement = 0;
 // Starts at 1.0 (perfect); degrades when operators can't keep up with demand.
 let rideOpinion = 1.0;
 
-// securityOpinion is declared in security.js — read here by calcDailyDemand().
+// Security.opinion is declared in security.js — read here by calcDailyDemand().
 
 // How well-staffed running rides are vs the crowd trying to ride them.
 // staffRatio = actual operators / needed operators (capped at 1).
@@ -57,7 +57,7 @@ function recalcExcitement() {
 // securityOpinion reduces demand via sqrt curve: 1 − √opinion/100.
 function calcDailyDemand() {
   const exhaustionFactor = Math.max(0, 1 - priceExhaustion / 100);
-  const securityFactor   = Math.max(0, 1 - Math.sqrt(securityOpinion) / 100);
+  const securityFactor   = Math.max(0, 1 - Math.sqrt(Security.opinion) / 100);
   return parkExcitement * 20 * exhaustionFactor * securityFactor;
 }
 
@@ -100,7 +100,7 @@ function calcStaffCosts() {
   return totalWeeklySalary() + totalPostingCosts();
 }
 
-// calcSecurityIncidents() and advanceSecurityOpinion() are in security.js.
+// Security.calcIncidents() and Security.advanceOpinion() are in security.js.
 
 // ── Round processing ───────────────────────────────────────────────────────
 // Called once per round advancement. Order matters: collect income before
@@ -121,7 +121,7 @@ function processRound() {
     .filter(r => r.status === STATUS.UNDER_CONSTRUCTION)
     .reduce((sum, r) => sum + r.weeklyPayment, 0);
 
-  const security = calcSecurityIncidents(weeklyAttendance, dailyDemand, dailyThroughput);
+  const security = Security.calcIncidents(weeklyAttendance, dailyDemand, dailyThroughput);
 
   // Income
   money += gateRevenue;
@@ -135,7 +135,7 @@ function processRound() {
   generateCandidates();                          // 4 new applicants per round when postings exist
   advanceCandidates();                           // withdrawal check, then increment weeksAsCandidate
   advancePriceExhaustion();                      // decay price fatigue by 1
-  advanceSecurityOpinion(security.unhandled);    // decay then add unhandled incidents
+  Security.advanceOpinion(security.unhandled);   // decay then add unhandled incidents
 
   return {
     weeklyAttendance,
@@ -144,6 +144,6 @@ function processRound() {
     constructionCosts,
     totalExpenses: staffCosts + constructionCosts,
     rideEfficiency: rideOpinion,
-    security: { ...security, opinionAfter: securityOpinion },
+    security: { ...security, opinionAfter: Security.opinion },
   };
 }
