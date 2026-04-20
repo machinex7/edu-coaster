@@ -137,6 +137,7 @@ const Finance = {
 
     // Costs
     money -= staffCosts;
+    money -= security.theftLoss;      // $50 per unhandled shoplifter
     processConstruction();            // deducts constructionCosts and advances build progress
 
     Staff.advanceExperience();        // increment weeksEmployed for all staff
@@ -153,7 +154,8 @@ const Finance = {
       totalIncome: gateRevenue + shopRevenue,
       staffCosts,
       constructionCosts,
-      totalExpenses: staffCosts + constructionCosts,
+      theftLoss:     security.theftLoss,
+      totalExpenses: staffCosts + constructionCosts + security.theftLoss,
       rideEfficiency: this.rideOpinion,
       security: { ...security, opinionAfter: Security.opinion },
     };

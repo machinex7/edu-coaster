@@ -13,7 +13,7 @@ const Security = {
   FOCUS_META: [
     { focus: SECURITY_FOCUS.PATROL, label: 'Patrol', desc: 'Handles unridden visitor incidents' },
     { focus: SECURITY_FOCUS.GATE,   label: 'Gate',   desc: 'Handles gate overflow incidents'    },
-    { focus: SECURITY_FOCUS.SHOP,   label: 'Shop',   desc: 'Handles shop theft (coming soon)'   },
+    { focus: SECURITY_FOCUS.SHOP,   label: 'Shop',   desc: 'Handles shop theft ($50/unhandled)' },
   ],
 
   // ── Incident calculation ──────────────────────────────────────────────────
@@ -36,7 +36,8 @@ const Security = {
     const fromUnridden   = Math.floor(unridden * 0.20);
 
     const fromRandom     = Math.floor(weeklyAttendance * 0.001);
-    const fromShop       = 0; // placeholder until shops are implemented
+    // 1% of non-buyers (80% of attendance) attempt to shoplift.
+    const fromShop       = Math.floor(weeklyAttendance * 0.80 * 0.01);
 
     const total = fromOverflow + fromUnridden + fromRandom + fromShop;
 
@@ -60,12 +61,22 @@ const Security = {
     const handled   = bonusHandled + normalHandled;
     const unhandled = total - handled;
 
+    // Shop incidents that survived the focus bonus compete proportionally for
+    // normal capacity. The remainder are successful thefts at $50 each.
+    const shopRemaining    = Math.max(0, fromShop - shopBonus);
+    const shopNormHandled  = remaining > 0
+      ? Math.min(shopRemaining, Math.floor(normalHandled * shopRemaining / remaining))
+      : 0;
+    const unhandledShop    = shopRemaining - shopNormHandled;
+    const theftLoss        = unhandledShop * 50;
+
     return {
       fromOverflow, fromUnridden, fromRandom, fromShop, total,
       gateCount, patrolCount, shopCount,
       overflowBonus, unriddenBonus, shopBonus, bonusHandled,
       capacity, normalHandled,
       handled, unhandled,
+      unhandledShop, theftLoss,
     };
   },
 

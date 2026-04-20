@@ -42,7 +42,8 @@ function showRoundSummary(report) {
   document.getElementById('summary-attendance').textContent  = report.weeklyAttendance.toLocaleString();
   document.getElementById('summary-income').textContent      = `$${report.gateRevenue.toLocaleString()}`;
   document.getElementById('summary-shop-income').textContent = `$${report.shopRevenue.toLocaleString()}`;
-  document.getElementById('summary-expenses').textContent    = `$${report.totalExpenses.toLocaleString()}`;
+  document.getElementById('summary-expenses').textContent    = `$${(report.staffCosts + report.constructionCosts).toLocaleString()}`;
+  document.getElementById('summary-theft-loss').textContent  = `-$${report.theftLoss.toLocaleString()}`;
   const netEl = document.getElementById('summary-net');
   netEl.textContent = (net >= 0 ? '+' : '\u2212') + `$${Math.abs(net).toLocaleString()}`;
   netEl.className   = net >= 0 ? 'summary-pos' : 'summary-neg';

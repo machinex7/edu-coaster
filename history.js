@@ -26,6 +26,7 @@ const History = {
       runningRides:        installedRides.filter(r => r.status === STATUS.ACTIVE && isRideConnected(r)).length,
       jobPostings:         Staff.postings.length,
       matchingCandidates:  Staff.candidates.filter(c => Staff.findMatchingPosting(c) !== null).length,
+      theftLoss:           report.theftLoss,
       securityIncidents:   report.security.total,
       securityHandled:     report.security.handled,
       securityUnhandled:   report.security.unhandled,
