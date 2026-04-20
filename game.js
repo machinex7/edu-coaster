@@ -63,8 +63,6 @@ async function init() {
     fetch('shops.json').then(r => r.json()),
   ]);
 
-  console.log('[init] rides loaded:', rides.length, '| facilities loaded:', facilities.length, '| shops loaded:', shops.length);
-
   rides.forEach((ride, i) => {
     ride._color = RIDE_COLORS[i % RIDE_COLORS.length];
   });
@@ -72,24 +70,18 @@ async function init() {
   gridState = Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS).fill(null));
 
   buildGrid();
-  buildRideList();
-  console.log('[init] after buildRideList — #ride-list children:', document.getElementById('ride-list').children.length);
+  buildRideCatalog();
   buildFacilityList();
-  console.log('[init] after buildFacilityList — #facility-list children:', document.getElementById('facility-list').children.length);
   buildShopList();
-  console.log('[init] after buildShopList — #shop-list children:', document.getElementById('shop-list').children.length);
   initStaff();
   initSubTabs();
   initHUD();
-  console.log('[init] complete — #ride-list children:', document.getElementById('ride-list').children.length);
 }
 
 // ── Sidebar lists ──────────────────────────────────────────────────────────
-function buildRideList() {
+function buildRideCatalog() {
   const list = document.getElementById('ride-list');
-  console.log('[buildRideList] rides:', rides.length, '| #ride-list el:', list, '| existing children:', list?.children.length);
   rides.forEach(ride => list.appendChild(createItemCard(ride, 'ride')));
-  console.log('[buildRideList] done — children now:', list.children.length);
 }
 
 function buildFacilityList() {
