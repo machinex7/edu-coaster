@@ -27,7 +27,7 @@ const Staff = {
   POSTING_WEEKLY_COST: 75,
 
   // ── State ──────────────────────────────────────────────────────────────────
-  // staff entries: { instanceId, name, jobId, salary, skillModifier, salaryModifier, mood (0–100), weeksEmployed }
+  // staff entries: { instanceId, name, jobId, salary, skillModifier, costOfLiving, mood (0–100), weeksEmployed }
   roster:          [],
   _idSeq:          0,
   postings:        [],
@@ -42,17 +42,17 @@ const Staff = {
     const firstName    = this.FIRST_NAMES[Math.floor(Math.random() * this.FIRST_NAMES.length)];
     const lastName     = String.fromCharCode(65 + Math.floor(Math.random() * 26));
     const job          = this.JOB_TYPES[Math.floor(Math.random() * this.JOB_TYPES.length)];
-    const skillModifier  = 0.75 + Math.random() * 0.5 * q;
-    const salaryModifier = 0.80 + Math.random() * 0.40;
-    const maxYears       = Math.round(5 * q);
-    const yearsExp       = maxYears > 0 ? Math.floor(Math.random() * (maxYears + 1)) : 0;
+    const skillModifier = 0.75 + Math.random() * 0.5 * q;
+    const costOfLiving  = Math.round(job.weeklySalary * (0.80 + Math.random() * 0.40));
+    const maxYears      = Math.round(5 * q);
+    const yearsExp      = maxYears > 0 ? Math.floor(Math.random() * (maxYears + 1)) : 0;
     return {
       instanceId:    `staff_${++this._idSeq}`,
       name:          `${firstName} ${lastName}.`,
       jobId:         job.id,
-      salary:        Math.round(job.weeklySalary * salaryModifier),
+      salary:        costOfLiving,
       skillModifier,
-      salaryModifier,
+      costOfLiving,
       mood:          80,
       weeksEmployed: yearsExp * 52,
       focus:         SECURITY_FOCUS.PATROL,
@@ -60,10 +60,11 @@ const Staff = {
   },
 
   hireStaff(jobId, salaryOverride) {
-    const emp = this.generateEmployee(0);
-    emp.jobId  = jobId;
-    emp.salary = salaryOverride
-      ?? Math.round(this.JOB_TYPES.find(j => j.id === jobId).weeklySalary * emp.salaryModifier);
+    const emp    = this.generateEmployee(0);
+    const jobDef = this.JOB_TYPES.find(j => j.id === jobId);
+    emp.jobId      = jobId;
+    emp.costOfLiving = Math.round(jobDef.weeklySalary * (0.80 + Math.random() * 0.40));
+    emp.salary     = salaryOverride ?? emp.costOfLiving;
     this.roster.push(emp);
   },
 
@@ -73,9 +74,11 @@ const Staff = {
       JOB.SECURITY, JOB.JANITOR, JOB.ENGINEER,
       JOB.BOOTH_ATTENDANT, JOB.BOOTH_ATTENDANT,
     ].forEach(jobId => {
-      const emp  = this.generateEmployee(0);
-      emp.jobId  = jobId;
-      emp.salary = Math.round(this.JOB_TYPES.find(j => j.id === jobId).weeklySalary * emp.salaryModifier);
+      const emp    = this.generateEmployee(0);
+      const jobDef = this.JOB_TYPES.find(j => j.id === jobId);
+      emp.jobId      = jobId;
+      emp.costOfLiving = Math.round(jobDef.weeklySalary * (0.80 + Math.random() * 0.40));
+      emp.salary     = emp.costOfLiving;
       this.roster.push(emp);
     });
   },

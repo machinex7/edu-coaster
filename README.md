@@ -361,7 +361,7 @@ Zero tiles → zero theft incidents.
   jobId,            // JOB.* constant
   salary,           // $/week
   skillModifier,    // 0.75–1.25
-  salaryModifier,   // 0.80–1.20
+  costOfLiving,     // $/week, base salary ±20%
   mood,             // 0–100
   weeksEmployed,
   focus,            // SECURITY_FOCUS.* (relevant for security guards)

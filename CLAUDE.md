@@ -50,7 +50,7 @@ Two game stages: **Setup** (instant builds, no income) → **Play** (weekly roun
 
 **Shopping (`Shopping` object):** Revenue and theft both scale by `sqrt(activeMerchandiseTiles)`. Revenue further multiplied by `staffRatio = min(1, attendants / workersNeeded)`. Theft multiplied by `1 + 0.25 × deficit`. Behavior rates (`BUYER_RATE`, `THEFT_RATE`) and economic multipliers (`utilityMultiplier`, `inflationRate`) live in `Population`.
 
-**Staff (`Staff` object):** Employees have `skillModifier` (0.75–1.25), `salaryModifier` (0.80–1.20), `weeksEmployed`, `mood`, `focus`. Experience tiers: Junior / Normal / Senior / Lead (>260 wks). HR staff boost candidate generation. Security guards have focus assignments (Patrol / Gate / Shop). Merchandise Attendants are hired at minimum wage and staff the shop.
+**Staff (`Staff` object):** Employees have `skillModifier` (0.75–1.25), `costOfLiving` (base salary ±20%), `weeksEmployed`, `mood`, `focus`. Experience tiers: Junior / Normal / Senior / Lead (>260 wks). HR staff boost candidate generation. Security guards have focus assignments (Patrol / Gate / Shop). Merchandise Attendants are hired at minimum wage and staff the shop.
 
 **Candidates:** Each round with postings → generate via `Staff.generateEmployee(quality)`. Candidates with no matching posting discarded immediately. Withdrawal: 20% at week 4, +20%/week. Player hires or declines — nothing auto-hires.
 
