@@ -15,6 +15,10 @@ let parkExcitement = 0;
 // Starts at 1.0 (perfect); degrades when operators can't keep up with demand.
 let rideOpinion = 1.0;
 
+// Accumulated perception of danger. Rises by unhandled incident count each
+// round; decays 20% per round (rounded up). Reduces demand via sqrt curve.
+let securityOpinion = 0;
+
 // How well-staffed running rides are vs the crowd trying to ride them.
 // staffRatio = actual operators / needed operators (capped at 1).
 // dailyRideCapacity = sum(ridesPerHour for Running rides) * staffRatio.
@@ -52,9 +56,11 @@ function recalcExcitement() {
 
 // How many people want to visit based on park appeal.
 // priceExhaustion cuts demand by 1% per point (10 exhaustion = −10%).
+// securityOpinion reduces demand via sqrt curve: 1 − √opinion/100.
 function calcDailyDemand() {
   const exhaustionFactor = Math.max(0, 1 - priceExhaustion / 100);
-  return parkExcitement * 20 * exhaustionFactor;
+  const securityFactor   = Math.max(0, 1 - Math.sqrt(securityOpinion) / 100);
+  return parkExcitement * 20 * exhaustionFactor * securityFactor;
 }
 
 // How many people can actually enter: booth attendants are the bottleneck.
@@ -84,6 +90,12 @@ let priceExhaustion  = 0;
 
 function advancePriceExhaustion() {
   priceExhaustion = Math.max(0, priceExhaustion - 1);
+}
+
+// Decay securityOpinion by 20% (rounded up) then add new unhandled incidents.
+function advanceSecurityOpinion(unhandled) {
+  const decay     = Math.ceil(securityOpinion * 0.20);
+  securityOpinion = Math.max(0, securityOpinion - decay) + unhandled;
 }
 
 // ── Income sources ─────────────────────────────────────────────────────────
@@ -161,11 +173,12 @@ function processRound() {
   money -= staffCosts;
   processConstruction();  // deducts constructionCosts and advances build progress
 
-  advanceExperience();         // increment weeksEmployed for all staff
-  advancePostings();           // increment weeksActive for all postings
-  generateCandidates();       // 4 new applicants per round when postings exist
-  advanceCandidates();        // withdrawal check, then increment weeksAsCandidate
-  advancePriceExhaustion();   // decay price fatigue by 1
+  advanceExperience();                            // increment weeksEmployed for all staff
+  advancePostings();                              // increment weeksActive for all postings
+  generateCandidates();                          // 4 new applicants per round when postings exist
+  advanceCandidates();                           // withdrawal check, then increment weeksAsCandidate
+  advancePriceExhaustion();                      // decay price fatigue by 1
+  advanceSecurityOpinion(security.unhandled);    // decay then add unhandled incidents
 
   return {
     weeklyAttendance,
@@ -174,6 +187,6 @@ function processRound() {
     constructionCosts,
     totalExpenses: staffCosts + constructionCosts,
     rideEfficiency: rideOpinion,
-    security,
+    security: { ...security, opinionAfter: securityOpinion },
   };
 }

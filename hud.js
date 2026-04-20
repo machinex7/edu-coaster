@@ -55,6 +55,7 @@ function showRoundSummary(report) {
   const unhandledEl = document.getElementById('summary-sec-unhandled');
   unhandledEl.textContent = sec.unhandled.toLocaleString();
   unhandledEl.className   = `modal-stat-value${sec.unhandled > 0 ? ' expense' : ''}`;
+  document.getElementById('summary-sec-opinion').textContent = sec.opinionAfter.toLocaleString();
 
   document.getElementById('round-modal').classList.remove('hidden');
 }

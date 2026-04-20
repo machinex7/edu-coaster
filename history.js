@@ -26,5 +26,6 @@ function recordRound(report) {
     securityIncidents:   report.security.total,
     securityHandled:     report.security.handled,
     securityUnhandled:   report.security.unhandled,
+    securityOpinion:     report.security.opinionAfter,
   });
 }
