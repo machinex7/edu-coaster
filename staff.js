@@ -99,6 +99,13 @@ const Staff = {
     this.roster.forEach(s => s.weeksEmployed++);
   },
 
+  applyInflation() {
+    const weeklyRate = Population.inflationRate / 52;
+    this.roster.forEach(s => {
+      s.costOfLiving = Math.round(s.costOfLiving * (1 + weeklyRate));
+    });
+  },
+
   // ── Staffing requirements ──────────────────────────────────────────────────
   operatorsNeededForRide(record) {
     const tiles = record.footprint.flat().filter(v => v === 1).length;

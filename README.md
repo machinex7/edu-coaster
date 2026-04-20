@@ -102,7 +102,7 @@ Centralises all tunable rates so game balance changes are made in one place.
 | `UNRIDDEN_INCIDENT_RATE` | 0.20 | `Security.calcIncidents()` |
 | `RANDOM_INCIDENT_RATE` | 0.001 | `Security.calcIncidents()` |
 | `utilityMultiplier` | 1 | `Finance.calcUtilityCosts()` — stub for rising energy costs |
-| `inflationRate` | 1.02 | Stub for future cost-of-living adjustments |
+| `inflationRate` | 0.02 | Annual rate; `Staff.applyInflation()` raises each employee's `costOfLiving` by `inflationRate/52` per round |
 
 ---
 
