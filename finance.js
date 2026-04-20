@@ -110,53 +110,60 @@ function calcStaffCosts() {
 
 // ── Security incidents ─────────────────────────────────────────────────────
 
-// Weekly incident capacity per guard: tier 1 → 28, tier 2 → 35, tier 3 → 42, tier 4 → 49.
-function calcCapacityForFocus(focus) {
-  return staff
-    .filter(s => s.jobId === JOB.SECURITY && s.focus === focus)
-    .reduce((sum, s) => {
-      const { tier } = getExperienceTier(s.weeksEmployed);
-      return sum + (3 + tier) * 7;
-    }, 0);
-}
-
-// Three incident sources. Each is handled only by guards with the matching focus:
-//   Gate overflow  → GATE guards
-//   Unridden       → PATROL guards (remaining patrol capacity then covers random)
-//   Random         → PATROL guards (leftover after unridden)
-//   Shop theft     → SHOP guards (no incidents yet; capacity tracked for future use)
+// Two-phase handling:
+//   Phase 1 — Focus bonus: each guard with a matching focus handles 3 extra
+//             incidents of that type, free (does not consume normal capacity).
+//   Phase 2 — Normal capacity: all guards' weekly quota (pooled) handles
+//             whatever incidents remain after bonuses.
+//
+// Weekly normal quota per guard: tier 1 → 28, tier 2 → 35, tier 3 → 42, tier 4 → 49.
 // Must be called after computeRideOpinion() so lastRoundRiders is current.
-function calcSecurityIncidents(weeklyAttendance, dailyDemand, dailyThroughput) {
-  const weeklyOverflow  = Math.max(0, (dailyDemand - dailyThroughput) * 7);
-  const fromOverflow    = Math.floor(weeklyOverflow * 0.05);
 
-  const weeklyRiders    = installedRides
+const SECURITY_FOCUS_BONUS = 3; // extra incidents handled per focused guard
+
+function calcSecurityIncidents(weeklyAttendance, dailyDemand, dailyThroughput) {
+  // ── Incident sources ──────────────────────────────────────────────────────
+  const weeklyOverflow = Math.max(0, (dailyDemand - dailyThroughput) * 7);
+  const fromOverflow   = Math.floor(weeklyOverflow * 0.05);
+
+  const weeklyRiders   = installedRides
     .filter(r => r.status === STATUS.ACTIVE && isRideConnected(r))
     .reduce((sum, r) => sum + (r.lastRoundRiders ?? 0), 0);
-  const unridden        = Math.max(0, weeklyAttendance - weeklyRiders);
-  const fromUnridden    = Math.floor(unridden * 0.20);
+  const unridden       = Math.max(0, weeklyAttendance - weeklyRiders);
+  const fromUnridden   = Math.floor(unridden * 0.20);
 
-  const fromRandom      = Math.floor(weeklyAttendance * 0.001);
-  const fromShop        = 0; // placeholder until shops are implemented
+  const fromRandom     = Math.floor(weeklyAttendance * 0.001);
+  const fromShop       = 0; // placeholder until shops are implemented
 
-  const total           = fromOverflow + fromUnridden + fromRandom + fromShop;
+  const total = fromOverflow + fromUnridden + fromRandom + fromShop;
 
-  const gateCapacity    = calcCapacityForFocus(SECURITY_FOCUS.GATE);
-  const patrolCapacity  = calcCapacityForFocus(SECURITY_FOCUS.PATROL);
-  const shopCapacity    = calcCapacityForFocus(SECURITY_FOCUS.SHOP);
+  // ── Phase 1: focus bonuses ────────────────────────────────────────────────
+  const guards           = staff.filter(s => s.jobId === JOB.SECURITY);
+  const gateCount        = guards.filter(s => s.focus === SECURITY_FOCUS.GATE).length;
+  const patrolCount      = guards.filter(s => s.focus === SECURITY_FOCUS.PATROL).length;
+  const shopCount        = guards.filter(s => s.focus === SECURITY_FOCUS.SHOP).length;
 
-  const overflowHandled  = Math.min(fromOverflow, gateCapacity);
-  const unriddenHandled  = Math.min(fromUnridden, patrolCapacity);
-  const randomHandled    = Math.min(fromRandom, Math.max(0, patrolCapacity - unriddenHandled));
-  const shopHandled      = Math.min(fromShop, shopCapacity);
+  const overflowBonus    = Math.min(fromOverflow, gateCount   * SECURITY_FOCUS_BONUS);
+  const unriddenBonus    = Math.min(fromUnridden, patrolCount * SECURITY_FOCUS_BONUS);
+  const shopBonus        = Math.min(fromShop,     shopCount   * SECURITY_FOCUS_BONUS);
+  const bonusHandled     = overflowBonus + unriddenBonus + shopBonus;
 
-  const handled  = overflowHandled + unriddenHandled + randomHandled + shopHandled;
-  const unhandled = total - handled;
+  // ── Phase 2: normal capacity (pooled) ─────────────────────────────────────
+  const capacity         = guards.reduce((sum, s) => {
+    const { tier } = getExperienceTier(s.weeksEmployed);
+    return sum + (3 + tier) * 7;
+  }, 0);
+  const remaining        = total - bonusHandled;
+  const normalHandled    = Math.min(remaining, capacity);
+
+  const handled          = bonusHandled + normalHandled;
+  const unhandled        = total - handled;
 
   return {
     fromOverflow, fromUnridden, fromRandom, fromShop, total,
-    gateCapacity, patrolCapacity, shopCapacity,
-    overflowHandled, unriddenHandled, randomHandled, shopHandled,
+    gateCount, patrolCount, shopCount,
+    overflowBonus, unriddenBonus, shopBonus, bonusHandled,
+    capacity, normalHandled,
     handled, unhandled,
   };
 }
