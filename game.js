@@ -30,7 +30,6 @@ const STARTING_WEEK_OF_YEAR = 27; // week 27 = first week of Q3
 // ── Game State ─────────────────────────────────────────────────────────────
 let rides      = [];  // from rides.json (with _color added)
 let facilities = [];  // from facilities.json
-let shops      = [];  // from shops.json
 
 let gridCells = [];   // [row][col] → <div>
 let gridState = [];   // [row][col] → instanceId string, or null
@@ -46,7 +45,6 @@ let round     = 1;
 // facility entry: { instanceId, facilityId, name, color, row, col, footprint, status }
 let installedRides      = [];
 let installedFacilities = [];
-let installedShops      = [];
 
 // Maps "row,col" → facilityId for fast adjacency lookups.
 const facilityTypeAtCell = {};
@@ -57,7 +55,7 @@ let currentPlacement = null;  // { startRow, startCol, valid }
 
 // ── Init ───────────────────────────────────────────────────────────────────
 async function init() {
-  [rides, facilities, shops] = await Promise.all([
+  [rides, facilities, Shopping.catalog] = await Promise.all([
     fetch('rides.json').then(r => r.json()),
     fetch('facilities.json').then(r => r.json()),
     fetch('shops.json').then(r => r.json()),
@@ -72,7 +70,7 @@ async function init() {
   buildGrid();
   buildRideCatalog();
   buildFacilityList();
-  buildShopList();
+  Shopping.buildCatalog();
   Staff.init();
   initSubTabs();
   initHUD();
@@ -89,10 +87,6 @@ function buildFacilityList() {
   facilities.forEach(facility => list.appendChild(createItemCard(facility, 'facility')));
 }
 
-function buildShopList() {
-  const list = document.getElementById('shop-list');
-  shops.forEach(shop => list.appendChild(createItemCard(shop, CATEGORY.SHOP)));
-}
 
 function createItemCard(item, category) {
   const card = document.createElement('div');
@@ -307,7 +301,7 @@ function _commitPlace(item, category, startRow, startCol, status) {
   } else if (category === CATEGORY.SHOP) {
     record.shopId = item.id;
     record.name   = item.name;
-    installedShops.push(record);
+    Shopping.installed.push(record);
   } else {
     record.facilityId = item.id;
     record.name       = item.name;
@@ -327,7 +321,7 @@ function _commitPlace(item, category, startRow, startCol, status) {
 
 // ── Construction queue ─────────────────────────────────────────────────────
 function processConstruction() {
-  for (const record of [...installedRides, ...installedFacilities, ...installedShops]) {
+  for (const record of [...installedRides, ...installedFacilities, ...Shopping.installed]) {
     if (record.status !== STATUS.UNDER_CONSTRUCTION) continue;
     money -= record.weeklyPayment;
     record.weeksCompleted++;

@@ -36,8 +36,7 @@ const Security = {
     const fromUnridden   = Math.floor(unridden * 0.20);
 
     const fromRandom     = Math.floor(weeklyAttendance * 0.001);
-    // 1% of non-buyers (80% of attendance) attempt to shoplift.
-    const fromShop       = Math.floor(weeklyAttendance * 0.80 * 0.01);
+    const fromShop       = Shopping.calcTheftIncidents(weeklyAttendance);
 
     const total = fromOverflow + fromUnridden + fromRandom + fromShop;
 
@@ -68,7 +67,7 @@ const Security = {
       ? Math.min(shopRemaining, Math.floor(normalHandled * shopRemaining / remaining))
       : 0;
     const unhandledShop    = shopRemaining - shopNormHandled;
-    const theftLoss        = unhandledShop * 50;
+    const theftLoss        = Shopping.calcTheftLoss(unhandledShop);
 
     return {
       fromOverflow, fromUnridden, fromRandom, fromShop, total,

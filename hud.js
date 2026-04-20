@@ -273,8 +273,8 @@ const PRICE_ITEMS = [
     key:       'merchandise',
     label:     'Merchandise Upcharge',
     unit:      '$/buyer',
-    getValue:  () => Finance.merchandiseUpcharge,
-    setValue:  v => { Finance.merchandiseUpcharge = v; },
+    getValue:  () => Shopping.merchandiseUpcharge,
+    setValue:  v => { Shopping.merchandiseUpcharge = v; },
   },
 ];
 
