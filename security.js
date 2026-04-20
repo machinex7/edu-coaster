@@ -27,15 +27,15 @@ const Security = {
   // Must be called after computeRideOpinion() so lastRoundRiders is current.
   calcIncidents(weeklyAttendance, dailyDemand, dailyThroughput) {
     const weeklyOverflow = Math.max(0, (dailyDemand - dailyThroughput) * 7);
-    const fromOverflow   = Math.floor(weeklyOverflow * 0.05);
+    const fromOverflow   = Math.floor(weeklyOverflow * Population.OVERFLOW_INCIDENT_RATE);
 
     const weeklyRiders   = installedRides
       .filter(r => r.status === STATUS.ACTIVE && isRideConnected(r))
       .reduce((sum, r) => sum + (r.lastRoundRiders ?? 0), 0);
     const unridden       = Math.max(0, weeklyAttendance - weeklyRiders);
-    const fromUnridden   = Math.floor(unridden * 0.20);
+    const fromUnridden   = Math.floor(unridden * Population.UNRIDDEN_INCIDENT_RATE);
 
-    const fromRandom     = Math.floor(weeklyAttendance * 0.001);
+    const fromRandom     = Math.floor(weeklyAttendance * Population.RANDOM_INCIDENT_RATE);
     const fromShop       = Shopping.calcTheftIncidents(weeklyAttendance);
 
     const total = fromOverflow + fromUnridden + fromRandom + fromShop;

@@ -111,7 +111,7 @@ const Finance = {
       .filter(r => r.status === STATUS.ACTIVE && isRideConnected(r))
       .reduce((sum, r) => {
         const def = rides.find(d => d.id === r.rideId);
-        return sum + (def?.utilityCost ?? 0);
+        return sum + (def?.utilityCost ?? 0) * Population.utilityMultiplier;
       }, 0);
   },
 
