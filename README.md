@@ -24,33 +24,85 @@ python3 -m http.server
 | `index.html` | Shell — layout structure only, no logic |
 | `style.css` | All styles |
 | `constants.js` | Frozen enum objects shared across all scripts |
+| `population.js` | Visitor behavior rates and external economic conditions (`Population` object) |
 | `game.js` | Core state, grid constants, placement logic, construction queue, ride actions |
 | `grid.js` | Grid DOM, cell painting, mouse/touch event handlers |
-| `finance.js` | Pricing variables, attendance model, park metrics, round financial processing |
-| `staff.js` | Job registry, employee generation, staff/candidates/postings state, panel rendering |
-| `history.js` | Append-only per-round data log for future reports/graphs |
+| `shopping.js` | Shop catalog, installed shops, revenue and theft calculations (`Shopping` object) |
+| `finance.js` | Attendance model, park metrics, all income/cost sources, round processing (`Finance` object) |
+| `staff.js` | Job registry, employee generation, staff/candidates/postings state and panel UI (`Staff` object) |
+| `security.js` | Security opinion state, incident calculation, panel UI (`Security` object) |
+| `history.js` | Append-only per-round data log for future reports/graphs (`History` object) |
 | `hud.js` | HUD display, stage transitions, panel management, round summary modal, pricing panel |
 | `rides.json` | Ride catalogue |
 | `facilities.json` | Facility catalogue |
+| `shops.json` | Shop catalogue |
 | `reqs.md` | Full game design document — read before adding features |
 
-**Script load order:** `constants.js → game.js → grid.js → finance.js → staff.js → history.js → hud.js`
+**Script load order:**
+```
+constants.js → population.js → game.js → grid.js → shopping.js → finance.js → staff.js → security.js → history.js → hud.js
+```
 
-All cross-file calls happen at runtime (not parse time), so forward references are safe.
+All cross-file calls happen at runtime (not parse time), so forward references inside method bodies are safe.
+
+---
+
+## Architecture: global objects
+
+All major systems use a plain-object pattern:
+
+```js
+const Foo = {
+  someState: 0,
+  someMethod() { this.someState++; },
+};
+```
+
+Objects and their responsibilities:
+
+| Object | File | Owns |
+|---|---|---|
+| `Population` | `population.js` | Visitor behavior rates, labor constants, economic multipliers |
+| `Finance` | `finance.js` | Pricing state, attendance model, income/cost calculations, round processing |
+| `Shopping` | `shopping.js` | Shop catalog, installed shops, revenue and theft math, staffing ratios |
+| `Staff` | `staff.js` | Roster, postings, candidates, experience, panel rendering |
+| `Security` | `security.js` | Opinion state, incident calculation, panel rendering |
+| `History` | `history.js` | Append-only per-round log |
 
 ---
 
 ## Shared constants (`constants.js`)
 
-All enums are `Object.freeze`d — typos like `STATUS.ACTVE` return `undefined` immediately rather than silently comparing wrong strings.
+All enums are `Object.freeze`d — typos return `undefined` immediately rather than silently comparing wrong strings.
 
 ```js
-STAGE        = { SETUP, PLAY }
-STATUS       = { ACTIVE, UNDER_CONSTRUCTION, PAUSED_CONSTRUCTION, CLOSED }
-CATEGORY     = { RIDE, FACILITY }
-JOB          = { RIDE_OPERATOR, SECURITY, JANITOR, ENGINEER, BOOTH_ATTENDANT, BUSINESS_ANALYST, HR }
-FACILITY_ID  = { PARK_ENTRANCE, PATH, BATHROOM, STATUE, GARDEN, FOUNTAIN }
+STAGE         = { SETUP, PLAY }
+STATUS        = { ACTIVE, UNDER_CONSTRUCTION, PAUSED_CONSTRUCTION, CLOSED }
+CATEGORY      = { RIDE, FACILITY, SHOP }
+SHOP_ID       = { MERCHANDISE }
+JOB           = { RIDE_OPERATOR, SECURITY, JANITOR, ENGINEER, BOOTH_ATTENDANT,
+                  MERCHANDISE_ATTENDANT, BUSINESS_ANALYST, HR }
+FACILITY_ID   = { PARK_ENTRANCE, PATH, BATHROOM, STATUE, GARDEN, FOUNTAIN }
+SECURITY_FOCUS = { PATROL, GATE, SHOP }
 ```
+
+---
+
+## Population constants (`population.js`)
+
+Centralises all tunable rates so game balance changes are made in one place.
+
+| Constant | Value | Used by |
+|---|---|---|
+| `MINIMUM_WAGE_HOURLY` | 7.25 | Reference only |
+| `MINIMUM_WAGE_WEEKLY` | 290 | `Staff.JOB_TYPES` (Merchandise Attendant salary) |
+| `BUYER_RATE` | 0.15 | `Shopping.calcRevenue()` |
+| `THEFT_RATE` | 0.008 | `Shopping.calcTheftIncidents()` |
+| `OVERFLOW_INCIDENT_RATE` | 0.05 | `Security.calcIncidents()` |
+| `UNRIDDEN_INCIDENT_RATE` | 0.20 | `Security.calcIncidents()` |
+| `RANDOM_INCIDENT_RATE` | 0.001 | `Security.calcIncidents()` |
+| `utilityMultiplier` | 1 | `Finance.calcUtilityCosts()` — stub for rising energy costs |
+| `inflationRate` | 1.02 | Stub for future cost-of-living adjustments |
 
 ---
 
@@ -59,7 +111,7 @@ FACILITY_ID  = { PARK_ENTRANCE, PATH, BATHROOM, STATUE, GARDEN, FOUNTAIN }
 | Stage | Constant | Behaviour |
 |---|---|---|
 | Setup | `STAGE.SETUP` | Items placed instantly at full cost. No income. Park opens once a Park Entrance and at least one connected ride exist. |
-| Play | `STAGE.PLAY` | Items under construction pay `buildCost / buildWeeks` per round. Income and expenses process on each round advance. |
+| Play | `STAGE.PLAY` | Items under construction pay `buildCost / buildWeeks` per round. All income and expenses process on each round advance. |
 
 ---
 
@@ -70,17 +122,17 @@ FACILITY_ID  = { PARK_ENTRANCE, PATH, BATHROOM, STATUE, GARDEN, FOUNTAIN }
 <div id="main">
   <div id="left-nav">            — position:relative container
     <nav id="btn-bar">           — narrow vertical button bar; always visible
-    <div class="side-panel">     — Construction panel (position:absolute overlay, z-index 10)
-    <div class="side-panel">     — Rides panel (master-detail)
-    <div class="side-panel">     — Staffing panel
-    <div class="side-panel">     — Pricing panel
+    <div class="side-panel">     — Construction (Attractions / Shopping / Facilities tabs)
+    <div class="side-panel">     — Rides (master-detail)
+    <div class="side-panel">     — Staffing (Roster / Postings / Candidates views)
+    <div class="side-panel">     — Security (guard list with focus assignment)
+    <div class="side-panel">     — Pricing
   <div id="park-view">           — flex:1, centers the grid
     <div id="grid">              — CSS grid of 20×20 cells
 <div id="round-modal">           — fixed overlay, shown after each round
 ```
 
-- Panels slide open at `left: 100%` of `#btn-bar` (overlaying the park). Width transitions 0 ↔ 275px. Only one panel open at a time.
-- **Open Park** and **Next Round** buttons are `position:fixed` at `bottom-right` of the viewport (with `safe-area-inset-bottom` for mobile). They share the same spot; only one is visible at a time.
+Panels slide open at `left: 100%` of `#btn-bar` (overlaying the park). Width transitions 0 ↔ 275px. Only one panel open at a time.
 
 ---
 
@@ -115,11 +167,20 @@ FACILITY_ID  = { PARK_ENTRANCE, PATH, BATHROOM, STATUE, GARDEN, FOUNTAIN }
   facilityId, name, color,
   row, col, footprint,
   status,
-  // if under_construction: same fields as above
+  // if under_construction: same fields as installedRides
+}
+
+// Shopping.installed[]
+{
+  instanceId,             // "shop_{id}_{timestamp}"
+  shopId, name, color,
+  row, col, footprint,
+  status,
+  // if under_construction: same fields as installedRides
 }
 ```
 
-### Ride status transitions
+### Status transitions (all placed items)
 
 ```
 UNDER_CONSTRUCTION ←→ PAUSED_CONSTRUCTION   (pause/resume in Rides panel)
@@ -129,120 +190,169 @@ ACTIVE ←→ CLOSED                            (close/reopen in Rides panel)
 
 ---
 
-## Interaction model
-
-**Tap/click-to-select → hover-to-preview → tap/click-to-place.**
-
-1. Click a sidebar card → `selectItem()` stores `selected` and marks the grid with `.has-selection`.
-2. Mousemove / touchmove over the grid → `updatePlacementFromPoint()` calls `highlightPlacement()`, runs `canPlaceItem()`, applies `.highlight-valid` (green) or `.highlight-invalid` (red).
-3. Click/tap grid → `placeItem()` if `currentPlacement.valid`.
-4. Escape, re-clicking the active card, or switching tabs → `deselectItem()`.
-
----
-
-## Placement validation
-
-`canPlaceItem()` checks affordability then dispatches:
-
-- **Rides** — `canPlaceFootprint()` only (bounds + collision).
-- **Facilities** — `canPlaceFootprint()`, then:
-  - **`limit`** — counts matching entries in `installedFacilities`.
-  - **`edgeOnly`** — at least one occupied cell must touch the grid boundary.
-  - **`mustBeAdjacentTo`** — at least one orthogonal neighbor of any occupied cell must be a listed facility type (via `facilityTypeAtCell`).
-
----
-
-## Ride connectivity
-
-`isRideConnected(record)` — returns `true` if any occupied cell of the ride's footprint has a `path` tile as an orthogonal neighbor. Used for:
-
-- Ride condition display (Running vs Unconnected)
-- Park-open prerequisite
-- Finance calculations (only connected rides count toward excitement and staffing needs)
-
----
-
 ## Finance system (`finance.js`)
 
-### Pricing variables
+### Pricing state (on `Finance` object)
 
-| Variable | Default | Notes |
+| Property | Default | Notes |
 |---|---|---|
 | `gatePrice` | 20 | $ per visitor |
-| `parkingPrice` | 10 | $ per vehicle — not yet wired to revenue |
+| `parkingPrice` | 10 | $ per vehicle |
 | `foodUpcharge` | 0 | $ per food item — not yet wired to revenue |
-| `priceExhaustion` | 0 | Internal only. Rises on price increases, decays 1/round. Reduces demand. |
+| `priceExhaustion` | 0 | Internal. Rises on price increases, decays 1/round. |
 
 **Price exhaustion rules:**
 - Gate price increase of `+$N` → `priceExhaustion += 2N`
 - Parking price increase of `+$N` → `priceExhaustion += 1N`
 - Decays by 1 each round (floor 0)
-- Applied to demand: `dailyDemand × (1 - priceExhaustion / 100)`
+- Applied to demand: `dailyDemand × (1 − priceExhaustion / 100)`
 
 ### Park metrics
 
-| Variable | Description |
+| Property | Description |
 |---|---|
-| `parkExcitement` | `runningRideCount × rideOpinion`. Drives daily demand. |
-| `rideOpinion` | Smoothed 0–1 score of how well rides serve the crowd. Starts at 1.0. |
+| `Finance.parkExcitement` | `runningRideCount × rideOpinion`. Drives daily demand. |
+| `Finance.rideOpinion` | Smoothed 0–1 score of how well rides serve the crowd. Starts at 1.0. |
+| `Security.opinion` | Accumulated danger perception. Reduces demand via `1 − √opinion / 100`. |
 
 ### Attendance model
 
 ```
-dailyDemand       = parkExcitement × 20 × (1 − priceExhaustion/100)
-gateThroughput    = Σ per booth attendant: 500 × moodMult × expMult × skillModifier
-                    (moodMult: 0.8–1.2, expMult from tier, skillModifier 0.75–1.25)
-dailyAttendance   = min(dailyDemand, gateThroughput)
-weeklyAttendance  = round(dailyAttendance × 7)
+dailyDemand      = parkExcitement × 20 × (1 − priceExhaustion/100) × (1 − √Security.opinion/100)
+gateThroughput   = Σ per booth attendant: 500 × moodMult × expMult × skillModifier
+                   (moodMult: 0.8–1.2; expMult from tier; skillModifier: 0.75–1.25)
+dailyAttendance  = min(dailyDemand, gateThroughput)
+weeklyAttendance = round(dailyAttendance × 7)
 ```
 
-### Ride opinion & per-ride ridership
+### Income sources
 
-Each round: `staffRatio = min(1, actualOperators / neededOperators)`.
+| Source | Formula |
+|---|---|
+| Gate revenue | `round(gatePrice × dailyAttendance × 7)` |
+| Parking revenue | `floor(dailyDemand × 7 / 3) × parkingPrice` (based on demand, not throughput) |
+| Shop revenue | `Shopping.calcRevenue(weeklyAttendance)` |
 
-Per running ride:
-- `lastRoundCapacity = round(ridesPerHour × 7)` — weekly max at full staff
-- `lastRoundRiders = round(ridesPerHour × staffRatio × 7)` — weekly actual
+### Cost sources
 
-`rideOpinion = (rideOpinion + score) / 2` where `score = min(1, totalCapacity × staffRatio / dailyAttendance)`.
+| Source | Formula |
+|---|---|
+| Staff wages | `Σ staff.salary` per week |
+| Posting fees | `$75 × activePostings` per week |
+| Ride utilities | `Σ utilityCost × Population.utilityMultiplier` for running connected rides |
+| Construction | `weeklyPayment` per item under construction |
+| Theft loss | `Security.calcIncidents()` → `unhandledShop × $50` |
 
-### Round processing order (`processRound`)
+### Round processing order (`Finance.processRound`)
 
-1. `recalcExcitement()` — uses previous round's `rideOpinion`
-2. `calcDailyAttendance()` — demand (with price exhaustion) vs gate throughput
-3. `computeRideOpinion(daily)` — updates `rideOpinion`; writes per-ride ridership
-4. Gate revenue added to `money` (rounded to nearest dollar)
-5. Staff wages and posting costs deducted
+1. `recalcExcitement()` — uses previous `rideOpinion`
+2. Calc demand, throughput, attendance
+3. `computeRideOpinion(daily)` — updates `rideOpinion`; writes `lastRoundRiders/Capacity` per ride
+4. Calc all income and costs for the round
+5. Add income to `money`; deduct costs from `money`
 6. `processConstruction()` — deducts weekly payments, completes finished builds
-7. `advanceExperience()` — increments `weeksEmployed` for all staff
-8. `advancePostings()` — increments `weeksActive` for all postings
-9. `generateCandidates()` — generates new applicants if postings exist
-10. `advanceCandidates()` — withdrawal check, then increments `weeksAsCandidate`
-11. `advancePriceExhaustion()` — decays exhaustion by 1
+7. `Staff.advanceExperience/Postings/generateCandidates/advanceCandidates()`
+8. `advancePriceExhaustion()` — decays by 1
+9. `Security.advanceOpinion(unhandled)` — decays 20% then adds unhandled count
 
-Returns `{ weeklyAttendance, gateRevenue, staffCosts, constructionCosts, totalExpenses, rideEfficiency }`.
+Returns:
+```js
+{
+  weeklyAttendance,
+  gateRevenue, parkingRevenue, shopRevenue, totalIncome,
+  staffCosts, utilityCosts, constructionCosts, theftLoss, totalExpenses,
+  rideEfficiency,
+  security: { ...incidentBreakdown, opinionAfter },
+}
+```
+
+### Round summary modal
+
+Rows shown: Attendance · Gate Revenue · Parking Revenue · Shop Revenue · Total Expenses · Theft Loss (hidden when 0) · Net.
+
+---
+
+## Security system (`security.js`)
+
+### State
+
+`Security.opinion` — accumulated danger perception (0+). Rises by `unhandled` incident count each round. Decays `ceil(opinion × 0.20)` per round (minimum 0). Suppresses daily demand via `1 − √opinion / 100`.
+
+### Incident sources (per round)
+
+| Source | Formula | Handled by focus |
+|---|---|---|
+| Gate overflow | `floor(weeklyOverflow × OVERFLOW_INCIDENT_RATE)` | Gate guards |
+| Unridden visitors | `floor(unridden × UNRIDDEN_INCIDENT_RATE)` | Patrol guards |
+| Shop theft | `Shopping.calcTheftIncidents(weeklyAttendance)` | Shop guards |
+| Random | `floor(weeklyAttendance × RANDOM_INCIDENT_RATE)` | Any |
+
+### Two-phase handling
+
+1. **Focus bonus** — each guard with a matching focus handles `FOCUS_BONUS` (3) extra incidents of that type, free (does not consume normal quota).
+2. **Normal capacity** — pooled weekly quota handles remaining incidents. Quota per guard: `(3 + tier) × 7` per week (tier 1–4).
+
+### Theft loss
+
+Shop incidents that survive both phases cost `$50` each (`Shopping.calcTheftLoss(unhandledShop)`). Deducted from `money` in `Finance.processRound()`. Tracked proportionally: `unhandledShop = shopRemaining − floor(normalHandled × shopRemaining / remaining)`.
+
+### Guard focus assignment
+
+Each guard has a `focus` property (`SECURITY_FOCUS.PATROL` default). Changed via the Security panel. Focus affects phase-1 bonuses only — all guards share the same phase-2 pool.
+
+---
+
+## Shopping system (`shopping.js`)
+
+### State
+
+| Property | Description |
+|---|---|
+| `Shopping.catalog` | Loaded from `shops.json` |
+| `Shopping.installed` | Placed shop records |
+| `Shopping.merchandiseUpcharge` | $ added on top of `BASE_SPEND` per buyer |
+
+### Revenue formula
+
+```
+tiles      = Σ active Merchandise store footprint tiles (1-cells only)
+staffRatio = min(1, merchandiseAttendants / (activeStores × WORKERS_PER_STORE))
+revenue    = round(weeklyAttendance × BUYER_RATE × (BASE_SPEND + upcharge) × sqrt(tiles) × staffRatio)
+```
+
+Zero tiles → zero revenue.
+
+### Theft formula
+
+```
+theftMultiplier = 1 + 0.25 × max(0, workersNeeded − actualAttendants)
+incidents       = floor(weeklyAttendance × (1 − BUYER_RATE) × THEFT_RATE × sqrt(tiles) × theftMultiplier)
+```
+
+Zero tiles → zero theft incidents.
+
+### Shop staffing
+
+`WORKERS_PER_STORE = 2`. Each missing worker: revenue proportionally reduced (via `staffRatio`) and theft increased by 25% multiplicatively (via `theftMultiplier`).
 
 ---
 
 ## Staffing system (`staff.js`)
 
-### Job type registry
+### Job types (`Staff.JOB_TYPES`)
 
-`JOB_TYPES` array — add new job types here. Fields: `id`, `label`, `plural`, `weeklySalary`.
+| Job | Weekly salary |
+|---|---|
+| Ride Operator | $520 |
+| Security | $640 |
+| Janitor | $480 |
+| Engineer | $1,200 |
+| Booth Attendant | $480 |
+| Merchandise Attendant | $290 (minimum wage) |
+| Business Analyst | $1,400 |
+| HR | $1,600 |
 
-Current jobs: Ride Operator · Security · Janitor · Engineer · Booth Attendant · Business Analyst · HR
-
-### Employee generation
-
-`generateEmployee(quality)` creates a randomised employee object (not yet in `staff[]`):
-- Random first name from pool + single capital-letter last name
-- Random job type from `JOB_TYPES`
-- `skillModifier`: `0.75 + rand × 0.5 × (quality/100)` — ranges 0.75 at quality 0, up to 1.25 at quality 100
-- `salaryModifier`: `0.80 + rand × 0.40` — ±20% salary variation, quality-independent
-- `weeksEmployed`: random 0–`round(5 × quality/100)` years converted to weeks
-- `salary`: `round(job.weeklySalary × salaryModifier)`
-
-### Staff record shape
+### Employee record shape
 
 ```js
 {
@@ -254,74 +364,64 @@ Current jobs: Ride Operator · Security · Janitor · Engineer · Booth Attendan
   salaryModifier,   // 0.80–1.20
   mood,             // 0–100
   weeksEmployed,
+  focus,            // SECURITY_FOCUS.* (relevant for security guards)
 }
 ```
 
 ### Experience tiers
 
-| Tier | Threshold | Efficiency multiplier |
-|---|---|---|
-| Junior | < 52 weeks | 0.75× |
-| (Normal) | 52–156 weeks | 1.0× |
-| Senior | 157–260 weeks | 1.25× |
-| Lead | > 260 weeks | 1.5× |
+| Tier | Threshold | Multiplier | tier value |
+|---|---|---|---|
+| Junior | < 52 weeks | 0.75× | 1 |
+| (Normal) | 52–156 weeks | 1.0× | 2 |
+| Senior | 157–260 weeks | 1.25× | 3 |
+| Lead | > 260 weeks | 1.5× | 4 |
 
-`getExperienceTier(weeksEmployed)` returns `{ label, multiplier, tier }` where `tier` is 1–4.
+`Staff.getExperienceTier(weeksEmployed)` returns `{ label, multiplier, tier }`.
 
-### HR staff effect
+### Special job effects
 
-Each HR employee boosts candidate generation per round:
-- Adds `tier` extra candidates (Junior=+1, Normal=+2, Senior=+3, Lead=+4)
-- Adds `tier × 5` to the quality parameter for generation
+- **Booth Attendant** — drives `Finance.calcGateThroughput()`. More attendants + higher skill/mood/exp = more visitors admitted per day.
+- **Ride Operator** — `Staff.rideOperatorsNeeded()` totals across all running rides. Under-staffing degrades `rideOpinion` and per-ride ridership.
+- **HR** — each HR employee boosts candidate generation: +`tier` candidates and +`tier × 5` quality per round.
+- **Security** — capacity `(3 + tier) × 7` incidents/week. Focus determines phase-1 bonus type.
+- **Merchandise Attendant** — 2 required per active Merchandise store. Under-staffing cuts revenue and raises theft.
 
-Base generation without HR: 4 candidates at quality 0.
+### Posting cost
 
-### Postings system
+`$75/week` per active posting (added to `staffCosts`).
 
-```js
-// postings[]
-{ instanceId, jobId, minYearsExperience, salary, weeksActive }
-```
-
-Cost: `$75/week per active posting` (deducted from `staffCosts`).
-
-### Candidates pipeline
+### Candidate pipeline
 
 Each round (if postings exist):
-1. **Generate** — `generateCandidates()` creates candidates via `generateEmployee(quality)`. Any candidate with no matching posting (same job, salary ≤ offer, years exp ≥ minimum) is discarded immediately.
-2. **Withdrawal** — `advanceCandidates()` runs before incrementing `weeksAsCandidate`. Chance: 20% at week 4, +20% per additional week (100% at week 8).
-3. **Player review** — Candidates panel shows all waiting candidates with **Hire** / **Decline** buttons.
-   - **Hire**: `hireCandidate(id)` finds a matching posting, moves candidate to `staff[]`, removes the posting.
-   - **Decline**: `declineCandidate(id)` removes candidate; posting stays open.
+1. **Generate** — `Staff.generateCandidates()` creates candidates via `Staff.generateEmployee(quality)`. Any with no matching posting discarded immediately.
+2. **Withdrawal** — 20% chance at week 4, +20% per additional week (100% at week 8).
+3. **Player review** — Hire (moves to roster, fills posting) or Decline (removes candidate, posting stays open).
 
-### Candidate record shape
+`Staff.findMatchingPosting(candidate)` — same job, `salary ≤ offer`, `yearsExp ≥ minimum`.
 
-Same as staff record, plus `weeksAsCandidate`.
+### Ride operator requirements
 
-`findMatchingPosting(candidate)` — returns first open posting the candidate qualifies for (used to enable/disable the Hire button).
-
-### Staffing requirements
-
-`operatorsNeededForRide(record)` — maps occupied tile count: ≤4 tiles → 2 operators, 5–9 → 3, ≥10 → 4.
-
-`rideOperatorsNeeded()` — sums across all Running rides.
+`Staff.operatorsNeededForRide(record)` — maps occupied tile count: ≤4 tiles → 2, 5–9 → 3, ≥10 → 4.
 
 ---
 
 ## History tracking (`history.js`)
 
-`roundHistory` is append-only. `recordRound(report)` is called after each round. Each entry:
+`History.record(report)` appends one entry per round. `History.rounds` is append-only.
 
 ```js
 {
   round, date,
-  attendance, gateIncome,
-  staffExpense, constructionExpense,
+  attendance,
+  gateIncome, parkingIncome, shopIncome,
+  staffExpense, utilityExpense, constructionExpense, theftLoss,
   rideEfficiency,       // 0–1
   staffCount, staffMood,
   runningRides,
-  jobPostings,          // active posting count
-  matchingCandidates,   // candidates with at least one qualifying posting
+  jobPostings,
+  matchingCandidates,
+  securityIncidents, securityHandled, securityUnhandled, securityOpinion,
 }
 ```
 
@@ -331,17 +431,14 @@ Same as staff record, plus `weeksAsCandidate`.
 
 **List view** — tappable rows showing name + condition badge.
 
-**Detail view** — context-sensitive actions based on status:
+**Detail view** — shows name, status badge, weekly utility cost, last-round ridership bar, and context-sensitive actions:
 
-| Status | Actions shown |
+| Status | Actions |
 |---|---|
 | Under Construction | Weeks remaining · Pause Construction |
 | Paused Construction | Weeks remaining · Resume Construction |
-| Active (running) | Close Ride |
-| Active (unconnected) | Close Ride |
+| Active | Close Ride |
 | Closed | Re-open Ride |
-
-Also shows **Last Round Ridership** bar (actual / max capacity with %) for any ride that has run at least one round.
 
 ---
 
@@ -358,7 +455,8 @@ Also shows **Last Round Ridership** bar (actual / max capacity with %) for any r
 | `buildWeeks` | number | Construction time |
 | `rideDuration` | number | Seconds per cycle |
 | `intensity` | string | `low` / `medium` / `high` / `extreme` |
-| `ridesPerHour` | number | Throughput; used for ride capacity and `rideOpinion` |
+| `ridesPerHour` | number | Throughput; drives capacity and `rideOpinion` |
+| `utilityCost` | number | $/week while running; multiplied by `Population.utilityMultiplier` |
 
 Colors assigned at runtime from `RIDE_COLORS` in `game.js` by array index.
 
@@ -368,7 +466,7 @@ Colors assigned at runtime from `RIDE_COLORS` in `game.js` by array index.
 |---|---|---|
 | `id` | string | Unique, snake_case |
 | `name` | string | Display name |
-| `color` | string | Hex — facilities define their own color |
+| `color` | string | Hex |
 | `footprint` | `number[][]` | Same format as rides |
 | `buildCost` | number | Dollars |
 | `buildWeeks` | number | `0` = instant |
@@ -376,42 +474,57 @@ Colors assigned at runtime from `RIDE_COLORS` in `game.js` by array index.
 | `edgeOnly` | boolean? | Occupied cell must touch grid boundary |
 | `mustBeAdjacentTo` | string[]? | Neighbor must contain one of these facility ids |
 
+### `shops.json`
+
+| Field | Type | Notes |
+|---|---|---|
+| `id` | string | Matches `SHOP_ID.*` |
+| `name` | string | Display name |
+| `color` | string | Hex |
+| `footprint` | `number[][]` | Same format as rides |
+| `buildCost` | number | Dollars |
+| `buildWeeks` | number | Construction time |
+| `limit` | number \| null | Max in park |
+| `mustBeAdjacentTo` | string[]? | Adjacency requirement |
+
 ---
 
 ## What's implemented
 
 - 20×20 park grid with collision detection and irregular footprint support
-- Ride and facility catalogues loaded from JSON with footprint previews
+- Ride, facility, and shop catalogues loaded from JSON with footprint previews
 - Placement rules: edge-only, adjacency, per-type limits, affordability
-- Tap/click-to-select placement (desktop + mobile touch with safe-area support)
+- Tap/click-to-select placement (desktop + mobile touch)
 - Two-stage game: Setup → Play with weekly construction payments
 - Park-open prerequisites: Park Entrance + at least one connected ride
 - Ride conditions: Running, Unconnected, Under Construction, Paused, Closed
-- Ride detail panel: construction pause/resume, close/reopen, last-round ridership bar
-- Four overlay panels: Construction (Attractions/Shopping/Facilities), Rides, Staffing, Pricing
-- HUD: budget, date (Week W, QN, YYYY), stage badge; action button fixed at bottom-right
-- Finance: attendance model, gate revenue, staff wages, round summary modal
-- Pricing panel: gate admission, parking, food upcharge; price exhaustion suppresses demand
+- Ride detail panel: pause/resume, close/reopen, last-round ridership bar, utility cost
+- Five overlay panels: Construction (Attractions/Shopping/Facilities), Rides, Staffing, Security, Pricing
+- HUD: budget, date (Week W, QN, YYYY), stage badge
+- Finance: gate/parking/shop revenue; staff/utility/construction/theft costs; round summary modal
+- Pricing panel: gate, parking, merchandise upcharge; price exhaustion suppresses demand
 - Park metrics: `parkExcitement`, `rideOpinion` (smoothed staffing quality score)
-- Per-ride weekly ridership tracking (actual vs max capacity)
-- Staffing: named employees with skill/salary modifiers, experience tiers (Junior/Normal/Senior/Lead)
-- HR job type boosts candidate count and quality
-- Job postings with min experience and salary offer; $75/week posting cost
+- Security system: incident tracking, two-phase handling, guard focus assignment, opinion decay
+- Security opinion suppresses daily visitor demand
+- Shop theft: scales with store tiles and understaffing; unhandled incidents lose $50 each
+- Shop revenue: scales with `sqrt(tiles)` and merchandise attendant staffing ratio
+- Ride utility costs deducted each round per running ride
+- Staffing: named employees with skill/salary/mood/experience, eight job types
+- HR boosts candidate count and quality; Merchandise Attendants staff the shop
+- Job postings with min experience, salary offer, $75/week cost
 - Candidate pipeline: generate → withdrawal timer → player hire/decline
-- Staff panel: roster view, postings view, candidates view with Hire/Decline buttons
-- Per-round history log (attendance, revenue, costs, staff metrics, postings, candidates)
+- Per-round history log (attendance, all revenue/cost streams, security, staff metrics)
+- Population constants centralise all tunable behavior rates and economic multipliers
 
 ## What's not yet implemented (see `reqs.md`)
 
 - Firing / wage adjustment UI
-- Staff mood dynamics (events that change mood)
-- Ride breakdown / repair system
-- Parking and food revenue wired to attendance
-- Login stage and teacher configuration
-- Reputation system
-- Research and surveys
-- Marketing campaigns
-- Shopping tab contents
+- Staff mood dynamics
+- Ride breakdown / repair
+- Food revenue
+- `Population.inflationRate` wired to cost-of-living adjustments
+- `Population.utilityMultiplier` wired to round-by-round increases
 - Reports, graphs, and awards
-- Events system
-- Demographics
+- Marketing and reputation
+- Events system and demographics
+- Login stage and teacher configuration
