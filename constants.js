@@ -24,13 +24,14 @@ const SHOP_ID = Object.freeze({
 });
 
 const JOB = Object.freeze({
-  RIDE_OPERATOR:    'ride_operator',
-  SECURITY:         'security',
-  JANITOR:          'janitor',
-  ENGINEER:         'engineer',
-  BOOTH_ATTENDANT:  'booth_attendant',
-  BUSINESS_ANALYST: 'business_analyst',
-  HR:               'hr',
+  RIDE_OPERATOR:         'ride_operator',
+  SECURITY:              'security',
+  JANITOR:               'janitor',
+  ENGINEER:              'engineer',
+  BOOTH_ATTENDANT:       'booth_attendant',
+  MERCHANDISE_ATTENDANT: 'merchandise_attendant',
+  BUSINESS_ANALYST:      'business_analyst',
+  HR:                    'hr',
 });
 
 // IDs that match the "id" field in facilities.json.

@@ -80,9 +80,9 @@ const Finance = {
   },
 
   // ── Pricing ─────────────────────────────────────────────────────────────────
-  gatePrice:       20,  // $ per visitor
-  parkingPrice:    10,  // $ per vehicle
-  foodUpcharge:     0,  // $ added per food item sold
+  gatePrice:    20,  // $ per visitor
+  parkingPrice: 10,  // $ per vehicle
+  foodUpcharge:  0,  // $ added per food item sold
 
   // Cumulative visitor price fatigue. Rises when prices increase, decays 1/round.
   priceExhaustion: 0,
@@ -96,9 +96,23 @@ const Finance = {
     return Math.round(this.gatePrice * dailyAttendance * 7);
   },
 
+  // 1 vehicle per 3 visitors who want to come (based on demand, not throughput).
+  calcParkingRevenue(dailyDemand) {
+    return Math.floor(dailyDemand * 7 / 3) * this.parkingPrice;
+  },
+
   // ── Cost sources ─────────────────────────────────────────────────────────────
   calcStaffCosts() {
     return Staff.totalWeeklySalary() + Staff.totalPostingCosts();
+  },
+
+  calcUtilityCosts() {
+    return installedRides
+      .filter(r => r.status === STATUS.ACTIVE && isRideConnected(r))
+      .reduce((sum, r) => {
+        const def = rides.find(d => d.id === r.rideId);
+        return sum + (def?.utilityCost ?? 0) * Population.utilityMultiplier;
+      }, 0);
   },
 
   // Security.calcIncidents() and Security.advanceOpinion() are in security.js.
@@ -117,8 +131,11 @@ const Finance = {
 
     const weeklyAttendance  = Math.round(daily * 7);
     const gateRevenue       = this.calcGateRevenue(daily);
+    const parkingRevenue    = this.calcParkingRevenue(dailyDemand);
+    const shopRevenue       = Shopping.calcRevenue(weeklyAttendance);
     const staffCosts        = this.calcStaffCosts();
-    const constructionCosts = [...installedRides, ...installedFacilities, ...installedShops]
+    const utilityCosts      = this.calcUtilityCosts();
+    const constructionCosts = [...installedRides, ...installedFacilities, ...Shopping.installed]
       .filter(r => r.status === STATUS.UNDER_CONSTRUCTION)
       .reduce((sum, r) => sum + r.weeklyPayment, 0);
 
@@ -126,9 +143,13 @@ const Finance = {
 
     // Income
     money += gateRevenue;
+    money += parkingRevenue;
+    money += shopRevenue;
 
     // Costs
     money -= staffCosts;
+    money -= utilityCosts;
+    money -= security.theftLoss;      // $50 per unhandled shoplifter
     processConstruction();            // deducts constructionCosts and advances build progress
 
     Staff.advanceExperience();        // increment weeksEmployed for all staff
@@ -141,9 +162,14 @@ const Finance = {
     return {
       weeklyAttendance,
       gateRevenue,
+      parkingRevenue,
+      shopRevenue,
+      totalIncome: gateRevenue + parkingRevenue + shopRevenue,
       staffCosts,
+      utilityCosts,
       constructionCosts,
-      totalExpenses: staffCosts + constructionCosts,
+      theftLoss:     security.theftLoss,
+      totalExpenses: staffCosts + utilityCosts + constructionCosts + security.theftLoss,
       rideEfficiency: this.rideOpinion,
       security: { ...security, opinionAfter: Security.opinion },
     };

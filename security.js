@@ -13,7 +13,7 @@ const Security = {
   FOCUS_META: [
     { focus: SECURITY_FOCUS.PATROL, label: 'Patrol', desc: 'Handles unridden visitor incidents' },
     { focus: SECURITY_FOCUS.GATE,   label: 'Gate',   desc: 'Handles gate overflow incidents'    },
-    { focus: SECURITY_FOCUS.SHOP,   label: 'Shop',   desc: 'Handles shop theft (coming soon)'   },
+    { focus: SECURITY_FOCUS.SHOP,   label: 'Shop',   desc: 'Handles shop theft'                 },
   ],
 
   // ── Incident calculation ──────────────────────────────────────────────────
@@ -27,16 +27,16 @@ const Security = {
   // Must be called after computeRideOpinion() so lastRoundRiders is current.
   calcIncidents(weeklyAttendance, dailyDemand, dailyThroughput) {
     const weeklyOverflow = Math.max(0, (dailyDemand - dailyThroughput) * 7);
-    const fromOverflow   = Math.floor(weeklyOverflow * 0.05);
+    const fromOverflow   = Math.floor(weeklyOverflow * Population.OVERFLOW_INCIDENT_RATE);
 
     const weeklyRiders   = installedRides
       .filter(r => r.status === STATUS.ACTIVE && isRideConnected(r))
       .reduce((sum, r) => sum + (r.lastRoundRiders ?? 0), 0);
     const unridden       = Math.max(0, weeklyAttendance - weeklyRiders);
-    const fromUnridden   = Math.floor(unridden * 0.20);
+    const fromUnridden   = Math.floor(unridden * Population.UNRIDDEN_INCIDENT_RATE);
 
-    const fromRandom     = Math.floor(weeklyAttendance * 0.001);
-    const fromShop       = 0; // placeholder until shops are implemented
+    const fromRandom     = Math.floor(weeklyAttendance * Population.RANDOM_INCIDENT_RATE);
+    const fromShop       = Shopping.calcTheftIncidents(weeklyAttendance);
 
     const total = fromOverflow + fromUnridden + fromRandom + fromShop;
 
@@ -60,12 +60,22 @@ const Security = {
     const handled   = bonusHandled + normalHandled;
     const unhandled = total - handled;
 
+    // Shop incidents that survived the focus bonus compete proportionally for
+    // normal capacity. The remainder are successful thefts at $50 each.
+    const shopRemaining    = Math.max(0, fromShop - shopBonus);
+    const shopNormHandled  = remaining > 0
+      ? Math.min(shopRemaining, Math.floor(normalHandled * shopRemaining / remaining))
+      : 0;
+    const unhandledShop    = shopRemaining - shopNormHandled;
+    const theftLoss        = Shopping.calcTheftLoss(unhandledShop);
+
     return {
       fromOverflow, fromUnridden, fromRandom, fromShop, total,
       gateCount, patrolCount, shopCount,
       overflowBonus, unriddenBonus, shopBonus, bonusHandled,
       capacity, normalHandled,
       handled, unhandled,
+      unhandledShop, theftLoss,
     };
   },
 
@@ -85,8 +95,7 @@ const Security = {
     }
 
     const guardRows = guards.map(s => {
-      const { label: expLabel, tier } = Staff.getExperienceTier(s.weeksEmployed);
-      const weeklyCapacity = (3 + tier) * 7;
+      const { label: expLabel } = Staff.getExperienceTier(s.weeksEmployed);
       const expBadge = expLabel
         ? `<span class="exp-badge exp-${expLabel.toLowerCase()}">${expLabel}</span>`
         : '';
@@ -97,7 +106,6 @@ const Security = {
       return `<div class="security-guard-row">
         <div class="sec-guard-info">
           <span class="sec-guard-name">${s.name} ${expBadge}</span>
-          <span class="sec-guard-cap">${weeklyCapacity}/wk</span>
         </div>
         <div class="sec-focus-btns">${focusBtns}</div>
       </div>`;

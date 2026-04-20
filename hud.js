@@ -37,11 +37,16 @@ function advanceRound() {
 }
 
 function showRoundSummary(report) {
-  const net = report.gateRevenue - report.totalExpenses;
-  document.getElementById('summary-date').textContent       = getDateLabel();
-  document.getElementById('summary-attendance').textContent = report.weeklyAttendance.toLocaleString();
-  document.getElementById('summary-income').textContent     = `$${report.gateRevenue.toLocaleString()}`;
-  document.getElementById('summary-expenses').textContent   = `$${report.totalExpenses.toLocaleString()}`;
+  const net = report.totalIncome - report.totalExpenses;
+  document.getElementById('summary-date').textContent        = getDateLabel();
+  document.getElementById('summary-attendance').textContent  = report.weeklyAttendance.toLocaleString();
+  document.getElementById('summary-income').textContent         = `$${report.gateRevenue.toLocaleString()}`;
+  document.getElementById('summary-parking-income').textContent = `$${report.parkingRevenue.toLocaleString()}`;
+  document.getElementById('summary-shop-income').textContent    = `$${report.shopRevenue.toLocaleString()}`;
+  document.getElementById('summary-expenses').textContent    = `$${(report.staffCosts + report.utilityCosts + report.constructionCosts).toLocaleString()}`;
+  const theftRow = document.getElementById('summary-theft-loss').closest('.modal-stat-row');
+  theftRow.classList.toggle('hidden', report.theftLoss === 0);
+  document.getElementById('summary-theft-loss').textContent = `-$${report.theftLoss.toLocaleString()}`;
   const netEl = document.getElementById('summary-net');
   netEl.textContent = (net >= 0 ? '+' : '\u2212') + `$${Math.abs(net).toLocaleString()}`;
   netEl.className   = net >= 0 ? 'summary-pos' : 'summary-neg';
@@ -152,6 +157,7 @@ function buildRideList() {
 function buildRideDetail(record) {
   const container = document.getElementById('rides-overview');
   const { label, cls } = getRideCondition(record);
+  const def = rides.find(r => r.id === record.rideId);
 
   let ridership = '';
   if (record.lastRoundCapacity != null) {
@@ -192,6 +198,7 @@ function buildRideDetail(record) {
       <button class="ride-back-btn" id="rdx-back">← Rides</button>
       <div class="ride-detail-name">${record.name}</div>
       <span class="cond-badge ${cls}">${label}</span>
+      <div class="ride-utility-cost">Utility: $${(def?.utilityCost ?? 0).toLocaleString()}/wk</div>
       ${ridership}
       <div class="ride-detail-actions">${actionsHtml}</div>
     </div>`;
@@ -266,6 +273,13 @@ const PRICE_ITEMS = [
     unit:      '$/item',
     getValue:  () => Finance.foodUpcharge,
     setValue:  v => { Finance.foodUpcharge = v; },
+  },
+  {
+    key:       'merchandise',
+    label:     'Merchandise Upcharge',
+    unit:      '$/buyer',
+    getValue:  () => Shopping.merchandiseUpcharge,
+    setValue:  v => { Shopping.merchandiseUpcharge = v; },
   },
 ];
 
