@@ -327,6 +327,19 @@ const Staff = {
         .sort((a, b) => b.wear - a.wear);
       const taskLabel = broken.length > 0 ? `Repairing ${broken[0].name}` : 'Maintenance';
       taskHtml = `<div class="staff-detail-task">${taskLabel}</div>`;
+    } else if (s.jobId === JOB.RIDE_OPERATOR) {
+      const running   = installedRides.filter(r => r.status === STATUS.ACTIVE && isRideConnected(r));
+      const operators = this.roster.filter(o => o.jobId === JOB.RIDE_OPERATOR);
+      let taskLabel;
+      if (running.length === 0) {
+        taskLabel = 'No rides running';
+      } else if (operators.length < running.length) {
+        taskLabel = 'Working multiple rides';
+      } else {
+        const idx = operators.findIndex(o => o.instanceId === s.instanceId);
+        taskLabel = `Operating ${running[idx % running.length].name}`;
+      }
+      taskHtml = `<div class="staff-detail-task">${taskLabel}</div>`;
     }
 
     const bubblesHtml = s.events.length === 0 ? '' : `
