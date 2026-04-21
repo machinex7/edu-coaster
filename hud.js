@@ -200,6 +200,8 @@ function buildRideDetail(record) {
     actionsHtml = `<button class="ride-action-btn ride-action-danger" id="rdx-close">Close Ride</button>`;
   } else if (record.status === STATUS.CLOSED) {
     actionsHtml = `<button class="ride-action-btn ride-action-resume" id="rdx-reopen">Re-open Ride</button>`;
+  } else if (record.status === STATUS.BROKEN_DOWN) {
+    actionsHtml = `<p class="ride-detail-weeks">Awaiting repair — assign an Engineer.</p>`;
   }
 
   container.innerHTML = `
@@ -208,6 +210,7 @@ function buildRideDetail(record) {
       <div class="ride-detail-name">${record.name}</div>
       <span class="cond-badge ${cls}">${label}</span>
       <div class="ride-utility-cost">Utility: $${(def?.utilityCost ?? 0).toLocaleString()}/wk</div>
+      <div class="ride-wear">Wear: ${(record.wear ?? 0).toLocaleString()}</div>
       ${ridership}
       <div class="ride-detail-actions">${actionsHtml}</div>
     </div>`;
@@ -227,6 +230,7 @@ function getRideCondition(record) {
     case STATUS.UNDER_CONSTRUCTION:  return { label: 'Under Construction', cls: 'cond-building'     };
     case STATUS.PAUSED_CONSTRUCTION: return { label: 'Paused',             cls: 'cond-paused'       };
     case STATUS.CLOSED:              return { label: 'Closed',             cls: 'cond-closed'       };
+    case STATUS.BROKEN_DOWN:         return { label: 'Broken Down',        cls: 'cond-broken'       };
     case STATUS.ACTIVE:
       return isRideConnected(record)
         ? { label: 'Running',     cls: 'cond-running'     }

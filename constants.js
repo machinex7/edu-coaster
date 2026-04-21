@@ -11,6 +11,7 @@ const STATUS = Object.freeze({
   UNDER_CONSTRUCTION:   'under_construction',
   PAUSED_CONSTRUCTION:  'paused_construction',
   CLOSED:               'closed',
+  BROKEN_DOWN:          'broken_down',
 });
 
 const CATEGORY = Object.freeze({
@@ -48,4 +49,9 @@ const SECURITY_FOCUS = Object.freeze({
   PATROL: 'patrol',
   GATE:   'gate',
   SHOP:   'shop',
+});
+
+const ENGINEER_FOCUS = Object.freeze({
+  MAINTENANCE:  'maintenance',
+  CONSTRUCTION: 'construction',
 });

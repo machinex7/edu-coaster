@@ -56,7 +56,7 @@ const Staff = {
       costOfLiving,
       mood:          80,
       weeksEmployed: yearsExp * 52,
-      focus:         SECURITY_FOCUS.PATROL,
+      focus:         job.id === JOB.ENGINEER ? ENGINEER_FOCUS.MAINTENANCE : SECURITY_FOCUS.PATROL,
       events:        [],
     };
   },
@@ -65,6 +65,7 @@ const Staff = {
     const emp    = this.generateEmployee(0);
     const jobDef = this.JOB_TYPES.find(j => j.id === jobId);
     emp.jobId        = jobId;
+    emp.focus        = jobId === JOB.ENGINEER ? ENGINEER_FOCUS.MAINTENANCE : SECURITY_FOCUS.PATROL;
     emp.costOfLiving = Math.round(jobDef.weeklySalary * (0.80 + Math.random() * 0.40));
     emp.salary       = salaryOverride ?? emp.costOfLiving;
     emp.events.push({ moodModifier: 20, comment: 'Excited to start a new job.' });
@@ -80,6 +81,7 @@ const Staff = {
       const emp    = this.generateEmployee(0);
       const jobDef = this.JOB_TYPES.find(j => j.id === jobId);
       emp.jobId        = jobId;
+      emp.focus        = jobId === JOB.ENGINEER ? ENGINEER_FOCUS.MAINTENANCE : SECURITY_FOCUS.PATROL;
       emp.costOfLiving = Math.round(jobDef.weeklySalary * (0.80 + Math.random() * 0.40));
       emp.salary       = emp.costOfLiving;
       emp.mood         = 50;
@@ -320,6 +322,52 @@ const Staff = {
                  : years > 0              ? `${years} yr`
                  :                          `${weeks} wk`;
 
+    let taskHtml = '';
+    if (s.jobId === JOB.ENGINEER) {
+      const broken    = installedRides
+        .filter(r => r.status === STATUS.BROKEN_DOWN)
+        .sort((a, b) => b.wear - a.wear);
+      const engineers = this.roster.filter(e => e.jobId === JOB.ENGINEER);
+      const idx       = engineers.findIndex(e => e.instanceId === s.instanceId);
+
+      let taskLabel;
+      if (s.focus === ENGINEER_FOCUS.CONSTRUCTION) {
+        const underConstruction = [...installedRides, ...installedFacilities, ...Shopping.installed]
+          .filter(r => r.status === STATUS.UNDER_CONSTRUCTION)
+          .sort((a, b) => b.weeksCompleted - a.weeksCompleted);
+        taskLabel = underConstruction.length > 0
+          ? `Expediting ${underConstruction[0].name}`
+          : (broken[idx] ? `Repairing ${broken[idx].name}` : 'Maintenance');
+      } else {
+        taskLabel = broken[idx] ? `Repairing ${broken[idx].name}` : 'Maintenance';
+      }
+
+      const focusBtns = [
+        { focus: ENGINEER_FOCUS.MAINTENANCE,  label: 'Maintenance'  },
+        { focus: ENGINEER_FOCUS.CONSTRUCTION, label: 'Construction' },
+      ].map(m =>
+        `<button class="sec-focus-btn${s.focus === m.focus ? ' active' : ''}"
+                 data-engid="${s.instanceId}" data-focus="${m.focus}">${m.label}</button>`
+      ).join('');
+
+      taskHtml = `
+        <div class="staff-detail-task">${taskLabel}</div>
+        <div class="sec-focus-btns" id="eng-focus-btns">${focusBtns}</div>`;
+    } else if (s.jobId === JOB.RIDE_OPERATOR) {
+      const running   = installedRides.filter(r => r.status === STATUS.ACTIVE && isRideConnected(r));
+      const operators = this.roster.filter(o => o.jobId === JOB.RIDE_OPERATOR);
+      let taskLabel;
+      if (running.length === 0) {
+        taskLabel = 'No rides running';
+      } else if (operators.length < running.length) {
+        taskLabel = 'Working multiple rides';
+      } else {
+        const idx = operators.findIndex(o => o.instanceId === s.instanceId);
+        taskLabel = `Operating ${running[idx % running.length].name}`;
+      }
+      taskHtml = `<div class="staff-detail-task">${taskLabel}</div>`;
+    }
+
     const bubblesHtml = s.events.length === 0 ? '' : `
       <div class="staff-events">
         ${s.events.map(e => `<div class="staff-event-bubble">${e.comment}</div>`).join('')}
@@ -330,6 +378,7 @@ const Staff = {
         <button class="ride-back-btn" id="sdx-back">← Roster</button>
         <div class="ride-detail-name">${s.name} ${expBadge}</div>
         <div class="staff-detail-job">${job.label}</div>
+        ${taskHtml}
         <div class="staff-detail-stats">
           <div class="staff-detail-row">
             <span class="staff-detail-label">Employed</span>
@@ -406,6 +455,13 @@ const Staff = {
       this.roster = this.roster.filter(e => e.instanceId !== instanceId);
       this._selectedStaffId = null;
       this.buildRosterView();
+    });
+    document.getElementById('eng-focus-btns')?.querySelectorAll('.sec-focus-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const eng = Staff.roster.find(e => e.instanceId === btn.dataset.engid);
+        if (eng) eng.focus = btn.dataset.focus;
+        this.buildStaffDetail(instanceId);
+      });
     });
   },
 

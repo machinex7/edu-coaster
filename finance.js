@@ -103,6 +103,55 @@ const Finance = {
     return Math.floor(dailyDemand * 7 / 3) * this.parkingPrice;
   },
 
+  // ── Engineers ────────────────────────────────────────────────────────────────
+  // Run at the very start of each round, before excitement recalc and wear.
+  // Each engineer either repairs one broken ride (most-worn first) or, if
+  // none are broken, reduces wear on the 2 most-worn running rides by
+  // 100 × tier per ride.
+  processEngineers() {
+    Staff.roster
+      .filter(s => s.jobId === JOB.ENGINEER)
+      .forEach(eng => {
+        if (eng.focus === ENGINEER_FOCUS.CONSTRUCTION) {
+          const underConstruction = [...installedRides, ...installedFacilities, ...Shopping.installed]
+            .filter(r => r.status === STATUS.UNDER_CONSTRUCTION)
+            .sort((a, b) => b.weeksCompleted - a.weeksCompleted);
+          if (underConstruction.length > 0) {
+            const target = underConstruction[0];
+            target.weeksCompleted++;
+            if (target.weeksCompleted >= target.weeksTotal) completeConstruction(target);
+            return;
+          }
+          // Nothing under construction — fall through to repair/maintenance
+        }
+
+        const broken = installedRides.filter(r => r.status === STATUS.BROKEN_DOWN);
+        if (broken.length > 0) {
+          broken.sort((a, b) => b.wear - a.wear);
+          broken[0].status = STATUS.ACTIVE;
+        } else {
+          const { tier } = Staff.getExperienceTier(eng.weeksEmployed);
+          installedRides
+            .filter(r => r.status === STATUS.ACTIVE && isRideConnected(r))
+            .sort((a, b) => b.wear - a.wear)
+            .slice(0, 2)
+            .forEach(r => { r.wear = Math.max(0, r.wear - 100 * tier); });
+        }
+      });
+  },
+
+  // ── Wear & breakdown ─────────────────────────────────────────────────────────
+  // Called each round after computeRideOpinion() so lastRoundRiders is current.
+  // Accumulates rider wear then rolls for breakdown at 0.1% per wear point.
+  processWear() {
+    installedRides
+      .filter(r => r.status === STATUS.ACTIVE && isRideConnected(r))
+      .forEach(r => {
+        r.wear += r.lastRoundRiders ?? 0;
+        if (Math.random() < r.wear * 0.001) r.status = STATUS.BROKEN_DOWN;
+      });
+  },
+
   // ── Mess generation ──────────────────────────────────────────────────────────
   calcMessGenerated(weeklyAttendance) {
     const fromGuests   = weeklyAttendance * Population.MESS_GUEST_RATE;
@@ -139,6 +188,7 @@ const Finance = {
   // Called once per round advancement. Order matters: collect income before
   // deducting costs so the budget display reflects net change.
   processRound() {
+    this.processEngineers();          // repair broken rides / reduce wear before anything else
     this.recalcExcitement();
 
     const dailyDemand     = this.calcDailyDemand();
@@ -146,6 +196,7 @@ const Finance = {
     const daily           = Math.min(dailyDemand, dailyThroughput);
 
     this.computeRideOpinion(daily);   // updates rideOpinion for next round; sets lastRoundRiders
+    this.processWear();               // accumulate wear then roll for breakdown
 
     const weeklyAttendance  = Math.round(daily * 7);
     const gateRevenue       = this.calcGateRevenue(daily);

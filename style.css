@@ -417,6 +417,7 @@ header h1 {
 .ride-detail-name { font-size: 1rem; font-weight: 700; color: #f9fafb; }
 
 .ride-utility-cost { font-size: 0.75rem; color: #9ca3af; margin-top: 2px; }
+.ride-wear         { font-size: 0.75rem; color: #9ca3af; margin-top: 2px; }
 
 .ride-detail-weeks { font-size: 0.8rem; color: #9ca3af; margin: 0; }
 
@@ -772,7 +773,8 @@ header h1 {
 .staff-row-clickable:hover td { background: #1f2937; }
 
 .staff-detail { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
-.staff-detail-job { font-size: 0.78rem; color: #9ca3af; margin-top: -4px; }
+.staff-detail-job  { font-size: 0.78rem; color: #9ca3af; margin-top: -4px; }
+.staff-detail-task { font-size: 0.75rem; color: #6b7280; font-style: italic; margin-top: -6px; }
 .staff-detail-stats { display: flex; flex-direction: column; gap: 6px; margin-top: 2px; }
 .staff-detail-row { display: flex; justify-content: space-between; font-size: 0.78rem; color: #e5e7eb; }
 .staff-detail-label { color: #6b7280; font-size: 0.72rem; }
