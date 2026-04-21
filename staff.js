@@ -322,10 +322,13 @@ const Staff = {
 
     let taskHtml = '';
     if (s.jobId === JOB.ENGINEER) {
-      const broken = installedRides
+      const broken    = installedRides
         .filter(r => r.status === STATUS.BROKEN_DOWN)
         .sort((a, b) => b.wear - a.wear);
-      const taskLabel = broken.length > 0 ? `Repairing ${broken[0].name}` : 'Maintenance';
+      const engineers = this.roster.filter(e => e.jobId === JOB.ENGINEER);
+      const idx       = engineers.findIndex(e => e.instanceId === s.instanceId);
+      const assigned  = broken[idx];
+      const taskLabel = assigned ? `Repairing ${assigned.name}` : 'Maintenance';
       taskHtml = `<div class="staff-detail-task">${taskLabel}</div>`;
     } else if (s.jobId === JOB.RIDE_OPERATOR) {
       const running   = installedRides.filter(r => r.status === STATUS.ACTIVE && isRideConnected(r));
