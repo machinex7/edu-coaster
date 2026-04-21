@@ -27,6 +27,8 @@ const Staff = {
   POSTING_WEEKLY_COST: 75,
   SICKNESS_RATE:       0.02,   // per-round chance of 1-week illness
   INJURY_RATE:         0.005,  // per-round chance of 4-week critical injury
+  VACATION_RATE:       0.04,   // per-round base chance of taking a vacation
+  VACATION_WEEKS:      1,      // vacation duration in weeks; effective chance = VACATION_RATE × VACATION_WEEKS
 
   // ── State ──────────────────────────────────────────────────────────────────
   // staff entries: { instanceId, name, jobId, salary, skillModifier, costOfLiving, mood (0–100), weeksEmployed }
@@ -121,21 +123,25 @@ const Staff = {
     });
   },
 
-  // Each round: decrement remaining sick time for ill staff, then roll for new
-  // illness on healthy staff. 1% chance of a 4-week illness, 5% chance of a
-  // 1-week illness or 4-week critical injury (checked only when already healthy).
+  // Each round: decrement remaining absence time, then roll for new absences on
+  // healthy staff. Injury and sickness are checked first; vacation last.
+  // Effective vacation chance = VACATION_RATE × VACATION_WEEKS.
   processSickness() {
     this.roster.forEach(s => {
       if (s.weeksOut > 0) {
         s.weeksOut--;
       } else {
-        const roll = Math.random();
+        const roll            = Math.random();
+        const vacationChance  = this.VACATION_RATE * this.VACATION_WEEKS;
         if (roll < this.INJURY_RATE) {
           s.weeksOut = 4;
           s.events.push({ moodModifier: -20, comment: 'I got seriously injured...' });
         } else if (roll < this.INJURY_RATE + this.SICKNESS_RATE) {
           s.weeksOut = 1;
           s.events.push({ moodModifier: -10, comment: 'I feel sick...' });
+        } else if (roll < this.INJURY_RATE + this.SICKNESS_RATE + vacationChance) {
+          s.weeksOut = this.VACATION_WEEKS;
+          s.events.push({ moodModifier: 15, comment: 'Taking a vacation!' });
         }
       }
     });
