@@ -27,13 +27,14 @@ const Staff = {
   POSTING_WEEKLY_COST: 75,
 
   // ── State ──────────────────────────────────────────────────────────────────
-  // staff entries: { instanceId, name, jobId, salary, skillModifier, salaryModifier, mood (0–100), weeksEmployed }
-  roster:          [],
-  _idSeq:          0,
-  postings:        [],
-  _postingIdSeq:   0,
-  candidates:      [],
-  _activeView:     'roster',
+  // staff entries: { instanceId, name, jobId, salary, skillModifier, costOfLiving, mood (0–100), weeksEmployed }
+  roster:           [],
+  _idSeq:           0,
+  postings:         [],
+  _postingIdSeq:    0,
+  candidates:       [],
+  _activeView:      'roster',
+  _selectedStaffId: null,
 
   // ── Employee generation ────────────────────────────────────────────────────
   // quality 0–100: controls the ceiling of skillModifier and yearsExperience.
@@ -42,17 +43,17 @@ const Staff = {
     const firstName    = this.FIRST_NAMES[Math.floor(Math.random() * this.FIRST_NAMES.length)];
     const lastName     = String.fromCharCode(65 + Math.floor(Math.random() * 26));
     const job          = this.JOB_TYPES[Math.floor(Math.random() * this.JOB_TYPES.length)];
-    const skillModifier  = 0.75 + Math.random() * 0.5 * q;
-    const salaryModifier = 0.80 + Math.random() * 0.40;
-    const maxYears       = Math.round(5 * q);
-    const yearsExp       = maxYears > 0 ? Math.floor(Math.random() * (maxYears + 1)) : 0;
+    const skillModifier = 0.75 + Math.random() * 0.5 * q;
+    const costOfLiving  = Math.round(job.weeklySalary * (0.80 + Math.random() * 0.40));
+    const maxYears      = Math.round(5 * q);
+    const yearsExp      = maxYears > 0 ? Math.floor(Math.random() * (maxYears + 1)) : 0;
     return {
       instanceId:    `staff_${++this._idSeq}`,
       name:          `${firstName} ${lastName}.`,
       jobId:         job.id,
-      salary:        Math.round(job.weeklySalary * salaryModifier),
+      salary:        costOfLiving,
       skillModifier,
-      salaryModifier,
+      costOfLiving,
       mood:          80,
       weeksEmployed: yearsExp * 52,
       focus:         SECURITY_FOCUS.PATROL,
@@ -60,10 +61,11 @@ const Staff = {
   },
 
   hireStaff(jobId, salaryOverride) {
-    const emp = this.generateEmployee(0);
-    emp.jobId  = jobId;
-    emp.salary = salaryOverride
-      ?? Math.round(this.JOB_TYPES.find(j => j.id === jobId).weeklySalary * emp.salaryModifier);
+    const emp    = this.generateEmployee(0);
+    const jobDef = this.JOB_TYPES.find(j => j.id === jobId);
+    emp.jobId      = jobId;
+    emp.costOfLiving = Math.round(jobDef.weeklySalary * (0.80 + Math.random() * 0.40));
+    emp.salary     = salaryOverride ?? emp.costOfLiving;
     this.roster.push(emp);
   },
 
@@ -73,9 +75,11 @@ const Staff = {
       JOB.SECURITY, JOB.JANITOR, JOB.ENGINEER,
       JOB.BOOTH_ATTENDANT, JOB.BOOTH_ATTENDANT,
     ].forEach(jobId => {
-      const emp  = this.generateEmployee(0);
-      emp.jobId  = jobId;
-      emp.salary = Math.round(this.JOB_TYPES.find(j => j.id === jobId).weeklySalary * emp.salaryModifier);
+      const emp    = this.generateEmployee(0);
+      const jobDef = this.JOB_TYPES.find(j => j.id === jobId);
+      emp.jobId      = jobId;
+      emp.costOfLiving = Math.round(jobDef.weeklySalary * (0.80 + Math.random() * 0.40));
+      emp.salary     = emp.costOfLiving;
       this.roster.push(emp);
     });
   },
@@ -94,6 +98,20 @@ const Staff = {
 
   advanceExperience() {
     this.roster.forEach(s => s.weeksEmployed++);
+  },
+
+  applyInflation() {
+    const weeklyRate = Population.inflationRate / 52;
+    this.roster.forEach(s => {
+      s.costOfLiving = Math.round(s.costOfLiving * (1 + weeklyRate));
+    });
+  },
+
+  updateMoods() {
+    this.roster.forEach(s => {
+      const ratio = s.salary / s.costOfLiving;
+      s.mood = Math.round(Math.max(0, Math.min(100, ratio / 2 * 100)));
+    });
   },
 
   // ── Staffing requirements ──────────────────────────────────────────────────
@@ -219,6 +237,8 @@ const Staff = {
   },
 
   buildRosterView() {
+    if (this._selectedStaffId) { this.buildStaffDetail(this._selectedStaffId); return; }
+
     const container = document.getElementById('staff-overview');
 
     const bodyRows = this.JOB_TYPES.flatMap(job => {
@@ -235,7 +255,7 @@ const Staff = {
         const expBadge = expLabel
           ? `<span class="exp-badge exp-${expLabel.toLowerCase()}">${expLabel}</span>`
           : '';
-        return `<tr>
+        return `<tr class="staff-row-clickable" data-id="${s.instanceId}">
           <td>${s.name} ${expBadge}</td>
           <td>$${s.salary.toLocaleString()}/wk</td>
           <td><span class="mood-badge ${moodCls}">${moodLabel}</span></td>
@@ -248,6 +268,85 @@ const Staff = {
         <thead><tr><th>Employee</th><th>Salary</th><th>Mood</th></tr></thead>
         <tbody>${bodyRows.join('')}</tbody>
       </table>`;
+
+    container.querySelectorAll('.staff-row-clickable').forEach(row =>
+      row.addEventListener('click', () => this.buildStaffDetail(row.dataset.id))
+    );
+  },
+
+  buildStaffDetail(instanceId) {
+    const s = this.roster.find(e => e.instanceId === instanceId);
+    if (!s) { this._selectedStaffId = null; this.buildRosterView(); return; }
+    this._selectedStaffId = instanceId;
+
+    const container = document.getElementById('staff-overview');
+    const job       = this.JOB_TYPES.find(j => j.id === s.jobId);
+    const { label: moodLabel, cls: moodCls } = this.getMoodInfo(s.mood);
+    const { label: expLabel } = this.getExperienceTier(s.weeksEmployed);
+    const expBadge = expLabel
+      ? `<span class="exp-badge exp-${expLabel.toLowerCase()}">${expLabel}</span>`
+      : '';
+
+    const years = Math.floor(s.weeksEmployed / 52);
+    const weeks = s.weeksEmployed % 52;
+    const empStr = years > 0 && weeks > 0 ? `${years} yr, ${weeks} wk`
+                 : years > 0              ? `${years} yr`
+                 :                          `${weeks} wk`;
+
+    container.innerHTML = `
+      <div class="staff-detail">
+        <button class="ride-back-btn" id="sdx-back">← Roster</button>
+        <div class="ride-detail-name">${s.name} ${expBadge}</div>
+        <div class="staff-detail-job">${job.label}</div>
+        <div class="staff-detail-stats">
+          <div class="staff-detail-row">
+            <span class="staff-detail-label">Employed</span>
+            <span>${empStr}</span>
+          </div>
+          <div class="staff-detail-row">
+            <span class="staff-detail-label">Salary</span>
+            <span>$${s.salary.toLocaleString()}/wk</span>
+          </div>
+          <div class="staff-detail-row">
+            <span class="staff-detail-label">Mood</span>
+            <span><span class="mood-badge ${moodCls}">${moodLabel}</span></span>
+          </div>
+        </div>
+        <div class="staff-propose-salary">
+          <label class="staff-detail-label">Propose New Salary</label>
+          <div class="staff-propose-row">
+            <input type="number" id="sdx-salary-input" min="0" value="${s.salary}">
+            <button class="ride-action-btn" id="sdx-propose">Propose</button>
+          </div>
+          <p id="sdx-propose-error" class="form-error hidden"></p>
+        </div>
+        <div class="ride-detail-actions">
+          <button class="ride-action-btn ride-action-danger" id="sdx-fire">Fire</button>
+        </div>
+      </div>`;
+
+    document.getElementById('sdx-back').addEventListener('click', () => {
+      this._selectedStaffId = null;
+      this.buildRosterView();
+    });
+    document.getElementById('sdx-propose').addEventListener('click', () => {
+      const val    = parseInt(document.getElementById('sdx-salary-input').value) || 0;
+      const errEl  = document.getElementById('sdx-propose-error');
+      if (val <= 0) {
+        errEl.textContent = 'Enter a valid salary.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      s.salary = val;
+      errEl.classList.add('hidden');
+      document.getElementById('sdx-propose').textContent = 'Proposed ✓';
+      document.getElementById('sdx-propose').disabled = true;
+    });
+    document.getElementById('sdx-fire').addEventListener('click', () => {
+      this.roster = this.roster.filter(e => e.instanceId !== instanceId);
+      this._selectedStaffId = null;
+      this.buildRosterView();
+    });
   },
 
   // ── Postings view ──────────────────────────────────────────────────────────

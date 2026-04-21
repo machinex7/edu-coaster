@@ -153,6 +153,8 @@ const Finance = {
     processConstruction();            // deducts constructionCosts and advances build progress
 
     Staff.advanceExperience();        // increment weeksEmployed for all staff
+    Staff.applyInflation();           // grow each employee's costOfLiving by one week of annual inflation
+    Staff.updateMoods();              // recalculate mood from salary vs costOfLiving
     Staff.advancePostings();          // increment weeksActive for all postings
     Staff.generateCandidates();       // new applicants per round when postings exist
     Staff.advanceCandidates();        // withdrawal check, then increment weeksAsCandidate

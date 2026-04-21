@@ -19,6 +19,6 @@ const Population = {
 
   // ── External economic conditions ───────────────────────────────────────────
   utilityMultiplier: 1,     // applied to all ride utility costs each round
-  inflationRate:     1.02,  // annual rate; will adjust cost-of-living and merchandise
+  inflationRate:     0.02,  // annual rate; applied weekly to staff cost-of-living
 
 };

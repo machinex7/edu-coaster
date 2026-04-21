@@ -768,6 +768,18 @@ header h1 {
 .exp-senior { background: #3b1f6e; color: #c4b5fd; }
 .exp-lead   { background: #3d1a1a; color: #fca5a5; }
 
+.staff-row-clickable { cursor: pointer; }
+.staff-row-clickable:hover td { background: #1f2937; }
+
+.staff-detail { padding: 12px 14px; display: flex; flex-direction: column; gap: 10px; }
+.staff-detail-job { font-size: 0.78rem; color: #9ca3af; margin-top: -4px; }
+.staff-detail-stats { display: flex; flex-direction: column; gap: 6px; margin-top: 2px; }
+.staff-detail-row { display: flex; justify-content: space-between; font-size: 0.78rem; color: #e5e7eb; }
+.staff-detail-label { color: #6b7280; font-size: 0.72rem; }
+.staff-propose-salary { display: flex; flex-direction: column; gap: 5px; border-top: 1px solid #374151; padding-top: 10px; }
+.staff-propose-row { display: flex; gap: 6px; }
+.staff-propose-row input { flex: 1; background: #111827; border: 1px solid #374151; color: #e5e7eb; border-radius: 5px; padding: 5px 8px; font-size: 0.78rem; }
+
 /* ── Pricing panel ── */
 .price-exhaustion-row {
   display: flex;
