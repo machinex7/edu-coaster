@@ -19,6 +19,7 @@ function canOpenPark() {
 function openPark() {
   if (!canOpenPark()) return;
   gameStage = STAGE.PLAY;
+  Population.populationEvents.push({ modifier: 50, comment: "Everyone is excited for the grand opening!" });
   document.getElementById('open-park-btn').classList.add('hidden');
   document.getElementById('next-round-btn').classList.remove('hidden');
   updateHUD();
@@ -50,6 +51,14 @@ function showRoundSummary(report) {
   const netEl = document.getElementById('summary-net');
   netEl.textContent = (net >= 0 ? '+' : '\u2212') + `$${Math.abs(net).toLocaleString()}`;
   netEl.className   = net >= 0 ? 'summary-pos' : 'summary-neg';
+
+  const eventsEl = document.getElementById('summary-events');
+  if (report.populationEvents.length > 0) {
+    eventsEl.innerHTML = report.populationEvents.map(e => `<div class="modal-event">${e.comment}</div>`).join('');
+    eventsEl.classList.remove('hidden');
+  } else {
+    eventsEl.classList.add('hidden');
+  }
 
   document.getElementById('round-modal').classList.remove('hidden');
 }

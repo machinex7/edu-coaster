@@ -161,6 +161,7 @@ const Finance = {
     Staff.advanceCandidates();        // withdrawal check, then increment weeksAsCandidate
     this.advancePriceExhaustion();    // decay price fatigue by 1
     Security.advanceOpinion(security.unhandled); // decay then add unhandled incidents
+    const populationEvents = Population.populationEvents.map(e => ({ ...e }));
     Population.tickEvents();          // tick population event modifiers toward 0
 
     return {
@@ -176,6 +177,7 @@ const Finance = {
       totalExpenses: staffCosts + utilityCosts + constructionCosts + security.theftLoss,
       rideEfficiency: this.rideOpinion,
       security: { ...security, opinionAfter: Security.opinion },
+      populationEvents,
     };
   },
 
