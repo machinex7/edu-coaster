@@ -36,7 +36,7 @@ const Shopping = {
   // theftMultiplier: ≥1, each missing worker adds 25% to the theft rate.
   calcStaffingState() {
     const needed  = this.calcWorkersNeeded();
-    const actual  = Staff.roster.filter(s => s.jobId === JOB.MERCHANDISE_ATTENDANT).length;
+    const actual  = Staff.roster.filter(s => s.jobId === JOB.MERCHANDISE_ATTENDANT && s.sicknessWeeksRemaining === 0).length;
     const deficit = Math.max(0, needed - actual);
     return {
       staffRatio:      needed > 0 ? Math.min(1, actual / needed) : 1,
