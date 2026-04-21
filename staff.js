@@ -141,7 +141,7 @@ const Staff = {
           s.events.push({ moodModifier: -10, comment: 'I feel sick...' });
         } else if (roll < this.INJURY_RATE + this.SICKNESS_RATE + vacationChance) {
           s.weeksOut = this.VACATION_WEEKS;
-          s.events.push({ moodModifier: 15, comment: 'Taking a vacation!' });
+          s.events.push({ moodModifier: 15 + 10 * (this.VACATION_WEEKS - 1), comment: 'Taking a vacation!' });
         }
       }
     });
