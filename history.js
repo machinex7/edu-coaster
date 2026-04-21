@@ -26,6 +26,7 @@ const History = {
       staffCount:          Staff.roster.length,
       staffMood:           Math.round(avgMood),
       runningRides:        installedRides.filter(r => r.status === STATUS.ACTIVE && isRideConnected(r)).length,
+      brokenRides:         installedRides.filter(r => r.status === STATUS.BROKEN_DOWN).length,
       jobPostings:         Staff.postings.length,
       matchingCandidates:  Staff.candidates.filter(c => Staff.findMatchingPosting(c) !== null).length,
       theftLoss:           report.theftLoss,
