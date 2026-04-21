@@ -24,7 +24,9 @@ const Staff = {
     { id: JOB.HR,               label: 'HR',               plural: 'HR',                weeklySalary: 1600 },
   ],
 
-  POSTING_WEEKLY_COST: 75,
+  POSTING_WEEKLY_COST:    75,
+  SICKNESS_RATE_SHORT:  0.05,  // per-round chance of 1-week illness
+  SICKNESS_RATE_LONG:   0.01,  // per-round chance of 4-week illness
 
   // ── State ──────────────────────────────────────────────────────────────────
   // staff entries: { instanceId, name, jobId, salary, skillModifier, costOfLiving, mood (0–100), weeksEmployed }
@@ -128,12 +130,12 @@ const Staff = {
         s.sicknessWeeksRemaining--;
       } else {
         const roll = Math.random();
-        if (roll < 0.01) {
+        if (roll < this.SICKNESS_RATE_LONG) {
           s.sicknessWeeksRemaining = 4;
-          s.events.push({ moodModifier: -20, comment: 'Out sick for the next 4 weeks.' });
-        } else if (roll < 0.06) {
+          s.events.push({ moodModifier: -20, comment: 'I feel really sick...' });
+        } else if (roll < this.SICKNESS_RATE_LONG + this.SICKNESS_RATE_SHORT) {
           s.sicknessWeeksRemaining = 1;
-          s.events.push({ moodModifier: -10, comment: 'Out sick this week.' });
+          s.events.push({ moodModifier: -10, comment: 'I feel sick...' });
         }
       }
     });
