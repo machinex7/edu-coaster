@@ -79,9 +79,10 @@ const Staff = {
     ].forEach(jobId => {
       const emp    = this.generateEmployee(0);
       const jobDef = this.JOB_TYPES.find(j => j.id === jobId);
-      emp.jobId      = jobId;
+      emp.jobId        = jobId;
       emp.costOfLiving = Math.round(jobDef.weeklySalary * (0.80 + Math.random() * 0.40));
-      emp.salary     = emp.costOfLiving;
+      emp.salary       = emp.costOfLiving;
+      emp.mood         = 50;
       this.roster.push(emp);
     });
   },
@@ -99,7 +100,13 @@ const Staff = {
   },
 
   advanceExperience() {
-    this.roster.forEach(s => s.weeksEmployed++);
+    this.roster.forEach(s => {
+      const tierBefore = this.getExperienceTier(s.weeksEmployed).tier;
+      s.weeksEmployed++;
+      if (this.getExperienceTier(s.weeksEmployed).tier > tierBefore) {
+        s.events.push({ moodModifier: 20, comment: 'Excited for my new title.' });
+      }
+    });
   },
 
   applyInflation() {
