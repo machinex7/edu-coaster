@@ -308,13 +308,17 @@ const Staff = {
             <span>$${s.salary.toLocaleString()}/wk</span>
           </div>
           <div class="staff-detail-row">
-            <span class="staff-detail-label">Cost of Living</span>
-            <span>$${s.costOfLiving.toLocaleString()}/wk</span>
-          </div>
-          <div class="staff-detail-row">
             <span class="staff-detail-label">Mood</span>
             <span><span class="mood-badge ${moodCls}">${moodLabel}</span></span>
           </div>
+        </div>
+        <div class="staff-propose-salary">
+          <label class="staff-detail-label">Propose Salary</label>
+          <div class="staff-propose-row">
+            <input type="number" id="sdx-salary-input" min="0" value="${s.salary}">
+            <button class="ride-action-btn" id="sdx-propose">/wk</button>
+          </div>
+          <p id="sdx-propose-error" class="form-error hidden"></p>
         </div>
         <div class="ride-detail-actions">
           <button class="ride-action-btn ride-action-danger" id="sdx-fire">Fire</button>
@@ -324,6 +328,19 @@ const Staff = {
     document.getElementById('sdx-back').addEventListener('click', () => {
       this._selectedStaffId = null;
       this.buildRosterView();
+    });
+    document.getElementById('sdx-propose').addEventListener('click', () => {
+      const val    = parseInt(document.getElementById('sdx-salary-input').value) || 0;
+      const errEl  = document.getElementById('sdx-propose-error');
+      if (val <= 0) {
+        errEl.textContent = 'Enter a valid salary.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      s.salary = val;
+      errEl.classList.add('hidden');
+      document.getElementById('sdx-propose').textContent = 'Proposed ✓';
+      document.getElementById('sdx-propose').disabled = true;
     });
     document.getElementById('sdx-fire').addEventListener('click', () => {
       this.roster = this.roster.filter(e => e.instanceId !== instanceId);
