@@ -320,6 +320,15 @@ const Staff = {
                  : years > 0              ? `${years} yr`
                  :                          `${weeks} wk`;
 
+    let taskHtml = '';
+    if (s.jobId === JOB.ENGINEER) {
+      const broken = installedRides
+        .filter(r => r.status === STATUS.BROKEN_DOWN)
+        .sort((a, b) => b.wear - a.wear);
+      const taskLabel = broken.length > 0 ? `Repairing ${broken[0].name}` : 'Maintenance';
+      taskHtml = `<div class="staff-detail-task">${taskLabel}</div>`;
+    }
+
     const bubblesHtml = s.events.length === 0 ? '' : `
       <div class="staff-events">
         ${s.events.map(e => `<div class="staff-event-bubble">${e.comment}</div>`).join('')}
@@ -330,6 +339,7 @@ const Staff = {
         <button class="ride-back-btn" id="sdx-back">← Roster</button>
         <div class="ride-detail-name">${s.name} ${expBadge}</div>
         <div class="staff-detail-job">${job.label}</div>
+        ${taskHtml}
         <div class="staff-detail-stats">
           <div class="staff-detail-row">
             <span class="staff-detail-label">Employed</span>
