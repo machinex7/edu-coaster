@@ -140,6 +140,17 @@ const Staff = {
       .reduce((total, r) => total + this.operatorsNeededForRide(r), 0);
   },
 
+  // Total mess units janitors can clear per week.
+  // Each janitor clears (40 + 5 × tier) messes/day × 7 days.
+  calcJanitorCapacity() {
+    return this.roster
+      .filter(s => s.jobId === JOB.JANITOR)
+      .reduce((sum, s) => {
+        const { tier } = this.getExperienceTier(s.weeksEmployed);
+        return sum + (40 + 5 * tier) * 7;
+      }, 0);
+  },
+
   // ── Postings ───────────────────────────────────────────────────────────────
   createPosting(jobId, minYearsExperience, salary) {
     this.postings.push({
