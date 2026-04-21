@@ -112,6 +112,19 @@ const Finance = {
     Staff.roster
       .filter(s => s.jobId === JOB.ENGINEER)
       .forEach(eng => {
+        if (eng.focus === ENGINEER_FOCUS.CONSTRUCTION) {
+          const underConstruction = [...installedRides, ...installedFacilities, ...Shopping.installed]
+            .filter(r => r.status === STATUS.UNDER_CONSTRUCTION)
+            .sort((a, b) => b.weeksCompleted - a.weeksCompleted);
+          if (underConstruction.length > 0) {
+            const target = underConstruction[0];
+            target.weeksCompleted++;
+            if (target.weeksCompleted >= target.weeksTotal) completeConstruction(target);
+            return;
+          }
+          // Nothing under construction — fall through to repair/maintenance
+        }
+
         const broken = installedRides.filter(r => r.status === STATUS.BROKEN_DOWN);
         if (broken.length > 0) {
           broken.sort((a, b) => b.wear - a.wear);

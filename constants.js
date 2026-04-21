@@ -50,3 +50,8 @@ const SECURITY_FOCUS = Object.freeze({
   GATE:   'gate',
   SHOP:   'shop',
 });
+
+const ENGINEER_FOCUS = Object.freeze({
+  MAINTENANCE:  'maintenance',
+  CONSTRUCTION: 'construction',
+});
