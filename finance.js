@@ -110,7 +110,10 @@ const Finance = {
     const fromExtremeRides = installedRides
       .filter(r => r.status === STATUS.ACTIVE && isRideConnected(r)
                 && rides.find(d => d.id === r.rideId)?.intensity === 'extreme')
-      .reduce((sum, r) => sum + (r.lastRoundRiders ?? 0) * Population.MESS_EXTREME_RIDER_RATE, 0);
+      .reduce((sum, r) => {
+        const dist = nearestBathroomDist(r);
+        return sum + (r.lastRoundRiders ?? 0) * Population.MESS_EXTREME_RIDER_RATE * dist;
+      }, 0);
 
     return Math.floor(fromGuests + fromShoppers + fromExtremeRides);
   },
