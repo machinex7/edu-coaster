@@ -11,6 +11,7 @@ const Finance = {
 
   // ── Park metrics ────────────────────────────────────────────────────────────
   parkExcitement: 0,
+  weeklyNetMess:  0,  // unhandled mess from last round; subtracted from excitement
 
   // Smoothed 0–1 score of how well rides are serving current crowds.
   // Starts at 1.0 (perfect); degrades when operators can't keep up with demand.
@@ -48,7 +49,7 @@ const Finance = {
     const runningCount = installedRides.filter(
       r => r.status === STATUS.ACTIVE && isRideConnected(r)
     ).length;
-    this.parkExcitement = runningCount * this.rideOpinion;
+    this.parkExcitement = Math.max(0, runningCount * this.rideOpinion - this.weeklyNetMess);
   },
 
   // ── Attendance ──────────────────────────────────────────────────────────────
@@ -100,6 +101,22 @@ const Finance = {
   // 1 vehicle per 3 visitors who want to come (based on demand, not throughput).
   calcParkingRevenue(dailyDemand) {
     return Math.floor(dailyDemand * 7 / 3) * this.parkingPrice;
+  },
+
+  // ── Mess generation ──────────────────────────────────────────────────────────
+  calcMessGenerated(weeklyAttendance) {
+    const fromGuests   = weeklyAttendance * Population.MESS_GUEST_RATE;
+    const fromShoppers = weeklyAttendance * Population.BUYER_RATE * Population.MESS_SHOPPER_RATE;
+
+    const fromExtremeRides = installedRides
+      .filter(r => r.status === STATUS.ACTIVE && isRideConnected(r)
+                && rides.find(d => d.id === r.rideId)?.intensity === 'extreme')
+      .reduce((sum, r) => {
+        const dist = nearestBathroomDist(r);
+        return sum + (r.lastRoundRiders ?? 0) * Population.MESS_EXTREME_RIDER_RATE * dist;
+      }, 0);
+
+    return Math.floor(fromGuests + fromShoppers + fromExtremeRides);
   },
 
   // ── Cost sources ─────────────────────────────────────────────────────────────
@@ -159,6 +176,7 @@ const Finance = {
     Staff.advancePostings();          // increment weeksActive for all postings
     Staff.generateCandidates();       // new applicants per round when postings exist
     Staff.advanceCandidates();        // withdrawal check, then increment weeksAsCandidate
+    this.weeklyNetMess = Math.max(0, this.calcMessGenerated(weeklyAttendance) - Staff.calcJanitorCapacity());
     this.advancePriceExhaustion();    // decay price fatigue by 1
     Security.advanceOpinion(security.unhandled); // decay then add unhandled incidents
     const populationEvents = Population.populationEvents.map(e => ({ ...e }));

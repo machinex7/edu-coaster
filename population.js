@@ -17,6 +17,11 @@ const Population = {
   UNRIDDEN_INCIDENT_RATE: 0.20,   // fraction of visitors who rode nothing who cause incidents
   RANDOM_INCIDENT_RATE:   0.001,  // baseline incident chance per visitor per week
 
+  // Mess generation rates (mess units per week).
+  MESS_GUEST_RATE:         0.01,  // 1 per 100 guests
+  MESS_SHOPPER_RATE:       0.20,  // 1 per 5 shoppers (guests × BUYER_RATE)
+  MESS_EXTREME_RIDER_RATE: 0.05,  // 1 per 20 riders on each extreme-intensity ride
+
   // ── External economic conditions ───────────────────────────────────────────
   utilityMultiplier: 1,     // applied to all ride utility costs each round
   inflationRate:     0.02,  // annual rate; applied weekly to staff cost-of-living
