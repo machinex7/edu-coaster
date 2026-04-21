@@ -342,6 +342,14 @@ const Staff = {
           </div>
           <p id="sdx-propose-error" class="form-error hidden"></p>
         </div>
+        <div class="staff-propose-salary">
+          <label class="staff-detail-label">Give Bonus</label>
+          <div class="staff-propose-row">
+            <input type="number" id="sdx-bonus-input" min="500" step="500" value="500">
+            <button class="ride-action-btn" id="sdx-bonus">Give</button>
+          </div>
+          <p id="sdx-bonus-error" class="form-error hidden"></p>
+        </div>
         <div class="ride-detail-actions">
           <button class="ride-action-btn ride-action-danger" id="sdx-fire">Fire</button>
         </div>
@@ -352,22 +360,36 @@ const Staff = {
       this.buildRosterView();
     });
     document.getElementById('sdx-propose').addEventListener('click', () => {
-      const val    = parseInt(document.getElementById('sdx-salary-input').value) || 0;
-      const errEl  = document.getElementById('sdx-propose-error');
+      const val   = parseInt(document.getElementById('sdx-salary-input').value) || 0;
+      const errEl = document.getElementById('sdx-propose-error');
       if (val <= 0) {
         errEl.textContent = 'Enter a valid salary.';
         errEl.classList.remove('hidden');
         return;
       }
-      if (val > s.salary) {
-        s.events.push({ moodModifier: 10, comment: 'Happy about a raise.' });
-      } else if (val < s.salary) {
-        s.events.push({ moodModifier: -10, comment: 'Unhappy about a pay cut.' });
+      if (val !== s.salary) {
+        const modifier = Math.round((val - s.salary) / s.salary * 100);
+        const comment  = modifier > 0 ? 'Happy about a raise.' : 'Unhappy about a pay cut.';
+        s.events.push({ moodModifier: modifier, comment });
       }
       s.salary = val;
       errEl.classList.add('hidden');
       document.getElementById('sdx-propose').textContent = 'Proposed ✓';
       document.getElementById('sdx-propose').disabled = true;
+    });
+    document.getElementById('sdx-bonus').addEventListener('click', () => {
+      const val   = parseInt(document.getElementById('sdx-bonus-input').value) || 0;
+      const errEl = document.getElementById('sdx-bonus-error');
+      if (val <= 0 || val % 500 !== 0) {
+        errEl.textContent = 'Bonus must be a multiple of $500.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      const modifier = (val / 500) * 10;
+      s.events.push({ moodModifier: modifier, comment: `Happy about a $${val.toLocaleString()} bonus.` });
+      errEl.classList.add('hidden');
+      document.getElementById('sdx-bonus').textContent = 'Given ✓';
+      document.getElementById('sdx-bonus').disabled = true;
     });
     document.getElementById('sdx-fire').addEventListener('click', () => {
       this.roster = this.roster.filter(e => e.instanceId !== instanceId);
