@@ -780,6 +780,28 @@ header h1 {
 .staff-propose-row { display: flex; gap: 6px; }
 .staff-propose-row input { flex: 1; background: #111827; border: 1px solid #374151; color: #e5e7eb; border-radius: 5px; padding: 5px 8px; font-size: 0.78rem; }
 
+.staff-events { display: flex; flex-direction: column; gap: 14px; padding: 2px 0; }
+.staff-event-bubble {
+  position: relative;
+  background: #1a2844;
+  border: 1px solid #2d4a6e;
+  border-radius: 14px;
+  padding: 7px 12px;
+  font-size: 0.74rem;
+  color: #93c5fd;
+  font-style: italic;
+  margin-bottom: 4px;
+}
+.staff-event-bubble::before,
+.staff-event-bubble::after {
+  content: '';
+  position: absolute;
+  background: #2d4a6e;
+  border-radius: 50%;
+}
+.staff-event-bubble::before { width: 7px; height: 7px; bottom: -11px; left: 16px; }
+.staff-event-bubble::after  { width: 4px; height: 4px; bottom: -18px; left: 12px; }
+
 /* ── Pricing panel ── */
 .price-exhaustion-row {
   display: flex;

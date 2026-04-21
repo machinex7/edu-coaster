@@ -57,15 +57,17 @@ const Staff = {
       mood:          80,
       weeksEmployed: yearsExp * 52,
       focus:         SECURITY_FOCUS.PATROL,
+      events:        [],
     };
   },
 
   hireStaff(jobId, salaryOverride) {
     const emp    = this.generateEmployee(0);
     const jobDef = this.JOB_TYPES.find(j => j.id === jobId);
-    emp.jobId      = jobId;
+    emp.jobId        = jobId;
     emp.costOfLiving = Math.round(jobDef.weeklySalary * (0.80 + Math.random() * 0.40));
-    emp.salary     = salaryOverride ?? emp.costOfLiving;
+    emp.salary       = salaryOverride ?? emp.costOfLiving;
+    emp.events.push({ moodModifier: 20, comment: 'Excited to start a new job.' });
     this.roster.push(emp);
   },
 
@@ -109,8 +111,13 @@ const Staff = {
 
   updateMoods() {
     this.roster.forEach(s => {
-      const ratio = s.salary / s.costOfLiving;
-      s.mood = Math.round(Math.max(0, Math.min(100, ratio / 2 * 100)));
+      const ratio      = s.salary / s.costOfLiving;
+      const base       = ratio / 2 * 100;
+      const eventBonus = s.events.reduce((sum, e) => sum + e.moodModifier, 0);
+      s.mood = Math.round(Math.max(0, Math.min(100, base + eventBonus)));
+
+      s.events.forEach(e => { e.moodModifier -= Math.sign(e.moodModifier) * 5; });
+      s.events = s.events.filter(e => Math.abs(e.moodModifier) >= 5);
     });
   },
 
@@ -183,7 +190,9 @@ const Staff = {
     const posting = this.findMatchingPosting(candidate);
     if (!posting) return;
 
-    this.roster.push({ ...candidate });
+    const emp = { ...candidate, events: [...(candidate.events ?? [])] };
+    emp.events.push({ moodModifier: 20, comment: 'Excited to start a new job.' });
+    this.roster.push(emp);
     this.postings   = this.postings.filter(p => p.instanceId !== posting.instanceId);
     this.candidates = this.candidates.filter(c => c.instanceId !== instanceId);
     this.buildCandidatesView();
@@ -293,6 +302,11 @@ const Staff = {
                  : years > 0              ? `${years} yr`
                  :                          `${weeks} wk`;
 
+    const bubblesHtml = s.events.length === 0 ? '' : `
+      <div class="staff-events">
+        ${s.events.map(e => `<div class="staff-event-bubble">${e.comment}</div>`).join('')}
+      </div>`;
+
     container.innerHTML = `
       <div class="staff-detail">
         <button class="ride-back-btn" id="sdx-back">← Roster</button>
@@ -312,6 +326,7 @@ const Staff = {
             <span><span class="mood-badge ${moodCls}">${moodLabel}</span></span>
           </div>
         </div>
+        ${bubblesHtml}
         <div class="staff-propose-salary">
           <label class="staff-detail-label">Propose New Salary</label>
           <div class="staff-propose-row">
