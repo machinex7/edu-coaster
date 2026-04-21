@@ -106,6 +106,17 @@ const Staff = {
     });
   },
 
+  updateMoods() {
+    this.roster.forEach(s => {
+      const ratio = s.salary / s.costOfLiving;
+      // piecewise: ratio 0.5→0, 1.0→50, 2.0→100
+      const mood = ratio <= 1
+        ? (ratio - 0.5) * 100
+        : 50 + (ratio - 1) * 50;
+      s.mood = Math.round(Math.max(0, Math.min(100, mood)));
+    });
+  },
+
   // ── Staffing requirements ──────────────────────────────────────────────────
   operatorsNeededForRide(record) {
     const tiles = record.footprint.flat().filter(v => v === 1).length;
