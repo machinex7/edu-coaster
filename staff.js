@@ -313,10 +313,10 @@ const Staff = {
           </div>
         </div>
         <div class="staff-propose-salary">
-          <label class="staff-detail-label">Propose Salary</label>
+          <label class="staff-detail-label">Propose New Salary</label>
           <div class="staff-propose-row">
             <input type="number" id="sdx-salary-input" min="0" value="${s.salary}">
-            <button class="ride-action-btn" id="sdx-propose">/wk</button>
+            <button class="ride-action-btn" id="sdx-propose">Propose</button>
           </div>
           <p id="sdx-propose-error" class="form-error hidden"></p>
         </div>
