@@ -59,7 +59,8 @@ const Finance = {
   calcDailyDemand() {
     const exhaustionFactor = Math.max(0, 1 - this.priceExhaustion / 100);
     const securityFactor   = Math.max(0, 1 - Math.sqrt(Security.opinion) / 100);
-    return this.parkExcitement * 20 * exhaustionFactor * securityFactor;
+    const eventFactor      = Population.populationEvents.reduce((f, e) => f * (1 + e.modifier / 100), 1);
+    return this.parkExcitement * 20 * exhaustionFactor * securityFactor * eventFactor;
   },
 
   // How many people can actually enter: booth attendants are the bottleneck.
@@ -160,6 +161,7 @@ const Finance = {
     Staff.advanceCandidates();        // withdrawal check, then increment weeksAsCandidate
     this.advancePriceExhaustion();    // decay price fatigue by 1
     Security.advanceOpinion(security.unhandled); // decay then add unhandled incidents
+    Population.tickEvents();          // tick population event modifiers toward 0
 
     return {
       weeklyAttendance,

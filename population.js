@@ -21,4 +21,16 @@ const Population = {
   utilityMultiplier: 1,     // applied to all ride utility costs each round
   inflationRate:     0.02,  // annual rate; applied weekly to staff cost-of-living
 
+  // ── Population events ──────────────────────────────────────────────────────
+  // Each entry: { modifier: number, comment: string }
+  // modifier is a percentage: 50 = +50% attendance, -20 = -20% attendance.
+  // Each round, modifiers tick 2 toward 0; events with |modifier| < 2 are removed.
+  populationEvents: [],
+
+  tickEvents() {
+    this.populationEvents = this.populationEvents
+      .map(e => ({ ...e, modifier: e.modifier > 0 ? e.modifier - 2 : e.modifier + 2 }))
+      .filter(e => Math.abs(e.modifier) >= 2);
+  },
+
 };
