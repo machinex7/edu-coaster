@@ -11,6 +11,7 @@ const Finance = {
 
   // ── Park metrics ────────────────────────────────────────────────────────────
   parkExcitement: 0,
+  weeklyNetMess:  0,  // unhandled mess from last round; subtracted from excitement
 
   // Smoothed 0–1 score of how well rides are serving current crowds.
   // Starts at 1.0 (perfect); degrades when operators can't keep up with demand.
@@ -48,7 +49,7 @@ const Finance = {
     const runningCount = installedRides.filter(
       r => r.status === STATUS.ACTIVE && isRideConnected(r)
     ).length;
-    this.parkExcitement = runningCount * this.rideOpinion;
+    this.parkExcitement = Math.max(0, runningCount * this.rideOpinion - this.weeklyNetMess);
   },
 
   // ── Attendance ──────────────────────────────────────────────────────────────
@@ -175,6 +176,7 @@ const Finance = {
     Staff.advancePostings();          // increment weeksActive for all postings
     Staff.generateCandidates();       // new applicants per round when postings exist
     Staff.advanceCandidates();        // withdrawal check, then increment weeksAsCandidate
+    this.weeklyNetMess = Math.max(0, this.calcMessGenerated(weeklyAttendance) - Staff.calcJanitorCapacity());
     this.advancePriceExhaustion();    // decay price fatigue by 1
     Security.advanceOpinion(security.unhandled); // decay then add unhandled incidents
     const populationEvents = Population.populationEvents.map(e => ({ ...e }));
