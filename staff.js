@@ -116,8 +116,8 @@ const Staff = {
       const eventBonus = s.events.reduce((sum, e) => sum + e.moodModifier, 0);
       s.mood = Math.round(Math.max(0, Math.min(100, base + eventBonus)));
 
-      s.events.forEach(e => { e.moodModifier -= Math.sign(e.moodModifier) * 5; });
-      s.events = s.events.filter(e => Math.abs(e.moodModifier) >= 5);
+      s.events.forEach(e => { e.moodModifier -= Math.sign(e.moodModifier) * 2; });
+      s.events = s.events.filter(e => Math.abs(e.moodModifier) >= 2);
     });
   },
 
@@ -351,6 +351,11 @@ const Staff = {
         errEl.textContent = 'Enter a valid salary.';
         errEl.classList.remove('hidden');
         return;
+      }
+      if (val > s.salary) {
+        s.events.push({ moodModifier: 10, comment: 'Happy about a raise.' });
+      } else if (val < s.salary) {
+        s.events.push({ moodModifier: -10, comment: 'Unhappy about a pay cut.' });
       }
       s.salary = val;
       errEl.classList.add('hidden');
