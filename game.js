@@ -297,6 +297,7 @@ function _commitPlace(item, category, startRow, startCol, status) {
   if (category === CATEGORY.RIDE) {
     record.rideId = item.id;
     record.name   = item.name;
+    record.wear   = 0;
     installedRides.push(record);
   } else if (category === CATEGORY.SHOP) {
     record.shopId = item.id;

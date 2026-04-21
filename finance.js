@@ -103,6 +103,18 @@ const Finance = {
     return Math.floor(dailyDemand * 7 / 3) * this.parkingPrice;
   },
 
+  // ── Wear & breakdown ─────────────────────────────────────────────────────────
+  // Called each round after computeRideOpinion() so lastRoundRiders is current.
+  // Accumulates rider wear then rolls for breakdown at 0.1% per wear point.
+  processWear() {
+    installedRides
+      .filter(r => r.status === STATUS.ACTIVE && isRideConnected(r))
+      .forEach(r => {
+        r.wear += r.lastRoundRiders ?? 0;
+        if (Math.random() < r.wear * 0.001) r.status = STATUS.BROKEN_DOWN;
+      });
+  },
+
   // ── Mess generation ──────────────────────────────────────────────────────────
   calcMessGenerated(weeklyAttendance) {
     const fromGuests   = weeklyAttendance * Population.MESS_GUEST_RATE;
@@ -146,6 +158,7 @@ const Finance = {
     const daily           = Math.min(dailyDemand, dailyThroughput);
 
     this.computeRideOpinion(daily);   // updates rideOpinion for next round; sets lastRoundRiders
+    this.processWear();               // accumulate wear then roll for breakdown
 
     const weeklyAttendance  = Math.round(daily * 7);
     const gateRevenue       = this.calcGateRevenue(daily);
