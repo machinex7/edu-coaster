@@ -57,15 +57,17 @@ const Staff = {
       mood:          80,
       weeksEmployed: yearsExp * 52,
       focus:         SECURITY_FOCUS.PATROL,
+      events:        [],
     };
   },
 
   hireStaff(jobId, salaryOverride) {
     const emp    = this.generateEmployee(0);
     const jobDef = this.JOB_TYPES.find(j => j.id === jobId);
-    emp.jobId      = jobId;
+    emp.jobId        = jobId;
     emp.costOfLiving = Math.round(jobDef.weeklySalary * (0.80 + Math.random() * 0.40));
-    emp.salary     = salaryOverride ?? emp.costOfLiving;
+    emp.salary       = salaryOverride ?? emp.costOfLiving;
+    emp.events.push({ moodModifier: 20, comment: 'Excited to start a new job.' });
     this.roster.push(emp);
   },
 
@@ -77,9 +79,10 @@ const Staff = {
     ].forEach(jobId => {
       const emp    = this.generateEmployee(0);
       const jobDef = this.JOB_TYPES.find(j => j.id === jobId);
-      emp.jobId      = jobId;
+      emp.jobId        = jobId;
       emp.costOfLiving = Math.round(jobDef.weeklySalary * (0.80 + Math.random() * 0.40));
-      emp.salary     = emp.costOfLiving;
+      emp.salary       = emp.costOfLiving;
+      emp.mood         = 50;
       this.roster.push(emp);
     });
   },
@@ -97,7 +100,13 @@ const Staff = {
   },
 
   advanceExperience() {
-    this.roster.forEach(s => s.weeksEmployed++);
+    this.roster.forEach(s => {
+      const tierBefore = this.getExperienceTier(s.weeksEmployed).tier;
+      s.weeksEmployed++;
+      if (this.getExperienceTier(s.weeksEmployed).tier > tierBefore) {
+        s.events.push({ moodModifier: 20, comment: 'Excited for my new title.' });
+      }
+    });
   },
 
   applyInflation() {
@@ -109,8 +118,13 @@ const Staff = {
 
   updateMoods() {
     this.roster.forEach(s => {
-      const ratio = s.salary / s.costOfLiving;
-      s.mood = Math.round(Math.max(0, Math.min(100, ratio / 2 * 100)));
+      const ratio      = s.salary / s.costOfLiving;
+      const base       = ratio / 2 * 100;
+      const eventBonus = s.events.reduce((sum, e) => sum + e.moodModifier, 0);
+      s.mood = Math.round(Math.max(0, Math.min(100, base + eventBonus)));
+
+      s.events.forEach(e => { e.moodModifier -= Math.sign(e.moodModifier) * 2; });
+      s.events = s.events.filter(e => Math.abs(e.moodModifier) >= 2);
     });
   },
 
@@ -183,7 +197,9 @@ const Staff = {
     const posting = this.findMatchingPosting(candidate);
     if (!posting) return;
 
-    this.roster.push({ ...candidate });
+    const emp = { ...candidate, events: [...(candidate.events ?? [])] };
+    emp.events.push({ moodModifier: 20, comment: 'Excited to start a new job.' });
+    this.roster.push(emp);
     this.postings   = this.postings.filter(p => p.instanceId !== posting.instanceId);
     this.candidates = this.candidates.filter(c => c.instanceId !== instanceId);
     this.buildCandidatesView();
@@ -293,6 +309,11 @@ const Staff = {
                  : years > 0              ? `${years} yr`
                  :                          `${weeks} wk`;
 
+    const bubblesHtml = s.events.length === 0 ? '' : `
+      <div class="staff-events">
+        ${s.events.map(e => `<div class="staff-event-bubble">${e.comment}</div>`).join('')}
+      </div>`;
+
     container.innerHTML = `
       <div class="staff-detail">
         <button class="ride-back-btn" id="sdx-back">← Roster</button>
@@ -312,6 +333,7 @@ const Staff = {
             <span><span class="mood-badge ${moodCls}">${moodLabel}</span></span>
           </div>
         </div>
+        ${bubblesHtml}
         <div class="staff-propose-salary">
           <label class="staff-detail-label">Propose New Salary</label>
           <div class="staff-propose-row">
@@ -319,6 +341,14 @@ const Staff = {
             <button class="ride-action-btn" id="sdx-propose">Propose</button>
           </div>
           <p id="sdx-propose-error" class="form-error hidden"></p>
+        </div>
+        <div class="staff-propose-salary">
+          <label class="staff-detail-label">Give Bonus</label>
+          <div class="staff-propose-row">
+            <input type="number" id="sdx-bonus-input" min="500" step="500" value="500">
+            <button class="ride-action-btn" id="sdx-bonus">Give</button>
+          </div>
+          <p id="sdx-bonus-error" class="form-error hidden"></p>
         </div>
         <div class="ride-detail-actions">
           <button class="ride-action-btn ride-action-danger" id="sdx-fire">Fire</button>
@@ -330,17 +360,36 @@ const Staff = {
       this.buildRosterView();
     });
     document.getElementById('sdx-propose').addEventListener('click', () => {
-      const val    = parseInt(document.getElementById('sdx-salary-input').value) || 0;
-      const errEl  = document.getElementById('sdx-propose-error');
+      const val   = parseInt(document.getElementById('sdx-salary-input').value) || 0;
+      const errEl = document.getElementById('sdx-propose-error');
       if (val <= 0) {
         errEl.textContent = 'Enter a valid salary.';
         errEl.classList.remove('hidden');
         return;
       }
+      if (val !== s.salary) {
+        const modifier = Math.round((val - s.salary) / s.salary * 100);
+        const comment  = modifier > 0 ? 'Happy about a raise.' : 'Unhappy about a pay cut.';
+        s.events.push({ moodModifier: modifier, comment });
+      }
       s.salary = val;
       errEl.classList.add('hidden');
       document.getElementById('sdx-propose').textContent = 'Proposed ✓';
       document.getElementById('sdx-propose').disabled = true;
+    });
+    document.getElementById('sdx-bonus').addEventListener('click', () => {
+      const val   = parseInt(document.getElementById('sdx-bonus-input').value) || 0;
+      const errEl = document.getElementById('sdx-bonus-error');
+      if (val <= 0 || val % 500 !== 0) {
+        errEl.textContent = 'Bonus must be a multiple of $500.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      const modifier = (val / 500) * 10;
+      s.events.push({ moodModifier: modifier, comment: `Happy about a $${val.toLocaleString()} bonus.` });
+      errEl.classList.add('hidden');
+      document.getElementById('sdx-bonus').textContent = 'Given ✓';
+      document.getElementById('sdx-bonus').disabled = true;
     });
     document.getElementById('sdx-fire').addEventListener('click', () => {
       this.roster = this.roster.filter(e => e.instanceId !== instanceId);
