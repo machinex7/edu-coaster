@@ -60,7 +60,7 @@ const Staff = {
       weeksEmployed:           yearsExp * 52,
       focus:                   job.id === JOB.ENGINEER ? ENGINEER_FOCUS.MAINTENANCE : SECURITY_FOCUS.PATROL,
       events:                  [],
-      sicknessWeeksRemaining:  0,
+      weeksOut:  0,
     };
   },
 
@@ -126,15 +126,15 @@ const Staff = {
   // 1-week illness (checked only when already healthy).
   processSickness() {
     this.roster.forEach(s => {
-      if (s.sicknessWeeksRemaining > 0) {
-        s.sicknessWeeksRemaining--;
+      if (s.weeksOut > 0) {
+        s.weeksOut--;
       } else {
         const roll = Math.random();
         if (roll < this.SICKNESS_RATE_LONG) {
-          s.sicknessWeeksRemaining = 4;
+          s.weeksOut = 4;
           s.events.push({ moodModifier: -20, comment: 'I feel really sick...' });
         } else if (roll < this.SICKNESS_RATE_LONG + this.SICKNESS_RATE_SHORT) {
-          s.sicknessWeeksRemaining = 1;
+          s.weeksOut = 1;
           s.events.push({ moodModifier: -10, comment: 'I feel sick...' });
         }
       }
@@ -169,7 +169,7 @@ const Staff = {
   // Each janitor clears (40 + 5 × tier) messes/day × 7 days.
   calcJanitorCapacity() {
     return this.roster
-      .filter(s => s.jobId === JOB.JANITOR && s.sicknessWeeksRemaining === 0)
+      .filter(s => s.jobId === JOB.JANITOR && s.weeksOut === 0)
       .reduce((sum, s) => {
         const { tier } = this.getExperienceTier(s.weeksEmployed);
         return sum + (40 + 5 * tier) * 7;
@@ -205,7 +205,7 @@ const Staff = {
 
     let count   = 4;
     let quality = 0;
-    this.roster.filter(s => s.jobId === JOB.HR && s.sicknessWeeksRemaining === 0).forEach(s => {
+    this.roster.filter(s => s.jobId === JOB.HR && s.weeksOut === 0).forEach(s => {
       const { tier } = this.getExperienceTier(s.weeksEmployed);
       count   += tier;
       quality += tier * 5;
@@ -307,14 +307,14 @@ const Staff = {
         const expBadge = expLabel
           ? `<span class="exp-badge exp-${expLabel.toLowerCase()}">${expLabel}</span>`
           : '';
-        const sickBadge = s.sicknessWeeksRemaining > 0
-          ? `<span class="sick-badge">Sick (${s.sicknessWeeksRemaining}wk)</span>`
+        const outBadge = s.weeksOut > 0
+          ? `<span class="out-badge">Out (${s.weeksOut}wk)</span>`
           : '';
-        const statusCell = s.sicknessWeeksRemaining > 0
-          ? `<span class="sick-badge">Out sick</span>`
+        const statusCell = s.weeksOut > 0
+          ? `<span class="out-badge">Out</span>`
           : `<span class="mood-badge ${moodCls}">${moodLabel}</span>`;
         return `<tr class="staff-row-clickable" data-id="${s.instanceId}">
-          <td>${s.name} ${expBadge} ${sickBadge}</td>
+          <td>${s.name} ${expBadge} ${outBadge}</td>
           <td>$${s.salary.toLocaleString()}/wk</td>
           <td>${statusCell}</td>
         </tr>`;
@@ -352,14 +352,14 @@ const Staff = {
                  :                          `${weeks} wk`;
 
     let taskHtml = '';
-    if (s.sicknessWeeksRemaining > 0) {
-      const wks = s.sicknessWeeksRemaining;
-      taskHtml = `<div class="staff-detail-sick">Out sick — ${wks} week${wks !== 1 ? 's' : ''} remaining</div>`;
+    if (s.weeksOut > 0) {
+      const wks = s.weeksOut;
+      taskHtml = `<div class="staff-detail-out">Out — ${wks} week${wks !== 1 ? 's' : ''} remaining</div>`;
     } else if (s.jobId === JOB.ENGINEER) {
       const broken    = installedRides
         .filter(r => r.status === STATUS.BROKEN_DOWN)
         .sort((a, b) => b.wear - a.wear);
-      const engineers = this.roster.filter(e => e.jobId === JOB.ENGINEER && e.sicknessWeeksRemaining === 0);
+      const engineers = this.roster.filter(e => e.jobId === JOB.ENGINEER && e.weeksOut === 0);
       const idx       = engineers.findIndex(e => e.instanceId === s.instanceId);
 
       let taskLabel;
@@ -387,7 +387,7 @@ const Staff = {
         <div class="sec-focus-btns" id="eng-focus-btns">${focusBtns}</div>`;
     } else if (s.jobId === JOB.RIDE_OPERATOR) {
       const running   = installedRides.filter(r => r.status === STATUS.ACTIVE && isRideConnected(r));
-      const operators = this.roster.filter(o => o.jobId === JOB.RIDE_OPERATOR && o.sicknessWeeksRemaining === 0);
+      const operators = this.roster.filter(o => o.jobId === JOB.RIDE_OPERATOR && o.weeksOut === 0);
       let taskLabel;
       if (running.length === 0) {
         taskLabel = 'No rides running';

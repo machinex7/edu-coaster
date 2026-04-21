@@ -769,9 +769,9 @@ header h1 {
 .exp-senior { background: #3b1f6e; color: #c4b5fd; }
 .exp-lead   { background: #3d1a1a; color: #fca5a5; }
 
-.sick-badge { display: inline-block; padding: 1px 5px; border-radius: 3px; font-size: 0.65rem; font-weight: 600; background: #422006; color: #fed7aa; vertical-align: middle; }
-.staff-detail-sick { font-size: 0.78rem; font-weight: 600; color: #fed7aa; background: #422006; border-radius: 5px; padding: 5px 9px; margin-top: -4px; }
-.guard-sick { opacity: 0.6; }
+.out-badge { display: inline-block; padding: 1px 5px; border-radius: 3px; font-size: 0.65rem; font-weight: 600; background: #422006; color: #fed7aa; vertical-align: middle; }
+.staff-detail-out { font-size: 0.78rem; font-weight: 600; color: #fed7aa; background: #422006; border-radius: 5px; padding: 5px 9px; margin-top: -4px; }
+.guard-out { opacity: 0.6; }
 
 .staff-row-clickable { cursor: pointer; }
 .staff-row-clickable:hover td { background: #1f2937; }

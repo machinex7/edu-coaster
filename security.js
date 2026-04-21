@@ -40,7 +40,7 @@ const Security = {
 
     const total = fromOverflow + fromUnridden + fromRandom + fromShop;
 
-    const guards      = Staff.roster.filter(s => s.jobId === JOB.SECURITY && s.sicknessWeeksRemaining === 0);
+    const guards      = Staff.roster.filter(s => s.jobId === JOB.SECURITY && s.weeksOut === 0);
     const gateCount   = guards.filter(s => s.focus === SECURITY_FOCUS.GATE).length;
     const patrolCount = guards.filter(s => s.focus === SECURITY_FOCUS.PATROL).length;
     const shopCount   = guards.filter(s => s.focus === SECURITY_FOCUS.SHOP).length;
@@ -99,17 +99,17 @@ const Security = {
       const expBadge = expLabel
         ? `<span class="exp-badge exp-${expLabel.toLowerCase()}">${expLabel}</span>`
         : '';
-      const sick = s.sicknessWeeksRemaining > 0;
-      const sickBadge = sick
-        ? `<span class="sick-badge">Sick (${s.sicknessWeeksRemaining}wk)</span>`
+      const out = s.weeksOut > 0;
+      const outBadge = out
+        ? `<span class="out-badge">Out (${s.weeksOut}wk)</span>`
         : '';
       const focusBtns = this.FOCUS_META.map(m =>
         `<button class="sec-focus-btn${s.focus === m.focus ? ' active' : ''}"
-                 data-id="${s.instanceId}" data-focus="${m.focus}" ${sick ? 'disabled' : ''}>${m.label}</button>`
+                 data-id="${s.instanceId}" data-focus="${m.focus}" ${out ? 'disabled' : ''}>${m.label}</button>`
       ).join('');
-      return `<div class="security-guard-row${sick ? ' guard-sick' : ''}">
+      return `<div class="security-guard-row${out ? ' guard-out' : ''}">
         <div class="sec-guard-info">
-          <span class="sec-guard-name">${s.name} ${expBadge} ${sickBadge}</span>
+          <span class="sec-guard-name">${s.name} ${expBadge} ${outBadge}</span>
         </div>
         <div class="sec-focus-btns">${focusBtns}</div>
       </div>`;
