@@ -27,10 +27,11 @@ const Staff = {
   POSTING_WEEKLY_COST: 75,
   SICKNESS_RATE:       0.02,   // per-round chance of 1-week illness
   INJURY_RATE:         0.005,  // per-round chance of 4-week critical injury
-  VACATION_RATE:       0.04,   // per-round base chance of taking a vacation
-  VACATION_WEEKS:      1,      // vacation duration in weeks; effective chance = VACATION_RATE × VACATION_WEEKS
-  PARENTAL_LEAVE_WEEKS: 0,    // weeks of paid parental leave per child
-  RETIREMENT_MATCH_PCT: 0,    // employer 401(k) match percentage (1–10, 0 = disabled)
+  VACATION_RATE:        0.04,  // per-round base chance of taking a vacation
+  VACATION_WEEKS:       1,     // vacation duration in weeks; effective chance = VACATION_RATE × VACATION_WEEKS
+  PARENTAL_LEAVE_RATE:  0.003, // per-round chance a healthy employee goes on parental leave
+  PARENTAL_LEAVE_WEEKS: 0,     // weeks of paid parental leave per child
+  RETIREMENT_MATCH_PCT: 0,     // employer 401(k) match percentage (1–10, 0 = disabled)
 
   // ── State ──────────────────────────────────────────────────────────────────
   // staff entries: { instanceId, name, jobId, salary, skillModifier, costOfLiving, mood (0–100), weeksEmployed }
@@ -65,6 +66,7 @@ const Staff = {
       focus:                   job.id === JOB.ENGINEER ? ENGINEER_FOCUS.MAINTENANCE : SECURITY_FOCUS.PATROL,
       events:      [],
       weeksOut:    0,
+      kids:        0,
     };
   },
 
@@ -133,8 +135,9 @@ const Staff = {
       if (s.weeksOut > 0) {
         s.weeksOut--;
       } else {
-        const roll           = Math.random();
-        const vacationChance = this.VACATION_RATE * this.VACATION_WEEKS;
+        const roll             = Math.random();
+        const vacationChance   = this.VACATION_RATE * this.VACATION_WEEKS;
+        const parentalThreshold = this.INJURY_RATE + this.SICKNESS_RATE + vacationChance + this.PARENTAL_LEAVE_RATE;
         if (roll < this.INJURY_RATE) {
           s.weeksOut = 4;
           s.events.push({ moodModifier: -20, comment: 'I got seriously injured...' });
@@ -144,6 +147,10 @@ const Staff = {
         } else if (roll < this.INJURY_RATE + this.SICKNESS_RATE + vacationChance) {
           s.weeksOut = this.VACATION_WEEKS;
           s.events.push({ moodModifier: 10, comment: 'Taking a vacation!' });
+        } else if (roll < parentalThreshold) {
+          s.weeksOut = 5 * (this.PARENTAL_LEAVE_WEEKS + 2);
+          s.kids++;
+          s.events.push({ moodModifier: 30, comment: 'Having a baby!' });
         }
       }
     });
