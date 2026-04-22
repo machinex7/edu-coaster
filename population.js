@@ -27,17 +27,18 @@ const Population = {
   inflationRate:     0.02,  // annual rate; applied weekly to staff cost-of-living
 
   // ── Demographics ──────────────────────────────────────────────────────────
-  // Each entry: { name, chance, annualVisits, count }
-  //   chance: 0–2 attendance propensity (0 = never, 1 = neutral, 2 = always attends if able)
-  //   annualVisits: expected visits per year given a good experience
-  //   count: number of people in this bracket in the surrounding population (~500k total per category)
+  // Each entry: { name, chance, annualVisits, count, intensityBias? }
+  //   chance:        0–2 attendance propensity (0 = never, 1 = neutral, 2 = always attends if able)
+  //   annualVisits:  expected visits per year given a good experience
+  //   count:         number of people in this bracket in the surrounding population (~500k total per category)
+  //   intensityBias: 0–2 ride intensity preference (0 = mild, 1 = moderate, 2 = extreme) — only on brackets where it correlates
 
   AGE_BRACKETS: [
-    { name: 'Child (0–12)',        chance: 1.6, annualVisits: 4.0, count:  80_000 },
-    { name: 'Teen (13–17)',        chance: 1.3, annualVisits: 2.5, count:  30_000 },
-    { name: 'Young Adult (18–34)', chance: 1.2, annualVisits: 2.0, count: 110_000 },
-    { name: 'Adult (35–54)',       chance: 1.1, annualVisits: 1.5, count: 125_000 },
-    { name: 'Senior (55+)',        chance: 0.5, annualVisits: 0.1, count: 155_000 },
+    { name: 'Child (0–12)',        chance: 1.6, annualVisits: 4.0, count:  80_000, intensityBias: 0.7 },
+    { name: 'Teen (13–17)',        chance: 1.3, annualVisits: 2.5, count:  30_000, intensityBias: 1.8 },
+    { name: 'Young Adult (18–34)', chance: 1.2, annualVisits: 2.0, count: 110_000, intensityBias: 1.5 },
+    { name: 'Adult (35–54)',       chance: 1.1, annualVisits: 1.5, count: 125_000, intensityBias: 1.0 },
+    { name: 'Senior (55+)',        chance: 0.5, annualVisits: 0.1, count: 155_000, intensityBias: 0.4 },
   ],
 
   INCOME_BRACKETS: [
@@ -57,11 +58,12 @@ const Population = {
   ],
 
   // count = people who live in that household-size type (not number of households)
+  // intensityBias pulled toward mild by youngest member present in family groups
   HOUSEHOLD_SIZES: [
-    { name: 'Solo (1)',          chance: 0.7, annualVisits: 1.0, count:  75_000 },
-    { name: 'Couple (2)',        chance: 1.1, annualVisits: 1.5, count: 150_000 },
-    { name: 'Small Family (3–4)',chance: 1.6, annualVisits: 2.5, count: 200_000 },
-    { name: 'Large Family (5+)', chance: 1.4, annualVisits: 2.0, count:  75_000 },
+    { name: 'Solo (1)',          chance: 0.7, annualVisits: 1.0, count:  75_000, intensityBias: 1.3 },
+    { name: 'Couple (2)',        chance: 1.1, annualVisits: 1.5, count: 150_000, intensityBias: 1.2 },
+    { name: 'Small Family (3–4)',chance: 1.6, annualVisits: 2.5, count: 200_000, intensityBias: 0.9 },
+    { name: 'Large Family (5+)', chance: 1.4, annualVisits: 2.0, count:  75_000, intensityBias: 0.7 },
   ],
 
   // Urban/suburban/rural reflects density and lifestyle, not just distance
