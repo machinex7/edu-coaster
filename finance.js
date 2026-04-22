@@ -44,24 +44,22 @@ const Finance = {
     this.rideOpinion = (this.rideOpinion + score) / 2;
   },
 
-  // Running ride count, pulled down by rideOpinion when rides are underserved.
-  recalcExcitement() {
+  // ── Attendance ──────────────────────────────────────────────────────────────
+
+  // Computes parkExcitement, then returns how many people want to visit.
+  // priceExhaustion cuts demand by 1% per point (10 exhaustion = −10%).
+  // Security.opinion reduces demand via sqrt curve: 1 − √opinion/100.
+  // Population.compositeFavor scales demand by earned demographic goodwill.
+  calcDailyDemand() {
     const runningCount = installedRides.filter(
       r => r.status === STATUS.ACTIVE && isRideConnected(r)
     ).length;
     this.parkExcitement = Math.max(0, runningCount * this.rideOpinion - this.weeklyNetMess);
-  },
 
-  // ── Attendance ──────────────────────────────────────────────────────────────
-
-  // How many people want to visit based on park appeal.
-  // priceExhaustion cuts demand by 1% per point (10 exhaustion = −10%).
-  // Security.opinion reduces demand via sqrt curve: 1 − √opinion/100.
-  calcDailyDemand() {
     const exhaustionFactor = Math.max(0, 1 - this.priceExhaustion / 100);
     const securityFactor   = Math.max(0, 1 - Math.sqrt(Security.opinion) / 100);
     const eventFactor      = Population.populationEvents.reduce((f, e) => f * (1 + e.modifier / 100), 1);
-    return this.parkExcitement * 20 * exhaustionFactor * securityFactor * eventFactor;
+    return this.parkExcitement * 20 * exhaustionFactor * securityFactor * eventFactor * Population.compositeFavor;
   },
 
   // How many people can actually enter: booth attendants are the bottleneck.
@@ -189,7 +187,6 @@ const Finance = {
   // deducting costs so the budget display reflects net change.
   processRound() {
     this.processEngineers();          // repair broken rides / reduce wear before anything else
-    this.recalcExcitement();
 
     const dailyDemand     = this.calcDailyDemand();
     const dailyThroughput = this.calcGateThroughput();
