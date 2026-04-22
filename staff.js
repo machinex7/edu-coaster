@@ -148,9 +148,9 @@ const Staff = {
           s.weeksOut = this.VACATION_WEEKS;
           s.events.push({ moodModifier: 10, comment: 'Taking a vacation!' });
         } else if (roll < parentalThreshold) {
-          s.weeksOut = 5 * (this.PARENTAL_LEAVE_WEEKS + 2);
+          s.weeksOut = this.PARENTAL_LEAVE_WEEKS;
           s.kids++;
-          s.events.push({ moodModifier: 30, comment: 'Having a baby!' });
+          s.events.push({ moodModifier: 5 * (this.PARENTAL_LEAVE_WEEKS + 2), comment: 'Having a baby!' });
         }
       }
     });
