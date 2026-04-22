@@ -80,6 +80,14 @@ const Population = {
     { name: 'Unemployed',           chance: 0.5, annualVisits: 0.5, count:  45_000 },
   ],
 
+  // Used for discount day eligibility modeling; disabled reflects accessibility barriers
+  VISITOR_STATUS: [
+    { name: 'None',             chance: 1.0, annualVisits: 1.5, count: 375_000 },
+    { name: 'Disabled',         chance: 0.6, annualVisits: 0.7, count:  80_000 },
+    { name: 'Veteran',          chance: 1.0, annualVisits: 1.4, count:  30_000 },
+    { name: 'Disabled Veteran', chance: 0.5, annualVisits: 0.6, count:  15_000 },
+  ],
+
   // ── Population events ──────────────────────────────────────────────────────
   // Each entry: { modifier: number, comment: string }
   // modifier is a percentage: 50 = +50% attendance, -20 = -20% attendance.
