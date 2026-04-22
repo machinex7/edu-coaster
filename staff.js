@@ -61,9 +61,8 @@ const Staff = {
       mood:                    80,
       weeksEmployed:           yearsExp * 52,
       focus:                   job.id === JOB.ENGINEER ? ENGINEER_FOCUS.MAINTENANCE : SECURITY_FOCUS.PATROL,
-      events:                  [],
-      weeksOut:                0,
-      absenceType:             null,  // 'sick' | 'injury' | 'vacation' | null
+      events:      [],
+      weeksOut:    0,
     };
   },
 
@@ -131,21 +130,17 @@ const Staff = {
     this.roster.forEach(s => {
       if (s.weeksOut > 0) {
         s.weeksOut--;
-        if (s.weeksOut === 0) s.absenceType = null;
       } else {
         const roll           = Math.random();
         const vacationChance = this.VACATION_RATE * this.VACATION_WEEKS;
         if (roll < this.INJURY_RATE) {
           s.weeksOut = 4;
-          s.absenceType = 'injury';
           s.events.push({ moodModifier: -20, comment: 'I got seriously injured...' });
         } else if (roll < this.INJURY_RATE + this.SICKNESS_RATE) {
           s.weeksOut = 1;
-          s.absenceType = 'sick';
           s.events.push({ moodModifier: -10, comment: 'I feel sick...' });
         } else if (roll < this.INJURY_RATE + this.SICKNESS_RATE + vacationChance) {
           s.weeksOut = this.VACATION_WEEKS;
-          s.absenceType = 'vacation';
           s.events.push({ moodModifier: 10, comment: 'Taking a vacation!' });
         }
       }
@@ -154,11 +149,10 @@ const Staff = {
 
   updateMoods() {
     this.roster.forEach(s => {
-      const ratio          = s.salary / s.costOfLiving;
-      const base           = ratio / 2 * 100;
-      const eventBonus     = s.events.reduce((sum, e) => sum + e.moodModifier, 0);
-      const vacationBonus  = s.absenceType === 'vacation' ? 5 * s.weeksOut : 0;
-      s.mood = Math.round(Math.max(0, Math.min(100, base + eventBonus + vacationBonus)));
+      const ratio      = s.salary / s.costOfLiving;
+      const base       = ratio / 2 * 100;
+      const eventBonus = s.events.reduce((sum, e) => sum + e.moodModifier, 0);
+      s.mood = Math.round(Math.max(0, Math.min(100, base + eventBonus + 5 * this.VACATION_WEEKS)));
 
       s.events.forEach(e => { e.moodModifier -= Math.sign(e.moodModifier) * 2; });
       s.events = s.events.filter(e => Math.abs(e.moodModifier) >= 2);
