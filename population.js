@@ -115,6 +115,30 @@ const Population = {
       ...this.VISITOR_STATUS,
     ];
     for (const bracket of allBrackets) bracket.favor = 1.0;
+    this.compositeFavor = 1.0;
+  },
+
+  // Weighted average favor for a single category.
+  _categoryFavor(brackets) {
+    const totalCount = brackets.reduce((s, b) => s + b.count, 0);
+    return brackets.reduce((s, b) => s + b.favor * b.count, 0) / totalCount;
+  },
+
+  // Recompute and store compositeFavor. Call whenever any bracket's favor changes.
+  // Result is an average of each category's weighted-average favor, so 1.0 = neutral baseline.
+  calcCompositeFavor() {
+    const categories = [
+      this.AGE_BRACKETS,
+      this.INCOME_BRACKETS,
+      this.DISTANCE_BRACKETS,
+      this.HOUSEHOLD_SIZES,
+      this.AREA_TYPES,
+      this.EMPLOYMENT_STATUS,
+      this.VISITOR_STATUS,
+    ];
+    const sum = categories.reduce((s, cat) => s + this._categoryFavor(cat), 0);
+    this.compositeFavor = sum / categories.length;
+    return this.compositeFavor;
   },
 
 };
