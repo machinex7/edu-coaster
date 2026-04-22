@@ -278,9 +278,11 @@ const Staff = {
     document.getElementById('staff-roster-view').classList.toggle('hidden',     viewName !== 'roster');
     document.getElementById('staff-postings-view').classList.toggle('hidden',   viewName !== 'postings');
     document.getElementById('staff-candidates-view').classList.toggle('hidden', viewName !== 'candidates');
-    if (viewName === 'postings')    this.buildPostingsView();
-    if (viewName === 'roster')      this.buildRosterView();
-    if (viewName === 'candidates')  this.buildCandidatesView();
+    document.getElementById('staff-benefits-view').classList.toggle('hidden',   viewName !== 'benefits');
+    if (viewName === 'postings')   this.buildPostingsView();
+    if (viewName === 'roster')     this.buildRosterView();
+    if (viewName === 'candidates') this.buildCandidatesView();
+    if (viewName === 'benefits')   this.buildBenefitsView();
   },
 
   openPanel() {
@@ -595,6 +597,7 @@ const Staff = {
     if (this._activeView === 'roster')     this.buildRosterView();
     if (this._activeView === 'postings')   this.buildPostingsView();
     if (this._activeView === 'candidates') this.buildCandidatesView();
+    if (this._activeView === 'benefits')   this.buildBenefitsView();
   },
 
   // ── Candidates view ────────────────────────────────────────────────────────
@@ -634,6 +637,37 @@ const Staff = {
     container.querySelectorAll('.decline-btn').forEach(btn =>
       btn.addEventListener('click', () => this.declineCandidate(btn.dataset.id))
     );
+  },
+
+  // ── Benefits view ──────────────────────────────────────────────────────────
+  buildBenefitsView() {
+    const container = document.getElementById('staff-benefits-view');
+
+    container.innerHTML = `
+      <div class="benefits-section">
+        <div class="benefits-section-title">Vacation</div>
+        <div class="form-field">
+          <label class="staff-detail-label">Weeks per year</label>
+          <div class="staff-propose-row">
+            <input type="number" id="ben-vacation-weeks" min="0" max="52" value="${this.VACATION_WEEKS}">
+            <button class="ride-action-btn" id="ben-vacation-apply">Apply</button>
+          </div>
+          <p id="ben-vacation-error" class="form-error hidden"></p>
+        </div>
+      </div>`;
+
+    document.getElementById('ben-vacation-apply').addEventListener('click', () => {
+      const val   = parseInt(document.getElementById('ben-vacation-weeks').value);
+      const errEl = document.getElementById('ben-vacation-error');
+      if (isNaN(val) || val < 0 || val > 52) {
+        errEl.textContent = 'Enter a value between 0 and 52.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      this.VACATION_WEEKS = val;
+      errEl.classList.add('hidden');
+      this.buildBenefitsView();
+    });
   },
 
 };
