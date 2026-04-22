@@ -29,7 +29,7 @@ const Finance = {
     if (runningRides.length === 0) return;
 
     const needed     = Staff.rideOperatorsNeeded();
-    const actual     = Staff.roster.filter(s => s.jobId === JOB.RIDE_OPERATOR).length;
+    const actual     = Staff.roster.filter(s => s.jobId === JOB.RIDE_OPERATOR && s.weeksOut === 0).length;
     const staffRatio = needed > 0 ? Math.min(1, actual / needed) : 1;
 
     let totalDailyCapacity = 0;
@@ -67,7 +67,7 @@ const Finance = {
   // How many people can actually enter: booth attendants are the bottleneck.
   // Per attendant: base 500 × mood multiplier (0.8–1.2) × experience multiplier × skill modifier.
   calcGateThroughput() {
-    const attendants = Staff.roster.filter(s => s.jobId === JOB.BOOTH_ATTENDANT);
+    const attendants = Staff.roster.filter(s => s.jobId === JOB.BOOTH_ATTENDANT && s.weeksOut === 0);
     if (attendants.length === 0) return 0;
     return attendants.reduce((sum, s) => {
       const moodMult = 0.8 + (s.mood / 100) * 0.4;
@@ -110,7 +110,7 @@ const Finance = {
   // 100 × tier per ride.
   processEngineers() {
     Staff.roster
-      .filter(s => s.jobId === JOB.ENGINEER)
+      .filter(s => s.jobId === JOB.ENGINEER && s.weeksOut === 0)
       .forEach(eng => {
         if (eng.focus === ENGINEER_FOCUS.CONSTRUCTION) {
           const underConstruction = [...installedRides, ...installedFacilities, ...Shopping.installed]
@@ -221,6 +221,7 @@ const Finance = {
     money -= security.theftLoss;      // $50 per unhandled shoplifter
     processConstruction();            // deducts constructionCosts and advances build progress
 
+    Staff.processSickness();          // roll for new illness, decrement existing sick time
     Staff.advanceExperience();        // increment weeksEmployed for all staff
     Staff.applyInflation();           // grow each employee's costOfLiving by one week of annual inflation
     Staff.updateMoods();              // recalculate mood from salary vs costOfLiving

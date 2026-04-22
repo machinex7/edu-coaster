@@ -25,6 +25,10 @@ const Staff = {
   ],
 
   POSTING_WEEKLY_COST: 75,
+  SICKNESS_RATE:       0.02,   // per-round chance of 1-week illness
+  INJURY_RATE:         0.005,  // per-round chance of 4-week critical injury
+  VACATION_RATE:       0.04,   // per-round base chance of taking a vacation
+  VACATION_WEEKS:      1,      // vacation duration in weeks; effective chance = VACATION_RATE × VACATION_WEEKS
 
   // ── State ──────────────────────────────────────────────────────────────────
   // staff entries: { instanceId, name, jobId, salary, skillModifier, costOfLiving, mood (0–100), weeksEmployed }
@@ -48,16 +52,17 @@ const Staff = {
     const maxYears      = Math.round(5 * q);
     const yearsExp      = maxYears > 0 ? Math.floor(Math.random() * (maxYears + 1)) : 0;
     return {
-      instanceId:    `staff_${++this._idSeq}`,
-      name:          `${firstName} ${lastName}.`,
-      jobId:         job.id,
-      salary:        costOfLiving,
+      instanceId:              `staff_${++this._idSeq}`,
+      name:                    `${firstName} ${lastName}.`,
+      jobId:                   job.id,
+      salary:                  costOfLiving,
       skillModifier,
       costOfLiving,
-      mood:          80,
-      weeksEmployed: yearsExp * 52,
-      focus:         job.id === JOB.ENGINEER ? ENGINEER_FOCUS.MAINTENANCE : SECURITY_FOCUS.PATROL,
-      events:        [],
+      mood:                    80,
+      weeksEmployed:           yearsExp * 52,
+      focus:                   job.id === JOB.ENGINEER ? ENGINEER_FOCUS.MAINTENANCE : SECURITY_FOCUS.PATROL,
+      events:      [],
+      weeksOut:    0,
     };
   },
 
@@ -118,12 +123,36 @@ const Staff = {
     });
   },
 
+  // Each round: decrement remaining absence time, then roll for new absences on
+  // healthy staff. Injury and sickness are checked first; vacation last.
+  // Effective vacation chance = VACATION_RATE × VACATION_WEEKS.
+  processSickness() {
+    this.roster.forEach(s => {
+      if (s.weeksOut > 0) {
+        s.weeksOut--;
+      } else {
+        const roll           = Math.random();
+        const vacationChance = this.VACATION_RATE * this.VACATION_WEEKS;
+        if (roll < this.INJURY_RATE) {
+          s.weeksOut = 4;
+          s.events.push({ moodModifier: -20, comment: 'I got seriously injured...' });
+        } else if (roll < this.INJURY_RATE + this.SICKNESS_RATE) {
+          s.weeksOut = 1;
+          s.events.push({ moodModifier: -10, comment: 'I feel sick...' });
+        } else if (roll < this.INJURY_RATE + this.SICKNESS_RATE + vacationChance) {
+          s.weeksOut = this.VACATION_WEEKS;
+          s.events.push({ moodModifier: 10, comment: 'Taking a vacation!' });
+        }
+      }
+    });
+  },
+
   updateMoods() {
     this.roster.forEach(s => {
       const ratio      = s.salary / s.costOfLiving;
       const base       = ratio / 2 * 100;
       const eventBonus = s.events.reduce((sum, e) => sum + e.moodModifier, 0);
-      s.mood = Math.round(Math.max(0, Math.min(100, base + eventBonus)));
+      s.mood = Math.round(Math.max(0, Math.min(100, base + eventBonus + 5 * this.VACATION_WEEKS)));
 
       s.events.forEach(e => { e.moodModifier -= Math.sign(e.moodModifier) * 2; });
       s.events = s.events.filter(e => Math.abs(e.moodModifier) >= 2);
@@ -146,7 +175,7 @@ const Staff = {
   // Each janitor clears (40 + 5 × tier) messes/day × 7 days.
   calcJanitorCapacity() {
     return this.roster
-      .filter(s => s.jobId === JOB.JANITOR)
+      .filter(s => s.jobId === JOB.JANITOR && s.weeksOut === 0)
       .reduce((sum, s) => {
         const { tier } = this.getExperienceTier(s.weeksEmployed);
         return sum + (40 + 5 * tier) * 7;
@@ -182,7 +211,7 @@ const Staff = {
 
     let count   = 4;
     let quality = 0;
-    this.roster.filter(s => s.jobId === JOB.HR).forEach(s => {
+    this.roster.filter(s => s.jobId === JOB.HR && s.weeksOut === 0).forEach(s => {
       const { tier } = this.getExperienceTier(s.weeksEmployed);
       count   += tier;
       quality += tier * 5;
@@ -284,10 +313,16 @@ const Staff = {
         const expBadge = expLabel
           ? `<span class="exp-badge exp-${expLabel.toLowerCase()}">${expLabel}</span>`
           : '';
+        const outBadge = s.weeksOut > 0
+          ? `<span class="out-badge">Out (${s.weeksOut}wk)</span>`
+          : '';
+        const statusCell = s.weeksOut > 0
+          ? `<span class="out-badge">Out</span>`
+          : `<span class="mood-badge ${moodCls}">${moodLabel}</span>`;
         return `<tr class="staff-row-clickable" data-id="${s.instanceId}">
-          <td>${s.name} ${expBadge}</td>
+          <td>${s.name} ${expBadge} ${outBadge}</td>
           <td>$${s.salary.toLocaleString()}/wk</td>
-          <td><span class="mood-badge ${moodCls}">${moodLabel}</span></td>
+          <td>${statusCell}</td>
         </tr>`;
       })];
     });
@@ -323,11 +358,14 @@ const Staff = {
                  :                          `${weeks} wk`;
 
     let taskHtml = '';
-    if (s.jobId === JOB.ENGINEER) {
+    if (s.weeksOut > 0) {
+      const wks = s.weeksOut;
+      taskHtml = `<div class="staff-detail-out">Out — ${wks} week${wks !== 1 ? 's' : ''} remaining</div>`;
+    } else if (s.jobId === JOB.ENGINEER) {
       const broken    = installedRides
         .filter(r => r.status === STATUS.BROKEN_DOWN)
         .sort((a, b) => b.wear - a.wear);
-      const engineers = this.roster.filter(e => e.jobId === JOB.ENGINEER);
+      const engineers = this.roster.filter(e => e.jobId === JOB.ENGINEER && e.weeksOut === 0);
       const idx       = engineers.findIndex(e => e.instanceId === s.instanceId);
 
       let taskLabel;
@@ -355,7 +393,7 @@ const Staff = {
         <div class="sec-focus-btns" id="eng-focus-btns">${focusBtns}</div>`;
     } else if (s.jobId === JOB.RIDE_OPERATOR) {
       const running   = installedRides.filter(r => r.status === STATUS.ACTIVE && isRideConnected(r));
-      const operators = this.roster.filter(o => o.jobId === JOB.RIDE_OPERATOR);
+      const operators = this.roster.filter(o => o.jobId === JOB.RIDE_OPERATOR && o.weeksOut === 0);
       let taskLabel;
       if (running.length === 0) {
         taskLabel = 'No rides running';
