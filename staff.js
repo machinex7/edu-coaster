@@ -642,7 +642,6 @@ const Staff = {
   // ── Benefits view ──────────────────────────────────────────────────────────
   buildBenefitsView() {
     const container = document.getElementById('staff-benefits-view');
-    const moodBonus = 5 * this.VACATION_WEEKS;
 
     container.innerHTML = `
       <div class="benefits-section">
@@ -653,7 +652,6 @@ const Staff = {
             <input type="number" id="ben-vacation-weeks" min="0" max="52" value="${this.VACATION_WEEKS}">
             <button class="ride-action-btn" id="ben-vacation-apply">Apply</button>
           </div>
-          <p class="benefits-hint">Each week adds +5 to every employee's mood baseline. Currently +${moodBonus}.</p>
           <p id="ben-vacation-error" class="form-error hidden"></p>
         </div>
       </div>`;
