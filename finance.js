@@ -192,7 +192,9 @@ const Finance = {
 
   // ── Cost sources ─────────────────────────────────────────────────────────────
   calcStaffCosts() {
-    return Staff.totalWeeklySalary() + Staff.totalPostingCosts();
+    const wages = Staff.totalWeeklySalary();
+    const matchContribution = Math.round(wages * Staff.RETIREMENT_MATCH_PCT / 100);
+    return wages + matchContribution + Staff.totalPostingCosts();
   },
 
   calcUtilityCosts() {

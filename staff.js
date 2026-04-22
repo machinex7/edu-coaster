@@ -161,7 +161,7 @@ const Staff = {
       const ratio      = s.salary / s.costOfLiving;
       const base       = ratio / 2 * 100;
       const eventBonus = s.events.reduce((sum, e) => sum + e.moodModifier, 0);
-      s.mood = Math.round(Math.max(0, Math.min(100, base + eventBonus + 5 * this.VACATION_WEEKS)));
+      s.mood = Math.round(Math.max(0, Math.min(100, base + eventBonus + 5 * this.VACATION_WEEKS + this.RETIREMENT_MATCH_PCT)));
 
       s.events.forEach(e => { e.moodModifier -= Math.sign(e.moodModifier) * 2; });
       s.events = s.events.filter(e => Math.abs(e.moodModifier) >= 2);
