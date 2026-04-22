@@ -121,9 +121,9 @@ const Staff = {
   },
 
   applyInflation() {
-    const weeklyRate = Population.inflationRate / 52;
     this.roster.forEach(s => {
-      s.costOfLiving = Math.round(s.costOfLiving * (1 + weeklyRate));
+      const annualRate = Population.inflationRate + s.kids / 100;
+      s.costOfLiving = Math.round(s.costOfLiving * (1 + annualRate / 52));
     });
   },
 
@@ -161,7 +161,7 @@ const Staff = {
       const ratio      = s.salary / s.costOfLiving;
       const base       = ratio / 2 * 100;
       const eventBonus = s.events.reduce((sum, e) => sum + e.moodModifier, 0);
-      s.mood = Math.round(Math.max(0, Math.min(100, base + eventBonus + 5 * this.VACATION_WEEKS + this.RETIREMENT_MATCH_PCT)));
+      s.mood = Math.round(Math.max(0, Math.min(100, base + eventBonus + 5 * this.VACATION_WEEKS + this.RETIREMENT_MATCH_PCT + 2 * s.kids)));
 
       s.events.forEach(e => { e.moodModifier -= Math.sign(e.moodModifier) * 2; });
       s.events = s.events.filter(e => Math.abs(e.moodModifier) >= 2);
