@@ -27,38 +27,41 @@ const Population = {
   inflationRate:     0.02,  // annual rate; applied weekly to staff cost-of-living
 
   // ── Demographics ──────────────────────────────────────────────────────────
-  // Each entry: { name, chance, annualVisits }
+  // Each entry: { name, chance, annualVisits, count }
   //   chance: 0–2 attendance propensity (0 = never, 1 = neutral, 2 = always attends if able)
   //   annualVisits: expected visits per year given a good experience
+  //   count: number of people in this bracket in the surrounding population (~500k total per category)
 
   AGE_BRACKETS: [
-    { name: 'Child (0–12)',        chance: 1.6, annualVisits: 4.0 },
-    { name: 'Teen (13–17)',        chance: 1.3, annualVisits: 2.5 },
-    { name: 'Young Adult (18–34)', chance: 1.2, annualVisits: 2.0 },
-    { name: 'Adult (35–54)',       chance: 1.1, annualVisits: 1.5 },
-    { name: 'Senior (55+)',        chance: 0.5, annualVisits: 0.1 },
+    { name: 'Child (0–12)',        chance: 1.6, annualVisits: 4.0, count:  80_000 },
+    { name: 'Teen (13–17)',        chance: 1.3, annualVisits: 2.5, count:  30_000 },
+    { name: 'Young Adult (18–34)', chance: 1.2, annualVisits: 2.0, count: 110_000 },
+    { name: 'Adult (35–54)',       chance: 1.1, annualVisits: 1.5, count: 125_000 },
+    { name: 'Senior (55+)',        chance: 0.5, annualVisits: 0.1, count: 155_000 },
   ],
 
   INCOME_BRACKETS: [
-    { name: 'Low Income',    chance: 0.5, annualVisits: 0.5 },
-    { name: 'Lower-Middle',  chance: 0.9, annualVisits: 0.8 },
-    { name: 'Middle',        chance: 1.2, annualVisits: 1.5 },
-    { name: 'Upper-Middle',  chance: 1.5, annualVisits: 2.5 },
-    { name: 'High Income',   chance: 1.6, annualVisits: 3.0 },
+    { name: 'Low Income',    chance: 0.5, annualVisits: 0.5, count:  80_000 },
+    { name: 'Lower-Middle',  chance: 0.9, annualVisits: 0.8, count: 125_000 },
+    { name: 'Middle',        chance: 1.2, annualVisits: 1.5, count: 165_000 },
+    { name: 'Upper-Middle',  chance: 1.5, annualVisits: 2.5, count:  95_000 },
+    { name: 'High Income',   chance: 1.6, annualVisits: 3.0, count:  35_000 },
   ],
 
+  // count = people who live within that distance band
   DISTANCE_BRACKETS: [
-    { name: 'Local (< 10 mi)',       chance: 1.8, annualVisits: 6.0 },
-    { name: 'Nearby (10–30 mi)',     chance: 1.4, annualVisits: 3.0 },
-    { name: 'Regional (30–100 mi)',  chance: 0.9, annualVisits: 1.0 },
-    { name: 'Destination (100+ mi)', chance: 0.5, annualVisits: 0.2 },
+    { name: 'Local (< 10 mi)',       chance: 1.8, annualVisits: 6.0, count:  75_000 },
+    { name: 'Nearby (10–30 mi)',     chance: 1.4, annualVisits: 3.0, count: 150_000 },
+    { name: 'Regional (30–100 mi)',  chance: 0.9, annualVisits: 1.0, count: 175_000 },
+    { name: 'Destination (100+ mi)', chance: 0.5, annualVisits: 0.2, count: 100_000 },
   ],
 
+  // count = people who live in that household-size type (not number of households)
   HOUSEHOLD_SIZES: [
-    { name: 'Solo (1)',          chance: 0.7, annualVisits: 1.0 },
-    { name: 'Couple (2)',        chance: 1.1, annualVisits: 1.5 },
-    { name: 'Small Family (3–4)',chance: 1.6, annualVisits: 2.5 },
-    { name: 'Large Family (5+)', chance: 1.4, annualVisits: 2.0 },
+    { name: 'Solo (1)',          chance: 0.7, annualVisits: 1.0, count:  75_000 },
+    { name: 'Couple (2)',        chance: 1.1, annualVisits: 1.5, count: 150_000 },
+    { name: 'Small Family (3–4)',chance: 1.6, annualVisits: 2.5, count: 200_000 },
+    { name: 'Large Family (5+)', chance: 1.4, annualVisits: 2.0, count:  75_000 },
   ],
 
   // ── Population events ──────────────────────────────────────────────────────
