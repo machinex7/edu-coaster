@@ -53,19 +53,25 @@ const Finance = {
   calcDailyDemand() {
     const exhaustionFactor = Math.max(0, 1 - this.priceExhaustion / 100);
     const eventFactor      = Population.populationEvents.reduce((f, e) => f * (1 + e.modifier / 100), 1);
-    return this.parkExcitement * 20 * exhaustionFactor * eventFactor * Population.compositeFavor;
+    return this.parkExcitement * exhaustionFactor * eventFactor * Population.compositeFavor;
   },
 
   // Recomputes parkExcitement at end of round for use next round.
   // Base = weekly attendance × (rides per person / desired rides), capped at 1.
-  // Security opinion and unhandled mess degrade the result.
+  // Security opinion and mess density degrade the result.
+  // Mess penalty: unhandled mess spread across path tiles; 1.25^(mess per path) as divisor.
   calcExcitement(weeklyAttendance) {
-    const runningRides     = installedRides.filter(r => r.status === STATUS.ACTIVE && isRideConnected(r));
-    const totalWeeklyRides = runningRides.reduce((s, r) => s + (r.lastRoundRiders ?? 0), 0);
-    const ridesPerPerson   = weeklyAttendance > 0 ? totalWeeklyRides / weeklyAttendance : 0;
+    const runningRides      = installedRides.filter(r => r.status === STATUS.ACTIVE && isRideConnected(r));
+    const totalWeeklyRides  = runningRides.reduce((s, r) => s + (r.lastRoundRiders ?? 0), 0);
+    const ridesPerPerson    = weeklyAttendance > 0 ? totalWeeklyRides / weeklyAttendance : 0;
     const satisfactionRatio = Math.min(1, ridesPerPerson / Population.DESIRED_RIDES);
-    const securityFactor   = Math.max(0, 1 - Math.sqrt(Security.opinion) / 100);
-    this.parkExcitement    = Math.max(0, weeklyAttendance * satisfactionRatio * securityFactor - this.weeklyNetMess);
+    const securityFactor    = Math.max(0, 1 - Math.sqrt(Security.opinion) / 100);
+
+    const pathTiles  = installedFacilities.filter(f => f.facilityId === FACILITY_ID.PATH).length;
+    const messPerPath = pathTiles > 0 ? this.weeklyNetMess / pathTiles : this.weeklyNetMess;
+    const messFactor  = Math.pow(1.25, messPerPath);
+
+    this.parkExcitement = Math.max(0, (weeklyAttendance * satisfactionRatio * securityFactor) / messFactor);
   },
 
   // How many people can actually enter: booth attendants are the bottleneck.
