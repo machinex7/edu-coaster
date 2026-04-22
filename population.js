@@ -26,6 +26,40 @@ const Population = {
   utilityMultiplier: 1,     // applied to all ride utility costs each round
   inflationRate:     0.02,  // annual rate; applied weekly to staff cost-of-living
 
+  // ── Demographics ──────────────────────────────────────────────────────────
+  // Each entry: { name, chance } where chance is a relative weight (0–1).
+  // These represent the makeup of the surrounding population that might visit.
+
+  AGE_BRACKETS: [
+    { name: 'Child (0–12)',     chance: 0.12 },
+    { name: 'Teen (13–17)',     chance: 0.10 },
+    { name: 'Young Adult (18–34)', chance: 0.28 },
+    { name: 'Adult (35–54)',    chance: 0.30 },
+    { name: 'Senior (55+)',     chance: 0.20 },
+  ],
+
+  INCOME_BRACKETS: [
+    { name: 'Low Income',       chance: 0.15 },
+    { name: 'Lower-Middle',     chance: 0.25 },
+    { name: 'Middle',           chance: 0.30 },
+    { name: 'Upper-Middle',     chance: 0.20 },
+    { name: 'High Income',      chance: 0.10 },
+  ],
+
+  DISTANCE_BRACKETS: [
+    { name: 'Local (< 10 mi)',      chance: 0.35 },
+    { name: 'Nearby (10–30 mi)',    chance: 0.30 },
+    { name: 'Regional (30–100 mi)', chance: 0.25 },
+    { name: 'Destination (100+ mi)',chance: 0.10 },
+  ],
+
+  HOUSEHOLD_SIZES: [
+    { name: 'Solo (1)',         chance: 0.15 },
+    { name: 'Couple (2)',       chance: 0.30 },
+    { name: 'Small Family (3–4)', chance: 0.35 },
+    { name: 'Large Family (5+)', chance: 0.20 },
+  ],
+
   // ── Population events ──────────────────────────────────────────────────────
   // Each entry: { modifier: number, comment: string }
   // modifier is a percentage: 50 = +50% attendance, -20 = -20% attendance.
