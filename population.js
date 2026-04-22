@@ -27,11 +27,12 @@ const Population = {
   inflationRate:     0.02,  // annual rate; applied weekly to staff cost-of-living
 
   // ── Demographics ──────────────────────────────────────────────────────────
-  // Each entry: { name, chance, annualVisits, count, intensityBias? }
+  // Each entry: { name, chance, annualVisits, count, intensityBias?, favor }
   //   chance:        0–2 attendance propensity (0 = never, 1 = neutral, 2 = always attends if able)
   //   annualVisits:  expected visits per year given a good experience
   //   count:         number of people in this bracket in the surrounding population (~500k total per category)
   //   intensityBias: 0–2 ride intensity preference (0 = mild, 1 = moderate, 2 = extreme) — only on brackets where it correlates
+  //   favor:         0–2 earned goodwill toward this park specifically — set at runtime via initDemographics()
 
   AGE_BRACKETS: [
     { name: 'Child (0–12)',        chance: 1.6, annualVisits: 4.0, count:  80_000, intensityBias: 0.7 },
@@ -100,6 +101,20 @@ const Population = {
     this.populationEvents = this.populationEvents
       .map(e => ({ ...e, modifier: e.modifier > 0 ? e.modifier - 2 : e.modifier + 2 }))
       .filter(e => Math.abs(e.modifier) >= 2);
+  },
+
+  // Call once at game start (and again on reset) to initialize mutable demographic state.
+  initDemographics() {
+    const allBrackets = [
+      ...this.AGE_BRACKETS,
+      ...this.INCOME_BRACKETS,
+      ...this.DISTANCE_BRACKETS,
+      ...this.HOUSEHOLD_SIZES,
+      ...this.AREA_TYPES,
+      ...this.EMPLOYMENT_STATUS,
+      ...this.VISITOR_STATUS,
+    ];
+    for (const bracket of allBrackets) bracket.favor = 1.0;
   },
 
 };
