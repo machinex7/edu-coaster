@@ -29,6 +29,8 @@ const Staff = {
   INJURY_RATE:         0.005,  // per-round chance of 4-week critical injury
   VACATION_RATE:       0.04,   // per-round base chance of taking a vacation
   VACATION_WEEKS:      1,      // vacation duration in weeks; effective chance = VACATION_RATE × VACATION_WEEKS
+  PARENTAL_LEAVE_WEEKS: 0,    // weeks of paid parental leave per child
+  RETIREMENT_MATCH_PCT: 0,    // employer 401(k) match percentage (1–10, 0 = disabled)
 
   // ── State ──────────────────────────────────────────────────────────────────
   // staff entries: { instanceId, name, jobId, salary, skillModifier, costOfLiving, mood (0–100), weeksEmployed }
@@ -654,6 +656,28 @@ const Staff = {
           </div>
           <p id="ben-vacation-error" class="form-error hidden"></p>
         </div>
+      </div>
+      <div class="benefits-section">
+        <div class="benefits-section-title">Parental Leave</div>
+        <div class="form-field">
+          <label class="staff-detail-label">Weeks per child</label>
+          <div class="staff-propose-row">
+            <input type="number" id="ben-parental-weeks" min="0" max="52" value="${this.PARENTAL_LEAVE_WEEKS}">
+            <button class="ride-action-btn" id="ben-parental-apply">Apply</button>
+          </div>
+          <p id="ben-parental-error" class="form-error hidden"></p>
+        </div>
+      </div>
+      <div class="benefits-section">
+        <div class="benefits-section-title">401(k) Match</div>
+        <div class="form-field">
+          <label class="staff-detail-label">Employer match % (0 = disabled, 1–10)</label>
+          <div class="staff-propose-row">
+            <input type="number" id="ben-retirement-pct" min="0" max="10" value="${this.RETIREMENT_MATCH_PCT}">
+            <button class="ride-action-btn" id="ben-retirement-apply">Apply</button>
+          </div>
+          <p id="ben-retirement-error" class="form-error hidden"></p>
+        </div>
       </div>`;
 
     document.getElementById('ben-vacation-apply').addEventListener('click', () => {
@@ -665,6 +689,32 @@ const Staff = {
         return;
       }
       this.VACATION_WEEKS = val;
+      errEl.classList.add('hidden');
+      this.buildBenefitsView();
+    });
+
+    document.getElementById('ben-parental-apply').addEventListener('click', () => {
+      const val   = parseInt(document.getElementById('ben-parental-weeks').value);
+      const errEl = document.getElementById('ben-parental-error');
+      if (isNaN(val) || val < 0 || val > 52) {
+        errEl.textContent = 'Enter a value between 0 and 52.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      this.PARENTAL_LEAVE_WEEKS = val;
+      errEl.classList.add('hidden');
+      this.buildBenefitsView();
+    });
+
+    document.getElementById('ben-retirement-apply').addEventListener('click', () => {
+      const val   = parseInt(document.getElementById('ben-retirement-pct').value);
+      const errEl = document.getElementById('ben-retirement-error');
+      if (isNaN(val) || val < 0 || val > 10) {
+        errEl.textContent = 'Enter a value between 0 and 10.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      this.RETIREMENT_MATCH_PCT = val;
       errEl.classList.add('hidden');
       this.buildBenefitsView();
     });
