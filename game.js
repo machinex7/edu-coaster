@@ -72,6 +72,7 @@ async function init() {
   buildFacilityList();
   Shopping.buildCatalog();
   Staff.init();
+  Population.initDemographics();
   initSubTabs();
   initHUD();
 }

@@ -11,6 +11,7 @@ const Population = {
   // ── Visitor behavior ───────────────────────────────────────────────────────
   BUYER_RATE:             0.15,   // fraction of visitors who purchase merchandise
   THEFT_RATE:             0.008,  // fraction of non-buyers who attempt to shoplift
+  DESIRED_RIDES:          4,      // rides per visit a guest needs for a satisfying trip
 
   // Incident rates: how often frustrated or bored visitors cause trouble.
   OVERFLOW_INCIDENT_RATE: 0.05,   // fraction of turned-away visitors who cause incidents
@@ -26,6 +27,71 @@ const Population = {
   utilityMultiplier: 1,     // applied to all ride utility costs each round
   inflationRate:     0.02,  // annual rate; applied weekly to staff cost-of-living
 
+  // ── Demographics ──────────────────────────────────────────────────────────
+  // Each entry: { name, chance, annualVisits, count, intensityBias?, favor }
+  //   chance:        0–2 attendance propensity (0 = never, 1 = neutral, 2 = always attends if able)
+  //   annualVisits:  expected visits per year given a good experience
+  //   count:         number of people in this bracket in the surrounding population (~500k total per category)
+  //   intensityBias: 0–2 ride intensity preference (0 = mild, 1 = moderate, 2 = extreme) — only on brackets where it correlates
+  //   favor:         0–2 earned goodwill toward this park specifically — set at runtime via initDemographics()
+
+  AGE_BRACKETS: [
+    { name: 'Child (0–12)',        chance: 1.6, annualVisits: 4.0, count:  80_000, intensityBias: 0.7 },
+    { name: 'Teen (13–17)',        chance: 1.3, annualVisits: 2.5, count:  30_000, intensityBias: 1.8 },
+    { name: 'Young Adult (18–34)', chance: 1.2, annualVisits: 2.0, count: 110_000, intensityBias: 1.5 },
+    { name: 'Adult (35–54)',       chance: 1.1, annualVisits: 1.5, count: 125_000, intensityBias: 1.0 },
+    { name: 'Senior (55+)',        chance: 0.5, annualVisits: 0.1, count: 155_000, intensityBias: 0.4 },
+  ],
+
+  INCOME_BRACKETS: [
+    { name: 'Low Income',    chance: 0.5, annualVisits: 0.5, count:  80_000 },
+    { name: 'Lower-Middle',  chance: 0.9, annualVisits: 0.8, count: 125_000 },
+    { name: 'Middle',        chance: 1.2, annualVisits: 1.5, count: 165_000 },
+    { name: 'Upper-Middle',  chance: 1.5, annualVisits: 2.5, count:  95_000 },
+    { name: 'High Income',   chance: 1.6, annualVisits: 3.0, count:  35_000 },
+  ],
+
+  // count = people who live within that distance band
+  DISTANCE_BRACKETS: [
+    { name: 'Local (< 10 mi)',       chance: 1.8, annualVisits: 6.0, count:  75_000 },
+    { name: 'Nearby (10–30 mi)',     chance: 1.4, annualVisits: 3.0, count: 150_000 },
+    { name: 'Regional (30–100 mi)',  chance: 0.9, annualVisits: 1.0, count: 175_000 },
+    { name: 'Destination (100+ mi)', chance: 0.5, annualVisits: 0.2, count: 100_000 },
+  ],
+
+  // count = people who live in that household-size type (not number of households)
+  // intensityBias pulled toward mild by youngest member present in family groups
+  HOUSEHOLD_SIZES: [
+    { name: 'Solo (1)',          chance: 0.7, annualVisits: 1.0, count:  75_000, intensityBias: 1.3 },
+    { name: 'Couple (2)',        chance: 1.1, annualVisits: 1.5, count: 150_000, intensityBias: 1.2 },
+    { name: 'Small Family (3–4)',chance: 1.6, annualVisits: 2.5, count: 200_000, intensityBias: 0.9 },
+    { name: 'Large Family (5+)', chance: 1.4, annualVisits: 2.0, count:  75_000, intensityBias: 0.7 },
+  ],
+
+  // Urban/suburban/rural reflects density and lifestyle, not just distance
+  AREA_TYPES: [
+    { name: 'Urban',    chance: 0.8, annualVisits: 1.2, count: 125_000 },
+    { name: 'Suburban', chance: 1.4, annualVisits: 2.5, count: 275_000 },
+    { name: 'Rural',    chance: 0.9, annualVisits: 1.0, count: 100_000 },
+  ],
+
+  // Employment status affects both disposable income and schedule flexibility
+  EMPLOYMENT_STATUS: [
+    { name: 'Employed (Full-Time)', chance: 1.1, annualVisits: 1.5, count: 235_000 },
+    { name: 'Employed (Part-Time)', chance: 1.2, annualVisits: 2.0, count:  65_000 },
+    { name: 'Student',              chance: 1.4, annualVisits: 3.0, count:  75_000 },
+    { name: 'Retired',              chance: 0.8, annualVisits: 0.8, count:  80_000 },
+    { name: 'Unemployed',           chance: 0.5, annualVisits: 0.5, count:  45_000 },
+  ],
+
+  // Used for discount day eligibility modeling; disabled reflects accessibility barriers
+  VISITOR_STATUS: [
+    { name: 'None',             chance: 1.0, annualVisits: 1.5, count: 375_000 },
+    { name: 'Disabled',         chance: 0.6, annualVisits: 0.7, count:  80_000 },
+    { name: 'Veteran',          chance: 1.0, annualVisits: 1.4, count:  30_000 },
+    { name: 'Disabled Veteran', chance: 0.5, annualVisits: 0.6, count:  15_000 },
+  ],
+
   // ── Population events ──────────────────────────────────────────────────────
   // Each entry: { modifier: number, comment: string }
   // modifier is a percentage: 50 = +50% attendance, -20 = -20% attendance.
@@ -36,6 +102,44 @@ const Population = {
     this.populationEvents = this.populationEvents
       .map(e => ({ ...e, modifier: e.modifier > 0 ? e.modifier - 2 : e.modifier + 2 }))
       .filter(e => Math.abs(e.modifier) >= 2);
+  },
+
+  // Call once at game start (and again on reset) to initialize mutable demographic state.
+  initDemographics() {
+    const allBrackets = [
+      ...this.AGE_BRACKETS,
+      ...this.INCOME_BRACKETS,
+      ...this.DISTANCE_BRACKETS,
+      ...this.HOUSEHOLD_SIZES,
+      ...this.AREA_TYPES,
+      ...this.EMPLOYMENT_STATUS,
+      ...this.VISITOR_STATUS,
+    ];
+    for (const bracket of allBrackets) bracket.favor = 1.0;
+    this.compositeFavor = 1.0;
+  },
+
+  // Weighted average favor for a single category.
+  _categoryFavor(brackets) {
+    const totalCount = brackets.reduce((s, b) => s + b.count, 0);
+    return brackets.reduce((s, b) => s + b.favor * b.count, 0) / totalCount;
+  },
+
+  // Recompute and store compositeFavor. Call whenever any bracket's favor changes.
+  // Result is an average of each category's weighted-average favor, so 1.0 = neutral baseline.
+  calcCompositeFavor() {
+    const categories = [
+      this.AGE_BRACKETS,
+      this.INCOME_BRACKETS,
+      this.DISTANCE_BRACKETS,
+      this.HOUSEHOLD_SIZES,
+      this.AREA_TYPES,
+      this.EMPLOYMENT_STATUS,
+      this.VISITOR_STATUS,
+    ];
+    const sum = categories.reduce((s, cat) => s + this._categoryFavor(cat), 0);
+    this.compositeFavor = sum / categories.length;
+    return this.compositeFavor;
   },
 
 };

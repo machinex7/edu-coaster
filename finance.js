@@ -10,8 +10,8 @@
 const Finance = {
 
   // ── Park metrics ────────────────────────────────────────────────────────────
-  parkExcitement: 0,
-  weeklyNetMess:  0,  // unhandled mess from last round; subtracted from excitement
+  parkExcitement: 500,  // satisfied-visitor count from last round; drives next round's demand
+  weeklyNetMess:  0,    // unhandled mess from last round; subtracted from excitement
 
   // Smoothed 0–1 score of how well rides are serving current crowds.
   // Starts at 1.0 (perfect); degrades when operators can't keep up with demand.
@@ -44,24 +44,30 @@ const Finance = {
     this.rideOpinion = (this.rideOpinion + score) / 2;
   },
 
-  // Running ride count, pulled down by rideOpinion when rides are underserved.
-  recalcExcitement() {
-    const runningCount = installedRides.filter(
-      r => r.status === STATUS.ACTIVE && isRideConnected(r)
-    ).length;
-    this.parkExcitement = Math.max(0, runningCount * this.rideOpinion - this.weeklyNetMess);
-  },
-
   // ── Attendance ──────────────────────────────────────────────────────────────
 
-  // How many people want to visit based on park appeal.
+  // Returns how many people want to visit based on last round's excitement.
   // priceExhaustion cuts demand by 1% per point (10 exhaustion = −10%).
-  // Security.opinion reduces demand via sqrt curve: 1 − √opinion/100.
+  // Population.compositeFavor scales demand by earned demographic goodwill.
+  // Security and mess penalties are applied to excitement at end-of-round instead.
   calcDailyDemand() {
     const exhaustionFactor = Math.max(0, 1 - this.priceExhaustion / 100);
-    const securityFactor   = Math.max(0, 1 - Math.sqrt(Security.opinion) / 100);
     const eventFactor      = Population.populationEvents.reduce((f, e) => f * (1 + e.modifier / 100), 1);
-    return this.parkExcitement * 20 * exhaustionFactor * securityFactor * eventFactor;
+    return this.parkExcitement * exhaustionFactor * eventFactor * Population.compositeFavor;
+  },
+
+  // Recomputes parkExcitement at end of round for use next round.
+  // Base = weekly attendance × (rides per person / desired rides), capped at 1.
+  // Security opinion and mess density degrade the result.
+  // Mess penalty: unhandled mess spread across path tiles; 1.25^(mess per path) as divisor.
+  calcExcitement(weeklyAttendance) {
+    const runningRides      = installedRides.filter(r => r.status === STATUS.ACTIVE && isRideConnected(r));
+    const totalWeeklyRides  = runningRides.reduce((s, r) => s + (r.lastRoundRiders ?? 0), 0);
+    const ridesPerPerson    = weeklyAttendance > 0 ? totalWeeklyRides / weeklyAttendance : 0;
+    const satisfactionRatio = Math.min(1, ridesPerPerson / Population.DESIRED_RIDES);
+    const securityFactor    = Math.max(0, 1 - Math.sqrt(Security.opinion) / 100);
+
+    this.parkExcitement = Math.max(0, (weeklyAttendance * satisfactionRatio * securityFactor) / this.calcMessFactor());
   },
 
   // How many people can actually enter: booth attendants are the bottleneck.
@@ -153,6 +159,22 @@ const Finance = {
   },
 
   // ── Mess generation ──────────────────────────────────────────────────────────
+
+  // Exponential penalty from unhandled mess spread across path and decorative tiles.
+  // Decorative tiles (fountain, garden, statue) count as 2 paths each.
+  // Returns a divisor ≥ 1; higher = more excitement lost.
+  calcMessFactor() {
+    const pathTiles = installedFacilities.filter(f => f.facilityId === FACILITY_ID.PATH).length;
+    const decoTiles = installedFacilities.filter(f =>
+      f.facilityId === FACILITY_ID.FOUNTAIN ||
+      f.facilityId === FACILITY_ID.GARDEN   ||
+      f.facilityId === FACILITY_ID.STATUE
+    ).length;
+    const effectivePaths = pathTiles + decoTiles * 2;
+    const messPerPath    = effectivePaths > 0 ? this.weeklyNetMess / effectivePaths : this.weeklyNetMess;
+    return Math.pow(1.25, messPerPath);
+  },
+
   calcMessGenerated(weeklyAttendance) {
     const fromGuests   = weeklyAttendance * Population.MESS_GUEST_RATE;
     const fromShoppers = weeklyAttendance * Population.BUYER_RATE * Population.MESS_SHOPPER_RATE;
@@ -189,7 +211,6 @@ const Finance = {
   // deducting costs so the budget display reflects net change.
   processRound() {
     this.processEngineers();          // repair broken rides / reduce wear before anything else
-    this.recalcExcitement();
 
     const dailyDemand     = this.calcDailyDemand();
     const dailyThroughput = this.calcGateThroughput();
@@ -229,6 +250,7 @@ const Finance = {
     Staff.generateCandidates();       // new applicants per round when postings exist
     Staff.advanceCandidates();        // withdrawal check, then increment weeksAsCandidate
     this.weeklyNetMess = Math.max(0, this.calcMessGenerated(weeklyAttendance) - Staff.calcJanitorCapacity());
+    this.calcExcitement(weeklyAttendance); // uses this round's mess and security before opinion advances
     this.advancePriceExhaustion();    // decay price fatigue by 1
     Security.advanceOpinion(security.unhandled); // decay then add unhandled incidents
     const populationEvents = Population.populationEvents.map(e => ({ ...e }));
