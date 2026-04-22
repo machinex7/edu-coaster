@@ -67,8 +67,14 @@ const Finance = {
     const satisfactionRatio = Math.min(1, ridesPerPerson / Population.DESIRED_RIDES);
     const securityFactor    = Math.max(0, 1 - Math.sqrt(Security.opinion) / 100);
 
-    const pathTiles  = installedFacilities.filter(f => f.facilityId === FACILITY_ID.PATH).length;
-    const messPerPath = pathTiles > 0 ? this.weeklyNetMess / pathTiles : this.weeklyNetMess;
+    const pathTiles = installedFacilities.filter(f => f.facilityId === FACILITY_ID.PATH).length;
+    const decoTiles = installedFacilities.filter(f =>
+      f.facilityId === FACILITY_ID.FOUNTAIN ||
+      f.facilityId === FACILITY_ID.GARDEN   ||
+      f.facilityId === FACILITY_ID.STATUE
+    ).length;
+    const effectivePaths = pathTiles + decoTiles * 2;
+    const messPerPath = effectivePaths > 0 ? this.weeklyNetMess / effectivePaths : this.weeklyNetMess;
     const messFactor  = Math.pow(1.25, messPerPath);
 
     this.parkExcitement = Math.max(0, (weeklyAttendance * satisfactionRatio * securityFactor) / messFactor);
