@@ -610,6 +610,10 @@ header h1 {
 
 .posting-meta { color: #6b7280; }
 
+.benefits-section { padding: 12px 14px; display: flex; flex-direction: column; gap: 12px; }
+.benefits-section-title { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #6b7280; border-bottom: 1px solid #374151; padding-bottom: 6px; }
+.benefits-hint { font-size: 0.72rem; color: #6b7280; margin-top: 4px; }
+
 .cancel-posting-btn {
   width: 100%;
   padding: 4px 8px;
