@@ -64,6 +64,22 @@ const Population = {
     { name: 'Large Family (5+)', chance: 1.4, annualVisits: 2.0, count:  75_000 },
   ],
 
+  // Urban/suburban/rural reflects density and lifestyle, not just distance
+  AREA_TYPES: [
+    { name: 'Urban',    chance: 0.8, annualVisits: 1.2, count: 125_000 },
+    { name: 'Suburban', chance: 1.4, annualVisits: 2.5, count: 275_000 },
+    { name: 'Rural',    chance: 0.9, annualVisits: 1.0, count: 100_000 },
+  ],
+
+  // Employment status affects both disposable income and schedule flexibility
+  EMPLOYMENT_STATUS: [
+    { name: 'Employed (Full-Time)', chance: 1.1, annualVisits: 1.5, count: 235_000 },
+    { name: 'Employed (Part-Time)', chance: 1.2, annualVisits: 2.0, count:  65_000 },
+    { name: 'Student',              chance: 1.4, annualVisits: 3.0, count:  75_000 },
+    { name: 'Retired',              chance: 0.8, annualVisits: 0.8, count:  80_000 },
+    { name: 'Unemployed',           chance: 0.5, annualVisits: 0.5, count:  45_000 },
+  ],
+
   // ── Population events ──────────────────────────────────────────────────────
   // Each entry: { modifier: number, comment: string }
   // modifier is a percentage: 50 = +50% attendance, -20 = -20% attendance.
