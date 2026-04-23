@@ -43,6 +43,10 @@ const Staff = {
   _activeView:      'roster',
   _selectedStaffId: null,
 
+  medicalQuoteCooldown: 0,     // weeks until quote is ready; 0 = not shopping
+  medicalQuote:         null,  // { tier, pricePerEmployee, durationWeeks } pending offer
+  medicalPolicy:        null,  // { tier, pricePerEmployee, durationWeeks, weeksRemaining } active policy
+
   // ── Employee generation ────────────────────────────────────────────────────
   // quality 0–100: controls the ceiling of skillModifier and yearsExperience.
   generateEmployee(quality) {
@@ -653,6 +657,35 @@ const Staff = {
     );
   },
 
+  // ── Medical insurance ──────────────────────────────────────────────────────
+  generateMedicalQuote() {
+    const tier       = Math.random() < 0.5 ? 'Standard' : 'Premium';
+    const [lo, hi]   = tier === 'Standard' ? [100, 150] : [150, 200];
+    const basePrice  = Math.round((lo + Math.random() * (hi - lo)) * Population.inflationRate);
+    const increments = 2 + Math.floor(Math.random() * 5);  // 2–6
+    this.medicalQuote = {
+      tier,
+      pricePerEmployee: Math.max(0, basePrice - increments * 10),
+      durationWeeks:    increments * 4,
+    };
+  },
+
+  advanceMedicalInsurance() {
+    if (this.medicalQuoteCooldown > 0) {
+      this.medicalQuoteCooldown--;
+      if (this.medicalQuoteCooldown === 0) this.generateMedicalQuote();
+    }
+    if (this.medicalPolicy) {
+      this.medicalPolicy.weeksRemaining--;
+      if (this.medicalPolicy.weeksRemaining <= 0) this.medicalPolicy = null;
+    }
+  },
+
+  calcMedicalCosts() {
+    if (!this.medicalPolicy) return 0;
+    return this.medicalPolicy.pricePerEmployee * this.roster.length;
+  },
+
   // ── Benefits view ──────────────────────────────────────────────────────────
   buildBenefitsView() {
     const container = document.getElementById('staff-benefits-view');
@@ -690,6 +723,10 @@ const Staff = {
           </div>
           <p id="ben-retirement-error" class="form-error hidden"></p>
         </div>
+      </div>
+      <div class="benefits-section">
+        <div class="benefits-section-title">Medical Insurance</div>
+        ${this._buildMedicalInsuranceHTML()}
       </div>`;
 
     document.getElementById('ben-vacation-apply').addEventListener('click', () => {
@@ -730,6 +767,53 @@ const Staff = {
       errEl.classList.add('hidden');
       this.buildBenefitsView();
     });
+
+    const shopBtn = document.getElementById('ben-medical-shop');
+    if (shopBtn) {
+      shopBtn.addEventListener('click', () => {
+        this.medicalQuoteCooldown = 4;
+        this.buildBenefitsView();
+      });
+    }
+    const acceptBtn = document.getElementById('ben-medical-accept');
+    if (acceptBtn) {
+      acceptBtn.addEventListener('click', () => {
+        this.medicalPolicy = { ...this.medicalQuote, weeksRemaining: this.medicalQuote.durationWeeks };
+        this.medicalQuote  = null;
+        this.buildBenefitsView();
+      });
+    }
+    const dismissBtn = document.getElementById('ben-medical-dismiss');
+    if (dismissBtn) {
+      dismissBtn.addEventListener('click', () => {
+        this.medicalQuote = null;
+        this.buildBenefitsView();
+      });
+    }
+  },
+
+  _buildMedicalInsuranceHTML() {
+    if (this.medicalQuote) {
+      const q = this.medicalQuote;
+      return `
+        <p class="staff-detail-label">${q.tier} plan — $${q.pricePerEmployee}/employee/week — ${q.durationWeeks} weeks</p>
+        <div class="staff-propose-row">
+          <button class="ride-action-btn" id="ben-medical-accept">Accept</button>
+          <button class="ride-action-btn" id="ben-medical-dismiss">Dismiss</button>
+        </div>
+        ${this.medicalPolicy ? `<p class="staff-detail-label" style="margin-top:8px">Current: ${this.medicalPolicy.tier} — $${this.medicalPolicy.pricePerEmployee}/employee/week — ${this.medicalPolicy.weeksRemaining} weeks remaining</p>` : ''}`;
+    }
+    if (this.medicalQuoteCooldown > 0) {
+      return `<p class="staff-detail-label">Quote arriving in ${this.medicalQuoteCooldown} week${this.medicalQuoteCooldown !== 1 ? 's' : ''}...</p>
+        ${this.medicalPolicy ? `<p class="staff-detail-label" style="margin-top:8px">Current: ${this.medicalPolicy.tier} — $${this.medicalPolicy.pricePerEmployee}/employee/week — ${this.medicalPolicy.weeksRemaining} weeks remaining</p>` : ''}`;
+    }
+    if (this.medicalPolicy) {
+      const p = this.medicalPolicy;
+      return `
+        <p class="staff-detail-label">${p.tier} — $${p.pricePerEmployee}/employee/week — ${p.weeksRemaining} weeks remaining</p>
+        <button class="ride-action-btn" id="ben-medical-shop" style="margin-top:8px">Shop for New Coverage</button>`;
+    }
+    return `<button class="ride-action-btn" id="ben-medical-shop">Shop for Coverage</button>`;
   },
 
 };

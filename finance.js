@@ -194,7 +194,7 @@ const Finance = {
   calcStaffCosts() {
     const wages = Staff.totalWeeklySalary();
     const matchContribution = Math.round(wages * Staff.RETIREMENT_MATCH_PCT / 100);
-    return wages + matchContribution + Staff.totalPostingCosts();
+    return wages + matchContribution + Staff.totalPostingCosts() + Staff.calcMedicalCosts();
   },
 
   calcUtilityCosts() {
@@ -244,6 +244,7 @@ const Finance = {
     money -= security.theftLoss;      // $50 per unhandled shoplifter
     processConstruction();            // deducts constructionCosts and advances build progress
 
+    Staff.advanceMedicalInsurance();  // tick quote countdown; tick policy duration
     Staff.processSickness();          // roll for new illness, decrement existing sick time
     Staff.advanceExperience();        // increment weeksEmployed for all staff
     Staff.applyInflation();           // grow each employee's costOfLiving by one week of annual inflation
