@@ -21,7 +21,9 @@ const CATEGORY = Object.freeze({
 });
 
 const SHOP_ID = Object.freeze({
+  KIOSK:       'kiosk',
   MERCHANDISE: 'merchandise',
+  LARGE_STORE: 'large_store',
 });
 
 const JOB = Object.freeze({

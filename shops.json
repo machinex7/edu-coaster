@@ -1,11 +1,35 @@
 [
   {
+    "id": "kiosk",
+    "name": "Kiosk",
+    "color": "#fb923c",
+    "footprint": [[1]],
+    "buildCost": 8000,
+    "buildWeeks": 1,
+    "limit": null,
+    "mustBeAdjacentTo": ["path", "park_entrance"]
+  },
+  {
     "id": "merchandise",
     "name": "Merchandise Store",
     "color": "#f472b6",
     "footprint": [[1, 1]],
     "buildCost": 30000,
     "buildWeeks": 4,
+    "limit": null,
+    "mustBeAdjacentTo": ["path", "park_entrance"]
+  },
+  {
+    "id": "large_store",
+    "name": "Large Store",
+    "color": "#c084fc",
+    "footprint": [
+      [1, 0],
+      [1, 0],
+      [1, 1]
+    ],
+    "buildCost": 80000,
+    "buildWeeks": 10,
     "limit": null,
     "mustBeAdjacentTo": ["path", "park_entrance"]
   }
