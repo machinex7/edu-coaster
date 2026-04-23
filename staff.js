@@ -124,6 +124,9 @@ const Staff = {
     });
   },
 
+  // Grows each employee's cost of living by one week of their personal annual
+  // inflation rate. Base rate is global inflation; each child adds 1 percentage
+  // point on top (3 kids + 2% global = 5% annual for that employee).
   applyInflation() {
     this.roster.forEach(s => {
       const annualRate = Population.inflationRate + s.kids / 100;
@@ -165,6 +168,10 @@ const Staff = {
     });
   },
 
+  // Recalculates mood for every employee from salary vs cost-of-living ratio,
+  // plus flat passive bonuses from active benefits (vacation weeks × 5, 401k
+  // match %, kids × 2), plus any pending mood events. Events decay by 2 points
+  // per round and are pruned once they fall below ±2.
   updateMoods() {
     this.roster.forEach(s => {
       const ratio      = s.salary / s.costOfLiving;
@@ -658,6 +665,12 @@ const Staff = {
   },
 
   // ── Medical insurance ──────────────────────────────────────────────────────
+
+  // Generates a randomized insurance quote and stores it in medicalQuote.
+  // Tier (Standard/Premium) sets the base price range (100–150 or 150–200 ×
+  // inflationRate). Longer contracts (2–6 × 4-week increments) get $10/employee
+  // off per increment. 50% chance of auto-renew; if so, a fixed renewalBump is
+  // rolled once here and reused at every subsequent renewal.
   generateMedicalQuote() {
     const tier       = Math.random() < 0.5 ? 'Standard' : 'Premium';
     const [lo, hi]   = tier === 'Standard' ? [100, 150] : [150, 200];
@@ -674,6 +687,12 @@ const Staff = {
     };
   },
 
+  // Called each round. Ticks the quote-shopping countdown and generates a quote
+  // when it hits zero. Ticks an unaccepted quote's 4-round expiry window and
+  // silently discards it on timeout. Ticks the active policy; on expiry either
+  // auto-renews (adding the fixed renewalBump to pricePerEmployee) or nulls the
+  // policy, firing an appropriate notification in both cases. A 4-week warning
+  // notification is also pushed when the policy enters its final month.
   advanceMedicalInsurance() {
     if (this.medicalQuoteCooldown > 0) {
       this.medicalQuoteCooldown--;
@@ -722,12 +741,19 @@ const Staff = {
     }
   },
 
+  // Returns the total weekly medical insurance premium (pricePerEmployee ×
+  // roster size). Returns 0 when no policy is active.
   calcMedicalCosts() {
     if (!this.medicalPolicy) return 0;
     return this.medicalPolicy.pricePerEmployee * this.roster.length;
   },
 
   // ── Benefits view ──────────────────────────────────────────────────────────
+
+  // Renders all four benefit sections (vacation, parental leave, 401k, medical)
+  // and wires their event listeners. Rebuilds innerHTML completely on each call;
+  // this is intentional — it keeps state display accurate after any change and
+  // avoids stale listener buildup since the container is always fully replaced.
   buildBenefitsView() {
     const container = document.getElementById('staff-benefits-view');
 
@@ -840,6 +866,13 @@ const Staff = {
     }
   },
 
+  // Returns the inner HTML for the medical insurance section. Renders one of
+  // four states depending on current insurance state:
+  //   Quote pending  — accept/dismiss buttons with full quote details
+  //   Shopping       — countdown message (+ current policy summary if active)
+  //   Policy active  — policy details, shop button, and a cancel-auto-renew
+  //                    button during the final 4 weeks of an auto-renew policy
+  //   Idle           — shop-for-coverage button only
   _buildMedicalInsuranceHTML() {
     const autoRenewTag = p => p.autoRenew ? ` — Auto-renews (+$${p.renewalBump})` : '';
     const policyLine   = p => `${p.tier} — $${p.pricePerEmployee}/employee/week — ${p.weeksRemaining} wks remaining${autoRenewTag(p)}`;
