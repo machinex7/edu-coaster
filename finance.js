@@ -153,13 +153,13 @@ const Finance = {
 
   // ── Wear & breakdown ─────────────────────────────────────────────────────────
   // Called each round after computeRideOpinion() so lastRoundRiders is current.
-  // Accumulates rider wear then rolls for breakdown at 0.1% per wear point.
+  // Accumulates rider wear then rolls for breakdown; probability reaches 100% at MAX_EFFECTIVE_WEAR.
   processWear() {
     installedRides
       .filter(r => r.status === STATUS.ACTIVE && isRideConnected(r))
       .forEach(r => {
         r.wear += r.lastRoundRiders ?? 0;
-        if (Math.random() < r.wear * 0.001) {
+        if (Math.random() < r.wear / MAX_EFFECTIVE_WEAR) {
           r.status        = STATUS.BROKEN_DOWN;
           // Repair time scales with wear: more wear = longer repair, minimum 1 week.
           r.weeksToRepair = Math.floor(Math.random() * Math.floor(r.wear / 100)) + 1;

@@ -56,3 +56,6 @@ const ENGINEER_FOCUS = Object.freeze({
   MAINTENANCE:  'maintenance',
   CONSTRUCTION: 'construction',
 });
+
+// Breakdown probability reaches 100% at this cumulative wear value.
+const MAX_EFFECTIVE_WEAR = 1000;
