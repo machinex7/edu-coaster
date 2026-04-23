@@ -81,6 +81,16 @@ function getDateLabel() {
 function updateHUD() {
   document.getElementById('money-display').textContent = `$${money.toLocaleString()}`;
   document.getElementById('date-display').textContent  = getDateLabel();
+
+  const working = Staff.roster.filter(s => s.weeksOut === 0).length;
+  const onLeave = Staff.roster.filter(s => s.weeksOut > 0).length;
+  document.getElementById('staff-working-display').textContent = working;
+  document.getElementById('staff-leave-display').textContent   = onLeave;
+
+  const running = installedRides.filter(r => r.status === STATUS.ACTIVE).length;
+  const stopped = installedRides.filter(r => r.status !== STATUS.ACTIVE).length;
+  document.getElementById('rides-running-display').textContent = running;
+  document.getElementById('rides-stopped-display').textContent = stopped;
   const badge = document.getElementById('stage-badge');
   badge.textContent = gameStage === STAGE.SETUP ? 'Setup' : 'Open';
   badge.className   = `stage-badge ${gameStage}`;
