@@ -663,12 +663,14 @@ const Staff = {
     const [lo, hi]   = tier === 'Standard' ? [100, 150] : [150, 200];
     const basePrice  = Math.round((lo + Math.random() * (hi - lo)) * Population.inflationRate);
     const increments = 2 + Math.floor(Math.random() * 5);  // 2–6
+    const autoRenew = Math.random() < 0.5;
     this.medicalQuote = {
       tier,
       pricePerEmployee:  Math.max(0, basePrice - increments * 10),
       durationWeeks:     increments * 4,
       weeksRemaining:    4,
-      autoRenew:         Math.random() < 0.5,
+      autoRenew,
+      renewalBump:       autoRenew ? 10 * (1 + Math.floor(Math.random() * 5)) : 0,
     };
   },
 
@@ -698,10 +700,9 @@ const Staff = {
         Notifications.push({ label: 'Med.', message: msg, action: openBenefits });
       } else if (this.medicalPolicy.weeksRemaining <= 0) {
         if (this.medicalPolicy.autoRenew) {
-          const increase = 10 * (1 + Math.floor(Math.random() * 5));
           this.medicalPolicy = {
             ...this.medicalPolicy,
-            pricePerEmployee: this.medicalPolicy.pricePerEmployee + increase,
+            pricePerEmployee: this.medicalPolicy.pricePerEmployee + this.medicalPolicy.renewalBump,
             weeksRemaining:   this.medicalPolicy.durationWeeks,
           };
           Notifications.push({
@@ -830,14 +831,22 @@ const Staff = {
         this.buildBenefitsView();
       });
     }
+    const cancelRenewBtn = document.getElementById('ben-medical-cancel-renew');
+    if (cancelRenewBtn) {
+      cancelRenewBtn.addEventListener('click', () => {
+        this.medicalPolicy.autoRenew = false;
+        this.buildBenefitsView();
+      });
+    }
   },
 
   _buildMedicalInsuranceHTML() {
-    const policyLine = p => `${p.tier} — $${p.pricePerEmployee}/employee/week — ${p.weeksRemaining} wks remaining${p.autoRenew ? ' — Auto-renews' : ''}`;
+    const autoRenewTag = p => p.autoRenew ? ` — Auto-renews (+$${p.renewalBump})` : '';
+    const policyLine   = p => `${p.tier} — $${p.pricePerEmployee}/employee/week — ${p.weeksRemaining} wks remaining${autoRenewTag(p)}`;
     if (this.medicalQuote) {
       const q = this.medicalQuote;
       return `
-        <p class="staff-detail-label">${q.tier} — $${q.pricePerEmployee}/employee/week — ${q.durationWeeks} weeks${q.autoRenew ? ' — Auto-renews' : ''}</p>
+        <p class="staff-detail-label">${q.tier} — $${q.pricePerEmployee}/employee/week — ${q.durationWeeks} weeks${autoRenewTag(q)}</p>
         <div class="staff-propose-row">
           <button class="ride-action-btn" id="ben-medical-accept">Accept</button>
           <button class="ride-action-btn" id="ben-medical-dismiss">Dismiss</button>
@@ -850,9 +859,13 @@ const Staff = {
     }
     if (this.medicalPolicy) {
       const p = this.medicalPolicy;
+      const cancelBtn = p.autoRenew && p.weeksRemaining <= 4
+        ? `<button class="ride-action-btn" id="ben-medical-cancel-renew" style="margin-top:8px">Cancel Auto-Renew</button>`
+        : '';
       return `
         <p class="staff-detail-label">${policyLine(p)}</p>
-        <button class="ride-action-btn" id="ben-medical-shop" style="margin-top:8px">Shop for New Coverage</button>`;
+        <button class="ride-action-btn" id="ben-medical-shop" style="margin-top:8px">Shop for New Coverage</button>
+        ${cancelBtn}`;
     }
     return `<button class="ride-action-btn" id="ben-medical-shop">Shop for Coverage</button>`;
   },
