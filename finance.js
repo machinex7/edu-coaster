@@ -163,6 +163,11 @@ const Finance = {
           r.status        = STATUS.BROKEN_DOWN;
           // Repair time scales with wear: more wear = longer repair, minimum 1 week.
           r.weeksToRepair = Math.floor(Math.random() * Math.floor(r.wear / 100)) + 1;
+          Notifications.push({
+            label:   'Ride',
+            message: `${r.name} broke down — ${r.weeksToRepair} week${r.weeksToRepair !== 1 ? 's' : ''} to repair.`,
+            action:  () => openPanel('rides'),
+          });
         }
       });
   },
