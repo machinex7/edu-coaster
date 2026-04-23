@@ -668,6 +668,7 @@ const Staff = {
       pricePerEmployee:  Math.max(0, basePrice - increments * 10),
       durationWeeks:     increments * 4,
       weeksRemaining:    4,
+      autoRenew:         Math.random() < 0.5,
     };
   },
 
@@ -691,18 +692,31 @@ const Staff = {
       this.medicalPolicy.weeksRemaining--;
       const openBenefits = () => { openPanel('staffing'); Staff.setView('benefits'); };
       if (this.medicalPolicy.weeksRemaining === 4) {
-        Notifications.push({
-          label: 'Med.',
-          message: 'Medical insurance expires in 4 weeks. Shop for new coverage.',
-          action: openBenefits,
-        });
+        const msg = this.medicalPolicy.autoRenew
+          ? 'Medical insurance auto-renews in 4 weeks. Price will increase.'
+          : 'Medical insurance expires in 4 weeks. Shop for new coverage.';
+        Notifications.push({ label: 'Med.', message: msg, action: openBenefits });
       } else if (this.medicalPolicy.weeksRemaining <= 0) {
-        Notifications.push({
-          label: 'Med.',
-          message: 'Medical insurance policy has expired.',
-          action: openBenefits,
-        });
-        this.medicalPolicy = null;
+        if (this.medicalPolicy.autoRenew) {
+          const increase = 10 * (1 + Math.floor(Math.random() * 5));
+          this.medicalPolicy = {
+            ...this.medicalPolicy,
+            pricePerEmployee: this.medicalPolicy.pricePerEmployee + increase,
+            weeksRemaining:   this.medicalPolicy.durationWeeks,
+          };
+          Notifications.push({
+            label: 'Med.',
+            message: `Medical insurance auto-renewed at $${this.medicalPolicy.pricePerEmployee}/employee/week.`,
+            action: openBenefits,
+          });
+        } else {
+          Notifications.push({
+            label: 'Med.',
+            message: 'Medical insurance policy has expired.',
+            action: openBenefits,
+          });
+          this.medicalPolicy = null;
+        }
       }
     }
   },
@@ -819,24 +833,25 @@ const Staff = {
   },
 
   _buildMedicalInsuranceHTML() {
+    const policyLine = p => `${p.tier} — $${p.pricePerEmployee}/employee/week — ${p.weeksRemaining} wks remaining${p.autoRenew ? ' — Auto-renews' : ''}`;
     if (this.medicalQuote) {
       const q = this.medicalQuote;
       return `
-        <p class="staff-detail-label">${q.tier} plan — $${q.pricePerEmployee}/employee/week — ${q.durationWeeks} weeks</p>
+        <p class="staff-detail-label">${q.tier} — $${q.pricePerEmployee}/employee/week — ${q.durationWeeks} weeks${q.autoRenew ? ' — Auto-renews' : ''}</p>
         <div class="staff-propose-row">
           <button class="ride-action-btn" id="ben-medical-accept">Accept</button>
           <button class="ride-action-btn" id="ben-medical-dismiss">Dismiss</button>
         </div>
-        ${this.medicalPolicy ? `<p class="staff-detail-label" style="margin-top:8px">Current: ${this.medicalPolicy.tier} — $${this.medicalPolicy.pricePerEmployee}/employee/week — ${this.medicalPolicy.weeksRemaining} weeks remaining</p>` : ''}`;
+        ${this.medicalPolicy ? `<p class="staff-detail-label" style="margin-top:8px">Current: ${policyLine(this.medicalPolicy)}</p>` : ''}`;
     }
     if (this.medicalQuoteCooldown > 0) {
       return `<p class="staff-detail-label">Quote arriving in ${this.medicalQuoteCooldown} week${this.medicalQuoteCooldown !== 1 ? 's' : ''}...</p>
-        ${this.medicalPolicy ? `<p class="staff-detail-label" style="margin-top:8px">Current: ${this.medicalPolicy.tier} — $${this.medicalPolicy.pricePerEmployee}/employee/week — ${this.medicalPolicy.weeksRemaining} weeks remaining</p>` : ''}`;
+        ${this.medicalPolicy ? `<p class="staff-detail-label" style="margin-top:8px">Current: ${policyLine(this.medicalPolicy)}</p>` : ''}`;
     }
     if (this.medicalPolicy) {
       const p = this.medicalPolicy;
       return `
-        <p class="staff-detail-label">${p.tier} — $${p.pricePerEmployee}/employee/week — ${p.weeksRemaining} weeks remaining</p>
+        <p class="staff-detail-label">${policyLine(p)}</p>
         <button class="ride-action-btn" id="ben-medical-shop" style="margin-top:8px">Shop for New Coverage</button>`;
     }
     return `<button class="ride-action-btn" id="ben-medical-shop">Shop for Coverage</button>`;
