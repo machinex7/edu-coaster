@@ -12,7 +12,7 @@ const Finance = {
   // ── Park metrics ────────────────────────────────────────────────────────────
   parkExcitement:   500,  // satisfied-visitor count from last round; drives next round's demand
   weeklyNetMess:    0,    // unhandled mess from last round; subtracted from excitement
-  mealSatisfaction: 1,    // 0.25–1; penalises excitement when food supply < demand
+  mealSatisfaction: 1,    // 0.5–1; penalises excitement when food supply < demand
 
   // Smoothed 0–1 score of how well rides are serving current crowds.
   // Starts at 1.0 (perfect); degrades when operators can't keep up with demand.
@@ -279,8 +279,8 @@ const Finance = {
     Staff.advanceCandidates();        // withdrawal check, then increment weeksAsCandidate
     this.weeklyNetMess = Math.max(0, this.calcMessGenerated(weeklyAttendance) - Staff.calcJanitorCapacity());
     this.mealSatisfaction = food.mealsWanted > 0
-      ? Math.min(1, 0.25 + 0.75 * food.mealsServed / food.mealsWanted)
-      : 1;
+      ? Math.min(1, 0.5 + 0.5 * food.mealsServed / food.mealsWanted)
+      : 0.5;
     this.calcExcitement(weeklyAttendance); // uses this round's mess, security, and meal satisfaction
     this.advancePriceExhaustion();    // decay price fatigue by 1
     Security.advanceOpinion(security.unhandled); // decay then add unhandled incidents
