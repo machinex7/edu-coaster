@@ -20,15 +20,6 @@ const CATEGORY = Object.freeze({
   SHOP:     'shop',
 });
 
-const SHOP_ID = Object.freeze({
-  KIOSK:        'kiosk',
-  MERCHANDISE:  'merchandise',
-  LARGE_STORE:  'large_store',
-  SNACK_SHOP:   'snack_shop',
-  QUICK_FOODS:  'quick_foods',
-  DINER:        'diner',
-});
-
 const JOB = Object.freeze({
   RIDE_OPERATOR:         'ride_operator',
   SECURITY:              'security',
