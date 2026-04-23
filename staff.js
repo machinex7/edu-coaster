@@ -134,6 +134,22 @@ const Staff = {
     });
   },
 
+  // Fires a notification if the employee's job type now has no working members.
+  // Call this any time a staff member becomes unavailable (absence, fire, quit).
+  // Skipped for HR since gaps there are less operationally critical.
+  _notifyIfLastWorker(s) {
+    if (s.jobId === JOB.HR) return;
+    const stillWorking = this.roster.filter(r => r.jobId === s.jobId && r.weeksOut === 0).length;
+    if (stillWorking === 0) {
+      const jobDef = this.JOB_TYPES.find(j => j.id === s.jobId);
+      Notifications.push({
+        label:   'Staff',
+        message: `Your last ${jobDef.label} is out — no ${jobDef.plural} available this week!`,
+        action:  () => openPanel('staffing'),
+      });
+    }
+  },
+
   // Returns the mood penalty for an absence of the given duration based on the
   // active medical policy tier. Premium = no penalty; Standard = 5 × weeks;
   // no coverage = 10 × weeks. Applied to sick, injury, and parental leave events.
@@ -153,12 +169,15 @@ const Staff = {
         s.weeksOut--;
       } else {
         const roll              = Math.random();
+        const moodPenalty       = (100 - s.mood) / 2000; // low mood raises injury/sickness chance
+        const injuryRate        = this.INJURY_RATE   + moodPenalty;
+        const sicknessRate      = this.SICKNESS_RATE + moodPenalty;
         const vacationChance    = this.VACATION_RATE * this.VACATION_WEEKS;
-        const parentalThreshold = this.INJURY_RATE + this.SICKNESS_RATE + vacationChance + this.PARENTAL_LEAVE_RATE;
-        if (roll < this.INJURY_RATE) {
+        const parentalThreshold = injuryRate + sicknessRate + vacationChance + this.PARENTAL_LEAVE_RATE;
+        if (roll < injuryRate) {
           s.weeksOut = 4;
           s.events.push({ moodModifier: -20 - this._insuranceMoodReduction(4), comment: 'I got seriously injured...' });
-        } else if (roll < this.INJURY_RATE + this.SICKNESS_RATE) {
+        } else if (roll < injuryRate + sicknessRate) {
           s.weeksOut = 1;
           s.events.push({ moodModifier: -10 - this._insuranceMoodReduction(1), comment: 'I feel sick...' });
         } else if (roll < this.INJURY_RATE + this.SICKNESS_RATE + vacationChance) {
@@ -176,6 +195,7 @@ const Staff = {
             s.events.push({ moodModifier: parentalBase - reduction, comment: 'Having a baby!' });
           }
         }
+        if (s.weeksOut > 0) this._notifyIfLastWorker(s);
       }
     });
   },
@@ -243,6 +263,10 @@ const Staff = {
   },
 
   // ── Candidates ─────────────────────────────────────────────────────────────
+  // Generates a pool of candidates each round when postings exist. Pool size and
+  // candidate quality both scale with the number of active HR staff and their
+  // experience tier. Candidates without a matching posting are discarded immediately.
+  // Fires a single notification if any new matching candidates arrived this round.
   generateCandidates() {
     if (this.postings.length === 0) return;
 
@@ -254,10 +278,18 @@ const Staff = {
       quality += tier * 5;
     });
 
+    const before = this.candidates.length;
     for (let i = 0; i < count; i++) {
       const emp       = this.generateEmployee(quality);
       const candidate = { ...emp, weeksAsCandidate: 0 };
       if (this.findMatchingPosting(candidate)) this.candidates.push(candidate);
+    }
+    if (this.candidates.length > before) {
+      Notifications.push({
+        label:   'Hire',
+        message: 'New candidates are available for your open postings.',
+        action:  () => { openPanel('staffing'); Staff.setView('candidates'); },
+      });
     }
   },
 

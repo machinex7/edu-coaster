@@ -20,7 +20,7 @@ const RIDE_COLORS = [
 ];
 
 // ── Economy & Time Constants ───────────────────────────────────────────────
-const STARTING_MONEY        = 2_000_000;
+const STARTING_MONEY        = 1_000_000;
 const STARTING_YEAR         = 2024;
 const STARTING_WEEK_OF_YEAR = 27; // week 27 = first week of Q3
 
@@ -296,9 +296,10 @@ function _commitPlace(item, category, startRow, startCol, status) {
   };
 
   if (category === CATEGORY.RIDE) {
-    record.rideId = item.id;
-    record.name   = item.name;
-    record.wear   = 0;
+    record.rideId        = item.id;
+    record.name          = item.name;
+    record.wear          = 0;
+    record.weeksToRepair = 0;
     installedRides.push(record);
   } else if (category === CATEGORY.SHOP) {
     record.shopId = item.id;

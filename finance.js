@@ -134,7 +134,12 @@ const Finance = {
         const broken = installedRides.filter(r => r.status === STATUS.BROKEN_DOWN);
         if (broken.length > 0) {
           broken.sort((a, b) => b.wear - a.wear);
-          broken[0].status = STATUS.ACTIVE;
+          const target = broken[0];
+          target.weeksToRepair--;
+          if (target.weeksToRepair <= 0) {
+            target.status = STATUS.ACTIVE;
+            target.weeksToRepair = 0;
+          }
         } else {
           const { tier } = Staff.getExperienceTier(eng.weeksEmployed);
           installedRides
@@ -154,7 +159,16 @@ const Finance = {
       .filter(r => r.status === STATUS.ACTIVE && isRideConnected(r))
       .forEach(r => {
         r.wear += r.lastRoundRiders ?? 0;
-        if (Math.random() < r.wear * 0.001) r.status = STATUS.BROKEN_DOWN;
+        if (Math.random() < r.wear * 0.001) {
+          r.status        = STATUS.BROKEN_DOWN;
+          // Repair time scales with wear: more wear = longer repair, minimum 1 week.
+          r.weeksToRepair = Math.floor(Math.random() * Math.floor(r.wear / 100)) + 1;
+          Notifications.push({
+            label:   'Ride',
+            message: `${r.name} broke down — ${r.weeksToRepair} week${r.weeksToRepair !== 1 ? 's' : ''} to repair.`,
+            action:  () => openPanel('rides'),
+          });
+        }
       });
   },
 

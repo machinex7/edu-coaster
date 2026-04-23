@@ -211,7 +211,11 @@ function buildRideDetail(record) {
   } else if (record.status === STATUS.CLOSED) {
     actionsHtml = `<button class="ride-action-btn ride-action-resume" id="rdx-reopen">Re-open Ride</button>`;
   } else if (record.status === STATUS.BROKEN_DOWN) {
-    actionsHtml = `<p class="ride-detail-weeks">Awaiting repair — assign an Engineer.</p>`;
+    const wtr = record.weeksToRepair ?? 0;
+    const repairMsg = wtr > 0
+      ? `${wtr} week${wtr !== 1 ? 's' : ''} to repair`
+      : 'assign an Engineer to begin repairs';
+    actionsHtml = `<p class="ride-detail-weeks">Broken down — ${repairMsg}.</p>`;
   }
 
   container.innerHTML = `

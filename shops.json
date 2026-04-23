@@ -5,7 +5,7 @@
     "color": "#f472b6",
     "footprint": [[1, 1]],
     "buildCost": 30000,
-    "buildWeeks": 2,
+    "buildWeeks": 4,
     "limit": null,
     "mustBeAdjacentTo": ["path", "park_entrance"]
   }

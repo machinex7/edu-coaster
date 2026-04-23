@@ -7,7 +7,7 @@
       [1, 1]
     ],
     "buildCost": 75000,
-    "buildWeeks": 2,
+    "buildWeeks": 4,
     "rideDuration": 180,
     "intensity": "low",
     "ridesPerHour": 15,
@@ -22,7 +22,7 @@
       [0, 1, 0]
     ],
     "buildCost": 225000,
-    "buildWeeks": 5,
+    "buildWeeks": 7,
     "rideDuration": 300,
     "intensity": "low",
     "ridesPerHour": 10,
@@ -37,7 +37,7 @@
       [1, 1, 1]
     ],
     "buildCost": 55000,
-    "buildWeeks": 2,
+    "buildWeeks": 4,
     "rideDuration": 120,
     "intensity": "low",
     "ridesPerHour": 22,
@@ -53,7 +53,7 @@
       [0, 1, 1, 0]
     ],
     "buildCost": 375000,
-    "buildWeeks": 7,
+    "buildWeeks": 9,
     "rideDuration": 150,
     "intensity": "medium",
     "ridesPerHour": 18,
@@ -68,7 +68,7 @@
       [1, 1, 1]
     ],
     "buildCost": 120000,
-    "buildWeeks": 3,
+    "buildWeeks": 5,
     "rideDuration": 150,
     "intensity": "medium",
     "ridesPerHour": 18,
@@ -83,7 +83,7 @@
       [1, 1, 1, 1]
     ],
     "buildCost": 175000,
-    "buildWeeks": 4,
+    "buildWeeks": 6,
     "rideDuration": 300,
     "intensity": "low",
     "ridesPerHour": 10,
@@ -97,7 +97,7 @@
       [1, 1]
     ],
     "buildCost": 450000,
-    "buildWeeks": 9,
+    "buildWeeks": 11,
     "rideDuration": 60,
     "intensity": "high",
     "ridesPerHour": 30,
@@ -112,7 +112,7 @@
       [1, 1, 1, 1]
     ],
     "buildCost": 300000,
-    "buildWeeks": 8,
+    "buildWeeks": 10,
     "rideDuration": 600,
     "intensity": "low",
     "ridesPerHour": 6,
@@ -129,7 +129,7 @@
       [0, 0, 1, 1]
     ],
     "buildCost": 850000,
-    "buildWeeks": 14,
+    "buildWeeks": 16,
     "rideDuration": 360,
     "intensity": "medium",
     "ridesPerHour": 8,
@@ -145,7 +145,7 @@
       [1, 1, 1, 1]
     ],
     "buildCost": 2000000,
-    "buildWeeks": 20,
+    "buildWeeks": 22,
     "rideDuration": 90,
     "intensity": "high",
     "ridesPerHour": 24,
@@ -163,7 +163,7 @@
       [0, 1, 1, 1, 1, 0]
     ],
     "buildCost": 6500000,
-    "buildWeeks": 36,
+    "buildWeeks": 38,
     "rideDuration": 120,
     "intensity": "extreme",
     "ridesPerHour": 20,
