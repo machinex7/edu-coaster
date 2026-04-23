@@ -250,6 +250,7 @@ const Finance = {
     const parkingRevenue    = this.calcParkingRevenue(dailyDemand);
     const shopRevenue       = Shopping.calcRevenue(weeklyAttendance);
     const food              = Shopping.calcFood(weeklyAttendance);
+    const foodRevenue       = Math.round(food.mealsSold * (Shopping.MEAL_BASE_PRICE + this.foodUpcharge));
     const staffCosts        = this.calcStaffCosts();
     const utilityCosts      = this.calcUtilityCosts();
     const constructionCosts = [...installedRides, ...installedFacilities, ...Shopping.installed]
@@ -262,6 +263,7 @@ const Finance = {
     money += gateRevenue;
     money += parkingRevenue;
     money += shopRevenue;
+    money += foodRevenue;
 
     // Costs
     money -= staffCosts;
@@ -292,7 +294,8 @@ const Finance = {
       gateRevenue,
       parkingRevenue,
       shopRevenue,
-      totalIncome: gateRevenue + parkingRevenue + shopRevenue,
+      foodRevenue,
+      totalIncome: gateRevenue + parkingRevenue + shopRevenue + foodRevenue,
       staffCosts,
       utilityCosts,
       constructionCosts,
