@@ -2,7 +2,8 @@
 // Each notification: { id, label, message, action }
 //   label   — short text shown on the chip (e.g. "!!!" or "Staff")
 //   message — full tooltip shown on hover
-//   action  — optional callback fired when the player clicks to dismiss
+//   action  — optional callback fired on left-click dismiss
+//             right-click silently discards without firing the action
 
 const Notifications = {
   _queue: [],
@@ -21,6 +22,13 @@ const Notifications = {
     this._render();
   },
 
+  discard(id) {
+    const idx = this._queue.findIndex(n => n.id === id);
+    if (idx === -1) return;
+    this._queue.splice(idx, 1);
+    this._render();
+  },
+
   _render() {
     const stack = document.getElementById('notification-stack');
     if (!stack) return;
@@ -30,7 +38,9 @@ const Notifications = {
       </div>
     `).join('');
     stack.querySelectorAll('.notif-chip').forEach(chip => {
-      chip.addEventListener('click', () => this.dismiss(Number(chip.dataset.id)));
+      const id = Number(chip.dataset.id);
+      chip.addEventListener('click', () => this.dismiss(id));
+      chip.addEventListener('contextmenu', e => { e.preventDefault(); this.discard(id); });
     });
   },
 };
