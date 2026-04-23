@@ -677,7 +677,21 @@ const Staff = {
     }
     if (this.medicalPolicy) {
       this.medicalPolicy.weeksRemaining--;
-      if (this.medicalPolicy.weeksRemaining <= 0) this.medicalPolicy = null;
+      const openBenefits = () => { openPanel('staffing'); Staff.setView('benefits'); };
+      if (this.medicalPolicy.weeksRemaining === 4) {
+        Notifications.push({
+          label: 'Med.',
+          message: 'Medical insurance expires in 4 weeks. Shop for new coverage.',
+          action: openBenefits,
+        });
+      } else if (this.medicalPolicy.weeksRemaining <= 0) {
+        Notifications.push({
+          label: 'Med.',
+          message: 'Medical insurance policy has expired.',
+          action: openBenefits,
+        });
+        this.medicalPolicy = null;
+      }
     }
   },
 
