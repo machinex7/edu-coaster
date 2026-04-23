@@ -10,8 +10,9 @@
 const Finance = {
 
   // ── Park metrics ────────────────────────────────────────────────────────────
-  parkExcitement: 500,  // satisfied-visitor count from last round; drives next round's demand
-  weeklyNetMess:  0,    // unhandled mess from last round; subtracted from excitement
+  parkExcitement:   500,  // satisfied-visitor count from last round; drives next round's demand
+  weeklyNetMess:    0,    // unhandled mess from last round; subtracted from excitement
+  mealSatisfaction: 1,    // 0.5–1; penalises excitement when food supply < demand
 
   // Smoothed 0–1 score of how well rides are serving current crowds.
   // Starts at 1.0 (perfect); degrades when operators can't keep up with demand.
@@ -67,7 +68,7 @@ const Finance = {
     const satisfactionRatio = Math.min(1, ridesPerPerson / Population.DESIRED_RIDES);
     const securityFactor    = Math.max(0, 1 - Math.sqrt(Security.opinion) / 100);
 
-    this.parkExcitement = Math.max(0, (weeklyAttendance * satisfactionRatio * securityFactor) / this.calcMessFactor());
+    this.parkExcitement = Math.max(0, (weeklyAttendance * satisfactionRatio * securityFactor * this.mealSatisfaction) / this.calcMessFactor());
   },
 
   // How many people can actually enter: booth attendants are the bottleneck.
@@ -153,13 +154,13 @@ const Finance = {
 
   // ── Wear & breakdown ─────────────────────────────────────────────────────────
   // Called each round after computeRideOpinion() so lastRoundRiders is current.
-  // Accumulates rider wear then rolls for breakdown at 0.1% per wear point.
+  // Accumulates rider wear then rolls for breakdown; probability reaches 100% at MAX_EFFECTIVE_WEAR.
   processWear() {
     installedRides
       .filter(r => r.status === STATUS.ACTIVE && isRideConnected(r))
       .forEach(r => {
         r.wear += r.lastRoundRiders ?? 0;
-        if (Math.random() < r.wear * 0.001) {
+        if (Math.random() < r.wear / MAX_EFFECTIVE_WEAR) {
           r.status        = STATUS.BROKEN_DOWN;
           // Repair time scales with wear: more wear = longer repair, minimum 1 week.
           r.weeksToRepair = Math.floor(Math.random() * Math.floor(r.wear / 100)) + 1;
@@ -214,12 +215,19 @@ const Finance = {
   },
 
   calcUtilityCosts() {
-    return installedRides
+    const rideCosts = installedRides
       .filter(r => r.status === STATUS.ACTIVE && isRideConnected(r))
       .reduce((sum, r) => {
         const def = rides.find(d => d.id === r.rideId);
         return sum + (def?.utilityCost ?? 0) * Population.utilityMultiplier;
       }, 0);
+    const facilityCosts = installedFacilities
+      .filter(f => f.status === STATUS.ACTIVE)
+      .reduce((sum, f) => {
+        const def = facilities.find(d => d.id === f.facilityId);
+        return sum + (def?.utilityCost ?? 0) * Population.utilityMultiplier;
+      }, 0);
+    return rideCosts + facilityCosts;
   },
 
   // Security.calcIncidents() and Security.advanceOpinion() are in security.js.
@@ -241,6 +249,7 @@ const Finance = {
     const gateRevenue       = this.calcGateRevenue(daily);
     const parkingRevenue    = this.calcParkingRevenue(dailyDemand);
     const shopRevenue       = Shopping.calcRevenue(weeklyAttendance);
+    const food              = Shopping.calcFood(weeklyAttendance);
     const staffCosts        = this.calcStaffCosts();
     const utilityCosts      = this.calcUtilityCosts();
     const constructionCosts = [...installedRides, ...installedFacilities, ...Shopping.installed]
@@ -269,7 +278,10 @@ const Finance = {
     Staff.generateCandidates();       // new applicants per round when postings exist
     Staff.advanceCandidates();        // withdrawal check, then increment weeksAsCandidate
     this.weeklyNetMess = Math.max(0, this.calcMessGenerated(weeklyAttendance) - Staff.calcJanitorCapacity());
-    this.calcExcitement(weeklyAttendance); // uses this round's mess and security before opinion advances
+    this.mealSatisfaction = food.mealsWanted > 0
+      ? Math.min(1, 0.5 + 0.5 * food.mealsServed / food.mealsWanted)
+      : 0.5;
+    this.calcExcitement(weeklyAttendance); // uses this round's mess, security, and meal satisfaction
     this.advancePriceExhaustion();    // decay price fatigue by 1
     Security.advanceOpinion(security.unhandled); // decay then add unhandled incidents
     const populationEvents = Population.populationEvents.map(e => ({ ...e }));
@@ -288,6 +300,7 @@ const Finance = {
       totalExpenses: staffCosts + utilityCosts + constructionCosts + security.theftLoss,
       rideEfficiency: this.rideOpinion,
       security: { ...security, opinionAfter: Security.opinion },
+      food: { ...food, mealSatisfaction: this.mealSatisfaction },
       populationEvents,
     };
   },

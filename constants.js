@@ -20,10 +20,6 @@ const CATEGORY = Object.freeze({
   SHOP:     'shop',
 });
 
-const SHOP_ID = Object.freeze({
-  MERCHANDISE: 'merchandise',
-});
-
 const JOB = Object.freeze({
   RIDE_OPERATOR:         'ride_operator',
   SECURITY:              'security',
@@ -31,6 +27,7 @@ const JOB = Object.freeze({
   ENGINEER:              'engineer',
   BOOTH_ATTENDANT:       'booth_attendant',
   MERCHANDISE_ATTENDANT: 'merchandise_attendant',
+  CONCESSIONS_WORKER:    'concessions_worker',
   BUSINESS_ANALYST:      'business_analyst',
   HR:                    'hr',
 });
@@ -43,6 +40,7 @@ const FACILITY_ID = Object.freeze({
   STATUE:        'statue',
   GARDEN:        'garden',
   FOUNTAIN:      'fountain',
+  STAFF_LOUNGE:  'staff_lounge',
 });
 
 const SECURITY_FOCUS = Object.freeze({
@@ -55,3 +53,6 @@ const ENGINEER_FOCUS = Object.freeze({
   MAINTENANCE:  'maintenance',
   CONSTRUCTION: 'construction',
 });
+
+// Breakdown probability reaches 100% at this cumulative wear value.
+const MAX_EFFECTIVE_WEAR = 1000;

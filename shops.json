@@ -1,11 +1,71 @@
 [
   {
+    "id": "kiosk",
+    "name": "Kiosk",
+    "shopType": "merchandise",
+    "color": "#fb923c",
+    "footprint": [[1]],
+    "buildCost": 8000,
+    "buildWeeks": 1,
+    "limit": null,
+    "mustBeAdjacentTo": ["path", "park_entrance"]
+  },
+  {
     "id": "merchandise",
     "name": "Merchandise Store",
+    "shopType": "merchandise",
     "color": "#f472b6",
     "footprint": [[1, 1]],
     "buildCost": 30000,
     "buildWeeks": 4,
+    "limit": null,
+    "mustBeAdjacentTo": ["path", "park_entrance"]
+  },
+  {
+    "id": "large_store",
+    "name": "Large Store",
+    "shopType": "merchandise",
+    "color": "#c084fc",
+    "footprint": [
+      [1, 0],
+      [1, 0],
+      [1, 1]
+    ],
+    "buildCost": 80000,
+    "buildWeeks": 10,
+    "limit": null,
+    "mustBeAdjacentTo": ["path", "park_entrance"]
+  },
+  {
+    "id": "snack_shop",
+    "name": "Snack Shop",
+    "shopType": "food",
+    "color": "#fcd34d",
+    "footprint": [[1]],
+    "buildCost": 12000,
+    "buildWeeks": 2,
+    "limit": null,
+    "mustBeAdjacentTo": ["path", "park_entrance"]
+  },
+  {
+    "id": "quick_foods",
+    "name": "Quick Foods",
+    "shopType": "food",
+    "color": "#f97316",
+    "footprint": [[1, 1]],
+    "buildCost": 28000,
+    "buildWeeks": 5,
+    "limit": null,
+    "mustBeAdjacentTo": ["path", "park_entrance"]
+  },
+  {
+    "id": "diner",
+    "name": "Diner",
+    "shopType": "food",
+    "color": "#ef4444",
+    "footprint": [[1, 1], [1, 1]],
+    "buildCost": 65000,
+    "buildWeeks": 9,
     "limit": null,
     "mustBeAdjacentTo": ["path", "park_entrance"]
   }

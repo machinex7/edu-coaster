@@ -20,6 +20,7 @@ const Staff = {
     { id: JOB.ENGINEER,         label: 'Engineer',         plural: 'Engineers',         weeklySalary: 1200 },
     { id: JOB.BOOTH_ATTENDANT,       label: 'Booth Attendant',       plural: 'Booth Attendants',       weeklySalary: 480                           },
     { id: JOB.MERCHANDISE_ATTENDANT, label: 'Merchandise Attendant', plural: 'Merchandise Attendants', weeklySalary: Population.MINIMUM_WAGE_WEEKLY },
+    { id: JOB.CONCESSIONS_WORKER,    label: 'Concessions Worker',    plural: 'Concessions Workers',    weeklySalary: Population.MINIMUM_WAGE_WEEKLY },
     { id: JOB.BUSINESS_ANALYST,      label: 'Business Analyst',      plural: 'Business Analysts',      weeklySalary: 1400                          },
     { id: JOB.HR,               label: 'HR',               plural: 'HR',                weeklySalary: 1600 },
   ],
@@ -87,9 +88,10 @@ const Staff = {
 
   init() {
     [
-      JOB.RIDE_OPERATOR, JOB.RIDE_OPERATOR,
+      JOB.RIDE_OPERATOR, JOB.RIDE_OPERATOR, JOB.RIDE_OPERATOR, JOB.RIDE_OPERATOR,
       JOB.SECURITY, JOB.JANITOR, JOB.ENGINEER,
       JOB.BOOTH_ATTENDANT, JOB.BOOTH_ATTENDANT,
+      JOB.MERCHANDISE_ATTENDANT,
     ].forEach(jobId => {
       const emp    = this.generateEmployee(0);
       const jobDef = this.JOB_TYPES.find(j => j.id === jobId);
@@ -205,11 +207,13 @@ const Staff = {
   // match %, kids × 2), plus any pending mood events. Events decay by 2 points
   // per round and are pruned once they fall below ±2.
   updateMoods() {
+    const loungeCount  = installedFacilities.filter(f => f.facilityId === FACILITY_ID.STAFF_LOUNGE && f.status === STATUS.ACTIVE).length;
+    const loungeBonus  = Math.floor(Math.sqrt(loungeCount));
     this.roster.forEach(s => {
       const ratio      = s.salary / s.costOfLiving;
       const base       = ratio / 2 * 100;
       const eventBonus = s.events.reduce((sum, e) => sum + e.moodModifier, 0);
-      s.mood = Math.round(Math.max(0, Math.min(100, base + eventBonus + 5 * this.VACATION_WEEKS + this.RETIREMENT_MATCH_PCT + 2 * s.kids)));
+      s.mood = Math.round(Math.max(0, Math.min(100, base + eventBonus + 5 * this.VACATION_WEEKS + this.RETIREMENT_MATCH_PCT + 2 * s.kids + loungeBonus)));
 
       s.events.forEach(e => { e.moodModifier -= Math.sign(e.moodModifier) * 2; });
       s.events = s.events.filter(e => Math.abs(e.moodModifier) >= 2);
@@ -270,7 +274,7 @@ const Staff = {
   generateCandidates() {
     if (this.postings.length === 0) return;
 
-    let count   = 4;
+    let count   = 6;
     let quality = 0;
     this.roster.filter(s => s.jobId === JOB.HR && s.weeksOut === 0).forEach(s => {
       const { tier } = this.getExperienceTier(s.weeksEmployed);

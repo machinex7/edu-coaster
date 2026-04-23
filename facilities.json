@@ -58,5 +58,15 @@
     "buildCost": 3000,
     "buildWeeks": 3,
     "limit": null
+  },
+  {
+    "id": "staff_lounge",
+    "name": "Staff Lounge",
+    "color": "#fca5a5",
+    "footprint": [[1, 1], [1, 1]],
+    "buildCost": 2000,
+    "buildWeeks": 3,
+    "utilityCost": 50,
+    "limit": null
   }
 ]
