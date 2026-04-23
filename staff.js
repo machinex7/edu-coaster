@@ -27,8 +27,11 @@ const Staff = {
   POSTING_WEEKLY_COST: 75,
   SICKNESS_RATE:       0.02,   // per-round chance of 1-week illness
   INJURY_RATE:         0.005,  // per-round chance of 4-week critical injury
-  VACATION_RATE:       0.04,   // per-round base chance of taking a vacation
-  VACATION_WEEKS:      1,      // vacation duration in weeks; effective chance = VACATION_RATE × VACATION_WEEKS
+  VACATION_RATE:        0.04,  // per-round base chance of taking a vacation
+  VACATION_WEEKS:       1,     // vacation duration in weeks; effective chance = VACATION_RATE × VACATION_WEEKS
+  PARENTAL_LEAVE_RATE:  0.003, // per-round chance a healthy employee goes on parental leave
+  PARENTAL_LEAVE_WEEKS: 0,     // weeks of paid parental leave per child
+  RETIREMENT_MATCH_PCT: 0,     // employer 401(k) match percentage (1–10, 0 = disabled)
 
   // ── State ──────────────────────────────────────────────────────────────────
   // staff entries: { instanceId, name, jobId, salary, skillModifier, costOfLiving, mood (0–100), weeksEmployed }
@@ -39,6 +42,10 @@ const Staff = {
   candidates:       [],
   _activeView:      'roster',
   _selectedStaffId: null,
+
+  medicalQuoteCooldown: 0,     // weeks until quote is ready; 0 = not shopping
+  medicalQuote:         null,  // { tier, pricePerEmployee, durationWeeks } pending offer
+  medicalPolicy:        null,  // { tier, pricePerEmployee, durationWeeks, weeksRemaining } active policy
 
   // ── Employee generation ────────────────────────────────────────────────────
   // quality 0–100: controls the ceiling of skillModifier and yearsExperience.
@@ -63,6 +70,7 @@ const Staff = {
       focus:                   job.id === JOB.ENGINEER ? ENGINEER_FOCUS.MAINTENANCE : SECURITY_FOCUS.PATROL,
       events:      [],
       weeksOut:    0,
+      kids:        0,
     };
   },
 
@@ -117,9 +125,9 @@ const Staff = {
   },
 
   applyInflation() {
-    const weeklyRate = Population.inflationRate / 52;
     this.roster.forEach(s => {
-      s.costOfLiving = Math.round(s.costOfLiving * (1 + weeklyRate));
+      const annualRate = Population.inflationRate + s.kids / 100;
+      s.costOfLiving = Math.round(s.costOfLiving * (1 + annualRate / 52));
     });
   },
 
@@ -131,8 +139,9 @@ const Staff = {
       if (s.weeksOut > 0) {
         s.weeksOut--;
       } else {
-        const roll           = Math.random();
-        const vacationChance = this.VACATION_RATE * this.VACATION_WEEKS;
+        const roll             = Math.random();
+        const vacationChance   = this.VACATION_RATE * this.VACATION_WEEKS;
+        const parentalThreshold = this.INJURY_RATE + this.SICKNESS_RATE + vacationChance + this.PARENTAL_LEAVE_RATE;
         if (roll < this.INJURY_RATE) {
           s.weeksOut = 4;
           s.events.push({ moodModifier: -20, comment: 'I got seriously injured...' });
@@ -142,6 +151,15 @@ const Staff = {
         } else if (roll < this.INJURY_RATE + this.SICKNESS_RATE + vacationChance) {
           s.weeksOut = this.VACATION_WEEKS;
           s.events.push({ moodModifier: 10, comment: 'Taking a vacation!' });
+        } else if (roll < parentalThreshold) {
+          s.weeksOut = this.PARENTAL_LEAVE_WEEKS;
+          s.kids++;
+          if (Math.random() < 0.03) {
+            s.kids++;
+            s.events.push({ moodModifier: 5 * (this.PARENTAL_LEAVE_WEEKS + 2) + 15, comment: 'Twins? Twins! ... twins...' });
+          } else {
+            s.events.push({ moodModifier: 5 * (this.PARENTAL_LEAVE_WEEKS + 2), comment: 'Having a baby!' });
+          }
         }
       }
     });
@@ -152,7 +170,7 @@ const Staff = {
       const ratio      = s.salary / s.costOfLiving;
       const base       = ratio / 2 * 100;
       const eventBonus = s.events.reduce((sum, e) => sum + e.moodModifier, 0);
-      s.mood = Math.round(Math.max(0, Math.min(100, base + eventBonus + 5 * this.VACATION_WEEKS)));
+      s.mood = Math.round(Math.max(0, Math.min(100, base + eventBonus + 5 * this.VACATION_WEEKS + this.RETIREMENT_MATCH_PCT + 2 * s.kids)));
 
       s.events.forEach(e => { e.moodModifier -= Math.sign(e.moodModifier) * 2; });
       s.events = s.events.filter(e => Math.abs(e.moodModifier) >= 2);
@@ -639,6 +657,35 @@ const Staff = {
     );
   },
 
+  // ── Medical insurance ──────────────────────────────────────────────────────
+  generateMedicalQuote() {
+    const tier       = Math.random() < 0.5 ? 'Standard' : 'Premium';
+    const [lo, hi]   = tier === 'Standard' ? [100, 150] : [150, 200];
+    const basePrice  = Math.round((lo + Math.random() * (hi - lo)) * Population.inflationRate);
+    const increments = 2 + Math.floor(Math.random() * 5);  // 2–6
+    this.medicalQuote = {
+      tier,
+      pricePerEmployee: Math.max(0, basePrice - increments * 10),
+      durationWeeks:    increments * 4,
+    };
+  },
+
+  advanceMedicalInsurance() {
+    if (this.medicalQuoteCooldown > 0) {
+      this.medicalQuoteCooldown--;
+      if (this.medicalQuoteCooldown === 0) this.generateMedicalQuote();
+    }
+    if (this.medicalPolicy) {
+      this.medicalPolicy.weeksRemaining--;
+      if (this.medicalPolicy.weeksRemaining <= 0) this.medicalPolicy = null;
+    }
+  },
+
+  calcMedicalCosts() {
+    if (!this.medicalPolicy) return 0;
+    return this.medicalPolicy.pricePerEmployee * this.roster.length;
+  },
+
   // ── Benefits view ──────────────────────────────────────────────────────────
   buildBenefitsView() {
     const container = document.getElementById('staff-benefits-view');
@@ -654,6 +701,32 @@ const Staff = {
           </div>
           <p id="ben-vacation-error" class="form-error hidden"></p>
         </div>
+      </div>
+      <div class="benefits-section">
+        <div class="benefits-section-title">Parental Leave</div>
+        <div class="form-field">
+          <label class="staff-detail-label">Weeks per child</label>
+          <div class="staff-propose-row">
+            <input type="number" id="ben-parental-weeks" min="0" max="52" value="${this.PARENTAL_LEAVE_WEEKS}">
+            <button class="ride-action-btn" id="ben-parental-apply">Apply</button>
+          </div>
+          <p id="ben-parental-error" class="form-error hidden"></p>
+        </div>
+      </div>
+      <div class="benefits-section">
+        <div class="benefits-section-title">401(k) Match</div>
+        <div class="form-field">
+          <label class="staff-detail-label">Employer match % (0 = disabled, 1–10)</label>
+          <div class="staff-propose-row">
+            <input type="number" id="ben-retirement-pct" min="0" max="10" value="${this.RETIREMENT_MATCH_PCT}">
+            <button class="ride-action-btn" id="ben-retirement-apply">Apply</button>
+          </div>
+          <p id="ben-retirement-error" class="form-error hidden"></p>
+        </div>
+      </div>
+      <div class="benefits-section">
+        <div class="benefits-section-title">Medical Insurance</div>
+        ${this._buildMedicalInsuranceHTML()}
       </div>`;
 
     document.getElementById('ben-vacation-apply').addEventListener('click', () => {
@@ -668,6 +741,79 @@ const Staff = {
       errEl.classList.add('hidden');
       this.buildBenefitsView();
     });
+
+    document.getElementById('ben-parental-apply').addEventListener('click', () => {
+      const val   = parseInt(document.getElementById('ben-parental-weeks').value);
+      const errEl = document.getElementById('ben-parental-error');
+      if (isNaN(val) || val < 0 || val > 52) {
+        errEl.textContent = 'Enter a value between 0 and 52.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      this.PARENTAL_LEAVE_WEEKS = val;
+      errEl.classList.add('hidden');
+      this.buildBenefitsView();
+    });
+
+    document.getElementById('ben-retirement-apply').addEventListener('click', () => {
+      const val   = parseInt(document.getElementById('ben-retirement-pct').value);
+      const errEl = document.getElementById('ben-retirement-error');
+      if (isNaN(val) || val < 0 || val > 10) {
+        errEl.textContent = 'Enter a value between 0 and 10.';
+        errEl.classList.remove('hidden');
+        return;
+      }
+      this.RETIREMENT_MATCH_PCT = val;
+      errEl.classList.add('hidden');
+      this.buildBenefitsView();
+    });
+
+    const shopBtn = document.getElementById('ben-medical-shop');
+    if (shopBtn) {
+      shopBtn.addEventListener('click', () => {
+        this.medicalQuoteCooldown = 4;
+        this.buildBenefitsView();
+      });
+    }
+    const acceptBtn = document.getElementById('ben-medical-accept');
+    if (acceptBtn) {
+      acceptBtn.addEventListener('click', () => {
+        this.medicalPolicy = { ...this.medicalQuote, weeksRemaining: this.medicalQuote.durationWeeks };
+        this.medicalQuote  = null;
+        this.buildBenefitsView();
+      });
+    }
+    const dismissBtn = document.getElementById('ben-medical-dismiss');
+    if (dismissBtn) {
+      dismissBtn.addEventListener('click', () => {
+        this.medicalQuote = null;
+        this.buildBenefitsView();
+      });
+    }
+  },
+
+  _buildMedicalInsuranceHTML() {
+    if (this.medicalQuote) {
+      const q = this.medicalQuote;
+      return `
+        <p class="staff-detail-label">${q.tier} plan — $${q.pricePerEmployee}/employee/week — ${q.durationWeeks} weeks</p>
+        <div class="staff-propose-row">
+          <button class="ride-action-btn" id="ben-medical-accept">Accept</button>
+          <button class="ride-action-btn" id="ben-medical-dismiss">Dismiss</button>
+        </div>
+        ${this.medicalPolicy ? `<p class="staff-detail-label" style="margin-top:8px">Current: ${this.medicalPolicy.tier} — $${this.medicalPolicy.pricePerEmployee}/employee/week — ${this.medicalPolicy.weeksRemaining} weeks remaining</p>` : ''}`;
+    }
+    if (this.medicalQuoteCooldown > 0) {
+      return `<p class="staff-detail-label">Quote arriving in ${this.medicalQuoteCooldown} week${this.medicalQuoteCooldown !== 1 ? 's' : ''}...</p>
+        ${this.medicalPolicy ? `<p class="staff-detail-label" style="margin-top:8px">Current: ${this.medicalPolicy.tier} — $${this.medicalPolicy.pricePerEmployee}/employee/week — ${this.medicalPolicy.weeksRemaining} weeks remaining</p>` : ''}`;
+    }
+    if (this.medicalPolicy) {
+      const p = this.medicalPolicy;
+      return `
+        <p class="staff-detail-label">${p.tier} — $${p.pricePerEmployee}/employee/week — ${p.weeksRemaining} weeks remaining</p>
+        <button class="ride-action-btn" id="ben-medical-shop" style="margin-top:8px">Shop for New Coverage</button>`;
+    }
+    return `<button class="ride-action-btn" id="ben-medical-shop">Shop for Coverage</button>`;
   },
 
 };
