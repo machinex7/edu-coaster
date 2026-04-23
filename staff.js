@@ -673,7 +673,14 @@ const Staff = {
   advanceMedicalInsurance() {
     if (this.medicalQuoteCooldown > 0) {
       this.medicalQuoteCooldown--;
-      if (this.medicalQuoteCooldown === 0) this.generateMedicalQuote();
+      if (this.medicalQuoteCooldown === 0) {
+        this.generateMedicalQuote();
+        Notifications.push({
+          label: 'Med.',
+          message: 'A new medical insurance quote is ready for review.',
+          action: () => { openPanel('staffing'); Staff.setView('benefits'); },
+        });
+      }
     }
     if (this.medicalPolicy) {
       this.medicalPolicy.weeksRemaining--;
