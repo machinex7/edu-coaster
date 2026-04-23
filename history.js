@@ -34,6 +34,9 @@ const History = {
       securityHandled:     report.security.handled,
       securityUnhandled:   report.security.unhandled,
       securityOpinion:     report.security.opinionAfter,
+      mealsWanted:         report.food.mealsWanted,
+      mealsServed:         report.food.mealsServed,
+      mealSatisfaction:    report.food.mealSatisfaction,
     });
   },
 

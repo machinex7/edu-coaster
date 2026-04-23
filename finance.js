@@ -10,8 +10,9 @@
 const Finance = {
 
   // ── Park metrics ────────────────────────────────────────────────────────────
-  parkExcitement: 500,  // satisfied-visitor count from last round; drives next round's demand
-  weeklyNetMess:  0,    // unhandled mess from last round; subtracted from excitement
+  parkExcitement:   500,  // satisfied-visitor count from last round; drives next round's demand
+  weeklyNetMess:    0,    // unhandled mess from last round; subtracted from excitement
+  mealSatisfaction: 1,    // 0.25–1; penalises excitement when food supply < demand
 
   // Smoothed 0–1 score of how well rides are serving current crowds.
   // Starts at 1.0 (perfect); degrades when operators can't keep up with demand.
@@ -67,7 +68,7 @@ const Finance = {
     const satisfactionRatio = Math.min(1, ridesPerPerson / Population.DESIRED_RIDES);
     const securityFactor    = Math.max(0, 1 - Math.sqrt(Security.opinion) / 100);
 
-    this.parkExcitement = Math.max(0, (weeklyAttendance * satisfactionRatio * securityFactor) / this.calcMessFactor());
+    this.parkExcitement = Math.max(0, (weeklyAttendance * satisfactionRatio * securityFactor * this.mealSatisfaction) / this.calcMessFactor());
   },
 
   // How many people can actually enter: booth attendants are the bottleneck.
@@ -277,7 +278,10 @@ const Finance = {
     Staff.generateCandidates();       // new applicants per round when postings exist
     Staff.advanceCandidates();        // withdrawal check, then increment weeksAsCandidate
     this.weeklyNetMess = Math.max(0, this.calcMessGenerated(weeklyAttendance) - Staff.calcJanitorCapacity());
-    this.calcExcitement(weeklyAttendance); // uses this round's mess and security before opinion advances
+    this.mealSatisfaction = food.mealsWanted > 0
+      ? Math.min(1, 0.25 + 0.75 * food.mealsServed / food.mealsWanted)
+      : 1;
+    this.calcExcitement(weeklyAttendance); // uses this round's mess, security, and meal satisfaction
     this.advancePriceExhaustion();    // decay price fatigue by 1
     Security.advanceOpinion(security.unhandled); // decay then add unhandled incidents
     const populationEvents = Population.populationEvents.map(e => ({ ...e }));
@@ -296,7 +300,7 @@ const Finance = {
       totalExpenses: staffCosts + utilityCosts + constructionCosts + security.theftLoss,
       rideEfficiency: this.rideOpinion,
       security: { ...security, opinionAfter: Security.opinion },
-      food,
+      food: { ...food, mealSatisfaction: this.mealSatisfaction },
       populationEvents,
     };
   },
