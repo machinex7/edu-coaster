@@ -150,7 +150,12 @@ const Staff = {
         } else if (roll < parentalThreshold) {
           s.weeksOut = this.PARENTAL_LEAVE_WEEKS;
           s.kids++;
-          s.events.push({ moodModifier: 5 * (this.PARENTAL_LEAVE_WEEKS + 2), comment: 'Having a baby!' });
+          if (Math.random() < 0.03) {
+            s.kids++;
+            s.events.push({ moodModifier: 5 * (this.PARENTAL_LEAVE_WEEKS + 2) + 15, comment: 'Twins? Twins! ... twins...' });
+          } else {
+            s.events.push({ moodModifier: 5 * (this.PARENTAL_LEAVE_WEEKS + 2), comment: 'Having a baby!' });
+          }
         }
       }
     });
