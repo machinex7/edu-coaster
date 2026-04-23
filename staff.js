@@ -87,9 +87,10 @@ const Staff = {
 
   init() {
     [
-      JOB.RIDE_OPERATOR, JOB.RIDE_OPERATOR,
+      JOB.RIDE_OPERATOR, JOB.RIDE_OPERATOR, JOB.RIDE_OPERATOR, JOB.RIDE_OPERATOR,
       JOB.SECURITY, JOB.JANITOR, JOB.ENGINEER,
       JOB.BOOTH_ATTENDANT, JOB.BOOTH_ATTENDANT,
+      JOB.MERCHANDISE_ATTENDANT,
     ].forEach(jobId => {
       const emp    = this.generateEmployee(0);
       const jobDef = this.JOB_TYPES.find(j => j.id === jobId);
