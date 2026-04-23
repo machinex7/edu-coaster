@@ -134,6 +134,23 @@ const Staff = {
     });
   },
 
+  // Fires a notification if the newly absent employee is the last working member
+  // of their job type. Skipped for HR since gaps there are less operationally
+  // critical. Called after weeksOut is set so the absent employee is already
+  // excluded from the working count.
+  _notifyIfLastWorker(s) {
+    if (s.jobId === JOB.HR) return;
+    const stillWorking = this.roster.filter(r => r.jobId === s.jobId && r.weeksOut === 0).length;
+    if (stillWorking === 0) {
+      const jobDef = this.JOB_TYPES.find(j => j.id === s.jobId);
+      Notifications.push({
+        label:   'Staff',
+        message: `Your last ${jobDef.label} is out — no ${jobDef.plural} available this week!`,
+        action:  () => openPanel('staffing'),
+      });
+    }
+  },
+
   // Returns the mood penalty for an absence of the given duration based on the
   // active medical policy tier. Premium = no penalty; Standard = 5 × weeks;
   // no coverage = 10 × weeks. Applied to sick, injury, and parental leave events.
@@ -161,9 +178,11 @@ const Staff = {
         if (roll < injuryRate) {
           s.weeksOut = 4;
           s.events.push({ moodModifier: -20 - this._insuranceMoodReduction(4), comment: 'I got seriously injured...' });
+          this._notifyIfLastWorker(s);
         } else if (roll < injuryRate + sicknessRate) {
           s.weeksOut = 1;
           s.events.push({ moodModifier: -10 - this._insuranceMoodReduction(1), comment: 'I feel sick...' });
+          this._notifyIfLastWorker(s);
         } else if (roll < this.INJURY_RATE + this.SICKNESS_RATE + vacationChance) {
           s.weeksOut = this.VACATION_WEEKS;
           s.events.push({ moodModifier: 10, comment: 'Taking a vacation!' });
@@ -178,6 +197,7 @@ const Staff = {
           } else {
             s.events.push({ moodModifier: parentalBase - reduction, comment: 'Having a baby!' });
           }
+          this._notifyIfLastWorker(s);
         }
       }
     });
