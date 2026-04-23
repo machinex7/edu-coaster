@@ -13,9 +13,11 @@ const Shopping = {
   merchandiseUpcharge: 0,  // $ added on top of BASE_SPEND per buyer
 
   // ── Constants ──────────────────────────────────────────────────────────────
-  BASE_SPEND:       30,  // $ base spend per buyer
-  THEFT_LOSS_PER:   50,  // $ lost per unhandled shoplifter
-  WORKERS_PER_STORE: 2,  // merchandise attendants required per active store
+  BASE_SPEND:              30,   // $ base spend per buyer
+  THEFT_LOSS_PER:          50,   // $ lost per unhandled shoplifter
+  WORKERS_PER_STORE:        2,   // merchandise attendants required per active store
+  EXPECTED_MEALS_PER_DAY:   2,   // meals a visitor wants to eat per day
+  MEALS_PER_WORKER_PER_DAY: 250, // meals a concessions worker can serve per day (base)
 
   // Total active tiles across all placed merchandise shops.
   // Used to scale revenue and theft: more floor space = more shoppers and more risk.
@@ -65,6 +67,37 @@ const Shopping = {
   // Called by Security.calcIncidents() after determining how many went unhandled.
   calcTheftLoss(unhandledShop) {
     return unhandledShop * this.THEFT_LOSS_PER;
+  },
+
+  // ── Food ───────────────────────────────────────────────────────────────────
+  calcFoodTiles() {
+    const foodIds = new Set(this.catalog.filter(s => s.shopType === 'food').map(s => s.id));
+    return this.installed
+      .filter(s => s.status === STATUS.ACTIVE && foodIds.has(s.shopId))
+      .reduce((sum, s) => sum + s.footprint.flat().filter(v => v === 1).length, 0);
+  },
+
+  // Returns mealsWanted (demand) and mealsServed (capacity).
+  // Effective workers = min(active concessions workers, food tiles), picking the
+  // most experienced workers first. Each worker contributes MEALS_PER_WORKER_PER_DAY
+  // boosted by 20% per experience tier (tier 1–4 → 1.2×–1.8×).
+  calcFood(weeklyAttendance) {
+    const mealsWanted = weeklyAttendance * this.EXPECTED_MEALS_PER_DAY;
+
+    const foodTiles = this.calcFoodTiles();
+    const workers = Staff.roster
+      .filter(s => s.jobId === JOB.CONCESSIONS_WORKER && s.weeksOut === 0)
+      .sort((a, b) => Staff.getExperienceTier(b.weeksEmployed).tier - Staff.getExperienceTier(a.weeksEmployed).tier);
+
+    const effectiveCount = Math.min(workers.length, foodTiles);
+    const mealsServed = Math.floor(
+      workers.slice(0, effectiveCount).reduce((sum, s) => {
+        const { tier } = Staff.getExperienceTier(s.weeksEmployed);
+        return sum + this.MEALS_PER_WORKER_PER_DAY * (1 + 0.2 * tier);
+      }, 0)
+    );
+
+    return { mealsWanted, mealsServed };
   },
 
   // ── Construction panel ─────────────────────────────────────────────────────

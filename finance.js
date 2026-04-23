@@ -248,6 +248,7 @@ const Finance = {
     const gateRevenue       = this.calcGateRevenue(daily);
     const parkingRevenue    = this.calcParkingRevenue(dailyDemand);
     const shopRevenue       = Shopping.calcRevenue(weeklyAttendance);
+    const food              = Shopping.calcFood(weeklyAttendance);
     const staffCosts        = this.calcStaffCosts();
     const utilityCosts      = this.calcUtilityCosts();
     const constructionCosts = [...installedRides, ...installedFacilities, ...Shopping.installed]
@@ -295,6 +296,7 @@ const Finance = {
       totalExpenses: staffCosts + utilityCosts + constructionCosts + security.theftLoss,
       rideEfficiency: this.rideOpinion,
       security: { ...security, opinionAfter: Security.opinion },
+      food,
       populationEvents,
     };
   },
