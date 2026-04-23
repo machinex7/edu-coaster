@@ -134,6 +134,16 @@ const Staff = {
     });
   },
 
+  // Returns the mood penalty for an absence of the given duration based on the
+  // active medical policy tier. Premium = no penalty; Standard = 5 × weeks;
+  // no coverage = 10 × weeks. Applied to sick, injury, and parental leave events.
+  _insuranceMoodReduction(weeks) {
+    const tier = this.medicalPolicy?.tier;
+    if (tier === 'Premium')  return 0;
+    if (tier === 'Standard') return 5 * weeks;
+    return 10 * weeks;
+  },
+
   // Each round: decrement remaining absence time, then roll for new absences on
   // healthy staff. Injury and sickness are checked first; vacation last.
   // Effective vacation chance = VACATION_RATE × VACATION_WEEKS.
@@ -142,26 +152,28 @@ const Staff = {
       if (s.weeksOut > 0) {
         s.weeksOut--;
       } else {
-        const roll             = Math.random();
-        const vacationChance   = this.VACATION_RATE * this.VACATION_WEEKS;
+        const roll              = Math.random();
+        const vacationChance    = this.VACATION_RATE * this.VACATION_WEEKS;
         const parentalThreshold = this.INJURY_RATE + this.SICKNESS_RATE + vacationChance + this.PARENTAL_LEAVE_RATE;
         if (roll < this.INJURY_RATE) {
           s.weeksOut = 4;
-          s.events.push({ moodModifier: -20, comment: 'I got seriously injured...' });
+          s.events.push({ moodModifier: -20 - this._insuranceMoodReduction(4), comment: 'I got seriously injured...' });
         } else if (roll < this.INJURY_RATE + this.SICKNESS_RATE) {
           s.weeksOut = 1;
-          s.events.push({ moodModifier: -10, comment: 'I feel sick...' });
+          s.events.push({ moodModifier: -10 - this._insuranceMoodReduction(1), comment: 'I feel sick...' });
         } else if (roll < this.INJURY_RATE + this.SICKNESS_RATE + vacationChance) {
           s.weeksOut = this.VACATION_WEEKS;
           s.events.push({ moodModifier: 10, comment: 'Taking a vacation!' });
         } else if (roll < parentalThreshold) {
           s.weeksOut = this.PARENTAL_LEAVE_WEEKS;
           s.kids++;
+          const parentalBase = 5 * (this.PARENTAL_LEAVE_WEEKS + 2);
+          const reduction    = this._insuranceMoodReduction(this.PARENTAL_LEAVE_WEEKS);
           if (Math.random() < 0.03) {
             s.kids++;
-            s.events.push({ moodModifier: 5 * (this.PARENTAL_LEAVE_WEEKS + 2) + 15, comment: 'Twins? Twins! ... twins...' });
+            s.events.push({ moodModifier: parentalBase + 15 - reduction, comment: 'Twins? Twins! ... twins...' });
           } else {
-            s.events.push({ moodModifier: 5 * (this.PARENTAL_LEAVE_WEEKS + 2), comment: 'Having a baby!' });
+            s.events.push({ moodModifier: parentalBase - reduction, comment: 'Having a baby!' });
           }
         }
       }
