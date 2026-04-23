@@ -20,7 +20,7 @@ const RIDE_COLORS = [
 ];
 
 // ── Economy & Time Constants ───────────────────────────────────────────────
-const STARTING_MONEY        = 2_000_000;
+const STARTING_MONEY        = 1_000_000;
 const STARTING_YEAR         = 2024;
 const STARTING_WEEK_OF_YEAR = 27; // week 27 = first week of Q3
 
