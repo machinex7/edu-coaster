@@ -665,8 +665,9 @@ const Staff = {
     const increments = 2 + Math.floor(Math.random() * 5);  // 2–6
     this.medicalQuote = {
       tier,
-      pricePerEmployee: Math.max(0, basePrice - increments * 10),
-      durationWeeks:    increments * 4,
+      pricePerEmployee:  Math.max(0, basePrice - increments * 10),
+      durationWeeks:     increments * 4,
+      weeksRemaining:    4,
     };
   },
 
@@ -681,6 +682,10 @@ const Staff = {
           action: () => { openPanel('staffing'); Staff.setView('benefits'); },
         });
       }
+    }
+    if (this.medicalQuote) {
+      this.medicalQuote.weeksRemaining--;
+      if (this.medicalQuote.weeksRemaining <= 0) this.medicalQuote = null;
     }
     if (this.medicalPolicy) {
       this.medicalPolicy.weeksRemaining--;
