@@ -18,6 +18,7 @@ const Shopping = {
   WORKERS_PER_STORE:        2,   // merchandise attendants required per active store
   EXPECTED_MEALS_PER_DAY:   2,   // meals a visitor wants to eat per day
   MEALS_PER_WORKER_PER_DAY: 250, // meals a concessions worker can serve per day (base)
+  MEAL_BASE_PRICE:          10,  // $ base price per meal sold
 
   // Total active tiles across all placed merchandise shops.
   // Used to scale revenue and theft: more floor space = more shoppers and more risk.
@@ -97,7 +98,8 @@ const Shopping = {
       }, 0)
     );
 
-    return { mealsWanted, mealsServed };
+    const mealsSold = Math.min(mealsWanted, mealsServed);
+    return { mealsWanted, mealsServed, mealsSold };
   },
 
   // ── Construction panel ─────────────────────────────────────────────────────
