@@ -124,11 +124,24 @@ const Staff = {
     });
   },
 
+  // Grows each employee's cost of living by one week of their personal annual
+  // inflation rate. Base rate is global inflation; each child adds 1 percentage
+  // point on top (3 kids + 2% global = 5% annual for that employee).
   applyInflation() {
     this.roster.forEach(s => {
       const annualRate = Population.inflationRate + s.kids / 100;
       s.costOfLiving = Math.round(s.costOfLiving * (1 + annualRate / 52));
     });
+  },
+
+  // Returns the mood penalty for an absence of the given duration based on the
+  // active medical policy tier. Premium = no penalty; Standard = 5 × weeks;
+  // no coverage = 10 × weeks. Applied to sick, injury, and parental leave events.
+  _insuranceMoodReduction(weeks) {
+    const tier = this.medicalPolicy?.tier;
+    if (tier === 'Premium')  return 0;
+    if (tier === 'Standard') return 5 * weeks;
+    return 10 * weeks;
   },
 
   // Each round: decrement remaining absence time, then roll for new absences on
@@ -139,32 +152,38 @@ const Staff = {
       if (s.weeksOut > 0) {
         s.weeksOut--;
       } else {
-        const roll             = Math.random();
-        const vacationChance   = this.VACATION_RATE * this.VACATION_WEEKS;
+        const roll              = Math.random();
+        const vacationChance    = this.VACATION_RATE * this.VACATION_WEEKS;
         const parentalThreshold = this.INJURY_RATE + this.SICKNESS_RATE + vacationChance + this.PARENTAL_LEAVE_RATE;
         if (roll < this.INJURY_RATE) {
           s.weeksOut = 4;
-          s.events.push({ moodModifier: -20, comment: 'I got seriously injured...' });
+          s.events.push({ moodModifier: -20 - this._insuranceMoodReduction(4), comment: 'I got seriously injured...' });
         } else if (roll < this.INJURY_RATE + this.SICKNESS_RATE) {
           s.weeksOut = 1;
-          s.events.push({ moodModifier: -10, comment: 'I feel sick...' });
+          s.events.push({ moodModifier: -10 - this._insuranceMoodReduction(1), comment: 'I feel sick...' });
         } else if (roll < this.INJURY_RATE + this.SICKNESS_RATE + vacationChance) {
           s.weeksOut = this.VACATION_WEEKS;
           s.events.push({ moodModifier: 10, comment: 'Taking a vacation!' });
         } else if (roll < parentalThreshold) {
           s.weeksOut = this.PARENTAL_LEAVE_WEEKS;
           s.kids++;
+          const parentalBase = 5 * (this.PARENTAL_LEAVE_WEEKS + 2);
+          const reduction    = this._insuranceMoodReduction(this.PARENTAL_LEAVE_WEEKS);
           if (Math.random() < 0.03) {
             s.kids++;
-            s.events.push({ moodModifier: 5 * (this.PARENTAL_LEAVE_WEEKS + 2) + 15, comment: 'Twins? Twins! ... twins...' });
+            s.events.push({ moodModifier: parentalBase + 15 - reduction, comment: 'Twins? Twins! ... twins...' });
           } else {
-            s.events.push({ moodModifier: 5 * (this.PARENTAL_LEAVE_WEEKS + 2), comment: 'Having a baby!' });
+            s.events.push({ moodModifier: parentalBase - reduction, comment: 'Having a baby!' });
           }
         }
       }
     });
   },
 
+  // Recalculates mood for every employee from salary vs cost-of-living ratio,
+  // plus flat passive bonuses from active benefits (vacation weeks × 5, 401k
+  // match %, kids × 2), plus any pending mood events. Events decay by 2 points
+  // per round and are pruned once they fall below ±2.
   updateMoods() {
     this.roster.forEach(s => {
       const ratio      = s.salary / s.costOfLiving;
@@ -658,35 +677,95 @@ const Staff = {
   },
 
   // ── Medical insurance ──────────────────────────────────────────────────────
+
+  // Generates a randomized insurance quote and stores it in medicalQuote.
+  // Tier (Standard/Premium) sets the base price range (100–150 or 150–200 ×
+  // inflationRate). Longer contracts (2–6 × 4-week increments) get $10/employee
+  // off per increment. 50% chance of auto-renew; if so, a fixed renewalBump is
+  // rolled once here and reused at every subsequent renewal.
   generateMedicalQuote() {
     const tier       = Math.random() < 0.5 ? 'Standard' : 'Premium';
     const [lo, hi]   = tier === 'Standard' ? [100, 150] : [150, 200];
     const basePrice  = Math.round((lo + Math.random() * (hi - lo)) * Population.inflationRate);
     const increments = 2 + Math.floor(Math.random() * 5);  // 2–6
+    const autoRenew = Math.random() < 0.5;
     this.medicalQuote = {
       tier,
-      pricePerEmployee: Math.max(0, basePrice - increments * 10),
-      durationWeeks:    increments * 4,
+      pricePerEmployee:  Math.max(0, basePrice - increments * 10),
+      durationWeeks:     increments * 4,
+      weeksRemaining:    4,
+      autoRenew,
+      renewalBump:       autoRenew ? 10 * (1 + Math.floor(Math.random() * 5)) : 0,
     };
   },
 
+  // Called each round. Ticks the quote-shopping countdown and generates a quote
+  // when it hits zero. Ticks an unaccepted quote's 4-round expiry window and
+  // silently discards it on timeout. Ticks the active policy; on expiry either
+  // auto-renews (adding the fixed renewalBump to pricePerEmployee) or nulls the
+  // policy, firing an appropriate notification in both cases. A 4-week warning
+  // notification is also pushed when the policy enters its final month.
   advanceMedicalInsurance() {
     if (this.medicalQuoteCooldown > 0) {
       this.medicalQuoteCooldown--;
-      if (this.medicalQuoteCooldown === 0) this.generateMedicalQuote();
+      if (this.medicalQuoteCooldown === 0) {
+        this.generateMedicalQuote();
+        Notifications.push({
+          label: 'Med.',
+          message: 'A new medical insurance quote is ready for review.',
+          action: () => { openPanel('staffing'); Staff.setView('benefits'); },
+        });
+      }
+    }
+    if (this.medicalQuote) {
+      this.medicalQuote.weeksRemaining--;
+      if (this.medicalQuote.weeksRemaining <= 0) this.medicalQuote = null;
     }
     if (this.medicalPolicy) {
       this.medicalPolicy.weeksRemaining--;
-      if (this.medicalPolicy.weeksRemaining <= 0) this.medicalPolicy = null;
+      const openBenefits = () => { openPanel('staffing'); Staff.setView('benefits'); };
+      if (this.medicalPolicy.weeksRemaining === 4) {
+        const msg = this.medicalPolicy.autoRenew
+          ? 'Medical insurance auto-renews in 4 weeks. Price will increase.'
+          : 'Medical insurance expires in 4 weeks. Shop for new coverage.';
+        Notifications.push({ label: 'Med.', message: msg, action: openBenefits });
+      } else if (this.medicalPolicy.weeksRemaining <= 0) {
+        if (this.medicalPolicy.autoRenew) {
+          this.medicalPolicy = {
+            ...this.medicalPolicy,
+            pricePerEmployee: this.medicalPolicy.pricePerEmployee + this.medicalPolicy.renewalBump,
+            weeksRemaining:   this.medicalPolicy.durationWeeks,
+          };
+          Notifications.push({
+            label: 'Med.',
+            message: `Medical insurance auto-renewed at $${this.medicalPolicy.pricePerEmployee}/employee/week.`,
+            action: openBenefits,
+          });
+        } else {
+          Notifications.push({
+            label: 'Med.',
+            message: 'Medical insurance policy has expired.',
+            action: openBenefits,
+          });
+          this.medicalPolicy = null;
+        }
+      }
     }
   },
 
+  // Returns the total weekly medical insurance premium (pricePerEmployee ×
+  // roster size). Returns 0 when no policy is active.
   calcMedicalCosts() {
     if (!this.medicalPolicy) return 0;
     return this.medicalPolicy.pricePerEmployee * this.roster.length;
   },
 
   // ── Benefits view ──────────────────────────────────────────────────────────
+
+  // Renders all four benefit sections (vacation, parental leave, 401k, medical)
+  // and wires their event listeners. Rebuilds innerHTML completely on each call;
+  // this is intentional — it keeps state display accurate after any change and
+  // avoids stale listener buildup since the container is always fully replaced.
   buildBenefitsView() {
     const container = document.getElementById('staff-benefits-view');
 
@@ -790,28 +869,48 @@ const Staff = {
         this.buildBenefitsView();
       });
     }
+    const cancelRenewBtn = document.getElementById('ben-medical-cancel-renew');
+    if (cancelRenewBtn) {
+      cancelRenewBtn.addEventListener('click', () => {
+        this.medicalPolicy.autoRenew = false;
+        this.buildBenefitsView();
+      });
+    }
   },
 
+  // Returns the inner HTML for the medical insurance section. Renders one of
+  // four states depending on current insurance state:
+  //   Quote pending  — accept/dismiss buttons with full quote details
+  //   Shopping       — countdown message (+ current policy summary if active)
+  //   Policy active  — policy details, shop button, and a cancel-auto-renew
+  //                    button during the final 4 weeks of an auto-renew policy
+  //   Idle           — shop-for-coverage button only
   _buildMedicalInsuranceHTML() {
+    const autoRenewTag = p => p.autoRenew ? ` — Auto-renews (+$${p.renewalBump})` : '';
+    const policyLine   = p => `${p.tier} — $${p.pricePerEmployee}/employee/week — ${p.weeksRemaining} wks remaining${autoRenewTag(p)}`;
     if (this.medicalQuote) {
       const q = this.medicalQuote;
       return `
-        <p class="staff-detail-label">${q.tier} plan — $${q.pricePerEmployee}/employee/week — ${q.durationWeeks} weeks</p>
+        <p class="staff-detail-label">${q.tier} — $${q.pricePerEmployee}/employee/week — ${q.durationWeeks} weeks${autoRenewTag(q)}</p>
         <div class="staff-propose-row">
           <button class="ride-action-btn" id="ben-medical-accept">Accept</button>
           <button class="ride-action-btn" id="ben-medical-dismiss">Dismiss</button>
         </div>
-        ${this.medicalPolicy ? `<p class="staff-detail-label" style="margin-top:8px">Current: ${this.medicalPolicy.tier} — $${this.medicalPolicy.pricePerEmployee}/employee/week — ${this.medicalPolicy.weeksRemaining} weeks remaining</p>` : ''}`;
+        ${this.medicalPolicy ? `<p class="staff-detail-label" style="margin-top:8px">Current: ${policyLine(this.medicalPolicy)}</p>` : ''}`;
     }
     if (this.medicalQuoteCooldown > 0) {
       return `<p class="staff-detail-label">Quote arriving in ${this.medicalQuoteCooldown} week${this.medicalQuoteCooldown !== 1 ? 's' : ''}...</p>
-        ${this.medicalPolicy ? `<p class="staff-detail-label" style="margin-top:8px">Current: ${this.medicalPolicy.tier} — $${this.medicalPolicy.pricePerEmployee}/employee/week — ${this.medicalPolicy.weeksRemaining} weeks remaining</p>` : ''}`;
+        ${this.medicalPolicy ? `<p class="staff-detail-label" style="margin-top:8px">Current: ${policyLine(this.medicalPolicy)}</p>` : ''}`;
     }
     if (this.medicalPolicy) {
       const p = this.medicalPolicy;
+      const cancelBtn = p.autoRenew && p.weeksRemaining <= 4
+        ? `<button class="ride-action-btn" id="ben-medical-cancel-renew" style="margin-top:8px">Cancel Auto-Renew</button>`
+        : '';
       return `
-        <p class="staff-detail-label">${p.tier} — $${p.pricePerEmployee}/employee/week — ${p.weeksRemaining} weeks remaining</p>
-        <button class="ride-action-btn" id="ben-medical-shop" style="margin-top:8px">Shop for New Coverage</button>`;
+        <p class="staff-detail-label">${policyLine(p)}</p>
+        <button class="ride-action-btn" id="ben-medical-shop" style="margin-top:8px">Shop for New Coverage</button>
+        ${cancelBtn}`;
     }
     return `<button class="ride-action-btn" id="ben-medical-shop">Shop for Coverage</button>`;
   },

@@ -191,6 +191,8 @@ const Finance = {
   },
 
   // ── Cost sources ─────────────────────────────────────────────────────────────
+  // Total weekly staff outlay: wages + 401(k) employer match contribution +
+  // job-posting fees + active medical insurance premiums.
   calcStaffCosts() {
     const wages = Staff.totalWeeklySalary();
     const matchContribution = Math.round(wages * Staff.RETIREMENT_MATCH_PCT / 100);
