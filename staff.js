@@ -134,10 +134,9 @@ const Staff = {
     });
   },
 
-  // Fires a notification if the newly absent employee is the last working member
-  // of their job type. Skipped for HR since gaps there are less operationally
-  // critical. Called after weeksOut is set so the absent employee is already
-  // excluded from the working count.
+  // Fires a notification if the employee's job type now has no working members.
+  // Call this any time a staff member becomes unavailable (absence, fire, quit).
+  // Skipped for HR since gaps there are less operationally critical.
   _notifyIfLastWorker(s) {
     if (s.jobId === JOB.HR) return;
     const stillWorking = this.roster.filter(r => r.jobId === s.jobId && r.weeksOut === 0).length;
@@ -178,11 +177,9 @@ const Staff = {
         if (roll < injuryRate) {
           s.weeksOut = 4;
           s.events.push({ moodModifier: -20 - this._insuranceMoodReduction(4), comment: 'I got seriously injured...' });
-          this._notifyIfLastWorker(s);
         } else if (roll < injuryRate + sicknessRate) {
           s.weeksOut = 1;
           s.events.push({ moodModifier: -10 - this._insuranceMoodReduction(1), comment: 'I feel sick...' });
-          this._notifyIfLastWorker(s);
         } else if (roll < this.INJURY_RATE + this.SICKNESS_RATE + vacationChance) {
           s.weeksOut = this.VACATION_WEEKS;
           s.events.push({ moodModifier: 10, comment: 'Taking a vacation!' });
@@ -197,8 +194,8 @@ const Staff = {
           } else {
             s.events.push({ moodModifier: parentalBase - reduction, comment: 'Having a baby!' });
           }
-          this._notifyIfLastWorker(s);
         }
+        if (s.weeksOut > 0) this._notifyIfLastWorker(s);
       }
     });
   },
