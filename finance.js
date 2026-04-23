@@ -214,12 +214,19 @@ const Finance = {
   },
 
   calcUtilityCosts() {
-    return installedRides
+    const rideCosts = installedRides
       .filter(r => r.status === STATUS.ACTIVE && isRideConnected(r))
       .reduce((sum, r) => {
         const def = rides.find(d => d.id === r.rideId);
         return sum + (def?.utilityCost ?? 0) * Population.utilityMultiplier;
       }, 0);
+    const facilityCosts = installedFacilities
+      .filter(f => f.status === STATUS.ACTIVE)
+      .reduce((sum, f) => {
+        const def = facilities.find(d => d.id === f.facilityId);
+        return sum + (def?.utilityCost ?? 0) * Population.utilityMultiplier;
+      }, 0);
+    return rideCosts + facilityCosts;
   },
 
   // Security.calcIncidents() and Security.advanceOpinion() are in security.js.

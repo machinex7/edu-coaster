@@ -205,11 +205,13 @@ const Staff = {
   // match %, kids × 2), plus any pending mood events. Events decay by 2 points
   // per round and are pruned once they fall below ±2.
   updateMoods() {
+    const loungeCount  = installedFacilities.filter(f => f.facilityId === FACILITY_ID.STAFF_LOUNGE && f.status === STATUS.ACTIVE).length;
+    const loungeBonus  = Math.floor(Math.sqrt(loungeCount));
     this.roster.forEach(s => {
       const ratio      = s.salary / s.costOfLiving;
       const base       = ratio / 2 * 100;
       const eventBonus = s.events.reduce((sum, e) => sum + e.moodModifier, 0);
-      s.mood = Math.round(Math.max(0, Math.min(100, base + eventBonus + 5 * this.VACATION_WEEKS + this.RETIREMENT_MATCH_PCT + 2 * s.kids)));
+      s.mood = Math.round(Math.max(0, Math.min(100, base + eventBonus + 5 * this.VACATION_WEEKS + this.RETIREMENT_MATCH_PCT + 2 * s.kids + loungeBonus)));
 
       s.events.forEach(e => { e.moodModifier -= Math.sign(e.moodModifier) * 2; });
       s.events = s.events.filter(e => Math.abs(e.moodModifier) >= 2);
