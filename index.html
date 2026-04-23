@@ -13,12 +13,26 @@
       <div id="hud">
         <span id="stage-badge" class="stage-badge setup">Setup</span>
         <div class="hud-stat">
-          <span class="hud-label">Budget</span>
+          <span class="hud-label">Balance</span>
           <span class="hud-value" id="money-display">$2,000,000</span>
         </div>
         <div class="hud-stat">
           <span class="hud-label">Date</span>
           <span class="hud-value" id="date-display">Week 1, Q3, 2024</span>
+        </div>
+        <div class="hud-stat">
+          <span class="hud-label">Staff</span>
+          <div class="hud-counts">
+            <span class="hud-count">😊 <span id="staff-working-display">0</span></span>
+            <span class="hud-count">🤒 <span id="staff-leave-display">0</span></span>
+          </div>
+        </div>
+        <div class="hud-stat">
+          <span class="hud-label">Rides</span>
+          <div class="hud-counts">
+            <span class="hud-count">✅ <span id="rides-running-display">0</span></span>
+            <span class="hud-count">❗ <span id="rides-stopped-display">0</span></span>
+          </div>
         </div>
         <button id="open-park-btn">Open Park &rsaquo;</button>
         <button id="next-round-btn" class="hidden">Next Round &rsaquo;</button>
