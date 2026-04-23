@@ -272,7 +272,7 @@ const Staff = {
   generateCandidates() {
     if (this.postings.length === 0) return;
 
-    let count   = 4;
+    let count   = 6;
     let quality = 0;
     this.roster.filter(s => s.jobId === JOB.HR && s.weeksOut === 0).forEach(s => {
       const { tier } = this.getExperienceTier(s.weeksEmployed);

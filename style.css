@@ -465,6 +465,11 @@ header h1 {
 }
 
 /* ── Staff panel ── */
+#panel-staffing,
+#panel-staffing .side-panel-inner {
+  width: 320px;
+}
+
 #staff-action-btns {
   display: flex;
   gap: 6px;
