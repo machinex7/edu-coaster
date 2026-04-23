@@ -153,12 +153,15 @@ const Staff = {
         s.weeksOut--;
       } else {
         const roll              = Math.random();
+        const moodPenalty       = (100 - s.mood) / 2000; // low mood raises injury/sickness chance
+        const injuryRate        = this.INJURY_RATE   + moodPenalty;
+        const sicknessRate      = this.SICKNESS_RATE + moodPenalty;
         const vacationChance    = this.VACATION_RATE * this.VACATION_WEEKS;
-        const parentalThreshold = this.INJURY_RATE + this.SICKNESS_RATE + vacationChance + this.PARENTAL_LEAVE_RATE;
-        if (roll < this.INJURY_RATE) {
+        const parentalThreshold = injuryRate + sicknessRate + vacationChance + this.PARENTAL_LEAVE_RATE;
+        if (roll < injuryRate) {
           s.weeksOut = 4;
           s.events.push({ moodModifier: -20 - this._insuranceMoodReduction(4), comment: 'I got seriously injured...' });
-        } else if (roll < this.INJURY_RATE + this.SICKNESS_RATE) {
+        } else if (roll < injuryRate + sicknessRate) {
           s.weeksOut = 1;
           s.events.push({ moodModifier: -10 - this._insuranceMoodReduction(1), comment: 'I feel sick...' });
         } else if (roll < this.INJURY_RATE + this.SICKNESS_RATE + vacationChance) {
