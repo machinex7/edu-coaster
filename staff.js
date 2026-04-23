@@ -243,6 +243,10 @@ const Staff = {
   },
 
   // ── Candidates ─────────────────────────────────────────────────────────────
+  // Generates a pool of candidates each round when postings exist. Pool size and
+  // candidate quality both scale with the number of active HR staff and their
+  // experience tier. Candidates without a matching posting are discarded immediately.
+  // Fires a single notification if any new matching candidates arrived this round.
   generateCandidates() {
     if (this.postings.length === 0) return;
 
@@ -254,10 +258,18 @@ const Staff = {
       quality += tier * 5;
     });
 
+    const before = this.candidates.length;
     for (let i = 0; i < count; i++) {
       const emp       = this.generateEmployee(quality);
       const candidate = { ...emp, weeksAsCandidate: 0 };
       if (this.findMatchingPosting(candidate)) this.candidates.push(candidate);
+    }
+    if (this.candidates.length > before) {
+      Notifications.push({
+        label:   'Hire',
+        message: 'New candidates are available for your open postings.',
+        action:  () => { openPanel('staffing'); Staff.setView('candidates'); },
+      });
     }
   },
 
