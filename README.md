@@ -29,7 +29,8 @@ python3 -m http.server
 | `grid.js` | Grid DOM, cell painting, mouse/touch event handlers |
 | `shopping.js` | Shop catalog, installed shops, revenue and theft calculations (`Shopping` object) |
 | `finance.js` | Attendance model, park metrics, all income/cost sources, round processing (`Finance` object) |
-| `staff.js` | Job registry, employee generation, staff/candidates/postings/benefits state and panel UI (`Staff` object) |
+| `staff.js` | Job registry, employee generation, staff/candidates/postings/benefits simulation logic (`Staff` object) |
+| `staff-panel.js` | All staffing panel UI — roster, postings, candidates, benefits views (extends `Staff` via `Object.assign`) |
 | `security.js` | Security opinion state, incident calculation, panel UI (`Security` object) |
 | `history.js` | Append-only per-round data log for future reports/graphs (`History` object) |
 | `hud.js` | HUD display, stage transitions, panel management, round summary modal, pricing panel |
@@ -40,7 +41,7 @@ python3 -m http.server
 
 **Script load order:**
 ```
-constants.js → population.js → game.js → grid.js → shopping.js → finance.js → staff.js → security.js → history.js → hud.js
+constants.js → population.js → game.js → grid.js → shopping.js → finance.js → staff.js → staff-panel.js → security.js → history.js → hud.js
 ```
 
 All cross-file calls happen at runtime (not parse time), so forward references inside method bodies are safe.
@@ -62,8 +63,8 @@ const Foo = {
 |---|---|---|
 | `Population` | `population.js` | Visitor behavior rates, labor constants, economic multipliers |
 | `Finance` | `finance.js` | Pricing state, attendance model, income/cost calculations, round processing |
-| `Shopping` | `shopping.js` | Shop catalog, installed shops, revenue and theft math, staffing ratios |
-| `Staff` | `staff.js` | Roster, postings, candidates, benefits policy, experience, panel rendering |
+| `Shopping` | `shopping.js` | Shop catalog, installed shops, revenue/theft math, food capacity, staffing ratios |
+| `Staff` | `staff.js` + `staff-panel.js` | Roster, postings, candidates, benefits policy, experience, panel rendering |
 | `Security` | `security.js` | Opinion state, incident calculation, panel rendering |
 | `History` | `history.js` | Append-only per-round log |
 
@@ -77,12 +78,12 @@ All enums are `Object.freeze`d — typos return `undefined` immediately rather t
 STAGE          = { SETUP, PLAY }
 STATUS         = { ACTIVE, UNDER_CONSTRUCTION, PAUSED_CONSTRUCTION, CLOSED, BROKEN_DOWN }
 CATEGORY       = { RIDE, FACILITY, SHOP }
-SHOP_ID        = { MERCHANDISE }
 JOB            = { RIDE_OPERATOR, SECURITY, JANITOR, ENGINEER, BOOTH_ATTENDANT,
-                   MERCHANDISE_ATTENDANT, BUSINESS_ANALYST, HR }
-FACILITY_ID    = { PARK_ENTRANCE, PATH, BATHROOM, STATUE, GARDEN, FOUNTAIN }
+                   MERCHANDISE_ATTENDANT, CONCESSIONS_WORKER, BUSINESS_ANALYST, HR }
+FACILITY_ID    = { PARK_ENTRANCE, PATH, BATHROOM, STATUE, GARDEN, FOUNTAIN, STAFF_LOUNGE }
 SECURITY_FOCUS = { PATROL, GATE, SHOP }
 ENGINEER_FOCUS = { MAINTENANCE, CONSTRUCTION }
+MAX_EFFECTIVE_WEAR = 1000   // breakdown probability reaches 100% at this cumulative wear
 ```
 
 ---
@@ -93,7 +94,7 @@ Centralises all tunable rates so game balance changes are made in one place.
 
 | Constant | Used by |
 |---|---|
-| `MINIMUM_WAGE_WEEKLY` | `Staff.JOB_TYPES` (Merchandise Attendant salary) |
+| `MINIMUM_WAGE_WEEKLY` | `Staff.JOB_TYPES` (Merchandise Attendant and Concessions Worker salary) |
 | `BUYER_RATE` | `Shopping.calcRevenue()` |
 | `THEFT_RATE` | `Shopping.calcTheftIncidents()` |
 | `OVERFLOW_INCIDENT_RATE` | `Security.calcIncidents()` |
@@ -190,6 +191,7 @@ BROKEN_DOWN → ACTIVE                        (engineer repairs)
 |---|---|
 | `Finance.parkExcitement` | `runningRideCount × rideOpinion`. Drives daily demand. |
 | `Finance.rideOpinion` | Smoothed 0–1 score of how well rides serve the crowd. |
+| `Finance.mealSatisfaction` | `0.5 + 0.5 × (mealsServed / mealsWanted)`, clamped 0.5–1. Multiplies `parkExcitement`; defaults to 0.5 when no food buildings exist. |
 | `Security.opinion` | Accumulated danger perception. Reduces demand via `1 − √opinion / 100`. |
 
 ### Attendance model
@@ -218,6 +220,7 @@ Only working (non-absent) booth attendants count toward throughput.
 | Staff wages | `Σ staff.salary` — all employees, including those currently absent |
 | Posting fees | `POSTING_WEEKLY_COST × activePostings` |
 | Ride utilities | `Σ utilityCost × Population.utilityMultiplier` for running connected rides |
+| Facility utilities | `Σ utilityCost × Population.utilityMultiplier` for active facilities with a `utilityCost` field |
 | Construction | `weeklyPayment` per item under construction |
 | Theft loss | `unhandledShop × THEFT_LOSS_PER` |
 
@@ -227,13 +230,15 @@ Only working (non-absent) booth attendants count toward throughput.
 2. `recalcExcitement()`
 3. Calc demand, throughput, attendance
 4. `computeRideOpinion()` — updates `rideOpinion`; writes `lastRoundRiders/Capacity`
-5. `processWear()` — accumulate wear, roll for breakdown
-6. Calc income and costs; apply to `money`
-7. `processConstruction()` — deduct weekly payments, complete finished builds
-8. `Staff.processSickness()` — decrement absences, roll for new illness/injury/vacation
-9. `Staff.advanceExperience/applyInflation/updateMoods/advancePostings/generateCandidates/advanceCandidates()`
-10. `advancePriceExhaustion()`
-11. `Security.advanceOpinion(unhandled)`
+5. `processWear()` — accumulate wear, roll for breakdown (probability = wear / `MAX_EFFECTIVE_WEAR`)
+6. `Shopping.calcFood()` — compute `mealsWanted` and `mealsServed`
+7. Calc income and costs; apply to `money`
+8. `processConstruction()` — deduct weekly payments, complete finished builds
+9. `Staff.processSickness()` — decrement absences, roll for new illness/injury/vacation
+10. `Staff.advanceExperience/applyInflation/updateMoods/advancePostings/generateCandidates/advanceCandidates()`
+11. Calc `weeklyNetMess`; compute `mealSatisfaction`; call `calcExcitement()`
+12. `advancePriceExhaustion()`
+13. `Security.advanceOpinion(unhandled)`
 
 ---
 
@@ -263,19 +268,34 @@ Unhandled shop incidents cost `THEFT_LOSS_PER` each.
 
 ## Shopping system (`shopping.js`)
 
+Shop entries in `shops.json` carry a `shopType` field (`"merchandise"` or `"food"`) which gates which calculations they participate in.
+
+### Merchandise
+
 ```
-staffRatio = min(1, workingAttendants / (activeStores × WORKERS_PER_STORE))
-revenue    = round(weeklyAttendance × BUYER_RATE × (BASE_SPEND + upcharge) × sqrt(tiles) × staffRatio)
+staffRatio = min(1, workingAttendants / (activeMerchandiseStores × WORKERS_PER_STORE))
+revenue    = round(weeklyAttendance × BUYER_RATE × (BASE_SPEND + upcharge) × sqrt(merchandiseTiles) × staffRatio)
 
 theftMultiplier = 1 + 0.25 × deficit
-incidents       = floor(weeklyAttendance × (1 − BUYER_RATE) × THEFT_RATE × sqrt(tiles) × theftMultiplier)
+incidents       = floor(weeklyAttendance × (1 − BUYER_RATE) × THEFT_RATE × sqrt(merchandiseTiles) × theftMultiplier)
 ```
 
 Only merchandise attendants with `weeksOut === 0` count toward `staffRatio`. Zero tiles → zero revenue and zero theft.
 
+### Food (`Shopping.calcFood`)
+
+```
+mealsWanted = weeklyAttendance × EXPECTED_MEALS_PER_DAY
+effectiveWorkers = top min(concessionWorkers, foodTiles) workers sorted by tier desc
+mealsServed = floor(Σ MEALS_PER_WORKER_PER_DAY × (1 + 0.2 × tier) for each effective worker)
+mealSatisfaction = 0.5 + 0.5 × (mealsServed / mealsWanted), clamped to [0.5, 1]
+```
+
+`mealSatisfaction` is stored on `Finance` and multiplies `parkExcitement` each round. Default 0.5 when no food buildings exist.
+
 ---
 
-## Staffing system (`staff.js`)
+## Staffing system (`staff.js` + `staff-panel.js`)
 
 ### Staff constants
 
@@ -319,7 +339,8 @@ Absent employees contribute nothing to any working capacity calculation but rema
 base         = (salary / costOfLiving) / 2 × 100
 eventBonus   = Σ moodModifier across active events
 vacationBase = 5 × VACATION_WEEKS   (passive benefit of company vacation policy)
-mood         = clamp(base + eventBonus + vacationBase, 0, 100)
+loungeBonus  = floor(sqrt(activeStaffLounges))
+mood         = clamp(base + eventBonus + vacationBase + loungeBonus, 0, 100)
 ```
 
 Events decay by 2 per round and are removed when their modifier reaches zero.
@@ -341,7 +362,8 @@ Events decay by 2 per round and are removed when their modifier reaches zero.
 - **HR** — each working HR employee boosts candidate count and quality by tier.
 - **Security** — capacity and focus bonuses; only working guards counted.
 - **Janitor** — clears mess each round; only working janitors counted.
-- **Merchandise Attendant** — 2 required per active store; only working attendants counted.
+- **Merchandise Attendant** — 2 required per active merchandise store; only working attendants counted.
+- **Concessions Worker** — staffs food buildings. Effective count = `min(workers, foodTiles)`; higher-tier workers are used first. Each worker's output is boosted 20% per experience tier.
 
 ### Staffing panel tabs
 
@@ -403,10 +425,15 @@ Events decay by 2 per round and are removed when their modifier reaches zero.
 | `limit` | number \| null | Max in park; `null` = unlimited |
 | `edgeOnly` | boolean? | Must touch grid boundary |
 | `mustBeAdjacentTo` | string[]? | Neighbor must contain one of these facility ids |
+| `utilityCost` | number? | $/week while active; included in `Finance.calcUtilityCosts()` |
 
 ### `shops.json`
 
-Same shape as `facilities.json` plus `shopId` matching `SHOP_ID.*`.
+Same shape as `facilities.json` plus:
+
+| Field | Type | Notes |
+|---|---|---|
+| `shopType` | string | `"merchandise"` or `"food"` — gates which revenue/staffing calculations apply |
 
 ---
 
@@ -424,21 +451,26 @@ Same shape as `facilities.json` plus `shopId` matching `SHOP_ID.*`.
 - HUD: budget, date (Week W, QN, YYYY), stage badge
 - Finance: gate/parking/shop revenue; staff/utility/construction/theft costs; round summary modal
 - Pricing panel: gate, parking, merchandise upcharge; price exhaustion suppresses demand
-- Park metrics: `parkExcitement`, `rideOpinion`
+- Park metrics: `parkExcitement`, `rideOpinion`, `mealSatisfaction`
 - Security system: incident tracking, two-phase handling, guard focus assignment, opinion decay
 - Shop theft: scales with tiles and understaffing; unhandled incidents lose money
 - Staff absence system: per-round rolls for sickness, critical injury, and vacation; absent staff excluded from all capacity calculations
 - Staff benefits panel: vacation weeks setting drives absence duration and passive mood baseline
 - Staffing: employees with skill/salary/mood/experience; events-based mood system; inflation
-- Eight job types with distinct gameplay effects
+- Nine job types with distinct gameplay effects (added Concessions Worker)
 - Job postings, candidate pipeline with withdrawal timer, hire/decline flow
-- Per-round history log
+- Staff Lounge facility: `floor(sqrt(count))` passive mood bonus to all employees
+- Three merchandise shop sizes: Kiosk (1 tile), Merchandise Store (2 tiles), Large Store (4 tiles)
+- Three food shop sizes: Snack Shop (1 tile), Quick Foods (2 tiles), Diner (4 tiles)
+- Food satisfaction system: `mealSatisfaction` multiplies park excitement based on concessions capacity vs. visitor demand
+- Facility utility costs: facilities with a `utilityCost` field are billed each round
+- Per-round history log (attendance, income, expenses, security, food metrics)
 
 ## What's not yet implemented (see `reqs.md`)
 
 - Firing / wage adjustment UI
 - Ride breakdown repair UI (engineers repair automatically; no player-visible repair queue yet)
-- Food revenue
+- Food revenue (satisfaction penalty exists; income not yet wired)
 - `Population.utilityMultiplier` wired to round-by-round increases
 - Reports, graphs, and awards
 - Marketing and reputation
