@@ -1106,3 +1106,67 @@ header h1 {
   font-style: italic;
   text-align: center;
 }
+
+/* ── Notification stack ── */
+#notification-stack {
+  position: fixed;
+  bottom: calc(1.5rem + 56px);   /* clear the Next Round button */
+  right: 1.5rem;
+  z-index: 49;
+  display: flex;
+  flex-direction: column-reverse; /* newest chip sits closest to the button */
+  align-items: flex-end;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.notif-chip {
+  position: relative;
+  pointer-events: all;
+  background: #92400e;
+  color: #fde68a;
+  border: 1px solid #b45309;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+  transition: background 0.12s, transform 0.12s;
+  user-select: none;
+}
+
+.notif-chip:hover {
+  background: #b45309;
+  transform: translateX(-2px);
+}
+
+/* Tooltip floats to the left of the chip */
+.notif-chip::before {
+  content: attr(data-message);
+  position: absolute;
+  right: calc(100% + 10px);
+  bottom: 0;
+  background: #111827;
+  color: #f3f4f6;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 0.8rem;
+  font-weight: 400;
+  white-space: nowrap;
+  max-width: 260px;
+  white-space: normal;
+  pointer-events: none;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.15s;
+  z-index: 60;
+}
+
+.notif-chip:hover::before {
+  opacity: 1;
+  visibility: visible;
+}
