@@ -17,17 +17,19 @@ const Shopping = {
   THEFT_LOSS_PER:   50,  // $ lost per unhandled shoplifter
   WORKERS_PER_STORE: 2,  // merchandise attendants required per active store
 
-  // Total active tiles across all placed shops.
+  // Total active tiles across all placed merchandise shops.
   // Used to scale revenue and theft: more floor space = more shoppers and more risk.
   calcMerchandiseTiles() {
+    const merchandiseIds = new Set(this.catalog.filter(s => s.shopType === 'merchandise').map(s => s.id));
     return this.installed
-      .filter(s => s.status === STATUS.ACTIVE)
+      .filter(s => s.status === STATUS.ACTIVE && merchandiseIds.has(s.shopId))
       .reduce((sum, s) => sum + s.footprint.flat().filter(v => v === 1).length, 0);
   },
 
-  // Workers needed to fully staff all active shops.
+  // Workers needed to fully staff all active merchandise shops.
   calcWorkersNeeded() {
-    const numStores = this.installed.filter(s => s.status === STATUS.ACTIVE).length;
+    const merchandiseIds = new Set(this.catalog.filter(s => s.shopType === 'merchandise').map(s => s.id));
+    const numStores = this.installed.filter(s => s.status === STATUS.ACTIVE && merchandiseIds.has(s.shopId)).length;
     return numStores * this.WORKERS_PER_STORE;
   },
 

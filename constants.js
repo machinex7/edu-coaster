@@ -21,9 +21,12 @@ const CATEGORY = Object.freeze({
 });
 
 const SHOP_ID = Object.freeze({
-  KIOSK:       'kiosk',
-  MERCHANDISE: 'merchandise',
-  LARGE_STORE: 'large_store',
+  KIOSK:        'kiosk',
+  MERCHANDISE:  'merchandise',
+  LARGE_STORE:  'large_store',
+  SNACK_SHOP:   'snack_shop',
+  QUICK_FOODS:  'quick_foods',
+  DINER:        'diner',
 });
 
 const JOB = Object.freeze({
@@ -33,6 +36,7 @@ const JOB = Object.freeze({
   ENGINEER:              'engineer',
   BOOTH_ATTENDANT:       'booth_attendant',
   MERCHANDISE_ATTENDANT: 'merchandise_attendant',
+  CONCESSIONS_WORKER:    'concessions_worker',
   BUSINESS_ANALYST:      'business_analyst',
   HR:                    'hr',
 });

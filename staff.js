@@ -20,6 +20,7 @@ const Staff = {
     { id: JOB.ENGINEER,         label: 'Engineer',         plural: 'Engineers',         weeklySalary: 1200 },
     { id: JOB.BOOTH_ATTENDANT,       label: 'Booth Attendant',       plural: 'Booth Attendants',       weeklySalary: 480                           },
     { id: JOB.MERCHANDISE_ATTENDANT, label: 'Merchandise Attendant', plural: 'Merchandise Attendants', weeklySalary: Population.MINIMUM_WAGE_WEEKLY },
+    { id: JOB.CONCESSIONS_WORKER,    label: 'Concessions Worker',    plural: 'Concessions Workers',    weeklySalary: Population.MINIMUM_WAGE_WEEKLY },
     { id: JOB.BUSINESS_ANALYST,      label: 'Business Analyst',      plural: 'Business Analysts',      weeklySalary: 1400                          },
     { id: JOB.HR,               label: 'HR',               plural: 'HR',                weeklySalary: 1600 },
   ],
