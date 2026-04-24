@@ -167,7 +167,7 @@ const Shopping = {
       if (eligible.length === 0) break;
       const { inv, idx } = eligible[Math.floor(Math.random() * eligible.length)];
       const stolenPrice   = inv.price + this.merchandiseUpcharge;
-      inv.count--;
+      inv.count = Math.max(0, inv.count - 1);
       totalValue += stolenPrice;
       itemsStolen++;
       this._roundItemStats[idx].theftValue += stolenPrice;
