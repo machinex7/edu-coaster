@@ -312,20 +312,34 @@ const PRICE_ITEMS = [
 ];
 
 function buildInventoryPanel() {
+  const totalStock    = merchandiseInventory.reduce((s, inv) => s + inv.count, 0);
+  const capacity      = Shopping.calcInventoryCapacity();
+  const pct           = capacity > 0 ? Math.min(100, Math.round(totalStock / capacity * 100)) : 0;
+  const capacityLabel = capacity > 0 ? `${totalStock} / ${capacity}` : 'No shops open';
+
   const CATEGORY_LABELS = { toy: 'Toys', practical: 'Practical', apparel: 'Apparel', souvenir: 'Souvenirs' };
   const categories = ['toy', 'practical', 'apparel', 'souvenir'];
-  const html = categories.map(cat => {
+  const rows = categories.map(cat => {
     const items = merchandise
       .map((item, i) => ({ item, inv: merchandiseInventory[i] }))
       .filter(({ item }) => item.category === cat);
-    const rows = items.map(({ item, inv }) => `
+    const itemRows = items.map(({ item, inv }) => `
       <div class="price-row">
         <div class="price-label">${item.name}</div>
         <div class="price-value">${inv.count}</div>
       </div>`).join('');
-    return `<div class="panel-section-header">${CATEGORY_LABELS[cat]}</div>${rows}`;
+    return `<div class="panel-section-header">${CATEGORY_LABELS[cat]}</div>${itemRows}`;
   }).join('');
-  document.getElementById('inventory-panel-body').innerHTML = html;
+
+  document.getElementById('inventory-panel-body').innerHTML = `
+    <div class="inv-capacity-wrap">
+      <div class="inv-capacity-label">Storage: ${capacityLabel}</div>
+      <div class="ride-ridership-bar-wrap">
+        <div class="ride-ridership-bar" style="width:${pct}%"></div>
+      </div>
+      <div class="inv-capacity-pct">${pct}%</div>
+    </div>
+    ${rows}`;
 }
 
 function buildPricingPanel() {

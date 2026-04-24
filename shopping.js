@@ -16,6 +16,7 @@ const Shopping = {
   BASE_SPEND:              30,   // $ base spend per buyer
   THEFT_LOSS_PER:          50,   // $ lost per unhandled shoplifter
   WORKERS_PER_STORE:        2,   // merchandise attendants required per active store
+  STORAGE_PER_SHOP:       200,   // inventory slots provided per active merchandise tile
   EXPECTED_MEALS_PER_DAY:   2,   // meals a visitor wants to eat per day
   MEALS_PER_WORKER_PER_DAY: 250, // meals a concessions worker can serve per day (base)
   MEAL_BASE_PRICE:          10,  // $ base price per meal sold
@@ -27,6 +28,11 @@ const Shopping = {
     return this.installed
       .filter(s => s.status === STATUS.ACTIVE && merchandiseIds.has(s.shopId))
       .reduce((sum, s) => sum + s.footprint.flat().filter(v => v === 1).length, 0);
+  },
+
+  // Maximum total inventory items the park can hold across all merchandise tiles.
+  calcInventoryCapacity() {
+    return this.calcMerchandiseTiles() * this.STORAGE_PER_SHOP;
   },
 
   // Workers needed to fully staff all active merchandise shops.
