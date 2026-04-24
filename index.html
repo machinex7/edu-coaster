@@ -48,6 +48,7 @@
           <button class="tool-btn" data-panel="staffing">Staffing</button>
           <button class="tool-btn" data-panel="security">Security</button>
           <button class="tool-btn" data-panel="pricing">Pricing</button>
+          <button class="tool-btn" data-panel="inventory">Inventory</button>
         </nav>
 
         <!-- Construction slide panel -->
@@ -104,6 +105,19 @@
           <div class="side-panel-inner">
             <div class="panel-header">Security</div>
             <div id="security-overview"></div>
+          </div>
+        </div>
+
+        <!-- Inventory slide panel -->
+        <div id="panel-inventory" class="side-panel closed">
+          <div class="side-panel-inner">
+            <div class="panel-header">Inventory</div>
+            <div id="inventory-sub-tabs" class="inv-sub-tabs">
+              <button class="inv-tab-btn active" data-inv-tab="stock">Stock</button>
+              <button class="inv-tab-btn" data-inv-tab="suppliers">Suppliers</button>
+            </div>
+            <div id="inv-stock-view" class="inv-view"></div>
+            <div id="inv-suppliers-view" class="inv-view hidden"></div>
           </div>
         </div>
 

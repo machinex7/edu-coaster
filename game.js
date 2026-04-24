@@ -30,6 +30,12 @@ const STARTING_WEEK_OF_YEAR = 27; // week 27 = first week of Q3
 // ── Game State ─────────────────────────────────────────────────────────────
 let rides      = [];  // from rides.json (with _color added)
 let facilities = [];  // from facilities.json
+let merchandise          = [];  // from merchandise.json
+let merchandiseInventory = [];  // parallel to merchandise: { count, price }
+let suppliers            = [];  // from suppliers.json
+let selectedSupplierId   = null;
+let unlockedSupplierIds  = new Set();
+let orders               = [];  // { itemIndex, itemName, count, weeksRemaining }
 
 let gridCells = [];   // [row][col] → <div>
 let gridState = [];   // [row][col] → instanceId string, or null
@@ -55,15 +61,22 @@ let currentPlacement = null;  // { startRow, startCol, valid }
 
 // ── Init ───────────────────────────────────────────────────────────────────
 async function init() {
-  [rides, facilities, Shopping.catalog] = await Promise.all([
+  [rides, facilities, Shopping.catalog, merchandise, suppliers] = await Promise.all([
     fetch('rides.json').then(r => r.json()),
     fetch('facilities.json').then(r => r.json()),
     fetch('shops.json').then(r => r.json()),
+    fetch('merchandise.json').then(r => r.json()),
+    fetch('suppliers.json').then(r => r.json()),
   ]);
 
   rides.forEach((ride, i) => {
     ride._color = RIDE_COLORS[i % RIDE_COLORS.length];
   });
+
+  merchandiseInventory = merchandise.map(item => ({ count: 100, price: item.basePrice }));
+
+  unlockedSupplierIds = new Set([suppliers[0].id]);
+  selectedSupplierId  = suppliers[0].id;
 
   gridState = Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS).fill(null));
 

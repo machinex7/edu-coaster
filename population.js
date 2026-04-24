@@ -9,7 +9,7 @@ const Population = {
   MINIMUM_WAGE_WEEKLY: 290,   // $ per week (7.25 × 40 hrs)
 
   // ── Visitor behavior ───────────────────────────────────────────────────────
-  BUYER_RATE:             0.15,   // fraction of visitors who purchase merchandise
+  BUYER_RATE:             0.015,  // fraction of visitors who purchase merchandise
   THEFT_RATE:             0.008,  // fraction of non-buyers who attempt to shoplift
   DESIRED_RIDES:          4,      // rides per visit a guest needs for a satisfying trip
 
@@ -24,8 +24,9 @@ const Population = {
   MESS_EXTREME_RIDER_RATE: 0.05,  // 1 per 20 riders on each extreme-intensity ride
 
   // ── External economic conditions ───────────────────────────────────────────
-  utilityMultiplier: 1,     // applied to all ride utility costs each round
-  inflationRate:     0.02,  // annual rate; applied weekly to staff cost-of-living
+  utilityMultiplier:    1,     // applied to all ride utility costs each round
+  inflationRate:        0.02,  // annual rate; applied weekly to staff cost-of-living
+  cumulativeInflation:  1,     // starts at 1; multiplied each round by (1 + inflationRate/52)
 
   // ── Demographics ──────────────────────────────────────────────────────────
   // Each entry: { name, chance, annualVisits, count, intensityBias?, favor }
@@ -36,60 +37,60 @@ const Population = {
   //   favor:         0–2 earned goodwill toward this park specifically — set at runtime via initDemographics()
 
   AGE_BRACKETS: [
-    { name: 'Child (0–12)',        chance: 1.6, annualVisits: 4.0, count:  80_000, intensityBias: 0.7 },
-    { name: 'Teen (13–17)',        chance: 1.3, annualVisits: 2.5, count:  30_000, intensityBias: 1.8 },
-    { name: 'Young Adult (18–34)', chance: 1.2, annualVisits: 2.0, count: 110_000, intensityBias: 1.5 },
-    { name: 'Adult (35–54)',       chance: 1.1, annualVisits: 1.5, count: 125_000, intensityBias: 1.0 },
-    { name: 'Senior (55+)',        chance: 0.5, annualVisits: 0.1, count: 155_000, intensityBias: 0.4 },
+    { name: 'Child (0–12)',        chance: 1.6, annualVisits: 4.0, count:  80_000, intensityBias: 0.7, preferredCategory: 'toy' },
+    { name: 'Teen (13–17)',        chance: 1.3, annualVisits: 2.5, count:  30_000, intensityBias: 1.8, preferredCategory: 'apparel' },
+    { name: 'Young Adult (18–34)', chance: 1.2, annualVisits: 2.0, count: 110_000, intensityBias: 1.5, preferredCategory: 'practical' },
+    { name: 'Adult (35–54)',       chance: 1.1, annualVisits: 1.5, count: 125_000, intensityBias: 1.0, preferredCategory: 'souvenir' },
+    { name: 'Senior (55+)',        chance: 0.5, annualVisits: 0.1, count: 155_000, intensityBias: 0.4, preferredCategory: 'souvenir' },
   ],
 
   INCOME_BRACKETS: [
-    { name: 'Low Income',    chance: 0.5, annualVisits: 0.5, count:  80_000 },
-    { name: 'Lower-Middle',  chance: 0.9, annualVisits: 0.8, count: 125_000 },
-    { name: 'Middle',        chance: 1.2, annualVisits: 1.5, count: 165_000 },
-    { name: 'Upper-Middle',  chance: 1.5, annualVisits: 2.5, count:  95_000 },
-    { name: 'High Income',   chance: 1.6, annualVisits: 3.0, count:  35_000 },
+    { name: 'Low Income',    chance: 0.5, annualVisits: 0.5, count:  80_000, preferredCategory: 'practical' },
+    { name: 'Lower-Middle',  chance: 0.9, annualVisits: 0.8, count: 125_000, preferredCategory: 'toy' },
+    { name: 'Middle',        chance: 1.2, annualVisits: 1.5, count: 165_000, preferredCategory: 'souvenir' },
+    { name: 'Upper-Middle',  chance: 1.5, annualVisits: 2.5, count:  95_000, preferredCategory: 'apparel' },
+    { name: 'High Income',   chance: 1.6, annualVisits: 3.0, count:  35_000, preferredCategory: 'souvenir' },
   ],
 
   // count = people who live within that distance band
   DISTANCE_BRACKETS: [
-    { name: 'Local (< 10 mi)',       chance: 1.8, annualVisits: 6.0, count:  75_000 },
-    { name: 'Nearby (10–30 mi)',     chance: 1.4, annualVisits: 3.0, count: 150_000 },
-    { name: 'Regional (30–100 mi)',  chance: 0.9, annualVisits: 1.0, count: 175_000 },
-    { name: 'Destination (100+ mi)', chance: 0.5, annualVisits: 0.2, count: 100_000 },
+    { name: 'Local (< 10 mi)',       chance: 1.8, annualVisits: 6.0, count:  75_000, preferredCategory: 'practical' },
+    { name: 'Nearby (10–30 mi)',     chance: 1.4, annualVisits: 3.0, count: 150_000, preferredCategory: 'toy' },
+    { name: 'Regional (30–100 mi)',  chance: 0.9, annualVisits: 1.0, count: 175_000, preferredCategory: 'apparel' },
+    { name: 'Destination (100+ mi)', chance: 0.5, annualVisits: 0.2, count: 100_000, preferredCategory: 'souvenir' },
   ],
 
   // count = people who live in that household-size type (not number of households)
   // intensityBias pulled toward mild by youngest member present in family groups
   HOUSEHOLD_SIZES: [
-    { name: 'Solo (1)',          chance: 0.7, annualVisits: 1.0, count:  75_000, intensityBias: 1.3 },
-    { name: 'Couple (2)',        chance: 1.1, annualVisits: 1.5, count: 150_000, intensityBias: 1.2 },
-    { name: 'Small Family (3–4)',chance: 1.6, annualVisits: 2.5, count: 200_000, intensityBias: 0.9 },
-    { name: 'Large Family (5+)', chance: 1.4, annualVisits: 2.0, count:  75_000, intensityBias: 0.7 },
+    { name: 'Solo (1)',          chance: 0.7, annualVisits: 1.0, count:  75_000, intensityBias: 1.3, preferredCategory: 'practical' },
+    { name: 'Couple (2)',        chance: 1.1, annualVisits: 1.5, count: 150_000, intensityBias: 1.2, preferredCategory: 'souvenir' },
+    { name: 'Small Family (3–4)',chance: 1.6, annualVisits: 2.5, count: 200_000, intensityBias: 0.9, preferredCategory: 'toy' },
+    { name: 'Large Family (5+)', chance: 1.4, annualVisits: 2.0, count:  75_000, intensityBias: 0.7, preferredCategory: 'apparel' },
   ],
 
   // Urban/suburban/rural reflects density and lifestyle, not just distance
   AREA_TYPES: [
-    { name: 'Urban',    chance: 0.8, annualVisits: 1.2, count: 125_000 },
-    { name: 'Suburban', chance: 1.4, annualVisits: 2.5, count: 275_000 },
-    { name: 'Rural',    chance: 0.9, annualVisits: 1.0, count: 100_000 },
+    { name: 'Urban',    chance: 0.8, annualVisits: 1.2, count: 125_000, preferredCategory: 'practical' },
+    { name: 'Suburban', chance: 1.4, annualVisits: 2.5, count: 275_000, preferredCategory: 'toy' },
+    { name: 'Rural',    chance: 0.9, annualVisits: 1.0, count: 100_000, preferredCategory: 'souvenir' },
   ],
 
   // Employment status affects both disposable income and schedule flexibility
   EMPLOYMENT_STATUS: [
-    { name: 'Employed (Full-Time)', chance: 1.1, annualVisits: 1.5, count: 235_000 },
-    { name: 'Employed (Part-Time)', chance: 1.2, annualVisits: 2.0, count:  65_000 },
-    { name: 'Student',              chance: 1.4, annualVisits: 3.0, count:  75_000 },
-    { name: 'Retired',              chance: 0.8, annualVisits: 0.8, count:  80_000 },
-    { name: 'Unemployed',           chance: 0.5, annualVisits: 0.5, count:  45_000 },
+    { name: 'Employed (Full-Time)', chance: 1.1, annualVisits: 1.5, count: 235_000, preferredCategory: 'practical' },
+    { name: 'Employed (Part-Time)', chance: 1.2, annualVisits: 2.0, count:  65_000, preferredCategory: 'apparel' },
+    { name: 'Student',              chance: 1.4, annualVisits: 3.0, count:  75_000, preferredCategory: 'toy' },
+    { name: 'Retired',              chance: 0.8, annualVisits: 0.8, count:  80_000, preferredCategory: 'souvenir' },
+    { name: 'Unemployed',           chance: 0.5, annualVisits: 0.5, count:  45_000, preferredCategory: 'practical' },
   ],
 
   // Used for discount day eligibility modeling; disabled reflects accessibility barriers
   VISITOR_STATUS: [
-    { name: 'None',             chance: 1.0, annualVisits: 1.5, count: 375_000 },
-    { name: 'Disabled',         chance: 0.6, annualVisits: 0.7, count:  80_000 },
-    { name: 'Veteran',          chance: 1.0, annualVisits: 1.4, count:  30_000 },
-    { name: 'Disabled Veteran', chance: 0.5, annualVisits: 0.6, count:  15_000 },
+    { name: 'None',             chance: 1.0, annualVisits: 1.5, count: 375_000, preferredCategory: 'souvenir' },
+    { name: 'Disabled',         chance: 0.6, annualVisits: 0.7, count:  80_000, preferredCategory: 'practical' },
+    { name: 'Veteran',          chance: 1.0, annualVisits: 1.4, count:  30_000, preferredCategory: 'apparel' },
+    { name: 'Disabled Veteran', chance: 0.5, annualVisits: 0.6, count:  15_000, preferredCategory: 'practical' },
   ],
 
   // ── Population events ──────────────────────────────────────────────────────
@@ -102,6 +103,7 @@ const Population = {
     this.populationEvents = this.populationEvents
       .map(e => ({ ...e, modifier: e.modifier > 0 ? e.modifier - 2 : e.modifier + 2 }))
       .filter(e => Math.abs(e.modifier) >= 2);
+    this.cumulativeInflation *= (1 + this.inflationRate / 52);
   },
 
   // Call once at game start (and again on reset) to initialize mutable demographic state.

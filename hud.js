@@ -7,6 +7,7 @@ function initHUD() {
   document.getElementById('next-round-btn').addEventListener('click', advanceRound);
   document.getElementById('modal-close-btn').addEventListener('click', hideRoundSummary);
   Staff.initPanel();
+  initInventoryPanel();
   initPanelBtns();
 }
 
@@ -130,7 +131,8 @@ function openPanel(panelId) {
   if (panelId === 'rides')    buildRidesPanel();
   if (panelId === 'staffing') Staff.openPanel();
   if (panelId === 'security') Security.buildPanel();
-  if (panelId === 'pricing')  buildPricingPanel();
+  if (panelId === 'pricing')    buildPricingPanel();
+  if (panelId === 'inventory')  buildInventoryPanel();
 }
 
 function closePanels() {
@@ -309,6 +311,116 @@ const PRICE_ITEMS = [
     setValue:  v => { Shopping.merchandiseUpcharge = v; },
   },
 ];
+
+let _activeInvTab = 'stock';
+
+function initInventoryPanel() {
+  document.querySelectorAll('.inv-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      _activeInvTab = btn.dataset.invTab;
+      document.querySelectorAll('.inv-tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+      document.getElementById('inv-stock-view').classList.toggle('hidden',     _activeInvTab !== 'stock');
+      document.getElementById('inv-suppliers-view').classList.toggle('hidden', _activeInvTab !== 'suppliers');
+      buildInventoryPanel();
+    });
+  });
+}
+
+function buildInventoryPanel() {
+  if (_activeInvTab === 'stock')     _buildInvStockView();
+  if (_activeInvTab === 'suppliers') _buildInvSuppliersView();
+}
+
+function _buildInvStockView() {
+  const totalStock    = merchandiseInventory.reduce((s, inv) => s + inv.count, 0);
+  const capacity      = Shopping.calcInventoryCapacity();
+  const pct           = capacity > 0 ? Math.min(100, Math.round(totalStock / capacity * 100)) : 0;
+  const capacityLabel = capacity > 0 ? `${totalStock} / ${capacity}` : 'No shops open';
+
+  const supplier     = suppliers.find(s => s.id === selectedSupplierId);
+  const supplierCard = supplier ? `
+    <div class="inv-supplier-card">
+      <span class="inv-supplier-name">${supplier.name}</span>
+      <span class="inv-supplier-meta">${supplier.deliveryTime}w delivery · +$${supplier.surcharge} surcharge</span>
+    </div>` : '';
+
+  const CATEGORY_LABELS = { toy: 'Toys', practical: 'Practical', apparel: 'Apparel', souvenir: 'Souvenirs' };
+  const itemRows = ['toy', 'practical', 'apparel', 'souvenir'].map(cat => {
+    const items = merchandise
+      .map((item, i) => ({ item, inv: merchandiseInventory[i], idx: i }))
+      .filter(({ item }) => item.category === cat);
+    const rows = items.map(({ item, inv, idx }) => {
+      const orderBtns = [10, 50, 100].map(qty => {
+        const cost = Math.round(qty * inv.price * Population.cumulativeInflation + (supplier?.surcharge ?? 0));
+        const canAfford = money >= cost;
+        return `<button class="inv-order-btn${canAfford ? '' : ' cant-afford'}"
+          data-idx="${idx}" data-qty="${qty}">+${qty} $${cost.toLocaleString()}</button>`;
+      }).join('');
+      return `
+        <div class="inv-item-row">
+          <div class="inv-item-header">
+            <span class="price-label">${item.name}</span>
+            <span class="price-value">${inv.count}</span>
+          </div>
+          <div class="inv-order-btns">${orderBtns}</div>
+        </div>`;
+    }).join('');
+    return `<div class="panel-section-header">${CATEGORY_LABELS[cat]}</div>${rows}`;
+  }).join('');
+
+  const el = document.getElementById('inv-stock-view');
+  el.innerHTML = `
+    ${supplierCard}
+    <div class="inv-capacity-wrap">
+      <div class="inv-capacity-label">Storage: ${capacityLabel}</div>
+      <div class="ride-ridership-bar-wrap">
+        <div class="ride-ridership-bar" style="width:${pct}%"></div>
+      </div>
+      <div class="inv-capacity-pct">${pct}%</div>
+    </div>
+    ${itemRows}`;
+
+  el.querySelectorAll('.inv-order-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx  = Number(btn.dataset.idx);
+      const qty  = Number(btn.dataset.qty);
+      const sup  = suppliers.find(s => s.id === selectedSupplierId);
+      const cost = Math.round(qty * merchandiseInventory[idx].price * Population.cumulativeInflation + (sup?.surcharge ?? 0));
+      if (money < cost) return;
+      money -= cost;
+      orders.push({ itemIndex: idx, itemName: merchandise[idx].name, count: qty, weeksRemaining: sup?.deliveryTime ?? 1 });
+      updateHUD();
+      _buildInvStockView();
+    });
+  });
+}
+
+function _buildInvSuppliersView() {
+  const rows = suppliers.map(s => {
+    const unlocked = unlockedSupplierIds.has(s.id);
+    const selected = s.id === selectedSupplierId;
+    return `
+      <div class="inv-supplier-row${selected ? ' selected' : ''}${!unlocked ? ' locked' : ''}"
+           ${unlocked && !selected ? `data-supplier-id="${s.id}"` : ''}>
+        <div class="inv-supplier-row-name">${unlocked ? s.name : '???'}</div>
+        <div class="inv-supplier-row-meta">
+          ${unlocked
+            ? `${s.deliveryTime}w delivery · +$${s.surcharge} surcharge`
+            : 'Locked'}
+        </div>
+        ${selected  ? '<div class="inv-supplier-badge">In use</div>'    : ''}
+        ${!unlocked ? '<div class="inv-supplier-badge locked">Locked</div>' : ''}
+      </div>`;
+  }).join('');
+  const el = document.getElementById('inv-suppliers-view');
+  el.innerHTML = `<div class="inv-supplier-list">${rows}</div>`;
+  el.querySelectorAll('.inv-supplier-row[data-supplier-id]').forEach(row => {
+    row.addEventListener('click', () => {
+      selectedSupplierId = row.dataset.supplierId;
+      _buildInvSuppliersView();
+    });
+  });
+}
 
 function buildPricingPanel() {
   const rows = PRICE_ITEMS.map(item => `

@@ -66,8 +66,8 @@ const Security = {
     const shopNormHandled  = remaining > 0
       ? Math.min(shopRemaining, Math.floor(normalHandled * shopRemaining / remaining))
       : 0;
-    const unhandledShop    = shopRemaining - shopNormHandled;
-    const theftLoss        = Shopping.calcTheftLoss(unhandledShop);
+    const unhandledShop              = shopRemaining - shopNormHandled;
+    const { value: theftLoss, itemsStolen: theftItemsStolen } = Shopping.handleThefts(unhandledShop);
 
     return {
       fromOverflow, fromUnridden, fromRandom, fromShop, total,
@@ -75,7 +75,7 @@ const Security = {
       overflowBonus, unriddenBonus, shopBonus, bonusHandled,
       capacity, normalHandled,
       handled, unhandled,
-      unhandledShop, theftLoss,
+      unhandledShop, theftLoss, theftItemsStolen,
     };
   },
 
