@@ -9,7 +9,7 @@ const Population = {
   MINIMUM_WAGE_WEEKLY: 290,   // $ per week (7.25 × 40 hrs)
 
   // ── Visitor behavior ───────────────────────────────────────────────────────
-  BUYER_RATE:             0.15,   // fraction of visitors who purchase merchandise
+  BUYER_RATE:             0.015,  // fraction of visitors who purchase merchandise
   THEFT_RATE:             0.008,  // fraction of non-buyers who attempt to shoplift
   DESIRED_RIDES:          4,      // rides per visit a guest needs for a satisfying trip
 
