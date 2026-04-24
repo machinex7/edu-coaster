@@ -37,6 +37,8 @@ python3 -m http.server
 | `rides.json` | Ride catalogue |
 | `facilities.json` | Facility catalogue |
 | `shops.json` | Shop catalogue |
+| `merchandise.json` | Merchandise item catalogue (12 items: 3 price tiers × 4 categories) |
+| `suppliers.json` | Supplier catalogue (delivery time, surcharge; first entry unlocked at start) |
 | `reqs.md` | Full game design document — read before adding features |
 
 **Script load order:**
@@ -272,15 +274,46 @@ Shop entries in `shops.json` carry a `shopType` field (`"merchandise"` or `"food
 
 ### Merchandise
 
+Revenue is demand-driven per item using the `merchandise` and `merchandiseInventory` globals (loaded from `merchandise.json`, parallel arrays).
+
 ```
-staffRatio = min(1, workingAttendants / (activeMerchandiseStores × WORKERS_PER_STORE))
-revenue    = round(weeklyAttendance × BUYER_RATE × (BASE_SPEND + upcharge) × sqrt(merchandiseTiles) × staffRatio)
+staffRatio  = min(1, workingAttendants / (activeMerchandiseStores × WORKERS_PER_STORE))
+
+// Per-round, for every item i:
+shelfPrice  = merchandiseInventory[i].price + merchandiseUpcharge
+desire[cat] = 1 + Σ (bracket.chance × bracket.favor) for each bracket whose preferredCategory === cat
+afford      = Σ bracket.chance for INCOME_BRACKETS where shelfPrice ≤ INCOME_LIMITS[j]
+attempts    = round(desire[cat] × afford × weeklyAttendance × BUYER_RATE × staffRatio)
+sold        = min(attempts, merchandiseInventory[i].count)
+revenue    += sold × shelfPrice
+merchandiseInventory[i].count -= sold
 
 theftMultiplier = 1 + 0.25 × deficit
 incidents       = floor(weeklyAttendance × (1 − BUYER_RATE) × THEFT_RATE × sqrt(merchandiseTiles) × theftMultiplier)
 ```
 
-Only merchandise attendants with `weeksOut === 0` count toward `staffRatio`. Zero tiles → zero revenue and zero theft.
+`desire` is rebuilt from scratch every round from `Population` demographic brackets (`preferredCategory` field). `INCOME_LIMITS` on `Shopping` maps positionally to `Population.INCOME_BRACKETS` (`[6, 10, 20, 40, Infinity]`). Zero merchandise tiles → zero revenue and zero theft.
+
+### Inventory and orders
+
+`merchandise[]` — catalogue from `merchandise.json`. 12 items: toy / practical / apparel / souvenir × cheap / mid / high.
+
+`merchandiseInventory[]` — parallel runtime array of `{ count, price }`. Initialised at game start (count=100, price=basePrice). Depletes each round via `calcRevenue`.
+
+`orders[]` — pending restock orders: `{ itemIndex, itemName, count, weeksRemaining }`. Created via the Inventory panel. `tickOrders()` runs at the start of each `advanceRound`, decrementing `weeksRemaining`; arrivals add to inventory and push a Delivery notification chip.
+
+Order cost formula:
+```
+cost = qty × inv.price × Population.cumulativeInflation + supplier.surcharge
+```
+
+`Population.cumulativeInflation` starts at 1 and compounds weekly (`× (1 + inflationRate / 52)`).
+
+### Suppliers
+
+Loaded from `suppliers.json` into `suppliers[]`. Active supplier tracked in `selectedSupplierId`; available suppliers in `unlockedSupplierIds` (Set). Only the first supplier is unlocked at game start. Each supplier has `{ id, name, deliveryTime, surcharge }`.
+
+Storage capacity = `calcMerchandiseTiles() × STORAGE_PER_SHOP` (displayed as a progress bar in the Inventory panel Stock tab).
 
 ### Food (`Shopping.calcFood`)
 
@@ -465,12 +498,18 @@ Same shape as `facilities.json` plus:
 - Food satisfaction system: `mealSatisfaction` multiplies park excitement based on concessions capacity vs. visitor demand
 - Facility utility costs: facilities with a `utilityCost` field are billed each round
 - Per-round history log (attendance, income, expenses, security, food metrics)
+- Merchandise inventory system: 12 items (3 tiers × 4 categories), demand-driven per-item sales, stock depletion
+- Supplier system: multiple suppliers with delivery time and surcharge; unlocked progressively
+- Restock orders with delivery countdown; Delivery notification on arrival
+- `Population.cumulativeInflation`: weekly compound tracker, multiplies restock order costs
+- Demographic `preferredCategory` on every bracket drives per-category purchase desire
 
 ## What's not yet implemented (see `reqs.md`)
 
 - Firing / wage adjustment UI
 - Ride breakdown repair UI (engineers repair automatically; no player-visible repair queue yet)
 - Food revenue (satisfaction penalty exists; income not yet wired)
+- Supplier unlock triggers (currently only the first supplier is ever unlocked)
 - `Population.utilityMultiplier` wired to round-by-round increases
 - Reports, graphs, and awards
 - Marketing and reputation

@@ -48,7 +48,13 @@ Two game stages: **Setup** (instant builds, no income) → **Play** (weekly roun
 
 **Security (`Security` object):** `Security.opinion` rises by unhandled incidents each round, decays 20% (rounded up). Three incident sources: gate overflow (5%), unridden visitors (20%), random (0.1%) — rates live in `Population`. Two-phase handling: focus bonuses (free) then pooled normal capacity. Unhandled shop incidents cause theft losses at `$50` each.
 
-**Shopping (`Shopping` object):** Revenue and theft both scale by `sqrt(activeMerchandiseTiles)`. Revenue further multiplied by `staffRatio = min(1, attendants / workersNeeded)`. Theft multiplied by `1 + 0.25 × deficit`. Behavior rates (`BUYER_RATE`, `THEFT_RATE`) and economic multipliers (`utilityMultiplier`, `inflationRate`) live in `Population`.
+**Shopping (`Shopping` object):** Revenue is demand-driven per item. Each round: (1) category desire = flat 1 + sum of `chance × favor` from every demographic bracket whose `preferredCategory` matches; (2) per-item affordability = sum of `chance` from income brackets whose `INCOME_LIMITS` entry ≥ shelf price; (3) `attempts = desire × afford × weeklyAttendance × BUYER_RATE × staffRatio`; (4) `sold = min(attempts, stock)` — inventory deducted, revenue accumulated. Zero merchandise tiles → no revenue. Theft still scales by `sqrt(activeMerchandiseTiles)` and is multiplied by `1 + 0.25 × deficit`.
+
+**Merchandise inventory (`merchandise`, `merchandiseInventory` in `game.js`):** `merchandise[]` is loaded from `merchandise.json` (12 items, 3 tiers per category: toy / practical / apparel / souvenir). `merchandiseInventory[]` is a parallel array of `{ count, price }` initialised at game start (count=100, price=basePrice). Stock depletes each round via `calcRevenue`; players restock via the Inventory panel.
+
+**Suppliers (`suppliers`, `selectedSupplierId`, `unlockedSupplierIds` in `game.js`):** Loaded from `suppliers.json`. Only the first supplier is unlocked at start; others are unlocked by game events. Order cost = `qty × inv.price × Population.cumulativeInflation + supplier.surcharge`. Orders are stored in `orders[]` as `{ itemIndex, itemName, count, weeksRemaining }`; `tickOrders()` (called each round) decrements delivery countdowns and credits inventory on arrival, firing a Delivery notification.
+
+**Inflation (`Population.cumulativeInflation`):** Starts at 1; multiplied each round by `(1 + inflationRate / 52)`. Used as a cost multiplier when placing restock orders.
 
 **Staff (`Staff` object):** Employees have `skillModifier` (0.75–1.25), `costOfLiving` (base salary ±20%), `weeksEmployed`, `mood`, `focus`. Experience tiers: Junior / Normal / Senior / Lead (>260 wks). HR staff boost candidate generation. Security guards have focus assignments (Patrol / Gate / Shop). Merchandise Attendants are hired at minimum wage and staff the shop.
 
@@ -63,8 +69,8 @@ Two game stages: **Setup** (instant builds, no income) → **Play** (weekly roun
 - Firing / wage adjustment UI
 - Staff mood dynamics
 - Ride breakdown / repair
-- Food revenue
 - Reports / graphs
 - Marketing and reputation
 - `Population.inflationRate` wired to cost adjustments
 - `Population.utilityMultiplier` wired to round-by-round increases
+- Supplier unlock triggers (currently only first supplier is ever unlocked)
