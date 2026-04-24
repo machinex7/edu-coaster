@@ -57,12 +57,22 @@ const Shopping = {
     };
   },
 
+  // ── Per-round item stats (reset by calcRevenue at the start of each round) ──
+  _roundItemStats: [],
+
+  _resetRoundItemStats() {
+    this._roundItemStats = merchandise.map(() => ({
+      salesRevenue: 0, salesCount: 0, theftValue: 0, theftCount: 0,
+    }));
+  },
+
   // ── Revenue ────────────────────────────────────────────────────────────────
   // Demand-driven: desire per category (from demographics) × affordability
   // (income brackets that can cover the shelf price) → purchase attempts per
   // item → sell from inventory, deducting stock and accumulating revenue.
   calcRevenue(weeklyAttendance) {
-    if (this.calcMerchandiseTiles() === 0) return 0;
+    this._resetRoundItemStats();
+    if (this.calcMerchandiseTiles() === 0) return { revenue: 0, itemsSold: 0 };
     const { staffRatio } = this.calcStaffingState();
 
     // Step 1 — category desire: flat 1 baseline + demographic contributions.
@@ -108,6 +118,8 @@ const Shopping = {
       inv.count    -= sold;
       totalRevenue += sold * shelfPrice;
       totalSold    += sold;
+      this._roundItemStats[i].salesRevenue += sold * shelfPrice;
+      this._roundItemStats[i].salesCount   += sold;
     }
 
     return { revenue: Math.round(totalRevenue), itemsSold: totalSold };
@@ -153,10 +165,13 @@ const Shopping = {
         .map((inv, idx) => ({ inv, idx }))
         .filter(({ inv }) => inv.count > 0);
       if (eligible.length === 0) break;
-      const { inv } = eligible[Math.floor(Math.random() * eligible.length)];
+      const { inv, idx } = eligible[Math.floor(Math.random() * eligible.length)];
+      const stolenPrice   = inv.price + this.merchandiseUpcharge;
       inv.count--;
-      totalValue += inv.price + this.merchandiseUpcharge;
+      totalValue += stolenPrice;
       itemsStolen++;
+      this._roundItemStats[idx].theftValue += stolenPrice;
+      this._roundItemStats[idx].theftCount++;
     }
     return { value: totalValue, itemsStolen };
   },
