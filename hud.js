@@ -29,21 +29,12 @@ function openPark() {
 
 function advanceRound() {
   round++;
-  const report       = Finance.processRound();
-  const arrivedOrders = tickOrders();
+  const report = Finance.processRound();
   History.record(report);
   updateHUD();
   refreshRidesPanel();
   Staff.refreshPanel();
   Security.refreshPanel();
-  if (arrivedOrders.length > 0) {
-    const detail = arrivedOrders.map(o => `${o.count}× ${o.itemName}`).join(', ');
-    Notifications.push({
-      label:   'Delivery',
-      message: `Orders arrived: ${detail}`,
-      action:  () => openPanel('inventory'),
-    });
-  }
   showRoundSummary(report);
 }
 

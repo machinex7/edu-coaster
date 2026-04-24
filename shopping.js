@@ -112,6 +112,23 @@ const Shopping = {
     return Math.round(totalRevenue);
   },
 
+  // ── Orders ─────────────────────────────────────────────────────────────────
+  // Advance all pending orders by one week. Returns { itemName, count }[] for
+  // every order that arrived so the caller can notify the player.
+  tickOrders() {
+    const arrived = [];
+    orders = orders.filter(order => {
+      order.weeksRemaining--;
+      if (order.weeksRemaining <= 0) {
+        merchandiseInventory[order.itemIndex].count += order.count;
+        arrived.push({ itemName: order.itemName, count: order.count });
+        return false;
+      }
+      return true;
+    });
+    return arrived;
+  },
+
   // ── Theft ──────────────────────────────────────────────────────────────────
   // Called by Security.calcIncidents() to get the raw shoplifter count.
   calcTheftIncidents(weeklyAttendance) {
