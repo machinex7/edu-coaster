@@ -24,8 +24,9 @@ const Population = {
   MESS_EXTREME_RIDER_RATE: 0.05,  // 1 per 20 riders on each extreme-intensity ride
 
   // ── External economic conditions ───────────────────────────────────────────
-  utilityMultiplier: 1,     // applied to all ride utility costs each round
-  inflationRate:     0.02,  // annual rate; applied weekly to staff cost-of-living
+  utilityMultiplier:    1,     // applied to all ride utility costs each round
+  inflationRate:        0.02,  // annual rate; applied weekly to staff cost-of-living
+  cumulativeInflation:  1,     // starts at 1; multiplied each round by (1 + inflationRate/52)
 
   // ── Demographics ──────────────────────────────────────────────────────────
   // Each entry: { name, chance, annualVisits, count, intensityBias?, favor }
@@ -102,6 +103,7 @@ const Population = {
     this.populationEvents = this.populationEvents
       .map(e => ({ ...e, modifier: e.modifier > 0 ? e.modifier - 2 : e.modifier + 2 }))
       .filter(e => Math.abs(e.modifier) >= 2);
+    this.cumulativeInflation *= (1 + this.inflationRate / 52);
   },
 
   // Call once at game start (and again on reset) to initialize mutable demographic state.
