@@ -7,6 +7,7 @@ function initHUD() {
   document.getElementById('next-round-btn').addEventListener('click', advanceRound);
   document.getElementById('modal-close-btn').addEventListener('click', hideRoundSummary);
   Staff.initPanel();
+  initInventoryPanel();
   initPanelBtns();
 }
 
@@ -311,27 +312,53 @@ const PRICE_ITEMS = [
   },
 ];
 
+let _activeInvTab = 'stock';
+
+function initInventoryPanel() {
+  document.querySelectorAll('.inv-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      _activeInvTab = btn.dataset.invTab;
+      document.querySelectorAll('.inv-tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+      document.getElementById('inv-stock-view').classList.toggle('hidden',     _activeInvTab !== 'stock');
+      document.getElementById('inv-suppliers-view').classList.toggle('hidden', _activeInvTab !== 'suppliers');
+      buildInventoryPanel();
+    });
+  });
+}
+
 function buildInventoryPanel() {
+  if (_activeInvTab === 'stock')     _buildInvStockView();
+  if (_activeInvTab === 'suppliers') _buildInvSuppliersView();
+}
+
+function _buildInvStockView() {
   const totalStock    = merchandiseInventory.reduce((s, inv) => s + inv.count, 0);
   const capacity      = Shopping.calcInventoryCapacity();
   const pct           = capacity > 0 ? Math.min(100, Math.round(totalStock / capacity * 100)) : 0;
   const capacityLabel = capacity > 0 ? `${totalStock} / ${capacity}` : 'No shops open';
 
+  const supplier     = suppliers.find(s => s.id === selectedSupplierId);
+  const supplierCard = supplier ? `
+    <div class="inv-supplier-card">
+      <span class="inv-supplier-name">${supplier.name}</span>
+      <span class="inv-supplier-meta">${supplier.deliveryTime}w delivery · +$${supplier.surcharge} surcharge</span>
+    </div>` : '';
+
   const CATEGORY_LABELS = { toy: 'Toys', practical: 'Practical', apparel: 'Apparel', souvenir: 'Souvenirs' };
-  const categories = ['toy', 'practical', 'apparel', 'souvenir'];
-  const rows = categories.map(cat => {
+  const itemRows = ['toy', 'practical', 'apparel', 'souvenir'].map(cat => {
     const items = merchandise
       .map((item, i) => ({ item, inv: merchandiseInventory[i] }))
       .filter(({ item }) => item.category === cat);
-    const itemRows = items.map(({ item, inv }) => `
+    const rows = items.map(({ item, inv }) => `
       <div class="price-row">
         <div class="price-label">${item.name}</div>
         <div class="price-value">${inv.count}</div>
       </div>`).join('');
-    return `<div class="panel-section-header">${CATEGORY_LABELS[cat]}</div>${itemRows}`;
+    return `<div class="panel-section-header">${CATEGORY_LABELS[cat]}</div>${rows}`;
   }).join('');
 
-  document.getElementById('inventory-panel-body').innerHTML = `
+  document.getElementById('inv-stock-view').innerHTML = `
+    ${supplierCard}
     <div class="inv-capacity-wrap">
       <div class="inv-capacity-label">Storage: ${capacityLabel}</div>
       <div class="ride-ridership-bar-wrap">
@@ -339,7 +366,34 @@ function buildInventoryPanel() {
       </div>
       <div class="inv-capacity-pct">${pct}%</div>
     </div>
-    ${rows}`;
+    ${itemRows}`;
+}
+
+function _buildInvSuppliersView() {
+  const rows = suppliers.map(s => {
+    const unlocked = unlockedSupplierIds.has(s.id);
+    const selected = s.id === selectedSupplierId;
+    return `
+      <div class="inv-supplier-row${selected ? ' selected' : ''}${!unlocked ? ' locked' : ''}"
+           ${unlocked && !selected ? `data-supplier-id="${s.id}"` : ''}>
+        <div class="inv-supplier-row-name">${unlocked ? s.name : '???'}</div>
+        <div class="inv-supplier-row-meta">
+          ${unlocked
+            ? `${s.deliveryTime}w delivery · +$${s.surcharge} surcharge`
+            : 'Locked'}
+        </div>
+        ${selected  ? '<div class="inv-supplier-badge">In use</div>'    : ''}
+        ${!unlocked ? '<div class="inv-supplier-badge locked">Locked</div>' : ''}
+      </div>`;
+  }).join('');
+  const el = document.getElementById('inv-suppliers-view');
+  el.innerHTML = `<div class="inv-supplier-list">${rows}</div>`;
+  el.querySelectorAll('.inv-supplier-row[data-supplier-id]').forEach(row => {
+    row.addEventListener('click', () => {
+      selectedSupplierId = row.dataset.supplierId;
+      _buildInvSuppliersView();
+    });
+  });
 }
 
 function buildPricingPanel() {

@@ -440,9 +440,37 @@ header h1 {
 .ride-ridership-bar { height: 100%; background: #3b82f6; border-radius: 3px; transition: width 0.3s; }
 .ride-ridership-nums { font-size: 0.75rem; color: #9ca3af; }
 
+/* ── Inventory panel ── */
+.inv-sub-tabs { display: flex; border-bottom: 2px solid #374151; flex-shrink: 0; }
+.inv-tab-btn  { flex: 1; padding: 9px 6px; background: none; border: none;
+  border-bottom: 2px solid transparent; margin-bottom: -2px; color: #6b7280;
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em;
+  text-transform: uppercase; cursor: pointer; }
+.inv-tab-btn.active { color: #f3f4f6; border-bottom-color: #fbbf24; }
+.inv-view { display: flex; flex-direction: column; flex: 1; overflow-y: auto; min-height: 0; }
+.inv-view.hidden { display: none; }
+
+.inv-supplier-card { margin: 10px 12px 4px; padding: 8px 10px; background: #1f2937;
+  border: 1px solid #374151; border-radius: 6px; }
+.inv-supplier-name { display: block; font-size: 0.8rem; font-weight: 600; color: #f3f4f6; }
+.inv-supplier-meta { display: block; font-size: 0.72rem; color: #9ca3af; margin-top: 2px; }
+
 .inv-capacity-wrap { padding: 10px 12px 14px; border-bottom: 1px solid #374151; margin-bottom: 4px; }
 .inv-capacity-label { font-size: 0.75rem; color: #9ca3af; margin-bottom: 5px; }
 .inv-capacity-pct { font-size: 0.75rem; color: #9ca3af; margin-top: 4px; text-align: right; }
+
+.inv-supplier-list { padding: 8px 0; }
+.inv-supplier-row { padding: 10px 14px; border-bottom: 1px solid #1f2937; cursor: pointer;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 4px; position: relative; }
+.inv-supplier-row:hover:not(.selected):not(.locked) { background: #1f2937; }
+.inv-supplier-row.selected { background: #1e3a5f; cursor: default; }
+.inv-supplier-row.locked   { opacity: 0.45; cursor: default; }
+.inv-supplier-row-name { font-size: 0.82rem; font-weight: 600; color: #f3f4f6; flex: 1 0 100%; }
+.inv-supplier-row-meta { font-size: 0.72rem; color: #9ca3af; flex: 1; }
+.inv-supplier-badge        { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.04em;
+  text-transform: uppercase; padding: 2px 6px; border-radius: 4px;
+  background: #1d4ed8; color: #bfdbfe; }
+.inv-supplier-badge.locked { background: #374151; color: #6b7280; }
 
 .ride-action-btn {
   padding: 7px 12px;
