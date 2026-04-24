@@ -13,13 +13,17 @@ const Shopping = {
   merchandiseUpcharge: 0,  // $ added on top of BASE_SPEND per buyer
 
   // ── Constants ──────────────────────────────────────────────────────────────
-  BASE_SPEND:              30,   // $ base spend per buyer
+  BASE_SPEND:              30,   // $ base spend per buyer (food/misc; not used in merch calcRevenue)
   THEFT_LOSS_PER:          50,   // $ lost per unhandled shoplifter
   WORKERS_PER_STORE:        2,   // merchandise attendants required per active store
   STORAGE_PER_SHOP:       200,   // inventory slots provided per active merchandise tile
   EXPECTED_MEALS_PER_DAY:   2,   // meals a visitor wants to eat per day
   MEALS_PER_WORKER_PER_DAY: 250, // meals a concessions worker can serve per day (base)
   MEAL_BASE_PRICE:          10,  // $ base price per meal sold
+
+  // Maximum price each income bracket will pay, positionally aligned to
+  // Population.INCOME_BRACKETS (Low Income → High Income).
+  INCOME_LIMITS: [6, 10, 20, 40, Infinity],
 
   // Total active tiles across all placed merchandise shops.
   // Used to scale revenue and theft: more floor space = more shoppers and more risk.
@@ -55,11 +59,57 @@ const Shopping = {
   },
 
   // ── Revenue ────────────────────────────────────────────────────────────────
+  // Demand-driven: desire per category (from demographics) × affordability
+  // (income brackets that can cover the shelf price) → purchase attempts per
+  // item → sell from inventory, deducting stock and accumulating revenue.
   calcRevenue(weeklyAttendance) {
-    const tiles = this.calcMerchandiseTiles();
-    if (tiles === 0) return 0;
+    if (this.calcMerchandiseTiles() === 0) return 0;
     const { staffRatio } = this.calcStaffingState();
-    return Math.round(weeklyAttendance * Population.BUYER_RATE * (this.BASE_SPEND + this.merchandiseUpcharge) * Math.sqrt(tiles) * staffRatio);
+
+    // Step 1 — category desire: flat 1 baseline + demographic contributions.
+    const desire = { toy: 1, practical: 1, apparel: 1, souvenir: 1 };
+    const bracketArrays = [
+      Population.AGE_BRACKETS,
+      Population.INCOME_BRACKETS,
+      Population.DISTANCE_BRACKETS,
+      Population.HOUSEHOLD_SIZES,
+      Population.AREA_TYPES,
+      Population.EMPLOYMENT_STATUS,
+      Population.VISITOR_STATUS,
+    ];
+    for (const arr of bracketArrays) {
+      for (const bracket of arr) {
+        desire[bracket.preferredCategory] += bracket.chance * (bracket.favor ?? 1);
+      }
+    }
+
+    // Step 2 — per-item: affordability × desire → attempts → sell from stock.
+    let totalRevenue = 0;
+    for (let i = 0; i < merchandise.length; i++) {
+      const item = merchandise[i];
+      const inv  = merchandiseInventory[i];
+      if (inv.count <= 0) continue;
+
+      const shelfPrice = inv.price + this.merchandiseUpcharge;
+
+      // Sum chance of income brackets whose limit covers the shelf price.
+      let afford = 0;
+      for (let j = 0; j < Population.INCOME_BRACKETS.length; j++) {
+        if (shelfPrice <= this.INCOME_LIMITS[j]) {
+          afford += Population.INCOME_BRACKETS[j].chance;
+        }
+      }
+      if (afford === 0) continue;
+
+      const attempts = Math.round(
+        desire[item.category] * afford * weeklyAttendance * Population.BUYER_RATE * staffRatio
+      );
+      const sold    = Math.min(attempts, inv.count);
+      inv.count    -= sold;
+      totalRevenue += sold * shelfPrice;
+    }
+
+    return Math.round(totalRevenue);
   },
 
   // ── Theft ──────────────────────────────────────────────────────────────────
