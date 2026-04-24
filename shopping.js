@@ -14,7 +14,6 @@ const Shopping = {
 
   // ── Constants ──────────────────────────────────────────────────────────────
   BASE_SPEND:              30,   // $ base spend per buyer (food/misc; not used in merch calcRevenue)
-  THEFT_LOSS_PER:          50,   // $ lost per unhandled shoplifter
   WORKERS_PER_STORE:        2,   // merchandise attendants required per active store
   STORAGE_PER_SHOP:       200,   // inventory slots provided per active merchandise tile
   EXPECTED_MEALS_PER_DAY:   2,   // meals a visitor wants to eat per day
@@ -131,16 +130,31 @@ const Shopping = {
 
   // ── Theft ──────────────────────────────────────────────────────────────────
   // Called by Security.calcIncidents() to get the raw shoplifter count.
+  // Capped at total stock — can't steal what isn't there.
   calcTheftIncidents(weeklyAttendance) {
     const tiles = this.calcMerchandiseTiles();
     if (tiles === 0) return 0;
     const { theftMultiplier } = this.calcStaffingState();
-    return Math.floor(weeklyAttendance * (1 - Population.BUYER_RATE) * Population.THEFT_RATE * Math.sqrt(tiles) * theftMultiplier);
+    const raw   = Math.floor(weeklyAttendance * (1 - Population.BUYER_RATE) * Population.THEFT_RATE * Math.sqrt(tiles) * theftMultiplier);
+    const stock = merchandiseInventory.reduce((s, inv) => s + inv.count, 0);
+    return Math.min(raw, stock);
   },
 
-  // Called by Security.calcIncidents() after determining how many went unhandled.
-  calcTheftLoss(unhandledShop) {
-    return unhandledShop * this.THEFT_LOSS_PER;
+  // Called by Security.calcIncidents() with the count of unhandled shop incidents.
+  // Randomly removes one item per theft from in-stock inventory; returns the
+  // total shelf value of everything stolen.
+  handleThefts(count) {
+    let totalValue = 0;
+    for (let i = 0; i < count; i++) {
+      const eligible = merchandiseInventory
+        .map((inv, idx) => ({ inv, idx }))
+        .filter(({ inv }) => inv.count > 0);
+      if (eligible.length === 0) break;
+      const { inv } = eligible[Math.floor(Math.random() * eligible.length)];
+      inv.count--;
+      totalValue += inv.price + this.merchandiseUpcharge;
+    }
+    return totalValue;
   },
 
   // ── Food ───────────────────────────────────────────────────────────────────
