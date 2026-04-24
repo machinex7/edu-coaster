@@ -130,7 +130,8 @@ function openPanel(panelId) {
   if (panelId === 'rides')    buildRidesPanel();
   if (panelId === 'staffing') Staff.openPanel();
   if (panelId === 'security') Security.buildPanel();
-  if (panelId === 'pricing')  buildPricingPanel();
+  if (panelId === 'pricing')    buildPricingPanel();
+  if (panelId === 'inventory')  buildInventoryPanel();
 }
 
 function closePanels() {
@@ -309,6 +310,23 @@ const PRICE_ITEMS = [
     setValue:  v => { Shopping.merchandiseUpcharge = v; },
   },
 ];
+
+function buildInventoryPanel() {
+  const CATEGORY_LABELS = { toy: 'Toys', practical: 'Practical', apparel: 'Apparel', souvenir: 'Souvenirs' };
+  const categories = ['toy', 'practical', 'apparel', 'souvenir'];
+  const html = categories.map(cat => {
+    const items = merchandise
+      .map((item, i) => ({ item, inv: merchandiseInventory[i] }))
+      .filter(({ item }) => item.category === cat);
+    const rows = items.map(({ item, inv }) => `
+      <div class="price-row">
+        <div class="price-label">${item.name}</div>
+        <div class="price-value">${inv.count}</div>
+      </div>`).join('');
+    return `<div class="panel-section-header">${CATEGORY_LABELS[cat]}</div>${rows}`;
+  }).join('');
+  document.getElementById('inventory-panel-body').innerHTML = html;
+}
 
 function buildPricingPanel() {
   const rows = PRICE_ITEMS.map(item => `
