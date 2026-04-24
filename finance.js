@@ -248,7 +248,7 @@ const Finance = {
     const weeklyAttendance  = Math.round(daily * 7);
     const gateRevenue       = this.calcGateRevenue(daily);
     const parkingRevenue    = this.calcParkingRevenue(dailyDemand);
-    const shopRevenue       = Shopping.calcRevenue(weeklyAttendance);
+    const { revenue: shopRevenue, itemsSold: shopItemsSold } = Shopping.calcRevenue(weeklyAttendance);
     const food              = Shopping.calcFood(weeklyAttendance);
     const foodRevenue       = Math.round(food.mealsSold * (Shopping.MEAL_BASE_PRICE + this.foodUpcharge));
     const staffCosts        = this.calcStaffCosts();
@@ -309,6 +309,7 @@ const Finance = {
       staffCosts,
       utilityCosts,
       constructionCosts,
+      shopItemsSold,
       theftLoss:     security.theftLoss,
       totalExpenses: staffCosts + utilityCosts + constructionCosts + security.theftLoss,
       rideEfficiency: this.rideOpinion,

@@ -84,6 +84,7 @@ const Shopping = {
 
     // Step 2 — per-item: affordability × desire → attempts → sell from stock.
     let totalRevenue = 0;
+    let totalSold    = 0;
     for (let i = 0; i < merchandise.length; i++) {
       const item = merchandise[i];
       const inv  = merchandiseInventory[i];
@@ -106,9 +107,10 @@ const Shopping = {
       const sold    = Math.min(attempts, inv.count);
       inv.count    -= sold;
       totalRevenue += sold * shelfPrice;
+      totalSold    += sold;
     }
 
-    return Math.round(totalRevenue);
+    return { revenue: Math.round(totalRevenue), itemsSold: totalSold };
   },
 
   // ── Orders ─────────────────────────────────────────────────────────────────
@@ -144,7 +146,8 @@ const Shopping = {
   // Randomly removes one item per theft from in-stock inventory; returns the
   // total shelf value of everything stolen.
   handleThefts(count) {
-    let totalValue = 0;
+    let totalValue   = 0;
+    let itemsStolen  = 0;
     for (let i = 0; i < count; i++) {
       const eligible = merchandiseInventory
         .map((inv, idx) => ({ inv, idx }))
@@ -153,8 +156,9 @@ const Shopping = {
       const { inv } = eligible[Math.floor(Math.random() * eligible.length)];
       inv.count--;
       totalValue += inv.price + this.merchandiseUpcharge;
+      itemsStolen++;
     }
-    return totalValue;
+    return { value: totalValue, itemsStolen };
   },
 
   // ── Food ───────────────────────────────────────────────────────────────────
