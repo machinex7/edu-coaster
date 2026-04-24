@@ -29,12 +29,21 @@ function openPark() {
 
 function advanceRound() {
   round++;
-  const report = Finance.processRound();
+  const report       = Finance.processRound();
+  const arrivedOrders = tickOrders();
   History.record(report);
   updateHUD();
   refreshRidesPanel();
   Staff.refreshPanel();
   Security.refreshPanel();
+  if (arrivedOrders.length > 0) {
+    const detail = arrivedOrders.map(o => `${o.count}× ${o.itemName}`).join(', ');
+    Notifications.push({
+      label:   'Delivery',
+      message: `Orders arrived: ${detail}`,
+      action:  () => openPanel('inventory'),
+    });
+  }
   showRoundSummary(report);
 }
 
@@ -347,17 +356,29 @@ function _buildInvStockView() {
   const CATEGORY_LABELS = { toy: 'Toys', practical: 'Practical', apparel: 'Apparel', souvenir: 'Souvenirs' };
   const itemRows = ['toy', 'practical', 'apparel', 'souvenir'].map(cat => {
     const items = merchandise
-      .map((item, i) => ({ item, inv: merchandiseInventory[i] }))
+      .map((item, i) => ({ item, inv: merchandiseInventory[i], idx: i }))
       .filter(({ item }) => item.category === cat);
-    const rows = items.map(({ item, inv }) => `
-      <div class="price-row">
-        <div class="price-label">${item.name}</div>
-        <div class="price-value">${inv.count}</div>
-      </div>`).join('');
+    const rows = items.map(({ item, inv, idx }) => {
+      const orderBtns = [10, 50, 100].map(qty => {
+        const cost = Math.round(qty * inv.price * Population.cumulativeInflation + (supplier?.surcharge ?? 0));
+        const canAfford = money >= cost;
+        return `<button class="inv-order-btn${canAfford ? '' : ' cant-afford'}"
+          data-idx="${idx}" data-qty="${qty}">+${qty} $${cost.toLocaleString()}</button>`;
+      }).join('');
+      return `
+        <div class="inv-item-row">
+          <div class="inv-item-header">
+            <span class="price-label">${item.name}</span>
+            <span class="price-value">${inv.count}</span>
+          </div>
+          <div class="inv-order-btns">${orderBtns}</div>
+        </div>`;
+    }).join('');
     return `<div class="panel-section-header">${CATEGORY_LABELS[cat]}</div>${rows}`;
   }).join('');
 
-  document.getElementById('inv-stock-view').innerHTML = `
+  const el = document.getElementById('inv-stock-view');
+  el.innerHTML = `
     ${supplierCard}
     <div class="inv-capacity-wrap">
       <div class="inv-capacity-label">Storage: ${capacityLabel}</div>
@@ -367,6 +388,20 @@ function _buildInvStockView() {
       <div class="inv-capacity-pct">${pct}%</div>
     </div>
     ${itemRows}`;
+
+  el.querySelectorAll('.inv-order-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx  = Number(btn.dataset.idx);
+      const qty  = Number(btn.dataset.qty);
+      const sup  = suppliers.find(s => s.id === selectedSupplierId);
+      const cost = Math.round(qty * merchandiseInventory[idx].price * Population.cumulativeInflation + (sup?.surcharge ?? 0));
+      if (money < cost) return;
+      money -= cost;
+      orders.push({ itemIndex: idx, itemName: merchandise[idx].name, count: qty, weeksRemaining: sup?.deliveryTime ?? 1 });
+      updateHUD();
+      _buildInvStockView();
+    });
+  });
 }
 
 function _buildInvSuppliersView() {

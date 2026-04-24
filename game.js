@@ -35,6 +35,7 @@ let merchandiseInventory = [];  // parallel to merchandise: { count, price }
 let suppliers            = [];  // from suppliers.json
 let selectedSupplierId   = null;
 let unlockedSupplierIds  = new Set();
+let orders               = [];  // { itemIndex, itemName, count, weeksRemaining }
 
 let gridCells = [];   // [row][col] → <div>
 let gridState = [];   // [row][col] → instanceId string, or null
@@ -335,6 +336,22 @@ function _commitPlace(item, category, startRow, startCol, status) {
 }
 
 // ── Construction queue ─────────────────────────────────────────────────────
+// Advance all pending orders by one week. Returns an array of { itemName, count }
+// for every order that arrived this round so callers can notify the player.
+function tickOrders() {
+  const arrived = [];
+  orders = orders.filter(order => {
+    order.weeksRemaining--;
+    if (order.weeksRemaining <= 0) {
+      merchandiseInventory[order.itemIndex].count += order.count;
+      arrived.push({ itemName: order.itemName, count: order.count });
+      return false;
+    }
+    return true;
+  });
+  return arrived;
+}
+
 function processConstruction() {
   for (const record of [...installedRides, ...installedFacilities, ...Shopping.installed]) {
     if (record.status !== STATUS.UNDER_CONSTRUCTION) continue;

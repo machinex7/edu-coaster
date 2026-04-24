@@ -459,6 +459,15 @@ header h1 {
 .inv-capacity-label { font-size: 0.75rem; color: #9ca3af; margin-bottom: 5px; }
 .inv-capacity-pct { font-size: 0.75rem; color: #9ca3af; margin-top: 4px; text-align: right; }
 
+.inv-item-row { padding: 6px 12px 8px; border-bottom: 1px solid #1f2937; }
+.inv-item-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 5px; }
+.inv-order-btns { display: flex; gap: 5px; }
+.inv-order-btn { flex: 1; padding: 4px 2px; background: #1d4ed8; color: #eff6ff;
+  border: none; border-radius: 4px; font-size: 0.68rem; font-weight: 600;
+  cursor: pointer; white-space: nowrap; }
+.inv-order-btn:hover { background: #2563eb; }
+.inv-order-btn.cant-afford { background: #374151; color: #6b7280; cursor: default; }
+
 .inv-supplier-list { padding: 8px 0; }
 .inv-supplier-row { padding: 10px 14px; border-bottom: 1px solid #1f2937; cursor: pointer;
   display: flex; flex-wrap: wrap; align-items: center; gap: 4px; position: relative; }
