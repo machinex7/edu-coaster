@@ -506,7 +506,7 @@ header h1 {
 }
 
 /* ── Staff panel ── */
-#panel-staffing,
+#panel-staffing:not(.closed),
 #panel-staffing .side-panel-inner {
   width: 320px;
 }
@@ -1322,7 +1322,7 @@ header h1 {
 }
 
 /* ── Business Research panel ──────────────────────────────────────────────── */
-#panel-research,
+#panel-research:not(.closed),
 #panel-research .side-panel-inner {
   width: 660px;
 }
