@@ -21,8 +21,9 @@ const Charts = {
   // items: [{ label, value }] — bars scale relative to the max value.
   // title and subtitle are optional.
   // formatValue: optional fn(value) → string for the right-hand label; defaults to String(value).
-  barChart({ title, subtitle, items, formatValue } = {}) {
-    if (!items || items.length === 0) return '';
+  barChart({ title, subtitle, items, formatValue, emptyMessage } = {}) {
+    if (!items || items.length === 0)
+      return emptyMessage ? `<p class="empty-note">${emptyMessage}</p>` : '';
     const max = Math.max(...items.map(d => d.value), 1);
     const fmt = formatValue ?? (v => String(v));
 

@@ -124,15 +124,19 @@ const Survey = {
          ).join('')}</div>`
       : '';
 
-    const lastResult    = this._lastSurveyResult();
+    const lastResult        = this._lastSurveyResult();
+    const completedQuarters = Math.floor(History.rounds.length / 13);
     const resultsSection = lastResult
       ? `<div class="survey-results-wrap">
            <button class="ride-action-btn" id="survey-results-btn">Show Survey Results</button>
+           <button class="ride-action-btn" id="survey-quarterly-btn"
+                   ${completedQuarters < 1 ? 'disabled title="Available after your first full quarter"' : ''}>
+             Quarterly Survey Results
+           </button>
          </div>`
       : '';
 
     const totalAttendance    = History.rounds.reduce((s, r) => s + r.attendance, 0);
-    const completedQuarters  = Math.floor(History.rounds.length / 13);
     const quarterBtnDisabled = completedQuarters < 1;
     const gateSection = History.rounds.length > 0
       ? `<div class="panel-section-header">Gate Analytics</div>
@@ -198,6 +202,38 @@ const Survey = {
           value: Math.round(score),
         })),
         formatValue: v => `${v}%`,
+      });
+    });
+
+    el.querySelector('#survey-quarterly-btn')?.addEventListener('click', () => {
+      const completedQ  = Math.floor(History.rounds.length / 13);
+      const qRounds     = History.rounds.slice((completedQ - 1) * 13, completedQ * 13);
+      const allSurveys  = qRounds.flatMap(r => r.surveys ?? []);
+
+      const lastRoundNum = completedQ * 13;
+      const weekOfYear   = STARTING_WEEK_OF_YEAR + lastRoundNum - 1;
+      const yearsElapsed = Math.floor((weekOfYear - 1) / 52);
+      const weekInYear   = ((weekOfYear - 1) % 52) + 1;
+      const qLabel       = `Q${Math.ceil(weekInYear / 13)} ${STARTING_YEAR + yearsElapsed}`;
+
+      const totalResponses = allSurveys.reduce((s, r) => s + r.completed, 0);
+      const categories     = Object.keys(Survey.CATEGORY_LABELS);
+      Charts.showModal({
+        title:        `Quarterly Survey Results — ${qLabel}`,
+        subtitle:     allSurveys.length > 0
+          ? `${totalResponses.toLocaleString()} total responses from ${allSurveys.length} survey${allSurveys.length !== 1 ? 's' : ''}`
+          : null,
+        items:        allSurveys.length > 0
+          ? categories.map(cat => {
+              const scores = allSurveys.map(s => s.reportedScores[cat]);
+              return {
+                label: Survey.CATEGORY_LABELS[cat],
+                value: Math.round(scores.reduce((s, v) => s + v, 0) / scores.length),
+              };
+            })
+          : [],
+        formatValue:  v => `${v}%`,
+        emptyMessage: 'No surveys were sent during this quarter.',
       });
     });
 
