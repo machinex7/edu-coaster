@@ -49,6 +49,7 @@
           <button class="tool-btn" data-panel="security">Security</button>
           <button class="tool-btn" data-panel="pricing">Pricing</button>
           <button class="tool-btn" data-panel="inventory">Inventory</button>
+          <button class="tool-btn" data-panel="survey">Surveys</button>
         </nav>
 
         <!-- Construction slide panel -->
@@ -121,6 +122,14 @@
           </div>
         </div>
 
+        <!-- Survey slide panel -->
+        <div id="panel-survey" class="side-panel closed">
+          <div class="side-panel-inner">
+            <div class="panel-header">Surveys</div>
+            <div id="survey-panel-body" class="inv-view"></div>
+          </div>
+        </div>
+
         <!-- Pricing slide panel -->
         <div id="panel-pricing" class="side-panel closed">
           <div class="side-panel-inner">
@@ -178,6 +187,15 @@
     </div>
   </div>
 
+  <!-- Shared chart modal -->
+  <div id="chart-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-title" id="chart-modal-title"></div>
+      <div id="chart-modal-body"></div>
+      <button class="modal-close-btn" id="chart-modal-close">Close</button>
+    </div>
+  </div>
+
   <div id="notification-stack"></div>
 
   <script src="constants.js"></script>
@@ -192,6 +210,8 @@
   <script src="security.js"></script>
   <script src="history.js"></script>
   <script src="notifications.js"></script>
+  <script src="charts.js"></script>
+  <script src="survey.js"></script>
   <script src="hud.js"></script>
 </body>
 </html>

@@ -8,6 +8,7 @@ function initHUD() {
   document.getElementById('modal-close-btn').addEventListener('click', hideRoundSummary);
   Staff.initPanel();
   initInventoryPanel();
+  Charts.initModal();
   initPanelBtns();
 }
 
@@ -133,6 +134,7 @@ function openPanel(panelId) {
   if (panelId === 'security') Security.buildPanel();
   if (panelId === 'pricing')    buildPricingPanel();
   if (panelId === 'inventory')  buildInventoryPanel();
+  if (panelId === 'survey')     Survey.buildPanel();
 }
 
 function closePanels() {

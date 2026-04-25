@@ -48,6 +48,7 @@ const History = {
       mealsWanted:         report.food.mealsWanted,
       mealsServed:         report.food.mealsServed,
       mealSatisfaction:    report.food.mealSatisfaction,
+      surveys:             Survey.drainPending(),
     });
   },
 

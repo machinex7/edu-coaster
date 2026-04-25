@@ -11,9 +11,10 @@ const Security = {
   FOCUS_BONUS: 3, // extra incidents handled per focused guard
 
   FOCUS_META: [
-    { focus: SECURITY_FOCUS.PATROL, label: 'Patrol', desc: 'Handles unridden visitor incidents' },
-    { focus: SECURITY_FOCUS.GATE,   label: 'Gate',   desc: 'Handles gate overflow incidents'    },
-    { focus: SECURITY_FOCUS.SHOP,   label: 'Shop',   desc: 'Handles shop theft'                 },
+    { focus: SECURITY_FOCUS.PATROL,      label: 'Patrol',  desc: 'Handles unridden visitor incidents'                       },
+    { focus: SECURITY_FOCUS.GATE,        label: 'Gate',    desc: 'Handles gate overflow incidents'                          },
+    { focus: SECURITY_FOCUS.SHOP,        label: 'Shop',    desc: 'Handles shop theft'                                       },
+    { focus: SECURITY_FOCUS.PARKING_OBS, label: 'Parking', desc: 'Logs license plates — no focus bonus, base coverage only' },
   ],
 
   // ── Incident calculation ──────────────────────────────────────────────────
@@ -40,10 +41,11 @@ const Security = {
 
     const total = fromOverflow + fromUnridden + fromRandom + fromShop;
 
-    const guards      = Staff.roster.filter(s => s.jobId === JOB.SECURITY && s.weeksOut === 0);
-    const gateCount   = guards.filter(s => s.focus === SECURITY_FOCUS.GATE).length;
-    const patrolCount = guards.filter(s => s.focus === SECURITY_FOCUS.PATROL).length;
-    const shopCount   = guards.filter(s => s.focus === SECURITY_FOCUS.SHOP).length;
+    const guards       = Staff.roster.filter(s => s.jobId === JOB.SECURITY && s.weeksOut === 0);
+    const gateCount    = guards.filter(s => s.focus === SECURITY_FOCUS.GATE).length;
+    const patrolCount  = guards.filter(s => s.focus === SECURITY_FOCUS.PATROL).length;
+    const shopCount    = guards.filter(s => s.focus === SECURITY_FOCUS.SHOP).length;
+    const parkingCount = guards.filter(s => s.focus === SECURITY_FOCUS.PARKING_OBS).length;
 
     const overflowBonus = Math.min(fromOverflow, gateCount   * this.FOCUS_BONUS);
     const unriddenBonus = Math.min(fromUnridden, patrolCount * this.FOCUS_BONUS);
@@ -71,7 +73,7 @@ const Security = {
 
     return {
       fromOverflow, fromUnridden, fromRandom, fromShop, total,
-      gateCount, patrolCount, shopCount,
+      gateCount, patrolCount, shopCount, parkingCount,
       overflowBonus, unriddenBonus, shopBonus, bonusHandled,
       capacity, normalHandled,
       handled, unhandled,

@@ -924,6 +924,97 @@ header h1 {
 }
 .price-apply-btn:hover { background: #374151; }
 
+/* ── Survey panel ── */
+.panel-section-header {
+  padding: 8px 12px 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6b7280;
+  border-bottom: 1px solid #374151;
+}
+
+.survey-incentive-group { padding: 4px 0; }
+
+.survey-incentive-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #1f2937;
+}
+.survey-incentive-row:hover { background: #374151; }
+.survey-incentive-row input[type="radio"] { flex-shrink: 0; accent-color: #60a5fa; }
+
+.survey-incentive-info { display: flex; flex-direction: column; gap: 1px; }
+.survey-incentive-label { font-size: 0.82rem; color: #e5e7eb; font-weight: 600; }
+.survey-incentive-meta  { font-size: 0.72rem; color: #9ca3af; }
+
+.survey-batch-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+}
+.survey-batch-input {
+  width: 80px;
+  padding: 4px 6px;
+  background: #111827;
+  border: 1px solid #374151;
+  border-radius: 4px;
+  color: #e5e7eb;
+  font-size: 0.82rem;
+}
+.survey-batch-meta { font-size: 0.76rem; color: #9ca3af; }
+
+.survey-send-wrap { padding: 4px 12px 10px; }
+.survey-send-wrap .ride-action-btn { width: 100%; }
+
+.survey-last-response {
+  padding: 7px 12px 5px;
+  font-size: 0.8rem;
+  color: #d1d5db;
+}
+
+.survey-sent-list { padding: 4px 0; }
+
+.survey-results-wrap { padding: 4px 12px 8px; }
+
+.gate-analytics-body {
+  padding: 8px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.gate-analytics-stat { font-size: 0.82rem; color: #d1d5db; }
+
+/* ── Bar charts ── */
+.chart-subtitle {
+  padding: 6px 12px 8px;
+  font-size: 0.74rem;
+  color: #9ca3af;
+}
+.chart-bars { padding: 4px 12px 10px; }
+.chart-row {
+  display: grid;
+  grid-template-columns: 110px 1fr 36px;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 7px;
+}
+.chart-row-label { font-size: 0.76rem; color: #d1d5db; }
+.chart-bar-wrap  { height: 8px; background: #374151; border-radius: 4px; overflow: hidden; }
+.chart-bar       { height: 100%; background: #60a5fa; border-radius: 4px; }
+.chart-row-value { font-size: 0.72rem; color: #9ca3af; text-align: right; }
+.survey-sent-row {
+  padding: 5px 12px;
+  font-size: 0.76rem;
+  color: #9ca3af;
+  border-bottom: 1px solid #1f2937;
+}
+
 /* ── Park View ── */
 #park-view {
   flex: 1;
@@ -1134,7 +1225,8 @@ header h1 {
   color: #fff;
 }
 
-#modal-close-btn {
+#modal-close-btn,
+.modal-close-btn {
   width: 100%;
   padding: 10px;
   background: #1d4ed8;
@@ -1148,7 +1240,8 @@ header h1 {
   transition: background 0.12s;
 }
 
-#modal-close-btn:hover { background: #2563eb; }
+#modal-close-btn:hover,
+.modal-close-btn:hover { background: #2563eb; }
 
 .modal-events {
   display: flex;

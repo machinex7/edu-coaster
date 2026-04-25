@@ -44,14 +44,21 @@ const FACILITY_ID = Object.freeze({
 });
 
 const SECURITY_FOCUS = Object.freeze({
-  PATROL: 'patrol',
-  GATE:   'gate',
-  SHOP:   'shop',
+  PATROL:      'patrol',
+  GATE:        'gate',
+  SHOP:        'shop',
+  PARKING_OBS: 'parking_obs',
 });
 
 const ENGINEER_FOCUS = Object.freeze({
   MAINTENANCE:  'maintenance',
   CONSTRUCTION: 'construction',
+});
+
+const SURVEY_INCENTIVE = Object.freeze({
+  NONE:     'none',
+  DISCOUNT: 'discount',
+  PRIZE:    'prize',
 });
 
 // Breakdown probability reaches 100% at this cumulative wear value.
