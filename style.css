@@ -979,6 +979,25 @@ header h1 {
 }
 
 .survey-sent-list { padding: 4px 0; }
+
+/* ── Gate analytics ── */
+.gate-meta {
+  padding: 6px 12px 8px;
+  font-size: 0.74rem;
+  color: #9ca3af;
+}
+.gate-chart { padding: 4px 12px 10px; }
+.gate-row {
+  display: grid;
+  grid-template-columns: 110px 1fr 36px;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 7px;
+}
+.gate-row-label { font-size: 0.76rem; color: #d1d5db; }
+.gate-bar-wrap  { height: 8px; background: #374151; border-radius: 4px; overflow: hidden; }
+.gate-bar       { height: 100%; background: #60a5fa; border-radius: 4px; }
+.gate-row-pct   { font-size: 0.72rem; color: #9ca3af; text-align: right; }
 .survey-sent-row {
   padding: 5px 12px;
   font-size: 0.76rem;

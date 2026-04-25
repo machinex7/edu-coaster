@@ -126,7 +126,12 @@
         <div id="panel-survey" class="side-panel closed">
           <div class="side-panel-inner">
             <div class="panel-header">Surveys</div>
-            <div id="survey-panel-body"></div>
+            <div id="survey-sub-tabs" class="inv-sub-tabs">
+              <button class="inv-tab-btn survey-tab-btn active" data-survey-tab="send">Survey</button>
+              <button class="inv-tab-btn survey-tab-btn" data-survey-tab="gate">Gate</button>
+            </div>
+            <div id="survey-send-view" class="inv-view"></div>
+            <div id="survey-gate-view" class="inv-view hidden"></div>
           </div>
         </div>
 

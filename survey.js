@@ -1,8 +1,11 @@
-// survey.js — Guest satisfaction survey system.
+// survey.js — Guest satisfaction survey system and gate analytics.
 //
 // Players pay to send surveys to guests. Only a fraction respond.
 // Results are noisy: accuracy improves with more responses following 1/√n.
 // Completed results accumulate in pendingResults until History.record() drains them.
+//
+// Gate Analytics derives party-size distribution from HOUSEHOLD_SIZES demographics,
+// weighted by chance × count, and grows more meaningful as attendance accumulates.
 
 const Survey = {
 
@@ -16,8 +19,23 @@ const Survey = {
     { id: SURVEY_INCENTIVE.PRIZE,    label: 'Prize Entry',     completionRate: 0.35, costPerSurvey: 3 },
   ]),
 
+  // Representative person-count for each HOUSEHOLD_SIZES bracket (same order).
+  HOUSEHOLD_SIZES_PERSONS: Object.freeze([1, 2, 3.5, 5.5]),
+
   // Surveys run this round, not yet recorded in History.
   pendingResults: [],
+
+  initPanel() {
+    document.querySelectorAll('.survey-tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        _activeSurveyTab = btn.dataset.surveyTab;
+        document.querySelectorAll('.survey-tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+        document.getElementById('survey-send-view').classList.toggle('hidden', _activeSurveyTab !== 'send');
+        document.getElementById('survey-gate-view').classList.toggle('hidden', _activeSurveyTab !== 'gate');
+        Survey.buildPanel();
+      });
+    });
+  },
 
   // True satisfaction per category derived from current game state, 0–100.
   // Each formula mirrors how that category already affects demand/excitement.
@@ -56,8 +74,7 @@ const Survey = {
     const result = { round, batchSize, completed, incentiveId, cost, noiseRange, reportedScores };
     this.pendingResults.push(result);
 
-    const el = document.getElementById('survey-panel-body');
-    if (el) Survey.buildPanel();
+    if (document.getElementById('survey-send-view')) Survey.buildPanel();
     return result;
   },
 
@@ -69,7 +86,12 @@ const Survey = {
   },
 
   buildPanel() {
-    const el = document.getElementById('survey-panel-body');
+    if (_activeSurveyTab === 'gate') this._buildGateView();
+    else                             this._buildSendView();
+  },
+
+  _buildSendView() {
+    const el = document.getElementById('survey-send-view');
     if (!el) return;
 
     if (gameStage !== STAGE.PLAY) {
@@ -119,22 +141,20 @@ const Survey = {
       </div>
       ${sentSection}`;
 
-    // Incentive radio — full rebuild since layout may change
     el.querySelectorAll('input[name="survey-incentive"]').forEach(radio => {
       radio.addEventListener('change', () => {
         _surveyIncentive = radio.value;
-        Survey.buildPanel();
+        Survey._buildSendView();
       });
     });
 
-    // Batch size — partial update only to avoid losing input focus
     el.querySelector('#survey-batch-input').addEventListener('input', e => {
-      const val = Math.max(10, parseInt(e.target.value) || 10);
+      const val    = Math.max(10, parseInt(e.target.value) || 10);
       _surveyBatchSize = val;
-      const inc   = Survey.INCENTIVES.find(i => i.id === _surveyIncentive) ?? Survey.INCENTIVES[0];
-      const c     = Math.round(val * inc.costPerSurvey);
+      const inc    = Survey.INCENTIVES.find(i => i.id === _surveyIncentive) ?? Survey.INCENTIVES[0];
+      const c      = Math.round(val * inc.costPerSurvey);
       const afford = money >= c;
-      const btn = document.getElementById('survey-send-btn');
+      const btn    = document.getElementById('survey-send-btn');
       btn.textContent = `Send ($${c.toLocaleString()})`;
       btn.classList.toggle('ride-action-danger', !afford);
       btn.disabled = !afford;
@@ -145,7 +165,45 @@ const Survey = {
     });
   },
 
+  _buildGateView() {
+    const el = document.getElementById('survey-gate-view');
+    if (!el) return;
+
+    if (gameStage !== STAGE.PLAY || History.rounds.length === 0) {
+      el.innerHTML = '<p class="empty-note">Gate data will appear after the first round.</p>';
+      return;
+    }
+
+    const sizes       = Population.HOUSEHOLD_SIZES;
+    const weights     = sizes.map(b => b.chance * b.count);
+    const totalWeight = weights.reduce((s, w) => s + w, 0);
+    const fractions   = weights.map(w => w / totalWeight);
+
+    // Weighted average party size for estimating parties from attendance
+    const avgPartySize = fractions.reduce((s, f, i) => s + f * this.HOUSEHOLD_SIZES_PERSONS[i], 0);
+    const totalAttendance = History.rounds.reduce((s, r) => s + r.attendance, 0);
+    const totalParties    = Math.round(totalAttendance / avgPartySize);
+
+    const bars = sizes.map((b, i) => {
+      const pct = Math.round(fractions[i] * 100);
+      return `
+        <div class="gate-row">
+          <span class="gate-row-label">${b.name}</span>
+          <div class="gate-bar-wrap">
+            <div class="gate-bar" style="width:${pct}%"></div>
+          </div>
+          <span class="gate-row-pct">${pct}%</span>
+        </div>`;
+    }).join('');
+
+    el.innerHTML = `
+      <div class="panel-section-header">Party Size</div>
+      <div class="gate-meta">${totalParties.toLocaleString()} parties over ${History.rounds.length} week${History.rounds.length !== 1 ? 's' : ''}</div>
+      <div class="gate-chart">${bars}</div>`;
+  },
+
 };
 
-let _surveyBatchSize = 100;
+let _surveyBatchSize  = 100;
 let _surveyIncentive  = SURVEY_INCENTIVE.NONE;
+let _activeSurveyTab  = 'send';

@@ -8,6 +8,7 @@ function initHUD() {
   document.getElementById('modal-close-btn').addEventListener('click', hideRoundSummary);
   Staff.initPanel();
   initInventoryPanel();
+  Survey.initPanel();
   initPanelBtns();
 }
 
