@@ -924,6 +924,62 @@ header h1 {
 }
 .price-apply-btn:hover { background: #374151; }
 
+/* ── Survey panel ── */
+.panel-section-header {
+  padding: 8px 12px 4px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6b7280;
+  border-bottom: 1px solid #374151;
+}
+
+.survey-incentive-group { padding: 4px 0; }
+
+.survey-incentive-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #1f2937;
+}
+.survey-incentive-row:hover { background: #374151; }
+.survey-incentive-row input[type="radio"] { flex-shrink: 0; accent-color: #60a5fa; }
+
+.survey-incentive-info { display: flex; flex-direction: column; gap: 1px; }
+.survey-incentive-label { font-size: 0.82rem; color: #e5e7eb; font-weight: 600; }
+.survey-incentive-meta  { font-size: 0.72rem; color: #9ca3af; }
+
+.survey-batch-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+}
+.survey-batch-input {
+  width: 80px;
+  padding: 4px 6px;
+  background: #111827;
+  border: 1px solid #374151;
+  border-radius: 4px;
+  color: #e5e7eb;
+  font-size: 0.82rem;
+}
+.survey-batch-meta { font-size: 0.76rem; color: #9ca3af; }
+
+.survey-send-wrap { padding: 4px 12px 10px; }
+.survey-send-wrap .ride-action-btn { width: 100%; }
+
+.survey-sent-list { padding: 4px 0; }
+.survey-sent-row {
+  padding: 5px 12px;
+  font-size: 0.76rem;
+  color: #9ca3af;
+  border-bottom: 1px solid #1f2937;
+}
+
 /* ── Park View ── */
 #park-view {
   flex: 1;

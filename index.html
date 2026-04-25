@@ -49,6 +49,7 @@
           <button class="tool-btn" data-panel="security">Security</button>
           <button class="tool-btn" data-panel="pricing">Pricing</button>
           <button class="tool-btn" data-panel="inventory">Inventory</button>
+          <button class="tool-btn" data-panel="survey">Surveys</button>
         </nav>
 
         <!-- Construction slide panel -->
@@ -118,6 +119,14 @@
             </div>
             <div id="inv-stock-view" class="inv-view"></div>
             <div id="inv-suppliers-view" class="inv-view hidden"></div>
+          </div>
+        </div>
+
+        <!-- Survey slide panel -->
+        <div id="panel-survey" class="side-panel closed">
+          <div class="side-panel-inner">
+            <div class="panel-header">Surveys</div>
+            <div id="survey-panel-body"></div>
           </div>
         </div>
 
@@ -192,6 +201,7 @@
   <script src="security.js"></script>
   <script src="history.js"></script>
   <script src="notifications.js"></script>
+  <script src="survey.js"></script>
   <script src="hud.js"></script>
 </body>
 </html>

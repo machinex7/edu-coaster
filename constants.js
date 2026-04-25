@@ -54,5 +54,11 @@ const ENGINEER_FOCUS = Object.freeze({
   CONSTRUCTION: 'construction',
 });
 
+const SURVEY_INCENTIVE = Object.freeze({
+  NONE:     'none',
+  DISCOUNT: 'discount',
+  PRIZE:    'prize',
+});
+
 // Breakdown probability reaches 100% at this cumulative wear value.
 const MAX_EFFECTIVE_WEAR = 1000;

@@ -133,6 +133,7 @@ function openPanel(panelId) {
   if (panelId === 'security') Security.buildPanel();
   if (panelId === 'pricing')    buildPricingPanel();
   if (panelId === 'inventory')  buildInventoryPanel();
+  if (panelId === 'survey')     Survey.buildPanel();
 }
 
 function closePanels() {
