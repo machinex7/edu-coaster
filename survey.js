@@ -16,9 +16,6 @@ const Survey = {
     { id: SURVEY_INCENTIVE.PRIZE,    label: 'Prize Entry',     completionRate: 0.35, costPerSurvey: 3 },
   ]),
 
-  // Representative person-count for each HOUSEHOLD_SIZES bracket (same order).
-  HOUSEHOLD_SIZES_PERSONS: Object.freeze([1, 2, 3.5, 5.5]),
-
   CATEGORY_LABELS: Object.freeze({
     rides:       'Rides',
     security:    'Security',
@@ -82,6 +79,21 @@ const Survey = {
     return null;
   },
 
+  // "Q3 2024" label for the quarter that ends at round completedQ * 13.
+  _quarterLabel(completedQ) {
+    const weekOfYear   = STARTING_WEEK_OF_YEAR + completedQ * 13 - 1;
+    const yearsElapsed = Math.floor((weekOfYear - 1) / 52);
+    const weekInYear   = ((weekOfYear - 1) % 52) + 1;
+    return `Q${Math.ceil(weekInYear / 13)} ${STARTING_YEAR + yearsElapsed}`;
+  },
+
+  // Normalised fractions for a bracket array, weighted by chance × count.
+  _demographicFractions(brackets) {
+    const weights     = brackets.map(b => b.chance * b.count);
+    const totalWeight = weights.reduce((s, w) => s + w, 0);
+    return weights.map(w => w / totalWeight);
+  },
+
   // Called by History.record() — returns pending results and clears the queue.
   drainPending() {
     const results = [...this.pendingResults];
@@ -113,12 +125,9 @@ const Survey = {
       </label>`).join('');
 
     const last = this.pendingResults[this.pendingResults.length - 1];
-    const lastResponseLine = last
-      ? `<div class="survey-last-response">${last.completed} people responded to your last survey.</div>`
-      : '';
     const sentSection = this.pendingResults.length > 0
       ? `<div class="panel-section-header">Sent This Round</div>
-         ${lastResponseLine}
+         ${last ? `<div class="survey-last-response">${last.completed} people responded to your last survey.</div>` : ''}
          <div class="survey-sent-list">${this.pendingResults.map(r =>
            `<div class="survey-sent-row">${r.batchSize.toLocaleString()} surveys &middot; ${r.completed} responses &middot; $${r.cost.toLocaleString()}</div>`
          ).join('')}</div>`
@@ -136,22 +145,21 @@ const Survey = {
          </div>`
       : '';
 
-    const totalAttendance    = History.rounds.reduce((s, r) => s + r.attendance, 0);
-    const quarterBtnDisabled = completedQuarters < 1;
+    const totalAttendance = History.rounds.reduce((s, r) => s + r.attendance, 0);
     const gateSection = History.rounds.length > 0
       ? `<div class="panel-section-header">Gate Analytics</div>
          <div class="gate-analytics-body">
            <div class="gate-analytics-stat">${totalAttendance.toLocaleString()} total visitors</div>
            <button class="ride-action-btn" id="gate-demographics-btn">View Group Size Demographics</button>
            <button class="ride-action-btn" id="gate-quarterly-btn"
-                   ${quarterBtnDisabled ? 'disabled title="Available after your first full quarter"' : ''}>
+                   ${completedQuarters < 1 ? 'disabled title="Available after your first full quarter"' : ''}>
              View Quarterly Demographics
            </button>
          </div>`
       : '';
 
-    const totalCars    = History.rounds.reduce((s, r) => s + Math.round(r.parkingIncome / Finance.parkingPrice), 0);
-    const hasParking   = Staff.roster.some(s => s.jobId === JOB.SECURITY && s.focus === SECURITY_FOCUS.PARKING_OBS && s.weeksOut === 0);
+    const totalCars  = History.rounds.reduce((s, r) => s + Math.round(r.parkingIncome / Finance.parkingPrice), 0);
+    const hasParking = Staff.roster.some(s => s.jobId === JOB.SECURITY && s.focus === SECURITY_FOCUS.PARKING_OBS && s.weeksOut === 0);
     const parkingSection = History.rounds.length > 0
       ? `<div class="panel-section-header">Parking</div>
          <div class="gate-analytics-body">
@@ -219,31 +227,20 @@ const Survey = {
     });
 
     el.querySelector('#survey-quarterly-btn')?.addEventListener('click', () => {
-      const completedQ  = Math.floor(History.rounds.length / 13);
-      const qRounds     = History.rounds.slice((completedQ - 1) * 13, completedQ * 13);
-      const allSurveys  = qRounds.flatMap(r => r.surveys ?? []);
-
-      const lastRoundNum = completedQ * 13;
-      const weekOfYear   = STARTING_WEEK_OF_YEAR + lastRoundNum - 1;
-      const yearsElapsed = Math.floor((weekOfYear - 1) / 52);
-      const weekInYear   = ((weekOfYear - 1) % 52) + 1;
-      const qLabel       = `Q${Math.ceil(weekInYear / 13)} ${STARTING_YEAR + yearsElapsed}`;
-
-      const totalResponses = allSurveys.reduce((s, r) => s + r.completed, 0);
-      const categories     = Object.keys(Survey.CATEGORY_LABELS);
+      const completedQ = Math.floor(History.rounds.length / 13);
+      const qRounds    = History.rounds.slice((completedQ - 1) * 13, completedQ * 13);
+      const allSurveys = qRounds.flatMap(r => r.surveys ?? []);
+      const categories = Object.keys(Survey.CATEGORY_LABELS);
       Charts.showModal({
-        title:        `Quarterly Survey Results — ${qLabel}`,
+        title:        `Quarterly Survey Results — ${Survey._quarterLabel(completedQ)}`,
         subtitle:     allSurveys.length > 0
-          ? `${totalResponses.toLocaleString()} total responses from ${allSurveys.length} survey${allSurveys.length !== 1 ? 's' : ''}`
+          ? `${allSurveys.reduce((s, r) => s + r.completed, 0).toLocaleString()} total responses from ${allSurveys.length} survey${allSurveys.length !== 1 ? 's' : ''}`
           : null,
         items:        allSurveys.length > 0
-          ? categories.map(cat => {
-              const scores = allSurveys.map(s => s.reportedScores[cat]);
-              return {
-                label: Survey.CATEGORY_LABELS[cat],
-                value: Math.round(scores.reduce((s, v) => s + v, 0) / scores.length),
-              };
-            })
+          ? categories.map(cat => ({
+              label: Survey.CATEGORY_LABELS[cat],
+              value: Math.round(allSurveys.reduce((s, r) => s + r.reportedScores[cat], 0) / allSurveys.length),
+            }))
           : [],
         formatValue:  v => `${v}%`,
         emptyMessage: 'No surveys were sent during this quarter.',
@@ -251,55 +248,40 @@ const Survey = {
     });
 
     el.querySelector('#gate-demographics-btn')?.addEventListener('click', () => {
-      const sizes       = Population.HOUSEHOLD_SIZES;
-      const weights     = sizes.map(b => b.chance * b.count);
-      const totalWeight = weights.reduce((s, w) => s + w, 0);
+      const fractions = Survey._demographicFractions(Population.HOUSEHOLD_SIZES);
       Charts.showModal({
-        title: 'Group Size Demographics',
-        items: sizes.map((b, i) => ({
+        title:       'Group Size Demographics',
+        items:       Population.HOUSEHOLD_SIZES.map((b, i) => ({
           label: b.name,
-          value: Math.round(weights[i] / totalWeight * 100),
+          value: Math.round(fractions[i] * 100),
         })),
         formatValue: v => `${v}%`,
       });
     });
 
     el.querySelector('#gate-quarterly-btn')?.addEventListener('click', () => {
-      const completedQ   = Math.floor(History.rounds.length / 13);
-      const qRounds      = History.rounds.slice((completedQ - 1) * 13, completedQ * 13);
+      const completedQ    = Math.floor(History.rounds.length / 13);
+      const qRounds       = History.rounds.slice((completedQ - 1) * 13, completedQ * 13);
       const avgAttendance = qRounds.reduce((s, r) => s + r.attendance, 0) / qRounds.length;
-
-      // Quarter label from the last round of that block
-      const lastRoundNum  = completedQ * 13;
-      const weekOfYear    = STARTING_WEEK_OF_YEAR + lastRoundNum - 1;
-      const yearsElapsed  = Math.floor((weekOfYear - 1) / 52);
-      const weekInYear    = ((weekOfYear - 1) % 52) + 1;
-      const qNum          = Math.ceil(weekInYear / 13);
-      const qLabel        = `Q${qNum} ${STARTING_YEAR + yearsElapsed}`;
-
-      const sizes       = Population.HOUSEHOLD_SIZES;
-      const weights     = sizes.map(b => b.chance * b.count);
-      const totalWeight = weights.reduce((s, w) => s + w, 0);
+      const fractions     = Survey._demographicFractions(Population.HOUSEHOLD_SIZES);
       Charts.showModal({
-        title:    `Quarterly Demographics — ${qLabel}`,
-        subtitle: `Avg. ${Math.round(avgAttendance).toLocaleString()} visitors/week`,
-        items:    sizes.map((b, i) => ({
+        title:       `Quarterly Demographics — ${Survey._quarterLabel(completedQ)}`,
+        subtitle:    `Avg. ${Math.round(avgAttendance).toLocaleString()} visitors/week`,
+        items:       Population.HOUSEHOLD_SIZES.map((b, i) => ({
           label: b.name,
-          value: Math.round(weights[i] / totalWeight * avgAttendance),
+          value: Math.round(fractions[i] * avgAttendance),
         })),
         formatValue: v => v.toLocaleString(),
       });
     });
 
     el.querySelector('#parking-location-btn')?.addEventListener('click', () => {
-      const brackets    = Population.DISTANCE_BRACKETS;
-      const weights     = brackets.map(b => b.chance * b.count);
-      const totalWeight = weights.reduce((s, w) => s + w, 0);
+      const fractions = Survey._demographicFractions(Population.DISTANCE_BRACKETS);
       Charts.showModal({
         title:       'Location Demographics',
-        items:       brackets.map((b, i) => ({
+        items:       Population.DISTANCE_BRACKETS.map((b, i) => ({
           label: b.name,
-          value: Math.round(weights[i] / totalWeight * 100),
+          value: Math.round(fractions[i] * 100),
         })),
         formatValue: v => `${v}%`,
       });
