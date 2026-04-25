@@ -135,6 +135,7 @@ function openPanel(panelId) {
   if (panelId === 'pricing')    buildPricingPanel();
   if (panelId === 'inventory')  buildInventoryPanel();
   if (panelId === 'survey')     Survey.buildPanel();
+  if (panelId === 'research')   Research.buildPanel();
 }
 
 function closePanels() {

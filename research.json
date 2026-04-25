@@ -1,0 +1,23 @@
+[
+  {
+    "id": "surveys",
+    "name": "Surveys",
+    "description": "Run structured visitor surveys to gather satisfaction data and identify pain points.",
+    "cost": 2,
+    "requires": []
+  },
+  {
+    "id": "license_plate_monitoring",
+    "name": "License Plate Monitoring",
+    "description": "Cross-reference parking data with regional records to estimate visitor origin and repeat visit rates.",
+    "cost": 4,
+    "requires": ["surveys"]
+  },
+  {
+    "id": "quarterly_survey_results",
+    "name": "Quarterly Survey Results",
+    "description": "Compile survey responses into trend-focused quarterly reports with demographic breakdowns.",
+    "cost": 3,
+    "requires": ["surveys"]
+  }
+]

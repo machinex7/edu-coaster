@@ -61,5 +61,11 @@ const SURVEY_INCENTIVE = Object.freeze({
   PRIZE:    'prize',
 });
 
+const RESEARCH_ID = Object.freeze({
+  SURVEYS:                  'surveys',
+  LICENSE_PLATE_MONITORING: 'license_plate_monitoring',
+  QUARTERLY_SURVEY_RESULTS: 'quarterly_survey_results',
+});
+
 // Breakdown probability reaches 100% at this cumulative wear value.
 const MAX_EFFECTIVE_WEAR = 1000;

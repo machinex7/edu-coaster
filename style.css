@@ -1320,3 +1320,158 @@ header h1 {
   opacity: 1;
   visibility: visible;
 }
+
+/* ── Business Research panel ──────────────────────────────────────────────── */
+#panel-research,
+#panel-research .side-panel-inner {
+  width: 660px;
+}
+
+.research-panel-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
+  min-height: 0;
+}
+
+.research-info-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 14px;
+  border-bottom: 1px solid #374151;
+  flex-shrink: 0;
+}
+
+.research-info-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #6b7280;
+}
+
+.research-pts {
+  font-size: 0.75rem;
+  color: #9ca3af;
+}
+
+.research-pts-val {
+  font-weight: 700;
+  color: #fbbf24;
+}
+
+.research-tree-scroll {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+}
+
+.research-tree-content {
+  position: relative;
+  display: inline-flex;
+  padding: 24px 28px;
+  min-width: 100%;
+  box-sizing: border-box;
+}
+
+.research-connectors {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.research-columns {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: row;
+  gap: 56px;
+  align-items: flex-start;
+}
+
+.research-col {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* ── Research node cards ── */
+.research-node {
+  width: 190px;
+  background: #111827;
+  border: 2px solid #374151;
+  border-radius: 8px;
+  padding: 12px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.research-node.available {
+  border-color: #b45309;
+  cursor: pointer;
+}
+
+.research-node.available:hover {
+  border-color: #fbbf24;
+  box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.2);
+}
+
+.research-node.completed {
+  border-color: #166534;
+}
+
+.rn-name {
+  font-size: 0.84rem;
+  font-weight: 700;
+  color: #f3f4f6;
+  margin-bottom: 3px;
+  line-height: 1.3;
+}
+
+.research-node.locked .rn-name {
+  color: #4b5563;
+}
+
+.rn-cost {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin-bottom: 7px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.research-node.available .rn-cost { color: #9ca3af; }
+.research-node.completed .rn-cost { color: #6b7280; }
+
+.rn-desc {
+  font-size: 0.72rem;
+  color: #6b7280;
+  line-height: 1.45;
+  margin-bottom: 9px;
+}
+
+.research-node.locked .rn-desc {
+  color: #374151;
+}
+
+.research-node.available .rn-desc {
+  color: #9ca3af;
+}
+
+.rn-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.rn-badge.locked    { background: #1f2937; color: #374151; }
+.rn-badge.available { background: #78350f; color: #fde68a; }
+.rn-badge.completed { background: #14532d; color: #86efac; }
