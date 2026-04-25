@@ -150,6 +150,18 @@ const Survey = {
          </div>`
       : '';
 
+    const totalCars    = History.rounds.reduce((s, r) => s + Math.round(r.parkingIncome / Finance.parkingPrice), 0);
+    const hasParking   = Staff.roster.some(s => s.jobId === JOB.SECURITY && s.focus === SECURITY_FOCUS.PARKING_OBS && s.weeksOut === 0);
+    const parkingSection = History.rounds.length > 0
+      ? `<div class="panel-section-header">Parking</div>
+         <div class="gate-analytics-body">
+           <div class="gate-analytics-stat">${totalCars.toLocaleString()} total cars parked</div>
+           ${hasParking
+             ? '<button class="ride-action-btn" id="parking-location-btn">View Location Demographics</button>'
+             : '<p class="empty-note">Assign a guard to Parking to unlock location data.</p>'}
+         </div>`
+      : '';
+
     el.innerHTML = `
       <div class="panel-section-header">Incentive</div>
       <div class="survey-incentive-group">${incentiveRows}</div>
@@ -166,7 +178,8 @@ const Survey = {
       </div>
       ${sentSection}
       ${resultsSection}
-      ${gateSection}`;
+      ${gateSection}
+      ${parkingSection}`;
 
     el.querySelectorAll('input[name="survey-incentive"]').forEach(radio => {
       radio.addEventListener('change', () => {
@@ -275,6 +288,20 @@ const Survey = {
           value: Math.round(weights[i] / totalWeight * avgAttendance),
         })),
         formatValue: v => v.toLocaleString(),
+      });
+    });
+
+    el.querySelector('#parking-location-btn')?.addEventListener('click', () => {
+      const brackets    = Population.DISTANCE_BRACKETS;
+      const weights     = brackets.map(b => b.chance * b.count);
+      const totalWeight = weights.reduce((s, w) => s + w, 0);
+      Charts.showModal({
+        title:       'Location Demographics',
+        items:       brackets.map((b, i) => ({
+          label: b.name,
+          value: Math.round(weights[i] / totalWeight * 100),
+        })),
+        formatValue: v => `${v}%`,
       });
     });
   },
