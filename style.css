@@ -980,6 +980,8 @@ header h1 {
 
 .survey-sent-list { padding: 4px 0; }
 
+.survey-results-wrap { padding: 4px 12px 8px; }
+
 .gate-analytics-body {
   padding: 8px 12px 12px;
   display: flex;

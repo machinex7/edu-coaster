@@ -19,6 +19,14 @@ const Survey = {
   // Representative person-count for each HOUSEHOLD_SIZES bracket (same order).
   HOUSEHOLD_SIZES_PERSONS: Object.freeze([1, 2, 3.5, 5.5]),
 
+  CATEGORY_LABELS: Object.freeze({
+    rides:       'Rides',
+    security:    'Security',
+    food:        'Food',
+    cleanliness: 'Cleanliness',
+    shopping:    'Shopping',
+  }),
+
   // Surveys run this round, not yet recorded in History.
   pendingResults: [],
 
@@ -63,6 +71,17 @@ const Survey = {
     return result;
   },
 
+  // Returns the most recent survey result from this round or past history, or null.
+  _lastSurveyResult() {
+    if (this.pendingResults.length > 0)
+      return this.pendingResults[this.pendingResults.length - 1];
+    for (let i = History.rounds.length - 1; i >= 0; i--) {
+      const surveys = History.rounds[i].surveys;
+      if (surveys && surveys.length > 0) return surveys[surveys.length - 1];
+    }
+    return null;
+  },
+
   // Called by History.record() — returns pending results and clears the queue.
   drainPending() {
     const results = [...this.pendingResults];
@@ -105,6 +124,13 @@ const Survey = {
          ).join('')}</div>`
       : '';
 
+    const lastResult    = this._lastSurveyResult();
+    const resultsSection = lastResult
+      ? `<div class="survey-results-wrap">
+           <button class="ride-action-btn" id="survey-results-btn">Show Survey Results</button>
+         </div>`
+      : '';
+
     const totalAttendance    = History.rounds.reduce((s, r) => s + r.attendance, 0);
     const completedQuarters  = Math.floor(History.rounds.length / 13);
     const quarterBtnDisabled = completedQuarters < 1;
@@ -135,6 +161,7 @@ const Survey = {
         </button>
       </div>
       ${sentSection}
+      ${resultsSection}
       ${gateSection}`;
 
     el.querySelectorAll('input[name="survey-incentive"]').forEach(radio => {
@@ -158,6 +185,20 @@ const Survey = {
 
     el.querySelector('#survey-send-btn').addEventListener('click', () => {
       Survey.run(_surveyBatchSize, _surveyIncentive);
+    });
+
+    el.querySelector('#survey-results-btn')?.addEventListener('click', () => {
+      const result = Survey._lastSurveyResult();
+      if (!result) return;
+      Charts.showModal({
+        title:       'Survey Results',
+        subtitle:    `${result.completed} of ${result.batchSize.toLocaleString()} responded · Round ${result.round}`,
+        items:       Object.entries(result.reportedScores).map(([cat, score]) => ({
+          label: Survey.CATEGORY_LABELS[cat] ?? cat,
+          value: Math.round(score),
+        })),
+        formatValue: v => `${v}%`,
+      });
     });
 
     el.querySelector('#gate-demographics-btn')?.addEventListener('click', () => {
