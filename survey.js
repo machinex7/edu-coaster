@@ -184,22 +184,12 @@ const Survey = {
     const totalAttendance = History.rounds.reduce((s, r) => s + r.attendance, 0);
     const totalParties    = Math.round(totalAttendance / avgPartySize);
 
-    const bars = sizes.map((b, i) => {
-      const pct = Math.round(fractions[i] * 100);
-      return `
-        <div class="gate-row">
-          <span class="gate-row-label">${b.name}</span>
-          <div class="gate-bar-wrap">
-            <div class="gate-bar" style="width:${pct}%"></div>
-          </div>
-          <span class="gate-row-pct">${pct}%</span>
-        </div>`;
-    }).join('');
-
-    el.innerHTML = `
-      <div class="panel-section-header">Party Size</div>
-      <div class="gate-meta">${totalParties.toLocaleString()} parties over ${History.rounds.length} week${History.rounds.length !== 1 ? 's' : ''}</div>
-      <div class="gate-chart">${bars}</div>`;
+    el.innerHTML = Charts.barChart({
+      title:       'Party Size',
+      subtitle:    `${totalParties.toLocaleString()} parties over ${History.rounds.length} week${History.rounds.length !== 1 ? 's' : ''}`,
+      items:       sizes.map((b, i) => ({ label: b.name, value: Math.round(fractions[i] * 100) })),
+      formatValue: v => `${v}%`,
+    });
   },
 
 };
