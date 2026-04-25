@@ -10,6 +10,7 @@ function initHUD() {
   initInventoryPanel();
   Charts.initModal();
   initPanelBtns();
+  updateLockedPanels();
 }
 
 function canOpenPark() {
@@ -33,6 +34,7 @@ function advanceRound() {
   const report = Finance.processRound();
   History.record(report);
   Research.tickResearch();
+  updateLockedPanels();
   updateHUD();
   refreshRidesPanel();
   Staff.refreshPanel();
@@ -115,6 +117,11 @@ function initPanelBtns() {
   document.querySelectorAll('.tool-btn').forEach(btn => {
     btn.addEventListener('click', () => togglePanel(btn.dataset.panel));
   });
+}
+
+function updateLockedPanels() {
+  const surveyBtn = document.querySelector('.tool-btn[data-panel="survey"]');
+  if (surveyBtn) surveyBtn.disabled = !Research.completed.has(RESEARCH_ID.SURVEYS);
 }
 
 function togglePanel(panelId) {
