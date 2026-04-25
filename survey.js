@@ -115,8 +115,6 @@ const Survey = {
       if (inc.id === SURVEY_INCENTIVE.PRIZE)    return Research.completed.has(RESEARCH_ID.SURVEY_PRIZE_INCENTIVE);
       return true;
     });
-    if (!available.some(i => i.id === _surveyIncentive)) _surveyIncentive = SURVEY_INCENTIVE.NONE;
-
     const incentive = available.find(i => i.id === _surveyIncentive) ?? available[0];
     const cost      = Math.round(_surveyBatchSize * incentive.costPerSurvey);
     const canAfford = money >= cost;
