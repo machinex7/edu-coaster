@@ -19,5 +19,19 @@
     "description": "Compile survey responses into trend-focused quarterly reports with demographic breakdowns.",
     "cost": 3,
     "requires": ["surveys"]
+  },
+  {
+    "id": "survey_coupon_incentive",
+    "name": "Coupon Surveys",
+    "description": "Offer a discount coupon as a survey incentive. Raises response rates to 25% at $2/survey.",
+    "cost": 3,
+    "requires": ["quarterly_survey_results"]
+  },
+  {
+    "id": "survey_prize_incentive",
+    "name": "Prize Entry Surveys",
+    "description": "Offer a prize entry as a survey incentive. Raises response rates to 35% at $3/survey.",
+    "cost": 4,
+    "requires": ["survey_coupon_incentive"]
   }
 ]
