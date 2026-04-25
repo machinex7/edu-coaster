@@ -105,12 +105,18 @@ const Survey = {
          ).join('')}</div>`
       : '';
 
-    const totalAttendance = History.rounds.reduce((s, r) => s + r.attendance, 0);
+    const totalAttendance    = History.rounds.reduce((s, r) => s + r.attendance, 0);
+    const completedQuarters  = Math.floor(History.rounds.length / 13);
+    const quarterBtnDisabled = completedQuarters < 1;
     const gateSection = History.rounds.length > 0
       ? `<div class="panel-section-header">Gate Analytics</div>
          <div class="gate-analytics-body">
            <div class="gate-analytics-stat">${totalAttendance.toLocaleString()} total visitors</div>
            <button class="ride-action-btn" id="gate-demographics-btn">View Group Size Demographics</button>
+           <button class="ride-action-btn" id="gate-quarterly-btn"
+                   ${quarterBtnDisabled ? 'disabled title="Available after your first full quarter"' : ''}>
+             View Quarterly Demographics
+           </button>
          </div>`
       : '';
 
@@ -165,6 +171,33 @@ const Survey = {
           value: Math.round(weights[i] / totalWeight * 100),
         })),
         formatValue: v => `${v}%`,
+      });
+    });
+
+    el.querySelector('#gate-quarterly-btn')?.addEventListener('click', () => {
+      const completedQ   = Math.floor(History.rounds.length / 13);
+      const qRounds      = History.rounds.slice((completedQ - 1) * 13, completedQ * 13);
+      const avgAttendance = qRounds.reduce((s, r) => s + r.attendance, 0) / qRounds.length;
+
+      // Quarter label from the last round of that block
+      const lastRoundNum  = completedQ * 13;
+      const weekOfYear    = STARTING_WEEK_OF_YEAR + lastRoundNum - 1;
+      const yearsElapsed  = Math.floor((weekOfYear - 1) / 52);
+      const weekInYear    = ((weekOfYear - 1) % 52) + 1;
+      const qNum          = Math.ceil(weekInYear / 13);
+      const qLabel        = `Q${qNum} ${STARTING_YEAR + yearsElapsed}`;
+
+      const sizes       = Population.HOUSEHOLD_SIZES;
+      const weights     = sizes.map(b => b.chance * b.count);
+      const totalWeight = weights.reduce((s, w) => s + w, 0);
+      Charts.showModal({
+        title:    `Quarterly Demographics — ${qLabel}`,
+        subtitle: `Avg. ${Math.round(avgAttendance).toLocaleString()} visitors/week`,
+        items:    sizes.map((b, i) => ({
+          label: b.name,
+          value: Math.round(weights[i] / totalWeight * avgAttendance),
+        })),
+        formatValue: v => v.toLocaleString(),
       });
     });
   },
