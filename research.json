@@ -47,5 +47,33 @@
     "description": "Upgrade to a full weather station with extended modelling. Extends the forecast window to 2 weeks.",
     "cost": 5,
     "requires": ["weather_sensor"]
+  },
+  {
+    "id": "employee_benefits",
+    "name": "Employee Benefits",
+    "description": "Establish a formal benefits program. Prerequisite for all staff benefit research.",
+    "cost": 3,
+    "requires": []
+  },
+  {
+    "id": "parental_leave",
+    "name": "Parental Leave",
+    "description": "Offer paid parental leave to staff. Improves employee retention and morale.",
+    "cost": 4,
+    "requires": ["employee_benefits"]
+  },
+  {
+    "id": "401k",
+    "name": "401k",
+    "description": "Provide a 401k retirement plan. Improves long-term staff retention.",
+    "cost": 4,
+    "requires": ["employee_benefits"]
+  },
+  {
+    "id": "medical_coverage",
+    "name": "Medical Coverage",
+    "description": "Offer employer-sponsored health insurance. Significantly boosts staff morale and reduces turnover.",
+    "cost": 6,
+    "requires": ["401k"]
   }
 ]

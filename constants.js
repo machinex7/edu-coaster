@@ -69,6 +69,10 @@ const RESEARCH_ID = Object.freeze({
   SURVEY_PRIZE_INCENTIVE:   'survey_prize_incentive',
   WEATHER_SENSOR:           'weather_sensor',
   WEATHER_STATION:          'weather_station',
+  EMPLOYEE_BENEFITS:        'employee_benefits',
+  PARENTAL_LEAVE:           'parental_leave',
+  FOUR_OH_ONE_K:            '401k',
+  MEDICAL_COVERAGE:         'medical_coverage',
 });
 
 // Breakdown probability reaches 100% at this cumulative wear value.
