@@ -1344,22 +1344,16 @@ header h1 {
   flex-shrink: 0;
 }
 
-.research-info-label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  color: #6b7280;
-}
-
-.research-pts {
+.research-rate {
   font-size: 0.75rem;
-  color: #9ca3af;
-}
-
-.research-pts-val {
   font-weight: 700;
   color: #fbbf24;
+}
+
+.research-active-label {
+  font-size: 0.73rem;
+  color: #6b7280;
+  font-style: italic;
 }
 
 .research-tree-scroll {
@@ -1419,6 +1413,17 @@ header h1 {
   box-shadow: 0 0 0 2px rgba(251, 191, 36, 0.2);
 }
 
+.research-node.available.active {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+  cursor: pointer;
+}
+
+.research-node.available.active:hover {
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.35);
+}
+
 .research-node.completed {
   border-color: #166534;
 }
@@ -1462,6 +1467,21 @@ header h1 {
   color: #9ca3af;
 }
 
+.rn-progress-wrap {
+  height: 4px;
+  background: #1f2937;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.rn-progress-bar {
+  height: 100%;
+  background: #3b82f6;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
 .rn-badge {
   display: inline-block;
   padding: 2px 7px;
@@ -1472,6 +1492,7 @@ header h1 {
   letter-spacing: 0.06em;
 }
 
-.rn-badge.locked    { background: #1f2937; color: #374151; }
-.rn-badge.available { background: #78350f; color: #fde68a; }
-.rn-badge.completed { background: #14532d; color: #86efac; }
+.rn-badge.locked      { background: #1f2937; color: #374151; }
+.rn-badge.available   { background: #78350f; color: #fde68a; }
+.rn-badge.completed   { background: #14532d; color: #86efac; }
+.rn-badge.in-progress { background: #1e3a5f; color: #93c5fd; }

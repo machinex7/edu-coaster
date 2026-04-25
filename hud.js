@@ -32,10 +32,12 @@ function advanceRound() {
   round++;
   const report = Finance.processRound();
   History.record(report);
+  Research.tickResearch();
   updateHUD();
   refreshRidesPanel();
   Staff.refreshPanel();
   Security.refreshPanel();
+  Research.refreshPanel();
   showRoundSummary(report);
 }
 

@@ -2,11 +2,66 @@
 const Research = {
   items: [],
   completed: new Set(),
+  activeId: null,
+  progress: {},  // { [id]: pointsSpent }
 
   load() {
     return fetch('research.json')
       .then(r => r.json())
       .then(data => { this.items = data; });
+  },
+
+  // Points contributed per week by all active Business Analysts.
+  // Each BA contributes 1 + 0.2 × their tier (1–4).
+  _researchRate() {
+    return Staff.roster
+      .filter(s => s.jobId === JOB.BUSINESS_ANALYST)
+      .reduce((sum, ba) => {
+        const { tier } = Staff.getExperienceTier(ba.weeksEmployed);
+        return sum + 1 + 0.2 * tier;
+      }, 0);
+  },
+
+  // Weeks to finish item from its current progress state, minimum 1.
+  _weeksRemaining(item) {
+    const rate = this._researchRate();
+    if (rate === 0) return Infinity;
+    const spent = this.progress[item.id] || 0;
+    const remaining = Math.max(0, item.cost - spent);
+    if (remaining === 0) return 0;
+    return Math.max(1, Math.ceil(remaining / rate));
+  },
+
+  // Called once per round. Advances progress on the active item.
+  tickResearch() {
+    if (!this.activeId) return;
+    const item = this.items.find(i => i.id === this.activeId);
+    if (!item || this.completed.has(this.activeId)) {
+      this.activeId = null;
+      return;
+    }
+
+    const rate = this._researchRate();
+    if (rate === 0) return;
+
+    this.progress[this.activeId] = (this.progress[this.activeId] || 0) + rate;
+
+    if (this.progress[this.activeId] >= item.cost) {
+      this.completed.add(this.activeId);
+      delete this.progress[this.activeId];
+      const name = item.name;
+      this.activeId = null;
+      Notifications.push({
+        label: 'Research',
+        message: `Research complete: ${name}`,
+        action: () => openPanel('research'),
+      });
+    }
+  },
+
+  // Called after each round if panel is open.
+  refreshPanel() {
+    if (document.getElementById('research-cols')) this._updatePanel();
   },
 
   _getDepth(id) {
@@ -41,30 +96,56 @@ const Research = {
     this._renderPanel();
   },
 
-  _renderPanel() {
-    const body = document.getElementById('research-panel-body');
-    const columns = this._buildColumns();
+  _nodeHtml(item) {
+    const status = this._getStatus(item);
+    const isActive = this.activeId === item.id;
 
     const STATUS_LABEL = { locked: 'Locked', available: 'Available', completed: 'Researched' };
+    const badgeLabel = isActive ? 'In Progress' : STATUS_LABEL[status];
+    const badgeCls   = isActive ? 'in-progress' : status;
 
-    const columnsHtml = columns.map(col => {
-      const nodes = col.map(item => {
-        const status = this._getStatus(item);
-        const costLabel = item.cost === 1 ? '1 pt' : `${item.cost} pts`;
-        return `<div class="research-node ${status}" data-id="${item.id}">
-          <div class="rn-name">${item.name}</div>
-          <div class="rn-cost">${costLabel}</div>
-          <div class="rn-desc">${item.description}</div>
-          <span class="rn-badge ${status}">${STATUS_LABEL[status]}</span>
-        </div>`;
-      }).join('');
-      return `<div class="research-col">${nodes}</div>`;
-    }).join('');
+    let timeHtml = '';
+    if (status !== 'completed') {
+      const wks = this._weeksRemaining(item);
+      const wksLabel = wks === Infinity ? '∞ wks'
+                     : `${wks} wk${wks !== 1 ? 's' : ''}`;
+      timeHtml = `<div class="rn-cost">${wksLabel}</div>`;
+    }
+
+    const spent = this.progress[item.id] || 0;
+    const pct   = item.cost > 0 ? Math.min(100, Math.round(spent / item.cost * 100)) : 0;
+    const progressHtml = isActive
+      ? `<div class="rn-progress-wrap"><div class="rn-progress-bar" style="width:${pct}%"></div></div>`
+      : '';
+
+    const activeClass = isActive ? ' active' : '';
+
+    return `<div class="research-node ${status}${activeClass}" data-id="${item.id}">
+      <div class="rn-name">${item.name}</div>
+      ${timeHtml}
+      <div class="rn-desc">${item.description}</div>
+      ${progressHtml}
+      <span class="rn-badge ${badgeCls}">${badgeLabel}</span>
+    </div>`;
+  },
+
+  _renderPanel() {
+    const body    = document.getElementById('research-panel-body');
+    const columns = this._buildColumns();
+    const rate    = this._researchRate();
+    const rateLabel = rate === 0 ? 'No BAs hired' : `${rate % 1 === 0 ? rate : rate.toFixed(1)} pts/wk`;
+    const activeLabel = this.activeId
+      ? `Researching: ${this.items.find(i => i.id === this.activeId)?.name ?? ''}`
+      : 'No active research';
+
+    const columnsHtml = columns.map(col =>
+      `<div class="research-col">${col.map(i => this._nodeHtml(i)).join('')}</div>`
+    ).join('');
 
     body.innerHTML = `
       <div class="research-info-bar">
-        <span class="research-info-label">Business Research</span>
-        <span class="research-pts"><span class="research-pts-val" id="research-pts-val">—</span> pts available</span>
+        <span class="research-rate" id="research-rate-val">${rateLabel}</span>
+        <span class="research-active-label" id="research-active-label">${activeLabel}</span>
       </div>
       <div class="research-tree-scroll">
         <div class="research-tree-content">
@@ -73,11 +154,53 @@ const Research = {
         </div>
       </div>`;
 
+    this._bindNodeClicks();
     requestAnimationFrame(() => this._drawConnections());
   },
 
+  _updatePanel() {
+    const cols = document.getElementById('research-cols');
+    if (!cols) return;
+
+    // Update info bar
+    const rate = this._researchRate();
+    const rateLabel = rate === 0 ? 'No BAs hired' : `${rate % 1 === 0 ? rate : rate.toFixed(1)} pts/wk`;
+    const rateEl = document.getElementById('research-rate-val');
+    if (rateEl) rateEl.textContent = rateLabel;
+    const activeEl = document.getElementById('research-active-label');
+    if (activeEl) {
+      activeEl.textContent = this.activeId
+        ? `Researching: ${this.items.find(i => i.id === this.activeId)?.name ?? ''}`
+        : 'No active research';
+    }
+
+    // Swap each node card
+    this.items.forEach(item => {
+      const old = cols.querySelector(`.research-node[data-id="${item.id}"]`);
+      if (!old) return;
+      const tmp = document.createElement('div');
+      tmp.innerHTML = this._nodeHtml(item);
+      old.replaceWith(tmp.firstElementChild);
+    });
+
+    this._bindNodeClicks();
+    requestAnimationFrame(() => this._drawConnections());
+  },
+
+  _bindNodeClicks() {
+    const cols = document.getElementById('research-cols');
+    if (!cols) return;
+    cols.querySelectorAll('.research-node.available').forEach(el => {
+      el.addEventListener('click', () => {
+        const id = el.dataset.id;
+        this.activeId = this.activeId === id ? null : id;
+        this._updatePanel();
+      });
+    });
+  },
+
   _drawConnections() {
-    const svg = document.getElementById('research-svg');
+    const svg     = document.getElementById('research-svg');
     const content = document.querySelector('.research-tree-content');
     if (!svg || !content) return;
 
@@ -85,32 +208,34 @@ const Research = {
     const h = content.scrollHeight;
     svg.setAttribute('width', w);
     svg.setAttribute('height', h);
-    svg.style.width = `${w}px`;
+    svg.style.width  = `${w}px`;
     svg.style.height = `${h}px`;
 
-    const contentRect = content.getBoundingClientRect();
+    const cr = content.getBoundingClientRect();
     const paths = [];
 
     this.items.forEach(item => {
       if (!item.requires.length) return;
       const toEl = content.querySelector(`.research-node[data-id="${item.id}"]`);
       if (!toEl) return;
-      const toRect = toEl.getBoundingClientRect();
+      const toRect   = toEl.getBoundingClientRect();
       const toStatus = this._getStatus(item);
+      const isActive = this.activeId === item.id;
 
       item.requires.forEach(reqId => {
         const fromEl = content.querySelector(`.research-node[data-id="${reqId}"]`);
         if (!fromEl) return;
         const fromRect = fromEl.getBoundingClientRect();
 
-        const x1 = fromRect.right - contentRect.left;
-        const y1 = (fromRect.top + fromRect.height / 2) - contentRect.top;
-        const x2 = toRect.left - contentRect.left;
-        const y2 = (toRect.top + toRect.height / 2) - contentRect.top;
+        const x1 = fromRect.right - cr.left;
+        const y1 = (fromRect.top + fromRect.height / 2) - cr.top;
+        const x2 = toRect.left  - cr.left;
+        const y2 = (toRect.top  + toRect.height / 2) - cr.top;
         const cx = (x1 + x2) / 2;
 
         const color = this.completed.has(reqId) && toStatus !== 'locked' ? '#4ade80'
-                    : toStatus === 'available' ? '#fbbf24'
+                    : isActive                                            ? '#3b82f6'
+                    : toStatus === 'available'                            ? '#b45309'
                     : '#374151';
 
         paths.push(
