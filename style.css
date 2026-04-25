@@ -972,6 +972,12 @@ header h1 {
 .survey-send-wrap { padding: 4px 12px 10px; }
 .survey-send-wrap .ride-action-btn { width: 100%; }
 
+.survey-last-response {
+  padding: 7px 12px 5px;
+  font-size: 0.8rem;
+  color: #d1d5db;
+}
+
 .survey-sent-list { padding: 4px 0; }
 .survey-sent-row {
   padding: 5px 12px;

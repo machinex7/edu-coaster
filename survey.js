@@ -42,7 +42,8 @@ const Survey = {
     money -= cost;
     updateHUD();
 
-    const completed  = Math.round(batchSize * incentive.completionRate);
+    const rateJitter = (Math.random() - 0.5) * 2 * (incentive.costPerSurvey / 100);
+    const completed  = Math.round(batchSize * Math.max(0, incentive.completionRate + rateJitter));
     const noiseRange = completed > 0 ? this.NOISE_K / Math.sqrt(completed) : 50;
     const trueScores = this.trueSatisfaction();
 
@@ -78,7 +79,6 @@ const Survey = {
 
     const incentive = this.INCENTIVES.find(i => i.id === _surveyIncentive) ?? this.INCENTIVES[0];
     const cost      = Math.round(_surveyBatchSize * incentive.costPerSurvey);
-    const expected  = Math.round(_surveyBatchSize * incentive.completionRate);
     const canAfford = money >= cost;
 
     const incentiveRows = this.INCENTIVES.map(inc => `
@@ -91,8 +91,13 @@ const Survey = {
         </div>
       </label>`).join('');
 
+    const last = this.pendingResults[this.pendingResults.length - 1];
+    const lastResponseLine = last
+      ? `<div class="survey-last-response">${last.completed} people responded to your last survey.</div>`
+      : '';
     const sentSection = this.pendingResults.length > 0
       ? `<div class="panel-section-header">Sent This Round</div>
+         ${lastResponseLine}
          <div class="survey-sent-list">${this.pendingResults.map(r =>
            `<div class="survey-sent-row">${r.batchSize.toLocaleString()} surveys &middot; ${r.completed} responses &middot; $${r.cost.toLocaleString()}</div>`
          ).join('')}</div>`
@@ -105,7 +110,6 @@ const Survey = {
       <div class="survey-batch-row">
         <input class="survey-batch-input" type="number" id="survey-batch-input"
                min="10" step="10" value="${_surveyBatchSize}">
-        <span class="survey-batch-meta" id="survey-batch-meta">~${expected} responses</span>
       </div>
       <div class="survey-send-wrap">
         <button class="ride-action-btn${canAfford ? '' : ' ride-action-danger'}"
@@ -127,11 +131,9 @@ const Survey = {
     el.querySelector('#survey-batch-input').addEventListener('input', e => {
       const val = Math.max(10, parseInt(e.target.value) || 10);
       _surveyBatchSize = val;
-      const inc  = Survey.INCENTIVES.find(i => i.id === _surveyIncentive) ?? Survey.INCENTIVES[0];
-      const c    = Math.round(val * inc.costPerSurvey);
-      const exp  = Math.round(val * inc.completionRate);
+      const inc   = Survey.INCENTIVES.find(i => i.id === _surveyIncentive) ?? Survey.INCENTIVES[0];
+      const c     = Math.round(val * inc.costPerSurvey);
       const afford = money >= c;
-      document.getElementById('survey-batch-meta').textContent = `~${exp} responses`;
       const btn = document.getElementById('survey-send-btn');
       btn.textContent = `Send ($${c.toLocaleString()})`;
       btn.classList.toggle('ride-action-danger', !afford);
