@@ -165,7 +165,7 @@ const Survey = {
 
     const totalCars  = History.rounds.reduce((s, r) => s + Math.round(r.parkingIncome / Finance.parkingPrice), 0);
     const hasParking = Staff.roster.some(s => s.jobId === JOB.SECURITY && s.focus === SECURITY_FOCUS.PARKING_OBS && s.weeksOut === 0);
-    const parkingSection = History.rounds.length > 0
+    const parkingSection = History.rounds.length > 0 && Research.completed.has(RESEARCH_ID.LICENSE_PLATE_MONITORING)
       ? `<div class="panel-section-header">Parking</div>
          <div class="gate-analytics-body">
            <div class="gate-analytics-stat">${totalCars.toLocaleString()} total cars parked</div>

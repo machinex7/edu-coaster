@@ -105,7 +105,10 @@ const Security = {
       const outBadge = out
         ? `<span class="out-badge">Out (${s.weeksOut}wk)</span>`
         : '';
-      const focusBtns = this.FOCUS_META.map(m =>
+      const focusMeta = this.FOCUS_META.filter(m =>
+        m.focus !== SECURITY_FOCUS.PARKING_OBS || Research.completed.has(RESEARCH_ID.LICENSE_PLATE_MONITORING)
+      );
+      const focusBtns = focusMeta.map(m =>
         `<button class="sec-focus-btn${s.focus === m.focus ? ' active' : ''}"
                  data-id="${s.instanceId}" data-focus="${m.focus}" ${out ? 'disabled' : ''}>${m.label}</button>`
       ).join('');
@@ -117,9 +120,12 @@ const Security = {
       </div>`;
     }).join('');
 
+    const legendMeta = this.FOCUS_META.filter(m =>
+      m.focus !== SECURITY_FOCUS.PARKING_OBS || Research.completed.has(RESEARCH_ID.LICENSE_PLATE_MONITORING)
+    );
     container.innerHTML = `
       <div class="sec-focus-legend">
-        ${this.FOCUS_META.map(m => `<div class="sec-legend-row">
+        ${legendMeta.map(m => `<div class="sec-legend-row">
           <strong>${m.label}</strong> — ${m.desc}</div>`).join('')}
       </div>
       <div class="security-guard-list">${guardRows}</div>`;
