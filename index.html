@@ -126,12 +126,7 @@
         <div id="panel-survey" class="side-panel closed">
           <div class="side-panel-inner">
             <div class="panel-header">Surveys</div>
-            <div id="survey-sub-tabs" class="inv-sub-tabs">
-              <button class="inv-tab-btn survey-tab-btn active" data-survey-tab="send">Survey</button>
-              <button class="inv-tab-btn survey-tab-btn" data-survey-tab="gate">Gate</button>
-            </div>
-            <div id="survey-send-view" class="inv-view"></div>
-            <div id="survey-gate-view" class="inv-view hidden"></div>
+            <div id="survey-panel-body" class="inv-view"></div>
           </div>
         </div>
 
@@ -189,6 +184,15 @@
       </div>
       <div id="summary-events" class="modal-events hidden"></div>
       <button id="modal-close-btn">Continue &rsaquo;</button>
+    </div>
+  </div>
+
+  <!-- Shared chart modal -->
+  <div id="chart-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-title" id="chart-modal-title"></div>
+      <div id="chart-modal-body"></div>
+      <button class="modal-close-btn" id="chart-modal-close">Close</button>
     </div>
   </div>
 

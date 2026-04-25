@@ -3,9 +3,6 @@
 // Players pay to send surveys to guests. Only a fraction respond.
 // Results are noisy: accuracy improves with more responses following 1/√n.
 // Completed results accumulate in pendingResults until History.record() drains them.
-//
-// Gate Analytics derives party-size distribution from HOUSEHOLD_SIZES demographics,
-// weighted by chance × count, and grows more meaningful as attendance accumulates.
 
 const Survey = {
 
@@ -24,18 +21,6 @@ const Survey = {
 
   // Surveys run this round, not yet recorded in History.
   pendingResults: [],
-
-  initPanel() {
-    document.querySelectorAll('.survey-tab-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        _activeSurveyTab = btn.dataset.surveyTab;
-        document.querySelectorAll('.survey-tab-btn').forEach(b => b.classList.toggle('active', b === btn));
-        document.getElementById('survey-send-view').classList.toggle('hidden', _activeSurveyTab !== 'send');
-        document.getElementById('survey-gate-view').classList.toggle('hidden', _activeSurveyTab !== 'gate');
-        Survey.buildPanel();
-      });
-    });
-  },
 
   // True satisfaction per category derived from current game state, 0–100.
   // Each formula mirrors how that category already affects demand/excitement.
@@ -74,7 +59,7 @@ const Survey = {
     const result = { round, batchSize, completed, incentiveId, cost, noiseRange, reportedScores };
     this.pendingResults.push(result);
 
-    if (document.getElementById('survey-send-view')) Survey.buildPanel();
+    if (document.getElementById('survey-panel-body')) Survey.buildPanel();
     return result;
   },
 
@@ -86,12 +71,7 @@ const Survey = {
   },
 
   buildPanel() {
-    if (_activeSurveyTab === 'gate') this._buildGateView();
-    else                             this._buildSendView();
-  },
-
-  _buildSendView() {
-    const el = document.getElementById('survey-send-view');
+    const el = document.getElementById('survey-panel-body');
     if (!el) return;
 
     if (gameStage !== STAGE.PLAY) {
@@ -125,6 +105,15 @@ const Survey = {
          ).join('')}</div>`
       : '';
 
+    const totalAttendance = History.rounds.reduce((s, r) => s + r.attendance, 0);
+    const gateSection = History.rounds.length > 0
+      ? `<div class="panel-section-header">Gate Analytics</div>
+         <div class="gate-analytics-body">
+           <div class="gate-analytics-stat">${totalAttendance.toLocaleString()} total visitors</div>
+           <button class="ride-action-btn" id="gate-demographics-btn">View Group Size Demographics</button>
+         </div>`
+      : '';
+
     el.innerHTML = `
       <div class="panel-section-header">Incentive</div>
       <div class="survey-incentive-group">${incentiveRows}</div>
@@ -139,12 +128,13 @@ const Survey = {
           Send ($${cost.toLocaleString()})
         </button>
       </div>
-      ${sentSection}`;
+      ${sentSection}
+      ${gateSection}`;
 
     el.querySelectorAll('input[name="survey-incentive"]').forEach(radio => {
       radio.addEventListener('change', () => {
         _surveyIncentive = radio.value;
-        Survey._buildSendView();
+        Survey.buildPanel();
       });
     });
 
@@ -163,37 +153,23 @@ const Survey = {
     el.querySelector('#survey-send-btn').addEventListener('click', () => {
       Survey.run(_surveyBatchSize, _surveyIncentive);
     });
-  },
 
-  _buildGateView() {
-    const el = document.getElementById('survey-gate-view');
-    if (!el) return;
-
-    if (gameStage !== STAGE.PLAY || History.rounds.length === 0) {
-      el.innerHTML = '<p class="empty-note">Gate data will appear after the first round.</p>';
-      return;
-    }
-
-    const sizes       = Population.HOUSEHOLD_SIZES;
-    const weights     = sizes.map(b => b.chance * b.count);
-    const totalWeight = weights.reduce((s, w) => s + w, 0);
-    const fractions   = weights.map(w => w / totalWeight);
-
-    // Weighted average party size for estimating parties from attendance
-    const avgPartySize = fractions.reduce((s, f, i) => s + f * this.HOUSEHOLD_SIZES_PERSONS[i], 0);
-    const totalAttendance = History.rounds.reduce((s, r) => s + r.attendance, 0);
-    const totalParties    = Math.round(totalAttendance / avgPartySize);
-
-    el.innerHTML = Charts.barChart({
-      title:       'Party Size',
-      subtitle:    `${totalParties.toLocaleString()} parties over ${History.rounds.length} week${History.rounds.length !== 1 ? 's' : ''}`,
-      items:       sizes.map((b, i) => ({ label: b.name, value: Math.round(fractions[i] * 100) })),
-      formatValue: v => `${v}%`,
+    el.querySelector('#gate-demographics-btn')?.addEventListener('click', () => {
+      const sizes       = Population.HOUSEHOLD_SIZES;
+      const weights     = sizes.map(b => b.chance * b.count);
+      const totalWeight = weights.reduce((s, w) => s + w, 0);
+      Charts.showModal({
+        title: 'Group Size Demographics',
+        items: sizes.map((b, i) => ({
+          label: b.name,
+          value: Math.round(weights[i] / totalWeight * 100),
+        })),
+        formatValue: v => `${v}%`,
+      });
     });
   },
 
 };
 
-let _surveyBatchSize  = 100;
-let _surveyIncentive  = SURVEY_INCENTIVE.NONE;
-let _activeSurveyTab  = 'send';
+let _surveyBatchSize = 100;
+let _surveyIncentive = SURVEY_INCENTIVE.NONE;

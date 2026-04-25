@@ -980,6 +980,14 @@ header h1 {
 
 .survey-sent-list { padding: 4px 0; }
 
+.gate-analytics-body {
+  padding: 8px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.gate-analytics-stat { font-size: 0.82rem; color: #d1d5db; }
+
 /* ── Bar charts ── */
 .chart-subtitle {
   padding: 6px 12px 8px;
@@ -1215,7 +1223,8 @@ header h1 {
   color: #fff;
 }
 
-#modal-close-btn {
+#modal-close-btn,
+.modal-close-btn {
   width: 100%;
   padding: 10px;
   background: #1d4ed8;
@@ -1229,7 +1238,8 @@ header h1 {
   transition: background 0.12s;
 }
 
-#modal-close-btn:hover { background: #2563eb; }
+#modal-close-btn:hover,
+.modal-close-btn:hover { background: #2563eb; }
 
 .modal-events {
   display: flex;

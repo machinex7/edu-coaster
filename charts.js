@@ -1,7 +1,21 @@
 // charts.js — Reusable chart rendering utilities.
 // All functions return HTML strings for insertion via innerHTML.
+// Charts.showModal() renders a bar chart inside the shared #chart-modal overlay.
 
 const Charts = {
+
+  initModal() {
+    document.getElementById('chart-modal-close').addEventListener('click', () => {
+      document.getElementById('chart-modal').classList.add('hidden');
+    });
+  },
+
+  // Populate and show the shared chart modal with a bar chart.
+  showModal({ title, ...barChartOptions }) {
+    document.getElementById('chart-modal-title').textContent = title ?? '';
+    document.getElementById('chart-modal-body').innerHTML = this.barChart(barChartOptions);
+    document.getElementById('chart-modal').classList.remove('hidden');
+  },
 
   // Horizontal bar chart.
   // items: [{ label, value }] — bars scale relative to the max value.
