@@ -201,7 +201,7 @@ header h1 {
 }
 
 .side-panel.closed {
-  width: 0;
+  width: 0 !important;
 }
 
 .side-panel-inner {
@@ -506,7 +506,7 @@ header h1 {
 }
 
 /* ── Staff panel ── */
-#panel-staffing:not(.closed),
+#panel-staffing,
 #panel-staffing .side-panel-inner {
   width: 320px;
 }
@@ -1322,7 +1322,7 @@ header h1 {
 }
 
 /* ── Business Research panel ──────────────────────────────────────────────── */
-#panel-research:not(.closed),
+#panel-research,
 #panel-research .side-panel-inner {
   width: 660px;
 }
@@ -1331,7 +1331,6 @@ header h1 {
   display: flex;
   flex-direction: column;
   flex: 1;
-  overflow: hidden;
   min-height: 0;
 }
 
