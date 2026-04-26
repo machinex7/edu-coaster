@@ -40,7 +40,6 @@ const History = {
         theftCount:   stats.theftCount,
       })),
       theftItemsStolen:    report.security.theftItemsStolen,
-      theftLoss:           report.theftLoss,
       securityIncidents:   report.security.total,
       securityHandled:     report.security.handled,
       securityUnhandled:   report.security.unhandled,

@@ -318,7 +318,6 @@ const Finance = {
     const staffCosts        = this.calcStaffCosts();
     const utilityCosts      = this.payUtilityCosts();
     const constructionCosts = processConstruction();  // skips progress on unaffordable builds
-    money -= security.theftLoss;      // $50 per unhandled shoplifter
     processDemolition();              // advances demolition timers, clears finished structures
 
     Staff.advanceMedicalInsurance();  // tick quote countdown; tick policy duration
@@ -360,8 +359,7 @@ const Finance = {
       utilityCosts,
       constructionCosts,
       shopItemsSold,
-      theftLoss:     security.theftLoss,
-      totalExpenses: staffCosts + utilityCosts + constructionCosts + security.theftLoss,
+      totalExpenses: staffCosts + utilityCosts + constructionCosts,
       rideEfficiency: this.rideOpinion,
       security: { ...security, opinionAfter: Security.opinion },
       food: { ...food, mealSatisfaction: this.mealSatisfaction },
