@@ -301,20 +301,23 @@ const Finance = {
   // Security.calcIncidents() and Security.advanceOpinion() are in security.js.
 
   // ── Park valuation ───────────────────────────────────────────────────────────
-  // Completed buildings count at full buildCost.
+  // Completed buildings count at full buildCost; broken-down rides are discounted
+  // 10% per week of repairs remaining (floored at 0).
   // In-construction (and paused) buildings count at money spent so far.
   // Demolishing buildings are excluded.
   // Inventory is valued at current shelf price × stock count.
   parkValue() {
-    const completedStatuses = new Set([STATUS.ACTIVE, STATUS.CLOSED, STATUS.BROKEN_DOWN]);
-
     let buildingValue = 0;
     for (const record of [...installedRides, ...installedFacilities, ...Shopping.installed]) {
-      if (completedStatuses.has(record.status)) {
+      if (record.status === STATUS.ACTIVE || record.status === STATUS.CLOSED) {
         const def = record.rideId     ? rides.find(r => r.id === record.rideId)
                   : record.facilityId ? facilities.find(f => f.id === record.facilityId)
                   :                     Shopping.catalog.find(s => s.id === record.shopId);
         buildingValue += def?.buildCost ?? 0;
+      } else if (record.status === STATUS.BROKEN_DOWN) {
+        const def = rides.find(r => r.id === record.rideId);
+        const base = def?.buildCost ?? 0;
+        buildingValue += Math.max(0, base * (1 - 0.1 * record.weeksToRepair));
       } else if (record.status === STATUS.UNDER_CONSTRUCTION || record.status === STATUS.PAUSED_CONSTRUCTION) {
         buildingValue += record.weeksCompleted * record.weeklyPayment;
       }
