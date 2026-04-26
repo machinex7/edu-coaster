@@ -42,7 +42,7 @@ function advanceRound() {
   Research.refreshPanel();
   showRoundSummary(report);
   nextWeekForecast   = futurecastForecast;
-  futurecastForecast = randomWeatherEmoji();
+  futurecastForecast = forecastForRound(round + 2);
 }
 
 function showRoundSummary(report) {

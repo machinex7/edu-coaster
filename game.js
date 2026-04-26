@@ -37,8 +37,16 @@ const WEATHER_MERCHANDISE_MULTIPLIERS = Object.freeze({
   '⛈️': { umbrella:  2 },
   '🌨️': { hoodie:    2 },
 });
+const HOLIDAY_FORECAST = Object.freeze({
+  15: '🐰',  // second week of April
+  51: '🎄',  // next-to-last week of year
+});
 function randomWeatherEmoji() {
   return WEATHER_EMOJIS[Math.floor(Math.random() * WEATHER_EMOJIS.length)];
+}
+function forecastForRound(r) {
+  const weekInYear = ((r + 25) % 52) + 1;
+  return HOLIDAY_FORECAST[weekInYear] ?? randomWeatherEmoji();
 }
 
 // ── Stage Constants ────────────────────────────────────────────────────────
@@ -61,8 +69,8 @@ let gridState = [];   // [row][col] → instanceId string, or null
 let gameStage = STAGE.SETUP;
 let money     = STARTING_MONEY;
 let round     = 1;
-let nextWeekForecast   = randomWeatherEmoji();
-let futurecastForecast = randomWeatherEmoji();
+let nextWeekForecast   = forecastForRound(2);
+let futurecastForecast = forecastForRound(3);
 
 // The canonical records of everything placed in the park.
 // status: STATUS.ACTIVE | STATUS.UNDER_CONSTRUCTION
