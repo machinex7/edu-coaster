@@ -191,40 +191,37 @@ BROKEN_DOWN → ACTIVE                        (engineer repairs)
 
 | Property | Description |
 |---|---|
-| `Finance.parkExcitement` | `runningRideCount × rideOpinion`. Drives daily demand. |
-| `Finance.rideOpinion` | Smoothed 0–1 score of how well rides serve the crowd. |
-| `Finance.mealSatisfaction` | `0.5 + 0.5 × (mealsServed / mealsWanted)`, clamped 0.5–1. Multiplies `parkExcitement`; defaults to 0.5 when no food buildings exist. |
-| `Security.opinion` | Accumulated danger perception. Reduces demand via `1 − √opinion / 100`. |
+| `Finance.parkExcitement` | Drives daily demand. Computed end-of-round from attendance, ride satisfaction, security opinion, and meal satisfaction. |
+| `Finance.rideOpinion` | Smoothed 0–1 score of ride capacity vs. crowd size. Degrades when operators can't serve all visitors. |
+| `Finance.mealSatisfaction` | Food capacity vs. visitor demand. Penalises `parkExcitement` when food is undersupplied. |
+| `Security.opinion` | Suppresses demand each round. Rises with unhandled incidents, decays by a fraction each round. |
 
 ### Attendance model
 
-```
-dailyDemand      = parkExcitement × 20 × exhaustionFactor × securityFactor
-gateThroughput   = Σ per booth attendant: 500 × moodMult × expMult × skillModifier
-dailyAttendance  = min(dailyDemand, gateThroughput)
-weeklyAttendance = round(dailyAttendance × 7)
-```
+`Finance.calcDailyDemand()` — key signals: `parkExcitement`, price exhaustion, population events, demographic favor, weather forecast (`WEATHER_DEMAND_REDUCTION`).
 
-Only working (non-absent) booth attendants count toward throughput.
+`Finance.calcGateThroughput()` — key signals: working booth attendant count, mood, experience tier, skill modifier.
+
+`Finance.calcDailyAttendance()` — min of demand and throughput; multiplied by 7 for weekly figure.
 
 ### Income sources
 
-| Source | Formula |
+| Source | Signals |
 |---|---|
-| Gate | `round(gatePrice × dailyAttendance × 7)` |
-| Parking | `floor(dailyDemand × 7 / 3) × parkingPrice` |
-| Shop | `Shopping.calcRevenue(weeklyAttendance)` |
+| Gate | gate price × weekly attendance |
+| Parking | parking price × vehicle estimate derived from daily demand |
+| Shop | see `Shopping.calcRevenue()` |
 
 ### Cost sources
 
-| Source | Formula |
+| Source | Signals |
 |---|---|
-| Staff wages | `Σ staff.salary` — all employees, including those currently absent |
-| Posting fees | `POSTING_WEEKLY_COST × activePostings` |
-| Ride utilities | `Σ utilityCost × Population.utilityMultiplier` for running connected rides |
-| Facility utilities | `Σ utilityCost × Population.utilityMultiplier` for active facilities with a `utilityCost` field |
-| Construction | `weeklyPayment` per item under construction |
-| Theft loss | `unhandledShop × THEFT_LOSS_PER` |
+| Staff wages | all employed staff salaries, including those currently absent |
+| Posting fees | weekly cost per active job posting |
+| Ride utilities | running connected rides × `Population.utilityMultiplier` |
+| Facility utilities | active facilities with a `utilityCost` field × `Population.utilityMultiplier` |
+| Construction | weekly installment per item under construction |
+| Theft loss | unhandled shop incidents × `THEFT_LOSS_PER` |
 
 ### Round processing order (`Finance.processRound`)
 
@@ -241,6 +238,37 @@ Only working (non-absent) booth attendants count toward throughput.
 11. Calc `weeklyNetMess`; compute `mealSatisfaction`; call `calcExcitement()`
 12. `advancePriceExhaustion()`
 13. `Security.advanceOpinion(unhandled)`
+
+---
+
+## Weather system (`game.js`)
+
+Two forecast state variables live in `game.js`:
+
+| Variable | Meaning |
+|---|---|
+| `nextWeekForecast` | Weather emoji applied this round by `Finance` and `Shopping` |
+| `futurecastForecast` | Weather emoji shown as "+2 Wks" in the HUD |
+
+At the end of each `advanceRound`: `nextWeekForecast = futurecastForecast`, then `futurecastForecast = forecastForRound(round + 2)`.
+
+`forecastForRound(r)` checks `HOLIDAY_FORECAST` for the corresponding week-in-year before falling back to `randomWeatherEmoji()`.
+
+### Constants (all in `game.js`)
+
+| Constant | Purpose |
+|---|---|
+| `WEATHER_EMOJIS` | Pool of random forecast emojis |
+| `WEATHER_DEMAND_REDUCTION` | Maps emoji → fraction subtracted from demand (e.g. `'⛈️': 0.25`) |
+| `WEATHER_MERCHANDISE_MULTIPLIERS` | Maps emoji → `{ itemId: multiplier }` applied to purchase attempts |
+| `HOLIDAY_FORECAST` | Maps week-in-year → fixed emoji (15 → 🐰, 51 → 🎄) |
+
+### HUD gating
+
+| Research | Effect |
+|---|---|
+| `WEATHER_SENSOR` | Shows the weather panel (Next Wk forecast) |
+| `WEATHER_STATION` | Additionally shows the +2 Wks futurecast slot |
 
 ---
 
@@ -274,25 +302,9 @@ Shop entries in `shops.json` carry a `shopType` field (`"merchandise"` or `"food
 
 ### Merchandise
 
-Revenue is demand-driven per item using the `merchandise` and `merchandiseInventory` globals (loaded from `merchandise.json`, parallel arrays).
+`Shopping.calcRevenue()` — per-item demand model using `merchandise` and `merchandiseInventory` (parallel arrays loaded from `merchandise.json`). Key signals: category desire (demographic `preferredCategory` brackets), item affordability (income brackets vs. shelf price), weekly attendance, staffing ratio, and weather multiplier (`WEATHER_MERCHANDISE_MULTIPLIERS`). Stock is deducted from `merchandiseInventory` each round.
 
-```
-staffRatio  = min(1, workingAttendants / (activeMerchandiseStores × WORKERS_PER_STORE))
-
-// Per-round, for every item i:
-shelfPrice  = merchandiseInventory[i].price + merchandiseUpcharge
-desire[cat] = 1 + Σ (bracket.chance × bracket.favor) for each bracket whose preferredCategory === cat
-afford      = Σ bracket.chance for INCOME_BRACKETS where shelfPrice ≤ INCOME_LIMITS[j]
-attempts    = round(desire[cat] × afford × weeklyAttendance × BUYER_RATE × staffRatio)
-sold        = min(attempts, merchandiseInventory[i].count)
-revenue    += sold × shelfPrice
-merchandiseInventory[i].count -= sold
-
-theftMultiplier = 1 + 0.25 × deficit
-incidents       = floor(weeklyAttendance × (1 − BUYER_RATE) × THEFT_RATE × sqrt(merchandiseTiles) × theftMultiplier)
-```
-
-`desire` is rebuilt from scratch every round from `Population` demographic brackets (`preferredCategory` field). `INCOME_LIMITS` on `Shopping` maps positionally to `Population.INCOME_BRACKETS` (`[6, 10, 20, 40, Infinity]`). Zero merchandise tiles → zero revenue and zero theft.
+Theft is calculated separately — key signals: attendance, merchandise tile count, staffing deficit. Zero merchandise tiles → no revenue and no theft.
 
 ### Inventory and orders
 
@@ -302,12 +314,7 @@ incidents       = floor(weeklyAttendance × (1 − BUYER_RATE) × THEFT_RATE × 
 
 `orders[]` — pending restock orders: `{ itemIndex, itemName, count, weeksRemaining }`. Created via the Inventory panel. `tickOrders()` runs at the start of each `advanceRound`, decrementing `weeksRemaining`; arrivals add to inventory and push a Delivery notification chip.
 
-Order cost formula:
-```
-cost = qty × inv.price × Population.cumulativeInflation + supplier.surcharge
-```
-
-`Population.cumulativeInflation` starts at 1 and compounds weekly (`× (1 + inflationRate / 52)`).
+`Population.cumulativeInflation` starts at 1 and compounds weekly. Order cost = item price × quantity × inflation multiplier + supplier surcharge.
 
 ### Suppliers
 
@@ -317,14 +324,7 @@ Storage capacity = `calcMerchandiseTiles() × STORAGE_PER_SHOP` (displayed as a 
 
 ### Food (`Shopping.calcFood`)
 
-```
-mealsWanted = weeklyAttendance × EXPECTED_MEALS_PER_DAY
-effectiveWorkers = top min(concessionWorkers, foodTiles) workers sorted by tier desc
-mealsServed = floor(Σ MEALS_PER_WORKER_PER_DAY × (1 + 0.2 × tier) for each effective worker)
-mealSatisfaction = 0.5 + 0.5 × (mealsServed / mealsWanted), clamped to [0.5, 1]
-```
-
-`mealSatisfaction` is stored on `Finance` and multiplies `parkExcitement` each round. Default 0.5 when no food buildings exist.
+Compares meals wanted (visitor count × daily meal rate) against meals served (worker count and tier, capped by food tile count). Result stored as `Finance.mealSatisfaction`, which multiplies `parkExcitement` each round. Defaults to 0.5 when no food buildings exist.
 
 ---
 
@@ -366,17 +366,9 @@ Each round, `Staff.processSickness()` runs for every employee:
 
 Absent employees contribute nothing to any working capacity calculation but remain on payroll.
 
-### Mood calculation (`updateMoods`)
+### Mood calculation (`Staff.updateMoods`)
 
-```
-base         = (salary / costOfLiving) / 2 × 100
-eventBonus   = Σ moodModifier across active events
-vacationBase = 5 × VACATION_WEEKS   (passive benefit of company vacation policy)
-loungeBonus  = floor(sqrt(activeStaffLounges))
-mood         = clamp(base + eventBonus + vacationBase + loungeBonus, 0, 100)
-```
-
-Events decay by 2 per round and are removed when their modifier reaches zero.
+Key signals: salary vs. cost-of-living ratio, active staff events (decay each round), vacation weeks policy, staff lounge count.
 
 ### Experience tiers
 
