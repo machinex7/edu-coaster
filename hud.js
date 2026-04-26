@@ -133,6 +133,9 @@ function updateLockedPanels() {
     benefitsBtn.classList.toggle('hidden', !benefitsUnlocked);
     if (!benefitsUnlocked && Staff._activeView === 'benefits') Staff.setView('roster');
   }
+
+  document.getElementById('weather-panel').classList.toggle('hidden', !Research.completed.has(RESEARCH_ID.WEATHER_SENSOR));
+  document.getElementById('forecast-future-count').classList.toggle('hidden', !Research.completed.has(RESEARCH_ID.WEATHER_STATION));
 }
 
 function togglePanel(panelId) {
