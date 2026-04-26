@@ -300,6 +300,33 @@ const Finance = {
 
   // Security.calcIncidents() and Security.advanceOpinion() are in security.js.
 
+  // ── Park valuation ───────────────────────────────────────────────────────────
+  // Completed buildings count at full buildCost.
+  // In-construction (and paused) buildings count at money spent so far.
+  // Demolishing buildings are excluded.
+  // Inventory is valued at current shelf price × stock count.
+  parkValue() {
+    const completedStatuses = new Set([STATUS.ACTIVE, STATUS.CLOSED, STATUS.BROKEN_DOWN]);
+
+    let buildingValue = 0;
+    for (const record of [...installedRides, ...installedFacilities, ...Shopping.installed]) {
+      if (completedStatuses.has(record.status)) {
+        const def = record.rideId     ? rides.find(r => r.id === record.rideId)
+                  : record.facilityId ? facilities.find(f => f.id === record.facilityId)
+                  :                     Shopping.catalog.find(s => s.id === record.shopId);
+        buildingValue += def?.buildCost ?? 0;
+      } else if (record.status === STATUS.UNDER_CONSTRUCTION || record.status === STATUS.PAUSED_CONSTRUCTION) {
+        buildingValue += record.weeksCompleted * record.weeklyPayment;
+      }
+    }
+
+    const inventoryValue = merchandiseInventory.reduce(
+      (sum, inv) => sum + inv.count * inv.price, 0
+    );
+
+    return buildingValue + inventoryValue + money;
+  },
+
   // ── Round processing ─────────────────────────────────────────────────────────
   // Called once per round advancement. Order matters: collect income before
   // deducting costs so the budget display reflects net change.
