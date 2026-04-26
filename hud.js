@@ -31,8 +31,6 @@ function openPark() {
 
 function advanceRound() {
   round++;
-  nextWeekForecast   = futurecastForecast;
-  futurecastForecast = randomWeatherEmoji();
   const report = Finance.processRound();
   History.record(report);
   Research.tickResearch();
@@ -43,6 +41,8 @@ function advanceRound() {
   Security.refreshPanel();
   Research.refreshPanel();
   showRoundSummary(report);
+  nextWeekForecast   = futurecastForecast;
+  futurecastForecast = randomWeatherEmoji();
 }
 
 function showRoundSummary(report) {

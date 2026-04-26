@@ -24,7 +24,7 @@ const STARTING_MONEY        = 1_000_000;
 const STARTING_YEAR         = 2024;
 const STARTING_WEEK_OF_YEAR = 27; // week 27 = first week of Q3
 
-const WEATHER_EMOJIS = ['☀️', '🌤️', '⛅', '🌦️', '🌧️', '⛈️', '🌨️', '🌫️'];
+const WEATHER_EMOJIS = ['☀️', '🌤️', '⛅', '🌦️', '🌧️', '⛈️', '🌨️', '🌫️', '🥵'];
 function randomWeatherEmoji() {
   return WEATHER_EMOJIS[Math.floor(Math.random() * WEATHER_EMOJIS.length)];
 }
