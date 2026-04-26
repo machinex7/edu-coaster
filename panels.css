@@ -168,6 +168,7 @@
 .cond-closed       { background: #374151; color: #9ca3af; }
 .cond-broken       { background: #7f1d1d; color: #fca5a5; }
 .cond-repair       { background: #4c1d95; color: #c4b5fd; }
+.cond-demolishing  { background: #450a0a; color: #fca5a5; }
 
 .ride-list { display: flex; flex-direction: column; }
 

@@ -271,6 +271,7 @@ const Finance = {
     money -= utilityCosts;
     money -= security.theftLoss;      // $50 per unhandled shoplifter
     processConstruction();            // deducts constructionCosts and advances build progress
+    processDemolition();              // advances demolition timers, clears finished structures
 
     Staff.advanceMedicalInsurance();  // tick quote countdown; tick policy duration
     Staff.processSickness();          // roll for new illness, decrement existing sick time

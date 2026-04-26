@@ -145,16 +145,18 @@ function togglePanel(panelId) {
 
 function openPanel(panelId) {
   if (activePanel && activePanel !== panelId) {
-    document.getElementById(`panel-${activePanel}`).classList.add('closed');
+    if (activePanel === 'demolish') setDemolishMode(false);
+    else document.getElementById(`panel-${activePanel}`).classList.add('closed');
     document.querySelector(`.tool-btn[data-panel="${activePanel}"]`)?.classList.remove('active');
     deselectItem();
   }
   activePanel = panelId;
-  document.getElementById(`panel-${panelId}`).classList.remove('closed');
   document.querySelector(`.tool-btn[data-panel="${panelId}"]`)?.classList.add('active');
-  if (panelId === 'rides')    buildRidesPanel();
-  if (panelId === 'staffing') Staff.openPanel();
-  if (panelId === 'security') Security.buildPanel();
+  if (panelId === 'demolish') { setDemolishMode(true); return; }
+  document.getElementById(`panel-${panelId}`).classList.remove('closed');
+  if (panelId === 'rides')      buildRidesPanel();
+  if (panelId === 'staffing')   Staff.openPanel();
+  if (panelId === 'security')   Security.buildPanel();
   if (panelId === 'pricing')    buildPricingPanel();
   if (panelId === 'inventory')  buildInventoryPanel();
   if (panelId === 'survey')     Survey.buildPanel();
@@ -163,7 +165,8 @@ function openPanel(panelId) {
 
 function closePanels() {
   if (!activePanel) return;
-  document.getElementById(`panel-${activePanel}`).classList.add('closed');
+  if (activePanel === 'demolish') setDemolishMode(false);
+  else document.getElementById(`panel-${activePanel}`).classList.add('closed');
   document.querySelector(`.tool-btn[data-panel="${activePanel}"]`)?.classList.remove('active');
   activePanel = null;
   deselectItem();
@@ -273,6 +276,7 @@ function getRideCondition(record) {
     case STATUS.PAUSED_CONSTRUCTION: return { label: 'Paused',             cls: 'cond-paused'       };
     case STATUS.CLOSED:              return { label: 'Closed',             cls: 'cond-closed'       };
     case STATUS.BROKEN_DOWN:         return { label: 'Broken Down',        cls: 'cond-broken'       };
+    case STATUS.DEMOLISHING:         return { label: 'Demolishing',        cls: 'cond-demolishing'  };
     case STATUS.ACTIVE:
       return isRideConnected(record)
         ? { label: 'Running',     cls: 'cond-running'     }
