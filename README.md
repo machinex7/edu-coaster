@@ -78,7 +78,7 @@ All enums are `Object.freeze`d — typos return `undefined` immediately rather t
 
 ```js
 STAGE          = { SETUP, PLAY }
-STATUS         = { ACTIVE, UNDER_CONSTRUCTION, PAUSED_CONSTRUCTION, CLOSED, BROKEN_DOWN }
+STATUS         = { ACTIVE, UNDER_CONSTRUCTION, PAUSED_CONSTRUCTION, CLOSED, BROKEN_DOWN, DEMOLISHING }
 CATEGORY       = { RIDE, FACILITY, SHOP }
 JOB            = { RIDE_OPERATOR, SECURITY, JANITOR, ENGINEER, BOOTH_ATTENDANT,
                    MERCHANDISE_ATTENDANT, CONCESSIONS_WORKER, BUSINESS_ANALYST, HR }
@@ -154,7 +154,7 @@ Panels slide open at `left: 100%` of `#btn-bar` (overlaying the park). Width tra
   instanceId,             // "ride_{id}_{timestamp}"
   rideId, name, color,
   row, col, footprint,
-  status,                 // STATUS.ACTIVE | UNDER_CONSTRUCTION | PAUSED_CONSTRUCTION | CLOSED | BROKEN_DOWN
+  status,                 // STATUS.ACTIVE | UNDER_CONSTRUCTION | PAUSED_CONSTRUCTION | CLOSED | BROKEN_DOWN | DEMOLISHING
   // if under_construction or paused_construction:
   weeksTotal, weeksCompleted, weeklyPayment,
   // populated after first round running:
@@ -173,7 +173,11 @@ UNDER_CONSTRUCTION → ACTIVE                 (construction completes)
 ACTIVE ←→ CLOSED                            (close/reopen in Rides panel)
 ACTIVE → BROKEN_DOWN                        (wear-based breakdown)
 BROKEN_DOWN → ACTIVE                        (engineer repairs)
+any → DEMOLISHING                           (player uses Demolish tool; irrevocable)
+DEMOLISHING → (removed)                     (processDemolition completes countdown)
 ```
+
+Demolishing structures are excluded from all game calculations. Demolition takes `ceil(buildWeeks / 2)` rounds; items with `buildWeeks === 0` (paths and setup-built structures) are removed instantly. The Park Entrance cannot be demolished.
 
 ---
 
@@ -233,6 +237,7 @@ BROKEN_DOWN → ACTIVE                        (engineer repairs)
 6. `Shopping.calcFood()` — compute `mealsWanted` and `mealsServed`
 7. Calc income and costs; apply to `money`
 8. `processConstruction()` — deduct weekly payments, complete finished builds
+8a. `processDemolition()` — advance demolition timers, remove completed demolitions
 9. `Staff.processSickness()` — decrement absences, roll for new illness/injury/vacation
 10. `Staff.advanceExperience/applyInflation/updateMoods/advancePostings/generateCandidates/advanceCandidates()`
 11. Calc `weeklyNetMess`; compute `mealSatisfaction`; call `calcExcitement()`
@@ -469,7 +474,8 @@ Same shape as `facilities.json` plus:
 - Placement rules: edge-only, adjacency, per-type limits, affordability
 - Two-stage game: Setup → Play with weekly construction payments
 - Park-open prerequisites: Park Entrance + at least one connected ride
-- Ride conditions: Running, Unconnected, Under Construction, Paused, Closed, Broken Down
+- Ride conditions: Running, Unconnected, Under Construction, Paused, Closed, Broken Down, Demolishing
+- Demolish tool: activates a grid mode where hovering highlights a structure's full footprint in red; clicking starts demolition (irrevocable); takes `ceil(buildWeeks / 2)` rounds; paths and setup-built items are instant; Park Entrance is indestructible
 - Ride detail panel: pause/resume, close/reopen, ridership bar, utility cost
 - Engineer system: repair broken rides and reduce wear; focus on construction or maintenance
 - Five overlay panels: Construction, Rides, Staffing, Security, Pricing
@@ -498,7 +504,7 @@ Same shape as `facilities.json` plus:
 
 ## What's not yet implemented (see `reqs.md`)
 
-- Firing / wage adjustment UI
+- Wage adjustment UI
 - Ride breakdown repair UI (engineers repair automatically; no player-visible repair queue yet)
 - Food revenue (satisfaction penalty exists; income not yet wired)
 - Supplier unlock triggers (currently only the first supplier is ever unlocked)
