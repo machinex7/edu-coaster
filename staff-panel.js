@@ -428,10 +428,11 @@ Object.assign(Staff, {
           <p id="ben-retirement-error" class="form-error hidden"></p>
         </div>
       </div>` : ''}
+      ${Research.completed.has(RESEARCH_ID.MEDICAL_COVERAGE) ? `
       <div class="benefits-section">
         <div class="benefits-section-title">Medical Insurance</div>
         ${this._buildMedicalInsuranceHTML()}
-      </div>`;
+      </div>` : ''}`;
 
     document.getElementById('ben-vacation-apply').addEventListener('click', () => {
       const val   = parseInt(document.getElementById('ben-vacation-weeks').value);
