@@ -404,6 +404,7 @@ Object.assign(Staff, {
           <p id="ben-vacation-error" class="form-error hidden"></p>
         </div>
       </div>
+      ${Research.completed.has(RESEARCH_ID.PARENTAL_LEAVE) ? `
       <div class="benefits-section">
         <div class="benefits-section-title">Parental Leave</div>
         <div class="form-field">
@@ -414,7 +415,8 @@ Object.assign(Staff, {
           </div>
           <p id="ben-parental-error" class="form-error hidden"></p>
         </div>
-      </div>
+      </div>` : ''}
+      ${Research.completed.has(RESEARCH_ID.FOUR_OH_ONE_K) ? `
       <div class="benefits-section">
         <div class="benefits-section-title">401(k) Match</div>
         <div class="form-field">
@@ -425,7 +427,7 @@ Object.assign(Staff, {
           </div>
           <p id="ben-retirement-error" class="form-error hidden"></p>
         </div>
-      </div>
+      </div>` : ''}
       <div class="benefits-section">
         <div class="benefits-section-title">Medical Insurance</div>
         ${this._buildMedicalInsuranceHTML()}
@@ -444,7 +446,7 @@ Object.assign(Staff, {
       this.buildBenefitsView();
     });
 
-    document.getElementById('ben-parental-apply').addEventListener('click', () => {
+    document.getElementById('ben-parental-apply')?.addEventListener('click', () => {
       const val   = parseInt(document.getElementById('ben-parental-weeks').value);
       const errEl = document.getElementById('ben-parental-error');
       if (isNaN(val) || val < 0 || val > 52) {
@@ -457,7 +459,7 @@ Object.assign(Staff, {
       this.buildBenefitsView();
     });
 
-    document.getElementById('ben-retirement-apply').addEventListener('click', () => {
+    document.getElementById('ben-retirement-apply')?.addEventListener('click', () => {
       const val   = parseInt(document.getElementById('ben-retirement-pct').value);
       const errEl = document.getElementById('ben-retirement-error');
       if (isNaN(val) || val < 0 || val > 10) {
