@@ -215,8 +215,19 @@ const Finance = {
     let paid = 0;
 
     const postingCosts = Staff.totalPostingCosts();
-    money -= postingCosts;
-    paid += postingCosts;
+    if (postingCosts > 0) {
+      if (money >= postingCosts) {
+        money -= postingCosts;
+        paid += postingCosts;
+      } else {
+        Staff.postings = [];
+        Notifications.push({
+          label:   'Hiring',
+          message: 'All job postings were cancelled — insufficient funds to cover posting fees.',
+          action:  () => { openPanel('staffing'); Staff.setView('postings'); },
+        });
+      }
+    }
 
     for (const s of Staff.roster) {
       const matchContrib = Math.round(s.salary * Staff.RETIREMENT_MATCH_PCT / 100);
