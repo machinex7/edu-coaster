@@ -273,14 +273,17 @@ const Finance = {
       }
     }
 
-    const facilityCosts = installedFacilities
-      .filter(f => f.status === STATUS.ACTIVE)
-      .reduce((sum, f) => {
-        const def = facilities.find(d => d.id === f.facilityId);
-        return sum + (def?.utilityCost ?? 0) * Population.utilityMultiplier;
-      }, 0);
-    money -= facilityCosts;
-    paid += facilityCosts;
+    for (const f of installedFacilities) {
+      if (f.status !== STATUS.ACTIVE) continue;
+      const def = facilities.find(d => d.id === f.facilityId);
+      const cost = (def?.utilityCost ?? 0) * Population.utilityMultiplier;
+      if (money >= cost) {
+        money -= cost;
+        paid += cost;
+      } else {
+        f.status = STATUS.CLOSED;
+      }
+    }
 
     return paid;
   },
