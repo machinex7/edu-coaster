@@ -306,10 +306,6 @@ const Finance = {
     const { revenue: shopRevenue, itemsSold: shopItemsSold } = Shopping.calcRevenue(weeklyAttendance);
     const food              = Shopping.calcFood(weeklyAttendance);
     const foodRevenue       = Math.round(food.mealsSold * (Shopping.MEAL_BASE_PRICE + this.foodUpcharge));
-    const constructionCosts = [...installedRides, ...installedFacilities, ...Shopping.installed]
-      .filter(r => r.status === STATUS.UNDER_CONSTRUCTION)
-      .reduce((sum, r) => sum + r.weeklyPayment, 0);
-
     const security = Security.calcIncidents(weeklyAttendance, dailyDemand, dailyThroughput);
 
     // Income
@@ -321,8 +317,8 @@ const Finance = {
     // Costs — income applied first so ability-to-pay reflects this week's revenue
     const staffCosts        = this.calcStaffCosts();
     const utilityCosts      = this.payUtilityCosts();
+    const constructionCosts = processConstruction();  // skips progress on unaffordable builds
     money -= security.theftLoss;      // $50 per unhandled shoplifter
-    processConstruction();            // deducts constructionCosts and advances build progress
     processDemolition();              // advances demolition timers, clears finished structures
 
     Staff.advanceMedicalInsurance();  // tick quote countdown; tick policy duration
