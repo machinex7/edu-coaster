@@ -207,12 +207,26 @@ const Finance = {
   },
 
   // ── Cost sources ─────────────────────────────────────────────────────────────
-  // Total weekly staff outlay: wages + 401(k) employer match contribution +
-  // job-posting fees + active medical insurance premiums.
+  // Pays each employee's salary + 401(k) match if money allows; employees who
+  // cannot be paid receive a mood penalty event. Also deducts job-posting fees
+  // and active medical insurance premiums unconditionally. Returns the total
+  // amount actually deducted from money.
   calcStaffCosts() {
-    const wages = Staff.totalWeeklySalary();
-    const matchContribution = Math.round(wages * Staff.RETIREMENT_MATCH_PCT / 100);
-    return wages + matchContribution + Staff.totalPostingCosts() + Staff.calcMedicalCosts();
+    let paid = 0;
+    for (const s of Staff.roster) {
+      const matchContrib = Math.round(s.salary * Staff.RETIREMENT_MATCH_PCT / 100);
+      const cost = s.salary + matchContrib;
+      if (money >= cost) {
+        money -= cost;
+        paid += cost;
+      } else {
+        s.events.push({ moodModifier: -20, comment: 'Angry that a paycheck was skipped.' });
+      }
+    }
+    const overhead = Staff.totalPostingCosts() + Staff.calcMedicalCosts();
+    money -= overhead;
+    paid += overhead;
+    return paid;
   },
 
   calcUtilityCosts() {
@@ -252,7 +266,6 @@ const Finance = {
     const { revenue: shopRevenue, itemsSold: shopItemsSold } = Shopping.calcRevenue(weeklyAttendance);
     const food              = Shopping.calcFood(weeklyAttendance);
     const foodRevenue       = Math.round(food.mealsSold * (Shopping.MEAL_BASE_PRICE + this.foodUpcharge));
-    const staffCosts        = this.calcStaffCosts();
     const utilityCosts      = this.calcUtilityCosts();
     const constructionCosts = [...installedRides, ...installedFacilities, ...Shopping.installed]
       .filter(r => r.status === STATUS.UNDER_CONSTRUCTION)
@@ -266,8 +279,8 @@ const Finance = {
     money += shopRevenue;
     money += foodRevenue;
 
-    // Costs
-    money -= staffCosts;
+    // Costs — income applied first so ability-to-pay reflects this week's revenue
+    const staffCosts        = this.calcStaffCosts();
     money -= utilityCosts;
     money -= security.theftLoss;      // $50 per unhandled shoplifter
     processConstruction();            // deducts constructionCosts and advances build progress
