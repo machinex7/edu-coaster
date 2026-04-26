@@ -65,6 +65,39 @@ function clearHighlights() {
     el.classList.remove('highlight-valid', 'highlight-invalid'));
 }
 
+// ── Demolish hover highlight ───────────────────────────────────────────────
+let _demolishHoverInstance = null;
+
+function clearDemolishHighlight() {
+  document.querySelectorAll('.demolish-hover').forEach(el => el.classList.remove('demolish-hover'));
+  _demolishHoverInstance = null;
+}
+
+function updateDemolishHighlight(clientX, clientY) {
+  const grid = document.getElementById('grid');
+  const rect = grid.getBoundingClientRect();
+  const col  = Math.floor((clientX - rect.left) / CELL_STEP);
+  const row  = Math.floor((clientY - rect.top)  / CELL_STEP);
+
+  if (col < 0 || col >= GRID_COLS || row < 0 || row >= GRID_ROWS) {
+    clearDemolishHighlight();
+    return;
+  }
+
+  const instanceId = gridState[row][col] ?? null;
+  if (instanceId === _demolishHoverInstance) return;
+  clearDemolishHighlight();
+  _demolishHoverInstance = instanceId;
+
+  if (!instanceId) return;
+
+  for (let r = 0; r < GRID_ROWS; r++) {
+    for (let c = 0; c < GRID_COLS; c++) {
+      if (gridState[r][c] === instanceId) gridCells[r][c].classList.add('demolish-hover');
+    }
+  }
+}
+
 // ── Shared position → placement helper ────────────────────────────────────
 function updatePlacementFromPoint(clientX, clientY) {
   if (!selected) return;
@@ -91,42 +124,63 @@ function updatePlacementFromPoint(clientX, clientY) {
 }
 
 // ── Grid event handlers ────────────────────────────────────────────────────
-function onGridClick() {
+function _cellFromPoint(clientX, clientY) {
+  const grid = document.getElementById('grid');
+  const rect = grid.getBoundingClientRect();
+  const col  = Math.floor((clientX - rect.left) / CELL_STEP);
+  const row  = Math.floor((clientY - rect.top)  / CELL_STEP);
+  if (col < 0 || col >= GRID_COLS || row < 0 || row >= GRID_ROWS) return null;
+  return { row, col };
+}
+
+function onGridClick(e) {
+  if (demolishMode) {
+    const cell = _cellFromPoint(e.clientX, e.clientY);
+    if (cell) startDemolition(cell.row, cell.col);
+    return;
+  }
   if (!selected || !currentPlacement?.valid) return;
   placeItem(selected.item, selected.category,
             currentPlacement.startRow, currentPlacement.startCol);
 }
 
 function onGridMouseMove(e) {
-  if (!selected) return;
-  updatePlacementFromPoint(e.clientX, e.clientY);
+  if (selected) { updatePlacementFromPoint(e.clientX, e.clientY); return; }
+  if (demolishMode) updateDemolishHighlight(e.clientX, e.clientY);
 }
 
 function onGridMouseLeave() {
-  if (!selected) return;
-  clearHighlights();
-  currentPlacement = null;
+  if (selected) { clearHighlights(); currentPlacement = null; return; }
+  if (demolishMode) clearDemolishHighlight();
 }
 
 function onGridTouchStart(e) {
-  if (!selected) return;
+  if (!selected && !demolishMode) return;
   e.preventDefault();
   const t = e.touches[0];
-  updatePlacementFromPoint(t.clientX, t.clientY);
+  if (selected) updatePlacementFromPoint(t.clientX, t.clientY);
+  else updateDemolishHighlight(t.clientX, t.clientY);
 }
 
 function onGridTouchMove(e) {
-  if (!selected) return;
+  if (!selected && !demolishMode) return;
   e.preventDefault();
   const t = e.touches[0];
-  updatePlacementFromPoint(t.clientX, t.clientY);
+  if (selected) updatePlacementFromPoint(t.clientX, t.clientY);
+  else updateDemolishHighlight(t.clientX, t.clientY);
 }
 
 function onGridTouchEnd(e) {
-  if (!selected) return;
+  if (!selected && !demolishMode) return;
   const t = e.changedTouches[0];
-  updatePlacementFromPoint(t.clientX, t.clientY);
-  if (currentPlacement?.valid)
-    placeItem(selected.item, selected.category,
-              currentPlacement.startRow, currentPlacement.startCol);
+  if (selected) {
+    updatePlacementFromPoint(t.clientX, t.clientY);
+    if (currentPlacement?.valid)
+      placeItem(selected.item, selected.category,
+                currentPlacement.startRow, currentPlacement.startCol);
+  } else {
+    const cell = _cellFromPoint(t.clientX, t.clientY);
+    if (cell) startDemolition(cell.row, cell.col);
+    clearDemolishHighlight();
+  }
 }

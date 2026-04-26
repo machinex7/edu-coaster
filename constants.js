@@ -12,6 +12,7 @@ const STATUS = Object.freeze({
   PAUSED_CONSTRUCTION:  'paused_construction',
   CLOSED:               'closed',
   BROKEN_DOWN:          'broken_down',
+  DEMOLISHING:          'demolishing',
 });
 
 const CATEGORY = Object.freeze({

@@ -168,6 +168,7 @@
 .cond-closed       { background: #374151; color: #9ca3af; }
 .cond-broken       { background: #7f1d1d; color: #fca5a5; }
 .cond-repair       { background: #4c1d95; color: #c4b5fd; }
+.cond-demolishing  { background: #450a0a; color: #fca5a5; }
 
 .ride-list { display: flex; flex-direction: column; }
 
@@ -205,6 +206,14 @@
 .ride-detail-weeks { font-size: 0.8rem; color: #9ca3af; margin: 0; }
 
 .ride-detail-actions { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+
+.fire-confirm-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fca5a5;
+  text-align: center;
+  padding-top: 2px;
+}
 
 .ride-ridership { display: flex; flex-direction: column; gap: 4px; }
 .ride-ridership-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280; }

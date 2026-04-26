@@ -88,6 +88,15 @@ const facilityTypeAtCell = {};
 let selected         = null;  // { item, category: 'ride'|'facility', cardEl }
 let currentPlacement = null;  // { startRow, startCol, valid }
 
+// ── Demolish Mode ──────────────────────────────────────────────────────────
+let demolishMode = false;
+
+function setDemolishMode(active) {
+  demolishMode = active;
+  document.getElementById('grid').classList.toggle('demolish-mode', active);
+  if (!active) clearDemolishHighlight();
+}
+
 // ── Init ───────────────────────────────────────────────────────────────────
 async function init() {
   [rides, facilities, Shopping.catalog, merchandise, suppliers] = await Promise.all([
@@ -404,6 +413,107 @@ function closeRide(instanceId) {
 function reopenRide(instanceId) {
   const record = installedRides.find(r => r.instanceId === instanceId);
   if (record?.status === STATUS.CLOSED) record.status = STATUS.ACTIVE;
+}
+
+// ── Demolish actions ───────────────────────────────────────────────────────
+function startDemolition(row, col) {
+  const instanceId = gridState[row][col];
+  if (!instanceId) return;
+
+  const record =
+    installedRides.find(r => r.instanceId === instanceId) ||
+    installedFacilities.find(f => f.instanceId === instanceId) ||
+    Shopping.installed.find(s => s.instanceId === instanceId);
+
+  if (!record) return;
+
+  if (record.facilityId === FACILITY_ID.PARK_ENTRANCE) {
+    Notifications.push({ label: 'Demolish', message: 'The Park Entrance cannot be demolished.' });
+    return;
+  }
+
+  if (record.status === STATUS.DEMOLISHING) return;
+
+  // Paths and items built instantly (no weeksTotal) are removed immediately.
+  const demolishWeeks = Math.ceil((record.weeksTotal || 0) / 2);
+  if (demolishWeeks === 0) {
+    completeDemolition(record);
+    return;
+  }
+
+  record.status                = STATUS.DEMOLISHING;
+  record.demolishWeeksTotal    = demolishWeeks;
+  record.demolishWeeksCompleted = 0;
+
+  for (let r = 0; r < record.footprint.length; r++) {
+    for (let c = 0; c < record.footprint[r].length; c++) {
+      if (record.footprint[r][c] === 1) {
+        const cell = gridCells[record.row + r][record.col + c];
+        cell.classList.remove('under-construction');
+        cell.classList.add('demolishing');
+      }
+    }
+  }
+
+  Notifications.push({
+    label:   'Demolish',
+    message: `${record.name} demolition started — ${demolishWeeks} week${demolishWeeks !== 1 ? 's' : ''} to go.`,
+  });
+
+  updateHUD();
+  refreshRidesPanel();
+}
+
+function completeDemolition(record) {
+  const name = record.name;
+
+  if (record.rideId !== undefined) {
+    const idx = installedRides.indexOf(record);
+    if (idx !== -1) installedRides.splice(idx, 1);
+  } else if (record.shopId !== undefined) {
+    const idx = Shopping.installed.indexOf(record);
+    if (idx !== -1) Shopping.installed.splice(idx, 1);
+  } else {
+    const idx = installedFacilities.indexOf(record);
+    if (idx !== -1) installedFacilities.splice(idx, 1);
+  }
+
+  for (let r = 0; r < record.footprint.length; r++) {
+    for (let c = 0; c < record.footprint[r].length; c++) {
+      if (record.footprint[r][c] === 1) {
+        const gr = record.row + r;
+        const gc = record.col + c;
+        gridState[gr][gc] = null;
+        const cell = gridCells[gr][gc];
+        cell.style.backgroundColor = '';
+        cell.classList.remove('occupied', 'under-construction', 'demolishing');
+        cell.title = '';
+      }
+    }
+  }
+
+  if (record.facilityId) {
+    for (let r = 0; r < record.footprint.length; r++) {
+      for (let c = 0; c < record.footprint[r].length; c++) {
+        if (record.footprint[r][c] === 1)
+          delete facilityTypeAtCell[`${record.row + r},${record.col + c}`];
+      }
+    }
+  }
+
+  Notifications.push({ label: 'Demolish', message: `${name} has been demolished.` });
+  updateHUD();
+  refreshRidesPanel();
+}
+
+function processDemolition() {
+  const toComplete = [];
+  for (const record of [...installedRides, ...installedFacilities, ...Shopping.installed]) {
+    if (record.status !== STATUS.DEMOLISHING) continue;
+    record.demolishWeeksCompleted++;
+    if (record.demolishWeeksCompleted >= record.demolishWeeksTotal) toComplete.push(record);
+  }
+  toComplete.forEach(completeDemolition);
 }
 
 // ── Keyboard ───────────────────────────────────────────────────────────────
