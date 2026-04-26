@@ -1057,3 +1057,19 @@
 .rn-badge.available   { background: #78350f; color: #fde68a; }
 .rn-badge.completed   { background: #14532d; color: #86efac; }
 .rn-badge.in-progress { background: #1e3a5f; color: #93c5fd; }
+
+/* ── Financial panel ─────────────────────────────────────────────────────── */
+.financial-section {
+  margin-bottom: 1.5rem;
+}
+
+.financial-section-header {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6b7280;
+  padding: 0.4rem 1rem 0.4rem;
+  border-bottom: 1px solid #1f2937;
+  margin-bottom: 0.5rem;
+}

@@ -155,7 +155,7 @@ function openPanel(panelId) {
   if (panelId === 'rides')      buildRidesPanel();
   if (panelId === 'staffing')   Staff.openPanel();
   if (panelId === 'security')   Security.buildPanel();
-  if (panelId === 'pricing')    buildPricingPanel();
+  if (panelId === 'financial')  buildFinancialPanel();
   if (panelId === 'inventory')  buildInventoryPanel();
   if (panelId === 'survey')     Survey.buildPanel();
   if (panelId === 'research')   Research.buildPanel();
@@ -300,7 +300,7 @@ function initSubTabs() {
   });
 }
 
-// ── Pricing panel ──────────────────────────────────────────────────────────
+// ── Financial panel ────────────────────────────────────────────────────────
 const PRICE_ITEMS = [
   {
     key:       'gate',
@@ -450,7 +450,7 @@ function _buildInvSuppliersView() {
   });
 }
 
-function buildPricingPanel() {
+function buildFinancialPanel() {
   const rows = PRICE_ITEMS.map(item => `
     <div class="price-row">
       <div class="price-label">${item.label}</div>
@@ -463,8 +463,14 @@ function buildPricingPanel() {
       </div>
     </div>`).join('');
 
-  document.getElementById('pricing-panel-body').innerHTML = `
-    <div class="price-list">${rows}</div>`;
+  document.getElementById('financial-panel-body').innerHTML = `
+    <div class="financial-section">
+      <div class="financial-section-header">Pricing Controls</div>
+      <div class="price-list">${rows}</div>
+    </div>
+    <div class="financial-section">
+      <div class="financial-section-header">Loan</div>
+    </div>`;
 
   document.querySelectorAll('.price-apply-btn').forEach(btn => {
     btn.addEventListener('click', () => {
