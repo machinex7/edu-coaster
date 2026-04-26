@@ -258,20 +258,31 @@ const Finance = {
     return paid;
   },
 
-  calcUtilityCosts() {
-    const rideCosts = installedRides
-      .filter(r => r.status === STATUS.ACTIVE && isRideConnected(r))
-      .reduce((sum, r) => {
-        const def = rides.find(d => d.id === r.rideId);
-        return sum + (def?.utilityCost ?? 0) * Population.utilityMultiplier;
-      }, 0);
+  payUtilityCosts() {
+    let paid = 0;
+
+    for (const r of installedRides) {
+      if (r.status !== STATUS.ACTIVE || !isRideConnected(r)) continue;
+      const def = rides.find(d => d.id === r.rideId);
+      const cost = (def?.utilityCost ?? 0) * Population.utilityMultiplier;
+      if (money >= cost) {
+        money -= cost;
+        paid += cost;
+      } else {
+        r.status = STATUS.CLOSED;
+      }
+    }
+
     const facilityCosts = installedFacilities
       .filter(f => f.status === STATUS.ACTIVE)
       .reduce((sum, f) => {
         const def = facilities.find(d => d.id === f.facilityId);
         return sum + (def?.utilityCost ?? 0) * Population.utilityMultiplier;
       }, 0);
-    return rideCosts + facilityCosts;
+    money -= facilityCosts;
+    paid += facilityCosts;
+
+    return paid;
   },
 
   // Security.calcIncidents() and Security.advanceOpinion() are in security.js.
@@ -295,7 +306,6 @@ const Finance = {
     const { revenue: shopRevenue, itemsSold: shopItemsSold } = Shopping.calcRevenue(weeklyAttendance);
     const food              = Shopping.calcFood(weeklyAttendance);
     const foodRevenue       = Math.round(food.mealsSold * (Shopping.MEAL_BASE_PRICE + this.foodUpcharge));
-    const utilityCosts      = this.calcUtilityCosts();
     const constructionCosts = [...installedRides, ...installedFacilities, ...Shopping.installed]
       .filter(r => r.status === STATUS.UNDER_CONSTRUCTION)
       .reduce((sum, r) => sum + r.weeklyPayment, 0);
@@ -310,7 +320,7 @@ const Finance = {
 
     // Costs — income applied first so ability-to-pay reflects this week's revenue
     const staffCosts        = this.calcStaffCosts();
-    money -= utilityCosts;
+    const utilityCosts      = this.payUtilityCosts();
     money -= security.theftLoss;      // $50 per unhandled shoplifter
     processConstruction();            // deducts constructionCosts and advances build progress
     processDemolition();              // advances demolition timers, clears finished structures
