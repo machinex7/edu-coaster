@@ -31,6 +31,8 @@ function openPark() {
 
 function advanceRound() {
   round++;
+  nextWeekForecast   = futurecastForecast;
+  futurecastForecast = randomWeatherEmoji();
   const report = Finance.processRound();
   History.record(report);
   Research.tickResearch();
@@ -97,6 +99,8 @@ function updateHUD() {
   const stopped = installedRides.filter(r => r.status !== STATUS.ACTIVE).length;
   document.getElementById('rides-running-display').textContent = running;
   document.getElementById('rides-stopped-display').textContent = stopped;
+  document.getElementById('forecast-next-week').textContent = nextWeekForecast;
+  document.getElementById('forecast-future').textContent    = futurecastForecast;
   const badge = document.getElementById('stage-badge');
   badge.textContent = gameStage === STAGE.SETUP ? 'Setup' : 'Open';
   badge.className   = `stage-badge ${gameStage}`;
