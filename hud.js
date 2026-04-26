@@ -122,6 +122,13 @@ function initPanelBtns() {
 function updateLockedPanels() {
   const surveyBtn = document.querySelector('.tool-btn[data-panel="survey"]');
   if (surveyBtn) surveyBtn.disabled = !Research.completed.has(RESEARCH_ID.SURVEYS);
+
+  const benefitsUnlocked = Research.completed.has(RESEARCH_ID.EMPLOYEE_BENEFITS);
+  const benefitsBtn = document.querySelector('.staff-action-btn[data-view="benefits"]');
+  if (benefitsBtn) {
+    benefitsBtn.classList.toggle('hidden', !benefitsUnlocked);
+    if (!benefitsUnlocked && Staff._activeView === 'benefits') Staff.setView('roster');
+  }
 }
 
 function togglePanel(panelId) {
