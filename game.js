@@ -31,11 +31,13 @@ const WEATHER_DEMAND_REDUCTION = Object.freeze({
   '🌧️': 0.10,
 });
 const WEATHER_MERCHANDISE_MULTIPLIERS = Object.freeze({
-  '☀️':  { sunscreen: 2 },
-  '🌦️': { umbrella:  2 },
-  '🌧️': { umbrella:  2 },
-  '⛈️': { umbrella:  2 },
-  '🌨️': { hoodie:    2 },
+  '☀️':  { sunscreen:   2 },
+  '🌦️': { umbrella:    2 },
+  '🌧️': { umbrella:    2 },
+  '⛈️': { umbrella:    2 },
+  '🌨️': { hoodie:      2 },
+  '🐰':  { plush_bunny: 2 },
+  '🎄':  { snow_globe:  2 },
 });
 const HOLIDAY_FORECAST = Object.freeze({
   15: '🐰',  // second week of April
