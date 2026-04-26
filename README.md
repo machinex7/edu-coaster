@@ -199,7 +199,8 @@ BROKEN_DOWN → ACTIVE                        (engineer repairs)
 ### Attendance model
 
 ```
-dailyDemand      = parkExcitement × 20 × exhaustionFactor × securityFactor
+dailyDemand      = parkExcitement × exhaustionFactor × eventFactor × compositeFavor × weatherFactor
+weatherFactor    = 1 − WEATHER_DEMAND_REDUCTION[nextWeekForecast]  (default 1)
 gateThroughput   = Σ per booth attendant: 500 × moodMult × expMult × skillModifier
 dailyAttendance  = min(dailyDemand, gateThroughput)
 weeklyAttendance = round(dailyAttendance × 7)
@@ -244,6 +245,37 @@ Only working (non-absent) booth attendants count toward throughput.
 
 ---
 
+## Weather system (`game.js`)
+
+Two forecast state variables live in `game.js`:
+
+| Variable | Meaning |
+|---|---|
+| `nextWeekForecast` | Weather emoji applied this round by `Finance` and `Shopping` |
+| `futurecastForecast` | Weather emoji shown as "+2 Wks" in the HUD |
+
+At the end of each `advanceRound`: `nextWeekForecast = futurecastForecast`, then `futurecastForecast = forecastForRound(round + 2)`.
+
+`forecastForRound(r)` converts a round number to its week-in-year via `((r + 25) % 52) + 1`, checks `HOLIDAY_FORECAST`, and falls back to `randomWeatherEmoji()`.
+
+### Constants (all in `game.js`)
+
+| Constant | Purpose |
+|---|---|
+| `WEATHER_EMOJIS` | Pool of random forecast emojis |
+| `WEATHER_DEMAND_REDUCTION` | Maps emoji → fraction subtracted from demand (e.g. `'⛈️': 0.25`) |
+| `WEATHER_MERCHANDISE_MULTIPLIERS` | Maps emoji → `{ itemId: multiplier }` applied to purchase attempts |
+| `HOLIDAY_FORECAST` | Maps week-in-year → fixed emoji (15 → 🐰, 51 → 🎄) |
+
+### HUD gating
+
+| Research | Effect |
+|---|---|
+| `WEATHER_SENSOR` | Shows the weather panel (Next Wk forecast) |
+| `WEATHER_STATION` | Additionally shows the +2 Wks futurecast slot |
+
+---
+
 ## Security system (`security.js`)
 
 `Security.opinion` rises by `unhandled` incident count each round; decays `ceil(opinion × 0.20)` per round. Suppresses demand via `1 − √opinion / 100`.
@@ -283,7 +315,8 @@ staffRatio  = min(1, workingAttendants / (activeMerchandiseStores × WORKERS_PER
 shelfPrice  = merchandiseInventory[i].price + merchandiseUpcharge
 desire[cat] = 1 + Σ (bracket.chance × bracket.favor) for each bracket whose preferredCategory === cat
 afford      = Σ bracket.chance for INCOME_BRACKETS where shelfPrice ≤ INCOME_LIMITS[j]
-attempts    = round(desire[cat] × afford × weeklyAttendance × BUYER_RATE × staffRatio)
+weatherMult = WEATHER_MERCHANDISE_MULTIPLIERS[nextWeekForecast][item.id] ?? 1
+attempts    = round(desire[cat] × afford × weeklyAttendance × BUYER_RATE × staffRatio × weatherMult)
 sold        = min(attempts, merchandiseInventory[i].count)
 revenue    += sold × shelfPrice
 merchandiseInventory[i].count -= sold

@@ -55,11 +55,11 @@ Two game stages: **Setup** (instant builds, no income) → **Play** (weekly roun
 
 **Finance (`Finance` object):** Revenue sources this round: gate (`gatePrice × weeklyAttendance`), parking (`floor(dailyDemand × 7 / 3) × parkingPrice`), shop (`Shopping.calcRevenue()`). Costs: staff wages + posting fees, ride utility costs (`utilityCost × Population.utilityMultiplier` per running ride), construction payments, theft losses. `priceExhaustion` decays 1/round, reduces demand 1% per point.
 
-**Attendance:** `min(dailyDemand, gateThroughput)`. Demand = `parkExcitement × 20 × exhaustionFactor × securityFactor` where `securityFactor = 1 − √Security.opinion / 100`. Throughput = booth attendants × `500 × moodMult × expMult × skillModifier`.
+**Attendance:** `min(dailyDemand, gateThroughput)`. Demand = `parkExcitement × exhaustionFactor × eventFactor × compositeFavor × weatherFactor` where `weatherFactor = 1 − WEATHER_DEMAND_REDUCTION[nextWeekForecast]` (default 1). Throughput = booth attendants × `500 × moodMult × expMult × skillModifier`.
 
 **Security (`Security` object):** `Security.opinion` rises by unhandled incidents each round, decays 20% (rounded up). Three incident sources: gate overflow (5%), unridden visitors (20%), random (0.1%) — rates live in `Population`. Two-phase handling: focus bonuses (free) then pooled normal capacity. Unhandled shop incidents cause theft losses at `$50` each.
 
-**Shopping (`Shopping` object):** Revenue is demand-driven per item. Each round: (1) category desire = flat 1 + sum of `chance × favor` from every demographic bracket whose `preferredCategory` matches; (2) per-item affordability = sum of `chance` from income brackets whose `INCOME_LIMITS` entry ≥ shelf price; (3) `attempts = desire × afford × weeklyAttendance × BUYER_RATE × staffRatio`; (4) `sold = min(attempts, stock)` — inventory deducted, revenue accumulated. Zero merchandise tiles → no revenue. Theft still scales by `sqrt(activeMerchandiseTiles)` and is multiplied by `1 + 0.25 × deficit`.
+**Shopping (`Shopping` object):** Revenue is demand-driven per item. Each round: (1) category desire = flat 1 + sum of `chance × favor` from every demographic bracket whose `preferredCategory` matches; (2) per-item affordability = sum of `chance` from income brackets whose `INCOME_LIMITS` entry ≥ shelf price; (3) `attempts = desire × afford × weeklyAttendance × BUYER_RATE × staffRatio × weatherMult` where `weatherMult` comes from `WEATHER_MERCHANDISE_MULTIPLIERS[nextWeekForecast][item.id]` (default 1); (4) `sold = min(attempts, stock)` — inventory deducted, revenue accumulated. Zero merchandise tiles → no revenue. Theft still scales by `sqrt(activeMerchandiseTiles)` and is multiplied by `1 + 0.25 × deficit`.
 
 **Merchandise inventory (`merchandise`, `merchandiseInventory` in `game.js`):** `merchandise[]` is loaded from `merchandise.json` (12 items, 3 tiers per category: toy / practical / apparel / souvenir). `merchandiseInventory[]` is a parallel array of `{ count, price }` initialised at game start (count=100, price=basePrice). Stock depletes each round via `calcRevenue`; players restock via the Inventory panel.
 
@@ -72,6 +72,8 @@ Two game stages: **Setup** (instant builds, no income) → **Play** (weekly roun
 **Candidates:** Each round with postings → generate via `Staff.generateEmployee(quality)`. Candidates with no matching posting discarded immediately. Withdrawal: 20% at week 4, +20%/week. Player hires or declines — nothing auto-hires.
 
 **Rides panel:** Master-detail. Tap a ride → detail view with pause/resume construction, close/reopen, last-round ridership bar, and weekly utility cost.
+
+**Weather (`game.js`):** Two forecast slots: `nextWeekForecast` (applies this round) and `futurecastForecast` (2 weeks out). At the end of each round, `nextWeekForecast = futurecastForecast` and a new `futurecastForecast` is generated via `forecastForRound(round + 2)`. `forecastForRound` checks `HOLIDAY_FORECAST` (week 15 → 🐰, week 51 → 🎄) before falling back to `randomWeatherEmoji()`. Demand penalty: `WEATHER_DEMAND_REDUCTION` maps bad-weather emojis to a 0–1 reduction applied in `calcDailyDemand`. Per-item merch boost: `WEATHER_MERCHANDISE_MULTIPLIERS` maps an emoji to `{ itemId: multiplier }` applied to `attempts` in `Shopping.calcRevenue`. Weather panel in header is hidden until `WEATHER_SENSOR` research completes; futurecast slot hidden until `WEATHER_STATION`. To add a weather effect: add an entry to the relevant constant(s) in `game.js`.
 
 ---
 
