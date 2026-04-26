@@ -244,9 +244,19 @@ Object.assign(Staff, {
       document.getElementById('sdx-bonus').disabled = true;
     });
     document.getElementById('sdx-fire').addEventListener('click', () => {
-      this.roster = this.roster.filter(e => e.instanceId !== instanceId);
-      this._selectedStaffId = null;
-      this.buildRosterView();
+      const actionsEl = document.querySelector('.ride-detail-actions');
+      actionsEl.innerHTML = `
+        <span class="fire-confirm-label">Fire this employee?</span>
+        <button class="ride-action-btn ride-action-danger" id="sdx-fire-confirm">Yes, Fire</button>
+        <button class="ride-action-btn" id="sdx-fire-cancel">Cancel</button>`;
+      document.getElementById('sdx-fire-confirm').addEventListener('click', () => {
+        this.roster = this.roster.filter(e => e.instanceId !== instanceId);
+        this._selectedStaffId = null;
+        this.buildRosterView();
+      });
+      document.getElementById('sdx-fire-cancel').addEventListener('click', () => {
+        this.buildStaffDetail(instanceId);
+      });
     });
     document.getElementById('eng-focus-btns')?.querySelectorAll('.sec-focus-btn').forEach(btn => {
       btn.addEventListener('click', () => {

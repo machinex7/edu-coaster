@@ -207,6 +207,14 @@
 
 .ride-detail-actions { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
 
+.fire-confirm-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fca5a5;
+  text-align: center;
+  padding-top: 2px;
+}
+
 .ride-ridership { display: flex; flex-direction: column; gap: 4px; }
 .ride-ridership-label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.06em; color: #6b7280; }
 .ride-ridership-bar-wrap { height: 6px; background: #374151; border-radius: 3px; overflow: hidden; }
