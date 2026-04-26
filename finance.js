@@ -207,12 +207,17 @@ const Finance = {
   },
 
   // ── Cost sources ─────────────────────────────────────────────────────────────
-  // Pays each employee's salary + 401(k) match if money allows; employees who
-  // cannot be paid receive a mood penalty event. Also deducts job-posting fees
-  // and active medical insurance premiums unconditionally. Returns the total
-  // amount actually deducted from money.
+  // Deducts posting fees first, then pays each employee's salary + 401(k) match
+  // if money allows (mood penalty event for any skipped paycheck), then attempts
+  // to pay the medical premium — cancelling the policy immediately if funds are
+  // insufficient. Returns the total amount actually deducted from money.
   calcStaffCosts() {
     let paid = 0;
+
+    const postingCosts = Staff.totalPostingCosts();
+    money -= postingCosts;
+    paid += postingCosts;
+
     for (const s of Staff.roster) {
       const matchContrib = Math.round(s.salary * Staff.RETIREMENT_MATCH_PCT / 100);
       const cost = s.salary + matchContrib;
@@ -223,9 +228,22 @@ const Finance = {
         s.events.push({ moodModifier: -20, comment: 'Angry that a paycheck was skipped.' });
       }
     }
-    const overhead = Staff.totalPostingCosts() + Staff.calcMedicalCosts();
-    money -= overhead;
-    paid += overhead;
+
+    const medicalCost = Staff.calcMedicalCosts();
+    if (medicalCost > 0) {
+      if (money >= medicalCost) {
+        money -= medicalCost;
+        paid += medicalCost;
+      } else {
+        Staff.medicalPolicy = null;
+        Notifications.push({
+          label:   'Med.',
+          message: 'Medical insurance policy was cancelled — insufficient funds to cover the premium.',
+          action:  () => { openPanel('staffing'); Staff.setView('benefits'); },
+        });
+      }
+    }
+
     return paid;
   },
 
