@@ -260,6 +260,7 @@ const Finance = {
 
   payUtilityCosts() {
     let paid = 0;
+    let closedCount = 0;
 
     for (const r of installedRides) {
       if (r.status !== STATUS.ACTIVE || !isRideConnected(r)) continue;
@@ -270,6 +271,7 @@ const Finance = {
         paid += cost;
       } else {
         r.status = STATUS.CLOSED;
+        closedCount++;
       }
     }
 
@@ -282,7 +284,15 @@ const Finance = {
         paid += cost;
       } else {
         f.status = STATUS.CLOSED;
+        closedCount++;
       }
+    }
+
+    if (closedCount > 0) {
+      Notifications.push({
+        label:   'Utilities',
+        message: `${closedCount} ride${closedCount !== 1 ? 's/facilities' : '/facility'} closed — insufficient funds to cover utility costs.`,
+      });
     }
 
     return paid;
