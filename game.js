@@ -30,6 +30,13 @@ const WEATHER_DEMAND_REDUCTION = Object.freeze({
   '🌨️': 0.10,
   '🌧️': 0.10,
 });
+const WEATHER_MERCHANDISE_MULTIPLIERS = Object.freeze({
+  '☀️':  { sunscreen: 2 },
+  '🌦️': { umbrella:  2 },
+  '🌧️': { umbrella:  2 },
+  '⛈️': { umbrella:  2 },
+  '🌨️': { hoodie:    2 },
+});
 function randomWeatherEmoji() {
   return WEATHER_EMOJIS[Math.floor(Math.random() * WEATHER_EMOJIS.length)];
 }
