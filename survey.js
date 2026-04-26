@@ -110,11 +110,16 @@ const Survey = {
       return;
     }
 
-    const incentive = this.INCENTIVES.find(i => i.id === _surveyIncentive) ?? this.INCENTIVES[0];
+    const available = this.INCENTIVES.filter(inc => {
+      if (inc.id === SURVEY_INCENTIVE.DISCOUNT) return Research.completed.has(RESEARCH_ID.SURVEY_COUPON_INCENTIVE);
+      if (inc.id === SURVEY_INCENTIVE.PRIZE)    return Research.completed.has(RESEARCH_ID.SURVEY_PRIZE_INCENTIVE);
+      return true;
+    });
+    const incentive = available.find(i => i.id === _surveyIncentive) ?? available[0];
     const cost      = Math.round(_surveyBatchSize * incentive.costPerSurvey);
     const canAfford = money >= cost;
 
-    const incentiveRows = this.INCENTIVES.map(inc => `
+    const incentiveRows = available.map(inc => `
       <label class="survey-incentive-row">
         <input type="radio" name="survey-incentive" value="${inc.id}"
                ${inc.id === _surveyIncentive ? 'checked' : ''}>
@@ -135,13 +140,14 @@ const Survey = {
 
     const lastResult        = this._lastSurveyResult();
     const completedQuarters = Math.floor(History.rounds.length / 13);
+    const hasQuarterlyResearch = Research.completed.has(RESEARCH_ID.QUARTERLY_SURVEY_RESULTS);
     const resultsSection = lastResult
       ? `<div class="survey-results-wrap">
            <button class="ride-action-btn" id="survey-results-btn">Show Survey Results</button>
-           <button class="ride-action-btn" id="survey-quarterly-btn"
+           ${hasQuarterlyResearch ? `<button class="ride-action-btn" id="survey-quarterly-btn"
                    ${completedQuarters < 1 ? 'disabled title="Available after your first full quarter"' : ''}>
              Quarterly Survey Results
-           </button>
+           </button>` : ''}
          </div>`
       : '';
 
@@ -160,7 +166,7 @@ const Survey = {
 
     const totalCars  = History.rounds.reduce((s, r) => s + Math.round(r.parkingIncome / Finance.parkingPrice), 0);
     const hasParking = Staff.roster.some(s => s.jobId === JOB.SECURITY && s.focus === SECURITY_FOCUS.PARKING_OBS && s.weeksOut === 0);
-    const parkingSection = History.rounds.length > 0
+    const parkingSection = History.rounds.length > 0 && Research.completed.has(RESEARCH_ID.LICENSE_PLATE_MONITORING)
       ? `<div class="panel-section-header">Parking</div>
          <div class="gate-analytics-body">
            <div class="gate-analytics-stat">${totalCars.toLocaleString()} total cars parked</div>

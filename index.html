@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>EduCoaster</title>
   <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="panels.css">
 </head>
 <body>
   <div id="app">
@@ -49,7 +50,8 @@
           <button class="tool-btn" data-panel="security">Security</button>
           <button class="tool-btn" data-panel="pricing">Pricing</button>
           <button class="tool-btn" data-panel="inventory">Inventory</button>
-          <button class="tool-btn" data-panel="survey">Surveys</button>
+          <button class="tool-btn" data-panel="survey" disabled>Surveys</button>
+          <button class="tool-btn" data-panel="research">Research</button>
         </nav>
 
         <!-- Construction slide panel -->
@@ -88,7 +90,7 @@
             <div id="staff-action-btns">
               <button class="staff-action-btn" data-view="postings">Postings</button>
               <button class="staff-action-btn" data-view="candidates">Candidates</button>
-              <button class="staff-action-btn" data-view="benefits">Benefits</button>
+              <button class="staff-action-btn hidden" data-view="benefits">Benefits</button>
             </div>
             <div id="staff-roster-view" class="staff-view">
               <div id="staff-overview"></div>
@@ -127,6 +129,14 @@
           <div class="side-panel-inner">
             <div class="panel-header">Surveys</div>
             <div id="survey-panel-body" class="inv-view"></div>
+          </div>
+        </div>
+
+        <!-- Business Research slide panel -->
+        <div id="panel-research" class="side-panel closed">
+          <div class="side-panel-inner">
+            <div class="panel-header">Business Research</div>
+            <div id="research-panel-body" class="research-panel-body"></div>
           </div>
         </div>
 
@@ -212,6 +222,7 @@
   <script src="notifications.js"></script>
   <script src="charts.js"></script>
   <script src="survey.js"></script>
+  <script src="research.js"></script>
   <script src="hud.js"></script>
 </body>
 </html>

@@ -24,6 +24,17 @@ constants.js → population.js → game.js → grid.js → shopping.js → finan
 
 ---
 
+## CSS structure
+
+Two stylesheet files, both linked in `index.html` (in order):
+
+- **`style.css`** — Base layout only: reset, body/app, header, HUD, stage badges, action buttons, grid cells, main layout, tool button bar, left nav, `.side-panel`/`.side-panel-inner`/`.panel-header` base styles, park view, modals, notification stack. The rule `.side-panel.closed { width: 0 !important; }` here must use `!important` because panel-specific ID rules (e.g. `#panel-research { width: 660px }`) have higher specificity.
+- **`panels.css`** — All panel-specific content styles: construction, rides, inventory, staff, pricing, survey, security, research nodes/tree. Panel width overrides (`#panel-staffing { width: 320px }`, `#panel-research { width: 660px }`) live here.
+
+When adding a new panel, put its content styles in `panels.css`.
+
+---
+
 ## Key architecture rules
 
 - **No build step.** Edit files directly; refresh browser to test.

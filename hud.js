@@ -10,6 +10,7 @@ function initHUD() {
   initInventoryPanel();
   Charts.initModal();
   initPanelBtns();
+  updateLockedPanels();
 }
 
 function canOpenPark() {
@@ -32,10 +33,13 @@ function advanceRound() {
   round++;
   const report = Finance.processRound();
   History.record(report);
+  Research.tickResearch();
+  updateLockedPanels();
   updateHUD();
   refreshRidesPanel();
   Staff.refreshPanel();
   Security.refreshPanel();
+  Research.refreshPanel();
   showRoundSummary(report);
 }
 
@@ -115,6 +119,18 @@ function initPanelBtns() {
   });
 }
 
+function updateLockedPanels() {
+  const surveyBtn = document.querySelector('.tool-btn[data-panel="survey"]');
+  if (surveyBtn) surveyBtn.disabled = !Research.completed.has(RESEARCH_ID.SURVEYS);
+
+  const benefitsUnlocked = Research.completed.has(RESEARCH_ID.EMPLOYEE_BENEFITS);
+  const benefitsBtn = document.querySelector('.staff-action-btn[data-view="benefits"]');
+  if (benefitsBtn) {
+    benefitsBtn.classList.toggle('hidden', !benefitsUnlocked);
+    if (!benefitsUnlocked && Staff._activeView === 'benefits') Staff.setView('roster');
+  }
+}
+
 function togglePanel(panelId) {
   if (activePanel === panelId) closePanels();
   else openPanel(panelId);
@@ -135,6 +151,7 @@ function openPanel(panelId) {
   if (panelId === 'pricing')    buildPricingPanel();
   if (panelId === 'inventory')  buildInventoryPanel();
   if (panelId === 'survey')     Survey.buildPanel();
+  if (panelId === 'research')   Research.buildPanel();
 }
 
 function closePanels() {

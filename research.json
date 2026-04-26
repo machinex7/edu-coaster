@@ -1,0 +1,79 @@
+[
+  {
+    "id": "surveys",
+    "name": "Surveys",
+    "description": "Run structured visitor surveys to gather satisfaction data and identify pain points.",
+    "cost": 2,
+    "requires": []
+  },
+  {
+    "id": "license_plate_monitoring",
+    "name": "License Plate Monitoring",
+    "description": "Cross-reference parking data with regional records to estimate visitor origin and repeat visit rates.",
+    "cost": 4,
+    "requires": ["surveys"]
+  },
+  {
+    "id": "quarterly_survey_results",
+    "name": "Quarterly Survey Results",
+    "description": "Compile survey responses into trend-focused quarterly reports with demographic breakdowns.",
+    "cost": 3,
+    "requires": ["surveys"]
+  },
+  {
+    "id": "survey_coupon_incentive",
+    "name": "Coupon Surveys",
+    "description": "Offer a discount coupon as a survey incentive. Raises response rates to 25% at $2/survey.",
+    "cost": 3,
+    "requires": ["quarterly_survey_results"]
+  },
+  {
+    "id": "survey_prize_incentive",
+    "name": "Prize Entry Surveys",
+    "description": "Offer a prize entry as a survey incentive. Raises response rates to 35% at $3/survey.",
+    "cost": 4,
+    "requires": ["survey_coupon_incentive"]
+  },
+  {
+    "id": "weather_sensor",
+    "name": "Weather Sensor",
+    "description": "Install an on-site weather sensor to generate short-range forecasts. Provides a 1-week attendance outlook.",
+    "cost": 3,
+    "requires": []
+  },
+  {
+    "id": "weather_station",
+    "name": "Weather Station",
+    "description": "Upgrade to a full weather station with extended modelling. Extends the forecast window to 2 weeks.",
+    "cost": 5,
+    "requires": ["weather_sensor"]
+  },
+  {
+    "id": "employee_benefits",
+    "name": "Employee Benefits",
+    "description": "Establish a formal benefits program. Prerequisite for all staff benefit research.",
+    "cost": 3,
+    "requires": []
+  },
+  {
+    "id": "parental_leave",
+    "name": "Parental Leave",
+    "description": "Offer paid parental leave to staff. Improves employee retention and morale.",
+    "cost": 4,
+    "requires": ["employee_benefits"]
+  },
+  {
+    "id": "401k",
+    "name": "401k",
+    "description": "Provide a 401k retirement plan. Improves long-term staff retention.",
+    "cost": 4,
+    "requires": ["employee_benefits"]
+  },
+  {
+    "id": "medical_coverage",
+    "name": "Medical Coverage",
+    "description": "Offer employer-sponsored health insurance. Significantly boosts staff morale and reduces turnover.",
+    "cost": 6,
+    "requires": ["401k"]
+  }
+]
