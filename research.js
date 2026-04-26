@@ -15,7 +15,7 @@ const Research = {
   // Each BA contributes 1 + 0.2 × their tier (1–4).
   _researchRate() {
     return Staff.roster
-      .filter(s => s.jobId === JOB.BUSINESS_ANALYST)
+      .filter(s => s.jobId === JOB.BUSINESS_ANALYST && s.weeksOut === 0)
       .reduce((sum, ba) => {
         const { tier } = Staff.getExperienceTier(ba.weeksEmployed);
         return sum + 1 + 0.2 * tier;
@@ -99,6 +99,20 @@ const Research = {
   _nodeHtml(item) {
     const status = this._getStatus(item);
     const isActive = this.activeId === item.id;
+
+    // Show details only if the node itself is visible (no prereqs, or at least
+    // one prereq is available/completed — i.e. the player can see what's coming).
+    const prereqsVisible = item.requires.length === 0 || item.requires.some(r => {
+      const s = this._getStatus(this.items.find(i => i.id === r));
+      return s === 'available' || s === 'completed';
+    });
+
+    if (!prereqsVisible) {
+      return `<div class="research-node locked mystery" data-id="${item.id}">
+        <div class="rn-name">???</div>
+        <span class="rn-badge locked">Locked</span>
+      </div>`;
+    }
 
     const STATUS_LABEL = { locked: 'Locked', available: 'Available', completed: 'Researched' };
     const badgeLabel = isActive ? 'In Progress' : STATUS_LABEL[status];

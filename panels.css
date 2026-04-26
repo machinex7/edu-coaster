@@ -982,6 +982,16 @@
   color: #4b5563;
 }
 
+.research-node.mystery {
+  opacity: 0.4;
+  pointer-events: none;
+}
+
+.research-node.mystery .rn-name {
+  color: #4b5563;
+  letter-spacing: 0.1em;
+}
+
 .rn-cost {
   font-size: 0.68rem;
   font-weight: 600;
