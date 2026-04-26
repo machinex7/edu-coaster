@@ -1,7 +1,7 @@
 [
   { "id": "bouncy_ball",   "name": "Bouncy Ball",      "basePrice":  3, "category": "toy" },
-  { "id": "foam_sword",    "name": "Foam Sword",        "basePrice":  9, "category": "toy" },
-  { "id": "plush_bear",    "name": "Stuffed Bear",      "basePrice": 22, "category": "toy" },
+  { "id": "glow_sword",    "name": "Glow Sword",        "basePrice": 22, "category": "toy" },
+  { "id": "plush_bunny",   "name": "Stuffed Bunny",     "basePrice":  9, "category": "toy" },
 
   { "id": "hand_sanitizer","name": "Hand Sanitizer",   "basePrice":  5, "category": "practical" },
   { "id": "sunscreen",     "name": "Sunscreen SPF 50", "basePrice": 12, "category": "practical" },

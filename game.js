@@ -24,6 +24,33 @@ const STARTING_MONEY        = 1_000_000;
 const STARTING_YEAR         = 2024;
 const STARTING_WEEK_OF_YEAR = 27; // week 27 = first week of Q3
 
+const WEATHER_EMOJIS = ['☀️', '🌤️', '⛅', '🌦️', '🌧️', '⛈️', '🌨️', '🌫️', '🥵'];
+const WEATHER_DEMAND_REDUCTION = Object.freeze({
+  '⛈️': 0.25,
+  '🌨️': 0.10,
+  '🌧️': 0.10,
+});
+const WEATHER_MERCHANDISE_MULTIPLIERS = Object.freeze({
+  '☀️':  { sunscreen:   2 },
+  '🌦️': { umbrella:    2 },
+  '🌧️': { umbrella:    2 },
+  '⛈️': { umbrella:    2 },
+  '🌨️': { hoodie:      2 },
+  '🐰':  { plush_bunny: 2 },
+  '🎄':  { snow_globe:  2 },
+});
+const HOLIDAY_FORECAST = Object.freeze({
+  15: '🐰',  // second week of April
+  51: '🎄',  // next-to-last week of year
+});
+function randomWeatherEmoji() {
+  return WEATHER_EMOJIS[Math.floor(Math.random() * WEATHER_EMOJIS.length)];
+}
+function forecastForRound(r) {
+  const weekInYear = ((r + 25) % 52) + 1;
+  return HOLIDAY_FORECAST[weekInYear] ?? randomWeatherEmoji();
+}
+
 // ── Stage Constants ────────────────────────────────────────────────────────
 // Stage 1 (login) is a future placeholder; game starts at setup for now.
 
@@ -44,6 +71,8 @@ let gridState = [];   // [row][col] → instanceId string, or null
 let gameStage = STAGE.SETUP;
 let money     = STARTING_MONEY;
 let round     = 1;
+let nextWeekForecast   = forecastForRound(2);
+let futurecastForecast = forecastForRound(3);
 
 // The canonical records of everything placed in the park.
 // status: STATUS.ACTIVE | STATUS.UNDER_CONSTRUCTION

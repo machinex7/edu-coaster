@@ -41,6 +41,8 @@ function advanceRound() {
   Security.refreshPanel();
   Research.refreshPanel();
   showRoundSummary(report);
+  nextWeekForecast   = futurecastForecast;
+  futurecastForecast = forecastForRound(round + 2);
 }
 
 function showRoundSummary(report) {
@@ -97,6 +99,8 @@ function updateHUD() {
   const stopped = installedRides.filter(r => r.status !== STATUS.ACTIVE).length;
   document.getElementById('rides-running-display').textContent = running;
   document.getElementById('rides-stopped-display').textContent = stopped;
+  document.getElementById('forecast-next-week').textContent = nextWeekForecast;
+  document.getElementById('forecast-future').textContent    = futurecastForecast;
   const badge = document.getElementById('stage-badge');
   badge.textContent = gameStage === STAGE.SETUP ? 'Setup' : 'Open';
   badge.className   = `stage-badge ${gameStage}`;
@@ -129,6 +133,9 @@ function updateLockedPanels() {
     benefitsBtn.classList.toggle('hidden', !benefitsUnlocked);
     if (!benefitsUnlocked && Staff._activeView === 'benefits') Staff.setView('roster');
   }
+
+  document.getElementById('weather-panel').classList.toggle('hidden', !Research.completed.has(RESEARCH_ID.WEATHER_SENSOR));
+  document.getElementById('forecast-future-count').classList.toggle('hidden', !Research.completed.has(RESEARCH_ID.WEATHER_STATION));
 }
 
 function togglePanel(panelId) {

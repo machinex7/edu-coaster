@@ -93,6 +93,7 @@ const Shopping = {
     }
 
     // Step 2 — per-item: affordability × desire → attempts → sell from stock.
+    const weatherItemMults = WEATHER_MERCHANDISE_MULTIPLIERS[nextWeekForecast] ?? {};
     let totalRevenue = 0;
     let totalSold    = 0;
     for (let i = 0; i < merchandise.length; i++) {
@@ -111,8 +112,9 @@ const Shopping = {
       }
       if (afford === 0) continue;
 
+      const weatherMult = weatherItemMults[item.id] ?? 1;
       const attempts = Math.round(
-        desire[item.category] * afford * weeklyAttendance * Population.BUYER_RATE * staffRatio
+        desire[item.category] * afford * weeklyAttendance * Population.BUYER_RATE * staffRatio * weatherMult
       );
       const sold    = Math.min(attempts, inv.count);
       inv.count    -= sold;
