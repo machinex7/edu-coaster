@@ -207,28 +207,95 @@ const Finance = {
   },
 
   // ── Cost sources ─────────────────────────────────────────────────────────────
-  // Total weekly staff outlay: wages + 401(k) employer match contribution +
-  // job-posting fees + active medical insurance premiums.
+  // Deducts posting fees first, then pays each employee's salary + 401(k) match
+  // if money allows (mood penalty event for any skipped paycheck), then attempts
+  // to pay the medical premium — cancelling the policy immediately if funds are
+  // insufficient. Returns the total amount actually deducted from money.
   calcStaffCosts() {
-    const wages = Staff.totalWeeklySalary();
-    const matchContribution = Math.round(wages * Staff.RETIREMENT_MATCH_PCT / 100);
-    return wages + matchContribution + Staff.totalPostingCosts() + Staff.calcMedicalCosts();
+    let paid = 0;
+
+    const postingCosts = Staff.totalPostingCosts();
+    if (postingCosts > 0) {
+      if (money >= postingCosts) {
+        money -= postingCosts;
+        paid += postingCosts;
+      } else {
+        Staff.postings = [];
+        Notifications.push({
+          label:   'Hiring',
+          message: 'All job postings were cancelled — insufficient funds to cover posting fees.',
+          action:  () => { openPanel('staffing'); Staff.setView('postings'); },
+        });
+      }
+    }
+
+    for (const s of Staff.roster) {
+      const matchContrib = Math.round(s.salary * Staff.RETIREMENT_MATCH_PCT / 100);
+      const cost = s.salary + matchContrib;
+      if (money >= cost) {
+        money -= cost;
+        paid += cost;
+      } else {
+        s.events.push({ moodModifier: -20, comment: 'Angry that a paycheck was skipped.' });
+      }
+    }
+
+    const medicalCost = Staff.calcMedicalCosts();
+    if (medicalCost > 0) {
+      if (money >= medicalCost) {
+        money -= medicalCost;
+        paid += medicalCost;
+      } else {
+        Staff.medicalPolicy = null;
+        Notifications.push({
+          label:   'Med.',
+          message: 'Medical insurance policy was cancelled — insufficient funds to cover the premium.',
+          action:  () => { openPanel('staffing'); Staff.setView('benefits'); },
+        });
+      }
+    }
+
+    return paid;
   },
 
-  calcUtilityCosts() {
-    const rideCosts = installedRides
-      .filter(r => r.status === STATUS.ACTIVE && isRideConnected(r))
-      .reduce((sum, r) => {
-        const def = rides.find(d => d.id === r.rideId);
-        return sum + (def?.utilityCost ?? 0) * Population.utilityMultiplier;
-      }, 0);
-    const facilityCosts = installedFacilities
-      .filter(f => f.status === STATUS.ACTIVE)
-      .reduce((sum, f) => {
-        const def = facilities.find(d => d.id === f.facilityId);
-        return sum + (def?.utilityCost ?? 0) * Population.utilityMultiplier;
-      }, 0);
-    return rideCosts + facilityCosts;
+  payUtilityCosts() {
+    let paid = 0;
+    let closedCount = 0;
+
+    for (const r of installedRides) {
+      if (r.status !== STATUS.ACTIVE || !isRideConnected(r)) continue;
+      const def = rides.find(d => d.id === r.rideId);
+      const cost = (def?.utilityCost ?? 0) * Population.utilityMultiplier;
+      if (money >= cost) {
+        money -= cost;
+        paid += cost;
+      } else {
+        r.status = STATUS.CLOSED;
+        closedCount++;
+      }
+    }
+
+    for (const f of installedFacilities) {
+      if (f.status !== STATUS.ACTIVE) continue;
+      const def = facilities.find(d => d.id === f.facilityId);
+      const cost = (def?.utilityCost ?? 0) * Population.utilityMultiplier;
+      if (money >= cost) {
+        money -= cost;
+        paid += cost;
+      } else {
+        f.status = STATUS.CLOSED;
+        closedCount++;
+      }
+    }
+
+    if (closedCount > 0) {
+      Notifications.push({
+        label:   'Utilities',
+        message: `${closedCount} ride${closedCount !== 1 ? 's/facilities' : '/facility'} closed — insufficient funds to cover utility costs.`,
+      });
+    }
+
+    return paid;
   },
 
   // Security.calcIncidents() and Security.advanceOpinion() are in security.js.
@@ -252,12 +319,6 @@ const Finance = {
     const { revenue: shopRevenue, itemsSold: shopItemsSold } = Shopping.calcRevenue(weeklyAttendance);
     const food              = Shopping.calcFood(weeklyAttendance);
     const foodRevenue       = Math.round(food.mealsSold * (Shopping.MEAL_BASE_PRICE + this.foodUpcharge));
-    const staffCosts        = this.calcStaffCosts();
-    const utilityCosts      = this.calcUtilityCosts();
-    const constructionCosts = [...installedRides, ...installedFacilities, ...Shopping.installed]
-      .filter(r => r.status === STATUS.UNDER_CONSTRUCTION)
-      .reduce((sum, r) => sum + r.weeklyPayment, 0);
-
     const security = Security.calcIncidents(weeklyAttendance, dailyDemand, dailyThroughput);
 
     // Income
@@ -266,11 +327,10 @@ const Finance = {
     money += shopRevenue;
     money += foodRevenue;
 
-    // Costs
-    money -= staffCosts;
-    money -= utilityCosts;
-    money -= security.theftLoss;      // $50 per unhandled shoplifter
-    processConstruction();            // deducts constructionCosts and advances build progress
+    // Costs — income applied first so ability-to-pay reflects this week's revenue
+    const staffCosts        = this.calcStaffCosts();
+    const utilityCosts      = this.payUtilityCosts();
+    const constructionCosts = processConstruction();  // skips progress on unaffordable builds
     processDemolition();              // advances demolition timers, clears finished structures
 
     Staff.advanceMedicalInsurance();  // tick quote countdown; tick policy duration
@@ -278,6 +338,7 @@ const Finance = {
     Staff.advanceExperience();        // increment weeksEmployed for all staff
     Staff.applyInflation();           // grow each employee's costOfLiving by one week of annual inflation
     Staff.updateMoods();              // recalculate mood from salary vs costOfLiving
+    Staff.processQuits();             // remove employees whose mood hit 0
     Staff.advancePostings();          // increment weeksActive for all postings
     Staff.generateCandidates();       // new applicants per round when postings exist
     Staff.advanceCandidates();        // withdrawal check, then increment weeksAsCandidate
@@ -312,8 +373,7 @@ const Finance = {
       utilityCosts,
       constructionCosts,
       shopItemsSold,
-      theftLoss:     security.theftLoss,
-      totalExpenses: staffCosts + utilityCosts + constructionCosts + security.theftLoss,
+      totalExpenses: staffCosts + utilityCosts + constructionCosts,
       rideEfficiency: this.rideOpinion,
       security: { ...security, opinionAfter: Security.opinion },
       food: { ...food, mealSatisfaction: this.mealSatisfaction },

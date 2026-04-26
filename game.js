@@ -375,12 +375,17 @@ function _commitPlace(item, category, startRow, startCol, status) {
 
 // ── Construction queue ─────────────────────────────────────────────────────
 function processConstruction() {
+  let paid = 0;
   for (const record of [...installedRides, ...installedFacilities, ...Shopping.installed]) {
     if (record.status !== STATUS.UNDER_CONSTRUCTION) continue;
-    money -= record.weeklyPayment;
-    record.weeksCompleted++;
-    if (record.weeksCompleted >= record.weeksTotal) completeConstruction(record);
+    if (money >= record.weeklyPayment) {
+      money -= record.weeklyPayment;
+      paid += record.weeklyPayment;
+      record.weeksCompleted++;
+      if (record.weeksCompleted >= record.weeksTotal) completeConstruction(record);
+    }
   }
+  return paid;
 }
 
 function completeConstruction(record) {
