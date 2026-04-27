@@ -608,7 +608,18 @@ const Finance = {
     this.loanApplication.bankFavor--;
   },
 
-  rejectOffer() {
+  // Fixed weekly payment for an amortizing loan.
+  // Uses the standard annuity formula: P × r(1+r)^n / ((1+r)^n − 1)
+  // where r = annualRatePct / 100 / 52 and n = weeksRemaining.
+  // Rounds up to the nearest dollar (standard lending practice).
+  // Returns 0 if weeksRemaining is 0; falls back to simple division at 0% rate.
+  calcLoanPayment(principal, annualRatePct, weeksRemaining) {
+    if (weeksRemaining <= 0) return 0;
+    const r = annualRatePct / 100 / 52;
+    if (r === 0) return Math.ceil(principal / weeksRemaining);
+    const factor = Math.pow(1 + r, weeksRemaining);
+    return Math.ceil(principal * r * factor / (factor - 1));
+  },
     if (this.loanApplication?.status !== 'offered') return;
     this.loanApplication = null;
   },
