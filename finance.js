@@ -444,6 +444,10 @@ const Finance = {
   loanApplication: null,
   activeLoans: [],  // disbursed loans currently being repaid
 
+  hasActiveCovenant(id) {
+    return this.activeLoans.some(loan => loan.covenants?.some(c => c.id === id));
+  },
+
   submitLoanApplication(amount, purpose, term) {
     // Favor 1–3; upper limit shrinks by 1 per active loan (floored at 1).
     const maxFavor  = Math.max(1, 3 - this.activeLoans.length);

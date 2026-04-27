@@ -134,6 +134,13 @@ function updateLockedPanels() {
     if (!benefitsUnlocked && Staff._activeView === 'benefits') Staff.setView('roster');
   }
 
+  const demolishBtn = document.querySelector('.tool-btn[data-panel="demolish"]');
+  if (demolishBtn) {
+    const demolishLocked = Finance.hasActiveCovenant('NO_DEMOLISH');
+    demolishBtn.disabled = demolishLocked;
+    demolishBtn.title    = demolishLocked ? 'Locked by loan covenant' : '';
+  }
+
   document.getElementById('weather-panel').classList.toggle('hidden', !Research.completed.has(RESEARCH_ID.WEATHER_SENSOR));
   document.getElementById('forecast-future-count').classList.toggle('hidden', !Research.completed.has(RESEARCH_ID.WEATHER_STATION));
 }
@@ -144,6 +151,10 @@ function togglePanel(panelId) {
 }
 
 function openPanel(panelId) {
+  if (panelId === 'demolish' && Finance.hasActiveCovenant('NO_DEMOLISH')) {
+    Notifications.push({ label: 'Covenant', message: 'Your loan covenant prohibits demolishing rides.' });
+    return;
+  }
   if (activePanel && activePanel !== panelId) {
     if (activePanel === 'demolish') setDemolishMode(false);
     else document.getElementById(`panel-${activePanel}`).classList.add('closed');
@@ -502,7 +513,9 @@ function buildFinancialPanel() {
     </div>
     <div class="financial-section">
       <div class="financial-section-header">Loan</div>
-      <div class="posting-form" id="loan-form">
+      ${Finance.hasActiveCovenant('NO_NEW_LOANS') && !app
+        ? `<div class="loan-covenant-block">An active loan covenant prohibits taking on new loans.</div>`
+        : `<div class="posting-form" id="loan-form">
         <div class="form-field">
           <label for="loan-amount">Desired Amount</label>
           <input id="loan-amount" type="number" min="0" step="1000" placeholder="$0"
@@ -519,7 +532,7 @@ function buildFinancialPanel() {
         </div>
         ${favorHtml}
         <div class="form-actions">${loanActionHtml}</div>
-      </div>
+      </div>`}
     </div>`;
 
   document.querySelectorAll('.price-apply-btn').forEach(btn => {

@@ -1096,3 +1096,10 @@
 .loan-favor-good    { color: #86efac; }
 .loan-favor-neutral { color: #9ca3af; }
 .loan-favor-bad     { color: #fca5a5; }
+
+.loan-covenant-block {
+  font-size: 0.75rem;
+  color: #fca5a5;
+  padding: 8px 1rem;
+  font-style: italic;
+}
