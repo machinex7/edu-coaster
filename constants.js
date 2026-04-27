@@ -89,6 +89,17 @@ const LOAN_STATUS = Object.freeze({
   REVIEW:      'review',
 });
 
+const AWARD_ID = Object.freeze({
+  FIRST_QUARTER: 'first_quarter',
+  CROWD_PLEASER: 'crowd_pleaser',
+  IN_THE_BLACK:  'in_the_black',
+  SHOP_STAR:     'shop_star',
+  SAFE_PARK:     'safe_park',
+  GROWING_TEAM:  'growing_team',
+  RIDE_HEAVEN:   'ride_heaven',
+  MONEY_MAKER:   'money_maker',
+});
+
 // Interest rate reduction per covenant on the loan agreement.
 const COVENANT_RATE_DISCOUNT = 0.4;
 // Per missed payment: interest rate premium added to future proposals.

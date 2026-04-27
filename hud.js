@@ -35,12 +35,14 @@ function advanceRound() {
   const loanResult = Finance.processPendingLoan();
   History.record(report);
   Research.tickResearch();
+  if (round % 13 === 1 && round > 1) Awards.checkQuarterly(report);
   updateLockedPanels();
   updateHUD();
   refreshRidesPanel();
   Staff.refreshPanel();
   Security.refreshPanel();
   Research.refreshPanel();
+  Awards.refreshPanel();
   if (loanResult && activePanel === 'financial') buildFinancialPanel();
   showRoundSummary(report);
   nextWeekForecast   = futurecastForecast;
@@ -172,6 +174,7 @@ function openPanel(panelId) {
   if (panelId === 'inventory')  buildInventoryPanel();
   if (panelId === 'survey')     Survey.buildPanel();
   if (panelId === 'research')   Research.buildPanel();
+  if (panelId === 'awards')     Awards.buildPanel();
 }
 
 function closePanels() {
