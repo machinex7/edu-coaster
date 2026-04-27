@@ -548,6 +548,23 @@ function buildFinancialPanel() {
           </div>
           ${covenantRows}
           ${feeRow}
+          <div class="form-actions">
+            <button id="loan-reject-btn" class="loan-reject-btn">Reject</button>
+            <button id="loan-accept-btn" class="loan-accept-btn">Accept</button>
+          </div>
+        </div>`;
+    }
+
+    if (appStatus === 'review') {
+      const { amount, term, rate, reviewWeeksRemaining } = app;
+      return `
+        <div class="posting-form">
+          <div class="loan-offer-row"><span>Amount</span><span>$${amount.toLocaleString()}</span></div>
+          <div class="loan-offer-row"><span>Term</span><span>${term} yr</span></div>
+          <div class="loan-offer-row loan-offer-rate"><span>Interest Rate</span><span>${rate}%</span></div>
+          <div class="loan-approaching-label">
+            Under Review — ${reviewWeeksRemaining} week${reviewWeeksRemaining !== 1 ? 's' : ''} remaining…
+          </div>
         </div>`;
     }
 
@@ -615,6 +632,14 @@ function buildFinancialPanel() {
   }
 
   if (appStatus === 'offered') {
+    document.getElementById('loan-reject-btn').addEventListener('click', () => {
+      Finance.rejectOffer();
+      buildFinancialPanel();
+    });
+    document.getElementById('loan-accept-btn').addEventListener('click', () => {
+      Finance.acceptOffer();
+      buildFinancialPanel();
+    });
     document.getElementById('negotiate-rate-btn')?.addEventListener('click', () => {
       Finance.negotiateRate();
       buildFinancialPanel();

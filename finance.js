@@ -608,6 +608,22 @@ const Finance = {
     this.loanApplication.bankFavor--;
   },
 
+  rejectOffer() {
+    if (this.loanApplication?.status !== 'offered') return;
+    this.loanApplication = null;
+  },
+
+  acceptOffer() {
+    if (this.loanApplication?.status !== 'offered') return;
+    this.loanApplication.status = 'review';
+    this.loanApplication.reviewWeeksRemaining = 2;
+    Notifications.push({
+      label:   'Loan',
+      message: 'Loan accepted and under final review. Funds arrive in 2 weeks.',
+      action:  () => openPanel('financial'),
+    });
+  },
+
   // Annual interest rate for the pending loan.
   // Base = inflation % + 1. Then four additive premiums and a covenant discount:
   //   LTV         — loan amount as share of park value (collateral risk)
@@ -702,6 +718,26 @@ const Finance = {
         action:  () => openPanel('financial'),
       });
       return 'offered';
+    }
+
+    if (status === 'review') {
+      this.loanApplication.reviewWeeksRemaining--;
+      if (this.loanApplication.reviewWeeksRemaining > 0) return 'reviewing';
+
+      // Disburse — credit cash, move to active loans, clear application
+      const { amount, purpose, term, rate, covenants, covenantPenaltyPct } = this.loanApplication;
+      money += amount;
+      this.activeLoans.push({
+        id: Date.now(),
+        amount, purpose, term, rate, covenants, covenantPenaltyPct,
+      });
+      this.loanApplication = null;
+      Notifications.push({
+        label:   'Loan',
+        message: `$${amount.toLocaleString()} loan disbursed and now active.`,
+        action:  () => openPanel('financial'),
+      });
+      return 'disbursed';
     }
 
     return null;
