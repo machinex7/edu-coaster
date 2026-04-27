@@ -445,7 +445,9 @@ const Finance = {
   activeLoans: [],  // disbursed loans currently being repaid
 
   hasActiveCovenant(id) {
-    return this.activeLoans.some(loan => loan.covenants?.some(c => c.id === id));
+    return this.activeLoans.some(loan =>
+      loan.covenants?.some(c => c.id === id && !c.breached && !c.satisfied)
+    );
   },
 
   submitLoanApplication(amount, purpose, term) {
@@ -464,7 +466,7 @@ const Finance = {
   // until the following round so the player sees it coming. Once the fee
   // is collected the covenant is retired and cannot fire again.
   breachCovenant(loan, covenant) {
-    if (covenant.breachPending || covenant.breached) return;
+    if (covenant.breachPending || covenant.breached || covenant.satisfied) return;
     covenant.breachPending = true;
     const penaltyAmt = Math.round(loan.amount * loan.covenantPenaltyPct / 100);
     Notifications.push({
@@ -489,6 +491,56 @@ const Finance = {
           message: `Breach fee of $${penaltyAmt.toLocaleString()} assessed for: "${covenant.description}".`,
           action:  () => openPanel('financial'),
         });
+      }
+    }
+  },
+
+  // Check COMPLETE_RIDE and HIRE_STAFF covenants each round.
+  // Baseline values (initialActiveRides, initialRosterSize) are recorded lazily
+  // on the first tick so they don't depend on an explicit acceptance step.
+  processActiveCovenants() {
+    for (const loan of this.activeLoans) {
+      for (const covenant of loan.covenants ?? []) {
+        if (covenant.breached || covenant.satisfied) continue;
+
+        // Lazy baseline init on first tick
+        if (covenant.id === 'COMPLETE_RIDE' && covenant.initialActiveRides === undefined)
+          covenant.initialActiveRides = installedRides.filter(r => r.status === STATUS.ACTIVE).length;
+        if (covenant.id === 'HIRE_STAFF' && covenant.initialRosterSize === undefined)
+          covenant.initialRosterSize = Staff.roster.length;
+
+        if (covenant.weeksRemaining === undefined)
+          covenant.weeksRemaining = covenant.weeks;
+
+        // Check satisfaction before decrementing so the last valid round counts
+        if (covenant.id === 'COMPLETE_RIDE') {
+          const activeNow = installedRides.filter(r => r.status === STATUS.ACTIVE).length;
+          if (activeNow >= covenant.initialActiveRides + covenant.value) {
+            covenant.satisfied = true;
+            Notifications.push({
+              label:   'Covenant',
+              message: `Covenant satisfied: "${covenant.description}".`,
+              action:  () => openPanel('financial'),
+            });
+            continue;
+          }
+        }
+
+        if (covenant.id === 'HIRE_STAFF') {
+          if (Staff.roster.length >= covenant.initialRosterSize + covenant.value) {
+            covenant.satisfied = true;
+            Notifications.push({
+              label:   'Covenant',
+              message: `Covenant satisfied: "${covenant.description}".`,
+              action:  () => openPanel('financial'),
+            });
+            continue;
+          }
+        }
+
+        covenant.weeksRemaining--;
+        if (covenant.weeksRemaining <= 0)
+          this.breachCovenant(loan, covenant);
       }
     }
   },
@@ -632,6 +684,7 @@ const Finance = {
     const constructionCosts = processConstruction();  // skips progress on unaffordable builds
     processDemolition();              // advances demolition timers, clears finished structures
     this.processCovenantBreaches();   // collect any pending breach fees and retire those covenants
+    this.processActiveCovenants();    // check COMPLETE_RIDE / HIRE_STAFF progress and deadlines
 
     Staff.advanceMedicalInsurance();  // tick quote countdown; tick policy duration
     Staff.processSickness();          // roll for new illness, decrement existing sick time
