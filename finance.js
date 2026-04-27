@@ -495,52 +495,67 @@ const Finance = {
     }
   },
 
-  // Check COMPLETE_RIDE and HIRE_STAFF covenants each round.
-  // Baseline values (initialActiveRides, initialRosterSize) are recorded lazily
-  // on the first tick so they don't depend on an explicit acceptance step.
-  processActiveCovenants() {
+  // Check all active covenant conditions each round.
+  // Achievement covenants (COMPLETE_RIDE, HIRE_STAFF) track a deadline and
+  // can be satisfied. Ongoing covenants (RIDERSHIP_FLOOR, SECURITY_THRESHOLD)
+  // breach the first time their condition is violated and are then retired.
+  // All covenants in all active loans are evaluated independently each round.
+  processActiveCovenants(weeklyAttendance) {
     for (const loan of this.activeLoans) {
       for (const covenant of loan.covenants ?? []) {
         if (covenant.breached || covenant.satisfied) continue;
 
-        // Lazy baseline init on first tick
-        if (covenant.id === 'COMPLETE_RIDE' && covenant.initialActiveRides === undefined)
-          covenant.initialActiveRides = installedRides.filter(r => r.status === STATUS.ACTIVE).length;
-        if (covenant.id === 'HIRE_STAFF' && covenant.initialRosterSize === undefined)
-          covenant.initialRosterSize = Staff.roster.length;
+        switch (covenant.id) {
 
-        if (covenant.weeksRemaining === undefined)
-          covenant.weeksRemaining = covenant.weeks;
-
-        // Check satisfaction before decrementing so the last valid round counts
-        if (covenant.id === 'COMPLETE_RIDE') {
-          const activeNow = installedRides.filter(r => r.status === STATUS.ACTIVE).length;
-          if (activeNow >= covenant.initialActiveRides + covenant.value) {
-            covenant.satisfied = true;
-            Notifications.push({
-              label:   'Covenant',
-              message: `Covenant satisfied: "${covenant.description}".`,
-              action:  () => openPanel('financial'),
-            });
-            continue;
+          case 'COMPLETE_RIDE': {
+            if (covenant.initialActiveRides === undefined) {
+              covenant.initialActiveRides = installedRides.filter(r => r.status === STATUS.ACTIVE).length;
+              covenant.weeksRemaining     = covenant.weeks;
+            }
+            const activeNow = installedRides.filter(r => r.status === STATUS.ACTIVE).length;
+            if (activeNow >= covenant.initialActiveRides + covenant.value) {
+              covenant.satisfied = true;
+              Notifications.push({
+                label:   'Covenant',
+                message: `Covenant satisfied: "${covenant.description}".`,
+                action:  () => openPanel('financial'),
+              });
+            } else {
+              covenant.weeksRemaining--;
+              if (covenant.weeksRemaining <= 0) this.breachCovenant(loan, covenant);
+            }
+            break;
           }
-        }
 
-        if (covenant.id === 'HIRE_STAFF') {
-          if (Staff.roster.length >= covenant.initialRosterSize + covenant.value) {
-            covenant.satisfied = true;
-            Notifications.push({
-              label:   'Covenant',
-              message: `Covenant satisfied: "${covenant.description}".`,
-              action:  () => openPanel('financial'),
-            });
-            continue;
+          case 'HIRE_STAFF': {
+            if (covenant.initialRosterSize === undefined) {
+              covenant.initialRosterSize = Staff.roster.length;
+              covenant.weeksRemaining    = covenant.weeks;
+            }
+            if (Staff.roster.length >= covenant.initialRosterSize + covenant.value) {
+              covenant.satisfied = true;
+              Notifications.push({
+                label:   'Covenant',
+                message: `Covenant satisfied: "${covenant.description}".`,
+                action:  () => openPanel('financial'),
+              });
+            } else {
+              covenant.weeksRemaining--;
+              if (covenant.weeksRemaining <= 0) this.breachCovenant(loan, covenant);
+            }
+            break;
           }
-        }
 
-        covenant.weeksRemaining--;
-        if (covenant.weeksRemaining <= 0)
-          this.breachCovenant(loan, covenant);
+          case 'RIDERSHIP_FLOOR':
+            if (weeklyAttendance < covenant.value)
+              this.breachCovenant(loan, covenant);
+            break;
+
+          case 'SECURITY_THRESHOLD':
+            if (Security.opinion > covenant.value)
+              this.breachCovenant(loan, covenant);
+            break;
+        }
       }
     }
   },
@@ -684,7 +699,7 @@ const Finance = {
     const constructionCosts = processConstruction();  // skips progress on unaffordable builds
     processDemolition();              // advances demolition timers, clears finished structures
     this.processCovenantBreaches();   // collect any pending breach fees and retire those covenants
-    this.processActiveCovenants();    // check COMPLETE_RIDE / HIRE_STAFF progress and deadlines
+    this.processActiveCovenants(weeklyAttendance);  // check all active covenant conditions
 
     Staff.advanceMedicalInsurance();  // tick quote countdown; tick policy duration
     Staff.processSickness();          // roll for new illness, decrement existing sick time
