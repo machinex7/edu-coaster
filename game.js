@@ -82,6 +82,7 @@ let futurecastForecast = forecastForRound(3);
 // facility entry: { instanceId, facilityId, name, color, row, col, footprint, status }
 let installedRides      = [];
 let installedFacilities = [];
+let placedRideIds       = new Set(); // rideIds ever placed (persists through demolition)
 
 // Maps "row,col" → facilityId for fast adjacency lookups.
 const facilityTypeAtCell = {};
@@ -133,7 +134,11 @@ async function init() {
 // ── Sidebar lists ──────────────────────────────────────────────────────────
 function buildRideCatalog() {
   const list = document.getElementById('ride-list');
-  rides.forEach(ride => list.appendChild(createItemCard(ride, 'ride')));
+  rides.forEach(ride => {
+    const card = createItemCard(ride, 'ride');
+    card.dataset.rideId = ride.id;
+    list.appendChild(card);
+  });
 }
 
 function buildFacilityList() {
@@ -329,6 +334,12 @@ function placeItem(item, category, startRow, startCol) {
   updateHUD();
   refreshRidesPanel();
 
+  if (category === CATEGORY.RIDE) {
+    placedRideIds.add(item.id);
+    document.querySelector(`#ride-list [data-ride-id="${item.id}"]`)?.remove();
+    deselectItem();
+  }
+
   if (category === CATEGORY.FACILITY && item.limit != null) {
     const placed = installedFacilities.filter(f => f.facilityId === item.id).length;
     if (placed >= item.limit) deselectItem();
@@ -353,6 +364,7 @@ function _commitPlace(item, category, startRow, startCol, status) {
     record.name          = item.name;
     record.wear          = 0;
     record.weeksToRepair = 0;
+    if (status === STATUS.ACTIVE) record.installedRound = round;
     installedRides.push(record);
   } else if (category === CATEGORY.SHOP) {
     record.shopId = item.id;
@@ -392,6 +404,7 @@ function processConstruction() {
 
 function completeConstruction(record) {
   record.status = STATUS.ACTIVE;
+  if (record.rideId !== undefined) record.installedRound = round;
   for (let r = 0; r < record.footprint.length; r++) {
     for (let c = 0; c < record.footprint[r].length; c++) {
       if (record.footprint[r][c] === 1)
