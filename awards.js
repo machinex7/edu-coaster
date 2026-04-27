@@ -85,4 +85,11 @@ const AWARD_DEFS = [
     description: 'Our Drop Tower sends you into 165 ft of free fall — the longest drop of any ride in the region.',
     check:       () => installedRides.some(r => r.rideId === 'drop_tower' && r.status === STATUS.ACTIVE),
   },
+  {
+    // All 11 rides active simultaneously.
+    id:          AWARD_ID.MOST_RIDES,
+    name:        'Most Rides in the Region',
+    description: 'With all 11 rides running, we offer more attractions than any other park in the region.',
+    check:       () => installedRides.filter(r => r.status === STATUS.ACTIVE).length >= 11,
+  },
 ];
