@@ -265,7 +265,7 @@ const Finance = {
     installedRides
       .filter(r => r.status === STATUS.ACTIVE && isRideConnected(r))
       .forEach(r => {
-        r.wear += (r.lastRoundRiders ?? 0) * wearMult;
+        r.wear += (r.lastRoundRiders ?? 0) * wearMult * rideWearFactor(r);
         if (Math.random() < r.wear / MAX_EFFECTIVE_WEAR) {
           r.status        = STATUS.BROKEN_DOWN;
           // Repair time scales with wear: more wear = longer repair, minimum 1 week.

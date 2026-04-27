@@ -310,6 +310,15 @@ function rideAgeFactor(record) {
   return Math.max(0, 1 - (ageYears - 5) * 0.02);
 }
 
+// Returns a ≥1 multiplier increasing per-rider wear after 5 years.
+// Grows 2% per year past the threshold: year 10 = ×1.10, year 15 = ×1.20, etc.
+function rideWearFactor(record) {
+  if (record.installedRound == null) return 1;
+  const ageYears = (round - record.installedRound) / 52;
+  if (ageYears < 5) return 1;
+  return 1 + (ageYears - 5) * 0.02;
+}
+
 function isRideConnected(record) {
   for (let r = 0; r < record.footprint.length; r++) {
     for (let c = 0; c < record.footprint[r].length; c++) {
