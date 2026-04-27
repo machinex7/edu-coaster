@@ -22,6 +22,7 @@ const Population = {
   MESS_GUEST_RATE:         0.01,  // 1 per 100 guests
   MESS_SHOPPER_RATE:       0.20,  // 1 per 5 shoppers (guests × BUYER_RATE)
   MESS_EXTREME_RIDER_RATE: 0.05,  // 1 per 20 riders on each extreme-intensity ride
+  MESS_FOOD_RATE:          0.10,  // 1 per 10 meals sold
 
   // ── External economic conditions ───────────────────────────────────────────
   utilityMultiplier:    1,     // applied to all ride utility costs each round
