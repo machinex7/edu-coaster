@@ -11,7 +11,12 @@
     "rideDuration": 180,
     "intensity": "low",
     "ridesPerHour": 15,
-    "utilityCost": 150
+    "utilityCost": 150,
+    "heightFt": 22,
+    "topSpeedMph": 5,
+    "trackLengthFt": 0,
+    "inversions": 0,
+    "dropFt": 0
   },
   {
     "id": "ferris_wheel",
@@ -26,7 +31,12 @@
     "rideDuration": 300,
     "intensity": "low",
     "ridesPerHour": 10,
-    "utilityCost": 300
+    "utilityCost": 300,
+    "heightFt": 150,
+    "topSpeedMph": 3,
+    "trackLengthFt": 0,
+    "inversions": 0,
+    "dropFt": 0
   },
   {
     "id": "tea_cups",
@@ -41,7 +51,12 @@
     "rideDuration": 120,
     "intensity": "low",
     "ridesPerHour": 22,
-    "utilityCost": 180
+    "utilityCost": 180,
+    "heightFt": 12,
+    "topSpeedMph": 10,
+    "trackLengthFt": 0,
+    "inversions": 0,
+    "dropFt": 0
   },
   {
     "id": "tower_swings",
@@ -57,7 +72,12 @@
     "rideDuration": 150,
     "intensity": "medium",
     "ridesPerHour": 18,
-    "utilityCost": 420
+    "utilityCost": 420,
+    "heightFt": 80,
+    "topSpeedMph": 28,
+    "trackLengthFt": 0,
+    "inversions": 0,
+    "dropFt": 0
   },
   {
     "id": "tilt_a_whirl",
@@ -72,7 +92,12 @@
     "rideDuration": 150,
     "intensity": "medium",
     "ridesPerHour": 18,
-    "utilityCost": 220
+    "utilityCost": 220,
+    "heightFt": 10,
+    "topSpeedMph": 14,
+    "trackLengthFt": 0,
+    "inversions": 0,
+    "dropFt": 0
   },
   {
     "id": "bumper_cars",
@@ -87,7 +112,12 @@
     "rideDuration": 300,
     "intensity": "low",
     "ridesPerHour": 10,
-    "utilityCost": 480
+    "utilityCost": 480,
+    "heightFt": 12,
+    "topSpeedMph": 6,
+    "trackLengthFt": 0,
+    "inversions": 0,
+    "dropFt": 0
   },
   {
     "id": "drop_tower",
@@ -101,7 +131,12 @@
     "rideDuration": 60,
     "intensity": "high",
     "ridesPerHour": 30,
-    "utilityCost": 520
+    "utilityCost": 520,
+    "heightFt": 185,
+    "topSpeedMph": 62,
+    "trackLengthFt": 0,
+    "inversions": 0,
+    "dropFt": 165
   },
   {
     "id": "haunted_house",
@@ -116,7 +151,12 @@
     "rideDuration": 600,
     "intensity": "low",
     "ridesPerHour": 6,
-    "utilityCost": 380
+    "utilityCost": 380,
+    "heightFt": 30,
+    "topSpeedMph": 8,
+    "trackLengthFt": 1250,
+    "inversions": 0,
+    "dropFt": 0
   },
   {
     "id": "log_flume",
@@ -133,7 +173,12 @@
     "rideDuration": 360,
     "intensity": "medium",
     "ridesPerHour": 8,
-    "utilityCost": 950
+    "utilityCost": 950,
+    "heightFt": 68,
+    "topSpeedMph": 38,
+    "trackLengthFt": 3400,
+    "inversions": 0,
+    "dropFt": 52
   },
   {
     "id": "boomerang_coaster",
@@ -149,7 +194,12 @@
     "rideDuration": 90,
     "intensity": "high",
     "ridesPerHour": 24,
-    "utilityCost": 1400
+    "utilityCost": 1400,
+    "heightFt": 125,
+    "topSpeedMph": 55,
+    "trackLengthFt": 875,
+    "inversions": 6,
+    "dropFt": 116
   },
   {
     "id": "mega_coaster",
@@ -167,6 +217,11 @@
     "rideDuration": 120,
     "intensity": "extreme",
     "ridesPerHour": 20,
-    "utilityCost": 2800
+    "utilityCost": 2800,
+    "heightFt": 210,
+    "topSpeedMph": 72,
+    "trackLengthFt": 5847,
+    "inversions": 2,
+    "dropFt": 195
   }
 ]

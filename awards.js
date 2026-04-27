@@ -12,7 +12,7 @@ const Awards = {
     this.list.push({ id: def.id, name: def.name, description: def.description, date: getDateLabel() });
     Notifications.push({
       label:   'Award',
-      message: `You earned: ${def.name}`,
+      message: `Award earned: ${def.name}`,
       action:  () => openPanel('awards'),
     });
   },
@@ -29,7 +29,7 @@ const Awards = {
   buildPanel() {
     const body = document.getElementById('awards-panel-body');
     if (this.list.length === 0) {
-      body.innerHTML = '<div class="awards-empty">No awards earned yet.<br>Complete a quarter to be evaluated.</div>';
+      body.innerHTML = '<div class="awards-empty">No awards yet.<br>Build qualifying rides and complete a quarter to be evaluated.</div>';
       return;
     }
     body.innerHTML = this.list.map(a => `
@@ -46,60 +46,43 @@ const Awards = {
 };
 
 // ── Award definitions ────────────────────────────────────────────────────────
-// check(report) → true if the condition is met at quarter-end.
-// report fields: weeklyAttendance, gateRevenue, parkingRevenue, shopRevenue,
-//   foodRevenue, totalIncome, totalExpenses, staffCosts, utilityCosts,
-//   constructionCosts, loanRepayments, rideEfficiency, security, food, populationEvents.
-// Global state also available: money, round, installedRides, Staff.roster,
-//   Security.opinion, Finance.parkExcitement.
+// Each award is tied to a specific qualifying ride being active at quarter-end.
+// Stats come from rides.json. The winning ride for each category is noted inline.
 
 const AWARD_DEFS = [
   {
-    id:          AWARD_ID.FIRST_QUARTER,
-    name:        'First Quarter Complete',
-    description: 'Completed your first full quarter running the park.',
-    check:       () => true,
+    // Mega Coaster: 210 ft — tallest structure of any ride in the park roster.
+    id:          AWARD_ID.HIGHEST_RIDE,
+    name:        'Tallest Ride in the Region',
+    description: 'Home of the Mega Coaster — standing 210 ft tall, the highest ride in the region.',
+    check:       () => installedRides.some(r => r.rideId === 'mega_coaster' && r.status === STATUS.ACTIVE),
   },
   {
-    id:          AWARD_ID.CROWD_PLEASER,
-    name:        'Crowd Pleaser',
-    description: 'Welcomed at least 2,000 visitors in a single week.',
-    check:       (r) => r.weeklyAttendance >= 2000,
+    // Log Flume: 3,400 ft of winding water channel — longer than any coaster in the roster.
+    id:          AWARD_ID.LONGEST_RIDE,
+    name:        'Longest Ride in the Region',
+    description: 'Our Log Flume winds through 3,400 ft of twisting waterway — the longest ride in the region.',
+    check:       () => installedRides.some(r => r.rideId === 'log_flume' && r.status === STATUS.ACTIVE),
   },
   {
-    id:          AWARD_ID.IN_THE_BLACK,
-    name:        'In the Black',
-    description: 'Finished a week with positive net income.',
-    check:       (r) => r.totalIncome > r.totalExpenses,
+    // Mega Coaster: 72 mph top speed — fastest of any ride in the roster.
+    id:          AWARD_ID.FASTEST_RIDE,
+    name:        'Fastest Ride in the Region',
+    description: 'The Mega Coaster hits 72 mph — the fastest ride in the region.',
+    check:       () => installedRides.some(r => r.rideId === 'mega_coaster' && r.status === STATUS.ACTIVE),
   },
   {
-    id:          AWARD_ID.SHOP_STAR,
-    name:        'Shop Star',
-    description: 'Generated $20,000 or more from merchandise in a single week.',
-    check:       (r) => r.shopRevenue >= 20_000,
+    // Boomerang Coaster: 6 inversions — launches forward through 3 loops, then backward through all 3 again.
+    id:          AWARD_ID.MOST_LOOPS,
+    name:        'Most Loops in the Region',
+    description: 'The Boomerang Coaster delivers 6 heart-stopping inversions in a single ride — more than any ride in the region.',
+    check:       () => installedRides.some(r => r.rideId === 'boomerang_coaster' && r.status === STATUS.ACTIVE),
   },
   {
-    id:          AWARD_ID.SAFE_PARK,
-    name:        'Safe Park',
-    description: 'Kept security opinion at or below 20 at the end of a quarter.',
-    check:       () => Security.opinion <= 20,
-  },
-  {
-    id:          AWARD_ID.GROWING_TEAM,
-    name:        'Growing Team',
-    description: 'Employed at least 8 staff members at once.',
-    check:       () => Staff.roster.length >= 8,
-  },
-  {
-    id:          AWARD_ID.RIDE_HEAVEN,
-    name:        'Ride Heaven',
-    description: 'Had at least 5 active rides running simultaneously.',
-    check:       () => installedRides.filter(r => r.status === STATUS.ACTIVE).length >= 5,
-  },
-  {
-    id:          AWARD_ID.MONEY_MAKER,
-    name:        'Money Maker',
-    description: 'Grew the park balance to $1,500,000.',
-    check:       () => money >= 1_500_000,
+    // Drop Tower: 165 ft of free fall — the pure vertical drop specialist.
+    id:          AWARD_ID.LONGEST_DROP,
+    name:        'Longest Drop in the Region',
+    description: 'Our Drop Tower sends you into 165 ft of free fall — the longest drop of any ride in the region.',
+    check:       () => installedRides.some(r => r.rideId === 'drop_tower' && r.status === STATUS.ACTIVE),
   },
 ];

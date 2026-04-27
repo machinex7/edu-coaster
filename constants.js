@@ -90,14 +90,11 @@ const LOAN_STATUS = Object.freeze({
 });
 
 const AWARD_ID = Object.freeze({
-  FIRST_QUARTER: 'first_quarter',
-  CROWD_PLEASER: 'crowd_pleaser',
-  IN_THE_BLACK:  'in_the_black',
-  SHOP_STAR:     'shop_star',
-  SAFE_PARK:     'safe_park',
-  GROWING_TEAM:  'growing_team',
-  RIDE_HEAVEN:   'ride_heaven',
-  MONEY_MAKER:   'money_maker',
+  HIGHEST_RIDE: 'highest_ride',
+  LONGEST_RIDE: 'longest_ride',
+  FASTEST_RIDE: 'fastest_ride',
+  MOST_LOOPS:   'most_loops',
+  LONGEST_DROP: 'longest_drop',
 });
 
 // Interest rate reduction per covenant on the loan agreement.
