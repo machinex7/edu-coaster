@@ -301,13 +301,13 @@ function canPlaceFacility(facility, startRow, startCol) {
   return true;
 }
 
-// Returns a 0–1 multiplier that slowly reduces a ride's enjoyment contribution
-// once it passes 20 years old. At year 20: −0.5%; at year 40: −1%; etc.
+// Returns a 0–1 multiplier reducing a ride's enjoyment contribution after 5 years.
+// Decays 2% per year past the threshold: year 5 = 0%, year 10 = −10%, year 55 = −100%.
 function rideAgeFactor(record) {
   if (record.installedRound == null) return 1;
   const ageYears = (round - record.installedRound) / 52;
-  if (ageYears < 20) return 1;
-  return Math.max(0, 1 - ageYears / 4000);
+  if (ageYears < 5) return 1;
+  return Math.max(0, 1 - (ageYears - 5) * 0.02);
 }
 
 function isRideConnected(record) {
