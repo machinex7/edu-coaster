@@ -165,7 +165,7 @@ const Finance = {
   // Mess penalty: unhandled mess spread across path tiles; 1.25^(mess per path) as divisor.
   calcExcitement(weeklyAttendance) {
     const runningRides      = installedRides.filter(r => r.status === STATUS.ACTIVE && isRideConnected(r));
-    const totalWeeklyRides  = runningRides.reduce((s, r) => s + (r.lastRoundRiders ?? 0), 0);
+    const totalWeeklyRides  = runningRides.reduce((s, r) => s + (r.lastRoundRiders ?? 0) * rideAgeFactor(r), 0);
     const ridesPerPerson    = weeklyAttendance > 0 ? totalWeeklyRides / weeklyAttendance : 0;
     const satisfactionRatio = Math.min(1, ridesPerPerson / Population.DESIRED_RIDES);
     const securityFactor    = Math.max(0, 1 - Math.sqrt(Security.opinion) / 100);
@@ -265,7 +265,7 @@ const Finance = {
     installedRides
       .filter(r => r.status === STATUS.ACTIVE && isRideConnected(r))
       .forEach(r => {
-        r.wear += (r.lastRoundRiders ?? 0) * wearMult;
+        r.wear += (r.lastRoundRiders ?? 0) * wearMult * rideWearFactor(r);
         if (Math.random() < r.wear / MAX_EFFECTIVE_WEAR) {
           r.status        = STATUS.BROKEN_DOWN;
           // Repair time scales with wear: more wear = longer repair, minimum 1 week.
