@@ -340,7 +340,8 @@ const Finance = {
   loanApplication: null,
 
   submitLoanApplication(amount, purpose, term) {
-    this.loanApplication = { amount, purpose, term, status: 'approaching' };
+    const bankFavor = Math.floor(Math.random() * 3);  // 0 unfavorable, 1 neutral, 2 favorable
+    this.loanApplication = { amount, purpose, term, status: 'approaching', bankFavor };
   },
 
   applyForLoan() {
@@ -349,10 +350,11 @@ const Finance = {
   },
 
   // Annual interest rate for the pending loan.
-  // Base = inflation % + 1. Then three additive premiums:
+  // Base = inflation % + 1. Then four additive premiums:
   //   LTV         — loan amount as share of park value (collateral risk)
   //   Coverage    — recent operating income vs expenses (repayment risk)
   //   Term        — longer terms carry more uncertainty
+  //   Favor       — bank's industry sentiment (-0.5 favorable, 0 neutral, +0.5 unfavorable)
   calcLoanRate() {
     const { amount, term } = this.loanApplication;
     const baseRate = Population.inflationRate * 100 + 1;
@@ -384,7 +386,11 @@ const Finance = {
     // Term premium
     const termPremium = term <= 2 ? 0 : term <= 5 ? 0.25 : 0.75;
 
-    return Math.round((baseRate + ltvPremium + coveragePremium + termPremium) * 100) / 100;
+    // Favor premium
+    const { bankFavor } = this.loanApplication;
+    const favorPremium = bankFavor >= 2 ? -0.5 : bankFavor === 1 ? 0 : 0.5;
+
+    return Math.round((baseRate + ltvPremium + coveragePremium + termPremium + favorPremium) * 100) / 100;
   },
 
   // Called once per round. Drives the loan state machine one step forward.

@@ -484,6 +484,17 @@ function buildFinancialPanel() {
     ? `<span class="loan-approaching-label">Approaching Banks…</span>`
     : `<button id="loan-approach-btn">Approach Banks</button>`;
 
+  const favorHtml = (appStatus === 'open' || appStatus === 'applying' || appStatus === 'offered')
+    ? (() => {
+        const f = app.bankFavor;
+        const cls  = f >= 2 ? 'loan-favor-good' : f === 1 ? 'loan-favor-neutral' : 'loan-favor-bad';
+        const text = f >= 2 ? 'The bank is favorable towards you.'
+                   : f === 1 ? 'The bank is neutral toward you.'
+                   :           'The bank views you unfavorably.';
+        return `<div class="${cls}">${text}</div>`;
+      })()
+    : '';
+
   document.getElementById('financial-panel-body').innerHTML = `
     <div class="financial-section">
       <div class="financial-section-header">Pricing Controls</div>
@@ -506,6 +517,7 @@ function buildFinancialPanel() {
           <input id="loan-term" type="number" min="1" max="10" step="1" placeholder="1"
                  value="${app?.term ?? ''}" ${dis}>
         </div>
+        ${favorHtml}
         <div class="form-actions">${loanActionHtml}</div>
       </div>
     </div>`;

@@ -1086,3 +1086,13 @@
   font-style: italic;
   padding: 6px 0;
 }
+
+.loan-favor-good,
+.loan-favor-neutral,
+.loan-favor-bad {
+  font-size: 0.75rem;
+  padding: 5px 0 2px;
+}
+.loan-favor-good    { color: #86efac; }
+.loan-favor-neutral { color: #9ca3af; }
+.loan-favor-bad     { color: #fca5a5; }
