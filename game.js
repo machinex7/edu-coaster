@@ -30,6 +30,8 @@ const WEATHER_DEMAND_REDUCTION = Object.freeze({
   '🌨️': 0.10,
   '🌧️': 0.10,
 });
+const WEATHER_WEAR_MULTIPLIER = 1.2;
+const WEATHER_WET_EMOJIS = Object.freeze(['🌧️', '🌨️', '⛈️']);
 const WEATHER_MERCHANDISE_MULTIPLIERS = Object.freeze({
   '☀️':  { sunscreen:   2 },
   '🌦️': { umbrella:    2 },
