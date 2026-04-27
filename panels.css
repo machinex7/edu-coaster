@@ -1073,3 +1073,16 @@
   border-bottom: 1px solid #1f2937;
   margin-bottom: 0.5rem;
 }
+
+.form-field select:disabled,
+.form-field input[type="number"]:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.loan-approaching-label {
+  font-size: 0.78rem;
+  color: #9ca3af;
+  font-style: italic;
+  padding: 6px 0;
+}

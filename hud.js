@@ -470,6 +470,27 @@ function buildFinancialPanel() {
     </div>
     <div class="financial-section">
       <div class="financial-section-header">Loan</div>
+      <div class="posting-form" id="loan-form">
+        <div class="form-field">
+          <label for="loan-amount">Desired Amount</label>
+          <input id="loan-amount" type="number" min="0" step="1000" placeholder="$0">
+        </div>
+        <div class="form-field">
+          <label for="loan-purpose">Purpose</label>
+          <select id="loan-purpose">
+            <option value="new_rides">New Rides</option>
+            <option value="staffing">Staffing</option>
+            <option value="emergency">Emergency</option>
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="loan-term">Term (Years)</label>
+          <input id="loan-term" type="number" min="1" max="30" step="1" placeholder="1">
+        </div>
+        <div class="form-actions">
+          <button id="loan-approach-btn">Approach Banks</button>
+        </div>
+      </div>
     </div>`;
 
   document.querySelectorAll('.price-apply-btn').forEach(btn => {
@@ -481,5 +502,13 @@ function buildFinancialPanel() {
       document.getElementById(`price-current-${item.key}`).textContent = `$${item.getValue()}`;
       input.value = item.getValue();
     });
+  });
+
+  document.getElementById('loan-approach-btn').addEventListener('click', () => {
+    document.getElementById('loan-amount').disabled  = true;
+    document.getElementById('loan-purpose').disabled = true;
+    document.getElementById('loan-term').disabled    = true;
+    const actions = document.querySelector('#loan-form .form-actions');
+    actions.innerHTML = `<span class="loan-approaching-label">Approaching Banks…</span>`;
   });
 }
