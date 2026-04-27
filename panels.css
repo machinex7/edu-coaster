@@ -1103,3 +1103,31 @@
   padding: 8px 1rem;
   font-style: italic;
 }
+
+.loan-offer-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  color: #e5e7eb;
+  padding: 3px 0;
+}
+.loan-offer-rate span:last-child {
+  font-weight: 700;
+  color: #fde68a;
+}
+.loan-offer-covenant {
+  border-top: 1px solid #374151;
+  margin-top: 6px;
+  padding-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.loan-offer-covenant-desc {
+  font-size: 0.78rem;
+  color: #e5e7eb;
+}
+.loan-offer-covenant-penalty {
+  font-size: 0.72rem;
+  color: #fca5a5;
+}

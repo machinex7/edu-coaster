@@ -497,7 +497,7 @@ function buildFinancialPanel() {
 
   const favorHtml = (appStatus === 'open' || appStatus === 'applying' || appStatus === 'offered')
     ? (() => {
-        const f = app.bankFavor;
+        const f    = app.bankFavor;
         const cls  = f >= 3 ? 'loan-favor-good' : f === 2 ? 'loan-favor-neutral' : 'loan-favor-bad';
         const text = f >= 3 ? 'The bank is favorable towards you.'
                    : f === 2 ? 'The bank is neutral toward you.'
@@ -506,6 +506,51 @@ function buildFinancialPanel() {
       })()
     : '';
 
+  const loanSectionHtml = (() => {
+    if (Finance.hasActiveCovenant('NO_NEW_LOANS') && !app)
+      return `<div class="loan-covenant-block">An active loan covenant prohibits taking on new loans.</div>`;
+
+    if (appStatus === 'offered') {
+      const { amount, term, rate, covenants, covenantPenaltyPct } = app;
+      const penaltyAmt = Math.round(amount * covenantPenaltyPct / 100);
+      const covenantRows = covenants.map(c => `
+        <div class="loan-offer-covenant">
+          <div class="loan-offer-covenant-desc">${c.description}</div>
+          <div class="loan-offer-covenant-penalty">
+            Breach penalty: ${covenantPenaltyPct}% of loan
+            ($${penaltyAmt.toLocaleString()})
+          </div>
+        </div>`).join('');
+      return `
+        <div class="posting-form">
+          ${favorHtml}
+          <div class="loan-offer-row"><span>Amount</span><span>$${amount.toLocaleString()}</span></div>
+          <div class="loan-offer-row"><span>Term</span><span>${term} yr</span></div>
+          <div class="loan-offer-row loan-offer-rate"><span>Interest Rate</span><span>${rate}%</span></div>
+          ${covenantRows}
+        </div>`;
+    }
+
+    return `<div class="posting-form" id="loan-form">
+      <div class="form-field">
+        <label for="loan-amount">Desired Amount</label>
+        <input id="loan-amount" type="number" min="0" step="1000" placeholder="$0"
+               value="${app?.amount ?? ''}" ${dis}>
+      </div>
+      <div class="form-field">
+        <label for="loan-purpose">Purpose</label>
+        <select id="loan-purpose" ${dis}>${purposeOptions}</select>
+      </div>
+      <div class="form-field">
+        <label for="loan-term">Term (Years)</label>
+        <input id="loan-term" type="number" min="1" max="10" step="1" placeholder="1"
+               value="${app?.term ?? ''}" ${dis}>
+      </div>
+      ${favorHtml}
+      <div class="form-actions">${loanActionHtml}</div>
+    </div>`;
+  })();
+
   document.getElementById('financial-panel-body').innerHTML = `
     <div class="financial-section">
       <div class="financial-section-header">Pricing Controls</div>
@@ -513,26 +558,7 @@ function buildFinancialPanel() {
     </div>
     <div class="financial-section">
       <div class="financial-section-header">Loan</div>
-      ${Finance.hasActiveCovenant('NO_NEW_LOANS') && !app
-        ? `<div class="loan-covenant-block">An active loan covenant prohibits taking on new loans.</div>`
-        : `<div class="posting-form" id="loan-form">
-        <div class="form-field">
-          <label for="loan-amount">Desired Amount</label>
-          <input id="loan-amount" type="number" min="0" step="1000" placeholder="$0"
-                 value="${app?.amount ?? ''}" ${dis}>
-        </div>
-        <div class="form-field">
-          <label for="loan-purpose">Purpose</label>
-          <select id="loan-purpose" ${dis}>${purposeOptions}</select>
-        </div>
-        <div class="form-field">
-          <label for="loan-term">Term (Years)</label>
-          <input id="loan-term" type="number" min="1" max="10" step="1" placeholder="1"
-                 value="${app?.term ?? ''}" ${dis}>
-        </div>
-        ${favorHtml}
-        <div class="form-actions">${loanActionHtml}</div>
-      </div>`}
+      ${loanSectionHtml}
     </div>`;
 
   document.querySelectorAll('.price-apply-btn').forEach(btn => {

@@ -547,11 +547,14 @@ const Finance = {
     }
 
     if (status === 'applying') {
-      const covenants = [this.pickCovenant()].filter(Boolean);
-      const rate      = this.calcLoanRate(covenants);
-      this.loanApplication.status    = 'offered';
-      this.loanApplication.rate      = rate;
-      this.loanApplication.covenants = covenants;
+      const covenants          = [this.pickCovenant()].filter(Boolean);
+      const rate               = this.calcLoanRate(covenants);
+      // Penalty for breaching any covenant: 5–20% of loan amount in 5% steps
+      const covenantPenaltyPct = covenants.length > 0 ? (Math.floor(Math.random() * 4) + 1) * 5 : 0;
+      this.loanApplication.status            = 'offered';
+      this.loanApplication.rate              = rate;
+      this.loanApplication.covenants         = covenants;
+      this.loanApplication.covenantPenaltyPct = covenantPenaltyPct;
       Notifications.push({
         label:   'Loan',
         message: `Bank offer: ${rate}% over ${this.loanApplication.term} yr — ${covenants.length} covenant${covenants.length !== 1 ? 's' : ''}.`,
