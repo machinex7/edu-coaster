@@ -10,6 +10,11 @@
 // Interest rate reduction per covenant on the loan agreement.
 const COVENANT_RATE_DISCOUNT = 0.4;
 
+// Per missed payment: interest rate premium added to future proposals.
+const MISSED_PAYMENT_RATE_PENALTY = 0.15;
+// Per missed payment: fraction subtracted from each purpose's LTV cap.
+const MISSED_PAYMENT_LTV_PENALTY  = 0.05;
+
 // Each entry: { id, applicable: purpose[], generate(app) → covenant }
 // covenant shape: { id, description, weeks, value }
 //   weeks — duration or deadline in game-weeks
@@ -442,7 +447,16 @@ const Finance = {
   //   'applying'    → rate calculation pending (1 round)
   //   'offered'     → bank has posted a rate offer
   loanApplication: null,
-  activeLoans: [],  // disbursed loans currently being repaid
+  activeLoans: [],        // disbursed loans currently being repaid
+  totalMissedPayments: 0, // cumulative across all loans; drives future rate/LTV penalties
+
+  // Maximum loan-to-value ratio for each purpose, shrinking with missed payments.
+  effectiveLtvCap(purpose) {
+    const reduction = this.totalMissedPayments * MISSED_PAYMENT_LTV_PENALTY;
+    if (purpose === 'emergency') return Math.max(0.05, 0.25 - reduction);
+    if (purpose === 'staffing')  return Math.max(0.10, 0.50 - reduction);
+    return Math.max(0.10, 1.00 - reduction);
+  },
 
   hasActiveCovenant(id) {
     return this.activeLoans.some(loan =>
@@ -641,12 +655,13 @@ const Finance = {
   },
 
   // Annual interest rate for the pending loan.
-  // Base = inflation % + 1. Then four additive premiums and a covenant discount:
-  //   LTV         — loan amount as share of park value (collateral risk)
-  //   Coverage    — recent operating income vs expenses (repayment risk)
-  //   Term        — longer terms carry more uncertainty
-  //   Favor       — bank's industry sentiment (-0.5 favorable, 0 neutral, +0.5 unfavorable)
-  //   Covenants   — COVENANT_RATE_DISCOUNT per covenant on the agreement
+  // Base = inflation % + 1. Then premiums and adjustments:
+  //   LTV             — loan amount as share of park value (collateral risk)
+  //   Coverage        — recent operating income vs expenses (repayment risk)
+  //   Term            — longer terms carry more uncertainty
+  //   Favor           — bank's industry sentiment (-0.5 favorable → +0.5 unfavorable)
+  //   Covenants       — COVENANT_RATE_DISCOUNT per covenant on the agreement
+  //   Missed payments — MISSED_PAYMENT_RATE_PENALTY per historical missed payment
   calcLoanRate(covenants = []) {
     const { amount, term } = this.loanApplication;
     const baseRate = Population.inflationRate * 100 + 1;
@@ -685,7 +700,10 @@ const Finance = {
     // Covenant discount — each covenant the player accepts shaves off a fixed amount
     const covenantDiscount = covenants.length * COVENANT_RATE_DISCOUNT;
 
-    return Math.round((baseRate + ltvPremium + coveragePremium + termPremium + favorPremium - covenantDiscount) * 100) / 100;
+    // Missed payment penalty — compounds across all historical missed payments
+    const missedPenalty = this.totalMissedPayments * MISSED_PAYMENT_RATE_PENALTY;
+
+    return Math.round((baseRate + ltvPremium + coveragePremium + termPremium + favorPremium - covenantDiscount + missedPenalty) * 100) / 100;
   },
 
   // Called once per round. Drives the loan state machine one step forward.
@@ -696,9 +714,8 @@ const Finance = {
 
     if (status === 'approaching') {
       const netWorth = this.parkValue();
-      let ok = amount > 0 && amount < netWorth;
-      if (ok && purpose === 'emergency') ok = amount < netWorth * 0.25;
-      if (ok && purpose === 'staffing')  ok = amount < netWorth * 0.50;
+      const cap      = this.effectiveLtvCap(purpose);
+      let ok = amount > 0 && amount < netWorth * cap;
 
       if (ok) {
         this.loanApplication.status = 'open';
@@ -750,6 +767,7 @@ const Finance = {
         weeksRemaining:     term * 52,
         totalInterestPaid:  0,
         totalPrincipalPaid: 0,
+        missedPayments:     0,
       });
       this.loanApplication = null;
       Notifications.push({
@@ -788,6 +806,8 @@ const Finance = {
           });
         }
       } else {
+        loan.missedPayments++;
+        this.totalMissedPayments++;
         Notifications.push({
           label:   'Loan',
           message: `Missed loan payment of $${total.toLocaleString()} — insufficient funds.`,
