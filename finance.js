@@ -292,9 +292,10 @@ const Finance = {
     return Math.pow(1.25, messPerPath);
   },
 
-  calcMessGenerated(weeklyAttendance) {
+  calcMessGenerated(weeklyAttendance, mealsSold = 0) {
     const fromGuests   = weeklyAttendance * Population.MESS_GUEST_RATE;
     const fromShoppers = weeklyAttendance * Population.BUYER_RATE * Population.MESS_SHOPPER_RATE;
+    const fromFood     = mealsSold * Population.MESS_FOOD_RATE;
 
     const fromExtremeRides = installedRides
       .filter(r => r.status === STATUS.ACTIVE && isRideConnected(r)
@@ -304,7 +305,7 @@ const Finance = {
         return sum + (r.lastRoundRiders ?? 0) * Population.MESS_EXTREME_RIDER_RATE * dist;
       }, 0);
 
-    return Math.floor(fromGuests + fromShoppers + fromExtremeRides);
+    return Math.floor(fromGuests + fromShoppers + fromFood + fromExtremeRides);
   },
 
   // ── Cost sources ─────────────────────────────────────────────────────────────
@@ -857,7 +858,7 @@ const Finance = {
     Staff.advancePostings();          // increment weeksActive for all postings
     Staff.generateCandidates();       // new applicants per round when postings exist
     Staff.advanceCandidates();        // withdrawal check, then increment weeksAsCandidate
-    this.weeklyNetMess = Math.max(0, this.calcMessGenerated(weeklyAttendance) - Staff.calcJanitorCapacity());
+    this.weeklyNetMess = Math.max(0, this.calcMessGenerated(weeklyAttendance, food.mealsSold) - Staff.calcJanitorCapacity());
     this.mealSatisfaction = food.mealsWanted > 0
       ? Math.min(1, 0.5 + 0.5 * food.mealsServed / food.mealsWanted)
       : 0.5;
