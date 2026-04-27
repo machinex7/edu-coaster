@@ -546,6 +546,11 @@ const Finance = {
             break;
           }
 
+          case 'MIN_CASH':
+            if (money < covenant.value)
+              this.breachCovenant(loan, covenant);
+            break;
+
           case 'RIDERSHIP_FLOOR':
             if (weeklyAttendance < covenant.value)
               this.breachCovenant(loan, covenant);
