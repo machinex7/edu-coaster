@@ -611,14 +611,19 @@ const Finance = {
   // Fixed weekly payment for an amortizing loan.
   // Uses the standard annuity formula: P × r(1+r)^n / ((1+r)^n − 1)
   // where r = annualRatePct / 100 / 52 and n = weeksRemaining.
-  // Rounds up to the nearest dollar (standard lending practice).
-  // Returns 0 if weeksRemaining is 0; falls back to simple division at 0% rate.
+  // Returns { total, principal } where total is the full payment (rounded up)
+  // and principal is the portion reducing the balance (total minus interest this period).
   calcLoanPayment(principal, annualRatePct, weeksRemaining) {
-    if (weeksRemaining <= 0) return 0;
+    if (weeksRemaining <= 0) return { total: 0, principal: 0 };
     const r = annualRatePct / 100 / 52;
-    if (r === 0) return Math.ceil(principal / weeksRemaining);
-    const factor = Math.pow(1 + r, weeksRemaining);
-    return Math.ceil(principal * r * factor / (factor - 1));
+    if (r === 0) {
+      const total = Math.ceil(principal / weeksRemaining);
+      return { total, principal: total };
+    }
+    const factor    = Math.pow(1 + r, weeksRemaining);
+    const total     = Math.ceil(principal * r * factor / (factor - 1));
+    const interest  = principal * r;
+    return { total, principal: total - interest };
   },
     if (this.loanApplication?.status !== 'offered') return;
     this.loanApplication = null;
