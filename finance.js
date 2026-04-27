@@ -7,14 +7,6 @@
 // Adding new cost sources:
 //   Same pattern — calc method, subtract in processRound.
 
-// Interest rate reduction per covenant on the loan agreement.
-const COVENANT_RATE_DISCOUNT = 0.4;
-
-// Per missed payment: interest rate premium added to future proposals.
-const MISSED_PAYMENT_RATE_PENALTY = 0.15;
-// Per missed payment: fraction subtracted from each purpose's LTV cap.
-const MISSED_PAYMENT_LTV_PENALTY  = 0.05;
-
 // Each entry: { id, applicable: purpose[], generate(app) → covenant }
 // covenant shape: { id, description, weeks, value }
 //   weeks — duration or deadline in game-weeks
@@ -28,7 +20,7 @@ const LOAN_COVENANT_TEMPLATES = [
       return {
         id: 'MIN_CASH',
         description: `Maintain at least $${value.toLocaleString()} cash on hand`,
-        weeks: app.term * 52,
+        weeks: app.term * WEEKS_PER_YEAR,
         value,
       };
     },
@@ -40,7 +32,7 @@ const LOAN_COVENANT_TEMPLATES = [
       return {
         id: 'NO_NEW_LOANS',
         description: 'Do not take on additional loans during the term',
-        weeks: app.term * 52,
+        weeks: app.term * WEEKS_PER_YEAR,
         value: 1,
       };
     },
@@ -49,7 +41,7 @@ const LOAN_COVENANT_TEMPLATES = [
     id: 'COMPLETE_RIDE',
     applicable: ['new_rides'],
     generate(app) {
-      const weeks = Math.max(8, Math.ceil(app.term * 52 * 0.25));
+      const weeks = Math.max(8, Math.ceil(app.term * WEEKS_PER_YEAR * 0.25));
       return {
         id: 'COMPLETE_RIDE',
         description: `Complete construction of at least 1 new ride within ${weeks} weeks`,
@@ -65,7 +57,7 @@ const LOAN_COVENANT_TEMPLATES = [
       return {
         id: 'NO_DEMOLISH',
         description: 'Do not demolish any rides for the duration of the loan',
-        weeks: app.term * 52,
+        weeks: app.term * WEEKS_PER_YEAR,
         value: 0,
       };
     },
@@ -75,7 +67,7 @@ const LOAN_COVENANT_TEMPLATES = [
     applicable: ['staffing'],
     generate(app) {
       const value = Math.max(2, Math.round(app.amount / 75000));
-      const weeks = Math.max(8, Math.ceil(app.term * 52 * 0.25));
+      const weeks = Math.max(8, Math.ceil(app.term * WEEKS_PER_YEAR * 0.25));
       return {
         id: 'HIRE_STAFF',
         description: `Hire at least ${value} new employee${value !== 1 ? 's' : ''} within ${weeks} weeks`,
@@ -96,7 +88,7 @@ const LOAN_COVENANT_TEMPLATES = [
       return {
         id: 'RIDERSHIP_FLOOR',
         description: `Maintain weekly attendance of at least ${value.toLocaleString()} visitors`,
-        weeks: app.term * 52,
+        weeks: app.term * WEEKS_PER_YEAR,
         value,
       };
     },
@@ -109,7 +101,7 @@ const LOAN_COVENANT_TEMPLATES = [
       return {
         id: 'SECURITY_THRESHOLD',
         description: `Keep security opinion below ${value} for the duration`,
-        weeks: app.term * 52,
+        weeks: app.term * WEEKS_PER_YEAR,
         value,
       };
     },
@@ -468,12 +460,12 @@ const Finance = {
     // Favor 1–3; upper limit shrinks by 1 per active loan (floored at 1).
     const maxFavor  = Math.max(1, 3 - this.activeLoans.length);
     const bankFavor = Math.floor(Math.random() * maxFavor) + 1;
-    this.loanApplication = { amount, purpose, term, status: 'approaching', bankFavor };
+    this.loanApplication = { amount, purpose, term, status: LOAN_STATUS.APPROACHING, bankFavor };
   },
 
   applyForLoan() {
-    if (this.loanApplication?.status === 'open')
-      this.loanApplication.status = 'applying';
+    if (this.loanApplication?.status === LOAN_STATUS.OPEN)
+      this.loanApplication.status = LOAN_STATUS.APPLYING;
   },
 
   // Mark a covenant as breached and warn the player. The fee is not taken
@@ -639,13 +631,15 @@ const Finance = {
     const interest  = principal * r;
     return { total, principal: total - interest };
   },
-    if (this.loanApplication?.status !== 'offered') return;
+
+  rejectOffer() {
+    if (this.loanApplication?.status !== LOAN_STATUS.OFFERED) return;
     this.loanApplication = null;
   },
 
   acceptOffer() {
-    if (this.loanApplication?.status !== 'offered') return;
-    this.loanApplication.status = 'review';
+    if (this.loanApplication?.status !== LOAN_STATUS.OFFERED) return;
+    this.loanApplication.status = LOAN_STATUS.REVIEW;
     this.loanApplication.reviewWeeksRemaining = 2;
     Notifications.push({
       label:   'Loan',
@@ -712,13 +706,13 @@ const Finance = {
     if (!this.loanApplication) return null;
     const { amount, purpose, status } = this.loanApplication;
 
-    if (status === 'approaching') {
+    if (status === LOAN_STATUS.APPROACHING) {
       const netWorth = this.parkValue();
       const cap      = this.effectiveLtvCap(purpose);
       let ok = amount > 0 && amount < netWorth * cap;
 
       if (ok) {
-        this.loanApplication.status = 'open';
+        this.loanApplication.status = LOAN_STATUS.OPEN;
         Notifications.push({
           label:   'Loan',
           message: 'A bank is open for applications on your requested loan.',
@@ -736,12 +730,12 @@ const Finance = {
       }
     }
 
-    if (status === 'applying') {
+    if (status === LOAN_STATUS.APPLYING) {
       const covenants          = [this.pickCovenant()].filter(Boolean);
       const rate               = this.calcLoanRate(covenants);
       // Penalty for breaching any covenant: 5–20% of loan amount in 5% steps
       const covenantPenaltyPct = covenants.length > 0 ? (Math.floor(Math.random() * 4) + 1) * 5 : 0;
-      this.loanApplication.status            = 'offered';
+      this.loanApplication.status            = LOAN_STATUS.OFFERED;
       this.loanApplication.rate              = rate;
       this.loanApplication.covenants         = covenants;
       this.loanApplication.covenantPenaltyPct = covenantPenaltyPct;
@@ -753,7 +747,7 @@ const Finance = {
       return 'offered';
     }
 
-    if (status === 'review') {
+    if (status === LOAN_STATUS.REVIEW) {
       this.loanApplication.reviewWeeksRemaining--;
       if (this.loanApplication.reviewWeeksRemaining > 0) return 'reviewing';
 
@@ -764,7 +758,7 @@ const Finance = {
         id: Date.now(),
         amount, purpose, term, rate, covenants, covenantPenaltyPct,
         balance:            amount,
-        weeksRemaining:     term * 52,
+        weeksRemaining:     term * WEEKS_PER_YEAR,
         totalInterestPaid:  0,
         totalPrincipalPaid: 0,
         missedPayments:     0,

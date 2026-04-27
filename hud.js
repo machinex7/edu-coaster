@@ -487,15 +487,15 @@ function buildFinancialPanel() {
     ['emergency', 'Emergency'],
   ].map(([v, l]) => `<option value="${v}"${v === purpose ? ' selected' : ''}>${l}</option>`).join('');
 
-  const loanActionHtml = appStatus === 'open'
+  const loanActionHtml = appStatus === LOAN_STATUS.OPEN
     ? `<button id="loan-apply-btn">Apply For Loan</button>`
-    : appStatus === 'applying'
+    : appStatus === LOAN_STATUS.APPLYING
     ? `<span class="loan-approaching-label">Awaiting Offer…</span>`
     : locked
     ? `<span class="loan-approaching-label">Approaching Banks…</span>`
     : `<button id="loan-approach-btn">Approach Banks</button>`;
 
-  const favorHtml = (appStatus === 'open' || appStatus === 'applying' || appStatus === 'offered')
+  const favorHtml = (appStatus === LOAN_STATUS.OPEN || appStatus === LOAN_STATUS.APPLYING || appStatus === LOAN_STATUS.OFFERED)
     ? (() => {
         const f    = app.bankFavor;
         const cls  = f >= 3 ? 'loan-favor-good' : f === 2 ? 'loan-favor-neutral' : 'loan-favor-bad';
@@ -510,7 +510,7 @@ function buildFinancialPanel() {
     if (Finance.hasActiveCovenant('NO_NEW_LOANS') && !app)
       return `<div class="loan-covenant-block">An active loan covenant prohibits taking on new loans.</div>`;
 
-    if (appStatus === 'offered') {
+    if (appStatus === LOAN_STATUS.OFFERED) {
       const { amount, term, rate, covenants, covenantPenaltyPct } = app;
       const canNegotiate = app.bankFavor > 0;
       const negBtn       = (id, extra = '') =>
@@ -555,7 +555,7 @@ function buildFinancialPanel() {
         </div>`;
     }
 
-    if (appStatus === 'review') {
+    if (appStatus === LOAN_STATUS.REVIEW) {
       const { amount, term, rate, reviewWeeksRemaining } = app;
       return `
         <div class="posting-form">
@@ -623,7 +623,7 @@ function buildFinancialPanel() {
     });
   }
 
-  if (appStatus === 'open') {
+  if (appStatus === LOAN_STATUS.OPEN) {
     document.getElementById('loan-apply-btn').addEventListener('click', () => {
       Finance.applyForLoan();
       document.querySelector('#loan-form .form-actions').innerHTML =
@@ -631,7 +631,7 @@ function buildFinancialPanel() {
     });
   }
 
-  if (appStatus === 'offered') {
+  if (appStatus === LOAN_STATUS.OFFERED) {
     document.getElementById('loan-reject-btn').addEventListener('click', () => {
       Finance.rejectOffer();
       buildFinancialPanel();
