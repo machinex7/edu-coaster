@@ -1057,3 +1057,123 @@
 .rn-badge.available   { background: #78350f; color: #fde68a; }
 .rn-badge.completed   { background: #14532d; color: #86efac; }
 .rn-badge.in-progress { background: #1e3a5f; color: #93c5fd; }
+
+/* ── Financial panel ─────────────────────────────────────────────────────── */
+.financial-section {
+  margin-bottom: 1.5rem;
+}
+
+.financial-section-header {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6b7280;
+  padding: 0.4rem 1rem 0.4rem;
+  border-bottom: 1px solid #1f2937;
+  margin-bottom: 0.5rem;
+}
+
+.form-field select:disabled,
+.form-field input[type="number"]:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.loan-approaching-label {
+  font-size: 0.78rem;
+  color: #9ca3af;
+  font-style: italic;
+  padding: 6px 0;
+}
+
+.loan-favor-good,
+.loan-favor-neutral,
+.loan-favor-bad {
+  font-size: 0.75rem;
+  padding: 5px 0 2px;
+}
+.loan-favor-good    { color: #86efac; }
+.loan-favor-neutral { color: #9ca3af; }
+.loan-favor-bad     { color: #fca5a5; }
+
+.loan-covenant-block {
+  font-size: 0.75rem;
+  color: #fca5a5;
+  padding: 8px 1rem;
+  font-style: italic;
+}
+
+.loan-offer-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.82rem;
+  color: #e5e7eb;
+  padding: 3px 0;
+}
+.loan-offer-rate span:last-child {
+  font-weight: 700;
+  color: #fde68a;
+}
+.loan-offer-covenant {
+  border-top: 1px solid #374151;
+  margin-top: 6px;
+  padding-top: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+.loan-offer-covenant-desc {
+  font-size: 0.78rem;
+  color: #e5e7eb;
+}
+.loan-offer-covenant-penalty {
+  font-size: 0.72rem;
+  color: #fca5a5;
+}
+
+.loan-offer-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.loan-offer-covenant-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+}
+.negotiate-btn {
+  flex-shrink: 0;
+  font-size: 0.65rem;
+  padding: 2px 7px;
+  background: #1e3a5f;
+  color: #93c5fd;
+  border: 1px solid #1d4ed8;
+  border-radius: 3px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.negotiate-btn:hover { background: #1d4ed8; color: #fff; }
+
+.loan-reject-btn {
+  background: #450a0a;
+  color: #fca5a5;
+  border: 1px solid #7f1d1d;
+  border-radius: 4px;
+  padding: 6px;
+  cursor: pointer;
+  flex: 1;
+}
+.loan-reject-btn:hover { background: #7f1d1d; }
+
+.loan-accept-btn {
+  background: #14532d;
+  color: #86efac;
+  border: 1px solid #166534;
+  border-radius: 4px;
+  padding: 6px;
+  cursor: pointer;
+  flex: 1;
+}
+.loan-accept-btn:hover { background: #166534; }

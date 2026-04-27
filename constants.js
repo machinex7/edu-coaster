@@ -78,3 +78,20 @@ const RESEARCH_ID = Object.freeze({
 
 // Breakdown probability reaches 100% at this cumulative wear value.
 const MAX_EFFECTIVE_WEAR = 1000;
+
+const WEEKS_PER_YEAR = 52;
+
+const LOAN_STATUS = Object.freeze({
+  APPROACHING: 'approaching',
+  OPEN:        'open',
+  APPLYING:    'applying',
+  OFFERED:     'offered',
+  REVIEW:      'review',
+});
+
+// Interest rate reduction per covenant on the loan agreement.
+const COVENANT_RATE_DISCOUNT = 0.4;
+// Per missed payment: interest rate premium added to future proposals.
+const MISSED_PAYMENT_RATE_PENALTY = 0.15;
+// Per missed payment: fraction subtracted from each purpose's LTV cap.
+const MISSED_PAYMENT_LTV_PENALTY  = 0.05;

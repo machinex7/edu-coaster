@@ -31,7 +31,8 @@ function openPark() {
 
 function advanceRound() {
   round++;
-  const report = Finance.processRound();
+  const report     = Finance.processRound();
+  const loanResult = Finance.processPendingLoan();
   History.record(report);
   Research.tickResearch();
   updateLockedPanels();
@@ -40,6 +41,7 @@ function advanceRound() {
   Staff.refreshPanel();
   Security.refreshPanel();
   Research.refreshPanel();
+  if (loanResult && activePanel === 'financial') buildFinancialPanel();
   showRoundSummary(report);
   nextWeekForecast   = futurecastForecast;
   futurecastForecast = forecastForRound(round + 2);
@@ -132,6 +134,13 @@ function updateLockedPanels() {
     if (!benefitsUnlocked && Staff._activeView === 'benefits') Staff.setView('roster');
   }
 
+  const demolishBtn = document.querySelector('.tool-btn[data-panel="demolish"]');
+  if (demolishBtn) {
+    const demolishLocked = Finance.hasActiveCovenant('NO_DEMOLISH');
+    demolishBtn.disabled = demolishLocked;
+    demolishBtn.title    = demolishLocked ? 'Locked by loan covenant' : '';
+  }
+
   document.getElementById('weather-panel').classList.toggle('hidden', !Research.completed.has(RESEARCH_ID.WEATHER_SENSOR));
   document.getElementById('forecast-future-count').classList.toggle('hidden', !Research.completed.has(RESEARCH_ID.WEATHER_STATION));
 }
@@ -142,6 +151,10 @@ function togglePanel(panelId) {
 }
 
 function openPanel(panelId) {
+  if (panelId === 'demolish' && Finance.hasActiveCovenant('NO_DEMOLISH')) {
+    Notifications.push({ label: 'Covenant', message: 'Your loan covenant prohibits demolishing rides.' });
+    return;
+  }
   if (activePanel && activePanel !== panelId) {
     if (activePanel === 'demolish') setDemolishMode(false);
     else document.getElementById(`panel-${activePanel}`).classList.add('closed');
@@ -155,7 +168,7 @@ function openPanel(panelId) {
   if (panelId === 'rides')      buildRidesPanel();
   if (panelId === 'staffing')   Staff.openPanel();
   if (panelId === 'security')   Security.buildPanel();
-  if (panelId === 'pricing')    buildPricingPanel();
+  if (panelId === 'financial')  buildFinancialPanel();
   if (panelId === 'inventory')  buildInventoryPanel();
   if (panelId === 'survey')     Survey.buildPanel();
   if (panelId === 'research')   Research.buildPanel();
@@ -300,7 +313,7 @@ function initSubTabs() {
   });
 }
 
-// ── Pricing panel ──────────────────────────────────────────────────────────
+// ── Financial panel ────────────────────────────────────────────────────────
 const PRICE_ITEMS = [
   {
     key:       'gate',
@@ -450,7 +463,7 @@ function _buildInvSuppliersView() {
   });
 }
 
-function buildPricingPanel() {
+function buildFinancialPanel() {
   const rows = PRICE_ITEMS.map(item => `
     <div class="price-row">
       <div class="price-label">${item.label}</div>
@@ -463,8 +476,127 @@ function buildPricingPanel() {
       </div>
     </div>`).join('');
 
-  document.getElementById('pricing-panel-body').innerHTML = `
-    <div class="price-list">${rows}</div>`;
+  const app     = Finance.loanApplication;
+  const appStatus = app?.status ?? null;
+  const locked  = app !== null;
+  const dis     = locked ? 'disabled' : '';
+  const purpose = app?.purpose ?? 'new_rides';
+  const purposeOptions = [
+    ['new_rides', 'New Rides'],
+    ['staffing',  'Staffing'],
+    ['emergency', 'Emergency'],
+  ].map(([v, l]) => `<option value="${v}"${v === purpose ? ' selected' : ''}>${l}</option>`).join('');
+
+  const loanActionHtml = appStatus === LOAN_STATUS.OPEN
+    ? `<button id="loan-apply-btn">Apply For Loan</button>`
+    : appStatus === LOAN_STATUS.APPLYING
+    ? `<span class="loan-approaching-label">Awaiting Offer…</span>`
+    : locked
+    ? `<span class="loan-approaching-label">Approaching Banks…</span>`
+    : `<button id="loan-approach-btn">Approach Banks</button>`;
+
+  const favorHtml = (appStatus === LOAN_STATUS.OPEN || appStatus === LOAN_STATUS.APPLYING || appStatus === LOAN_STATUS.OFFERED)
+    ? (() => {
+        const f    = app.bankFavor;
+        const cls  = f >= 3 ? 'loan-favor-good' : f === 2 ? 'loan-favor-neutral' : 'loan-favor-bad';
+        const text = f >= 3 ? 'The bank is favorable towards you.'
+                   : f === 2 ? 'The bank is neutral toward you.'
+                   :           'The bank views you unfavorably.';
+        return `<div class="${cls}">${text}</div>`;
+      })()
+    : '';
+
+  const loanSectionHtml = (() => {
+    if (Finance.hasActiveCovenant('NO_NEW_LOANS') && !app)
+      return `<div class="loan-covenant-block">An active loan covenant prohibits taking on new loans.</div>`;
+
+    if (appStatus === LOAN_STATUS.OFFERED) {
+      const { amount, term, rate, covenants, covenantPenaltyPct } = app;
+      const canNegotiate = app.bankFavor > 0;
+      const negBtn       = (id, extra = '') =>
+        `<button class="negotiate-btn"${id ? ` id="${id}"` : ''} ${extra}>Negotiate</button>`;
+
+      const covenantRows = covenants.map((c, i) => `
+        <div class="loan-offer-covenant">
+          <div class="loan-offer-covenant-header">
+            <span class="loan-offer-covenant-desc">${c.description}</span>
+            ${canNegotiate ? negBtn('', `data-covenant-index="${i}"`) : ''}
+          </div>
+        </div>`).join('');
+
+      const penaltyAmt = covenants.length > 0 ? Math.round(amount * covenantPenaltyPct / 100) : 0;
+      const feeRow = covenants.length > 0 ? `
+        <div class="loan-offer-row">
+          <span>Breach Fee</span>
+          <div class="loan-offer-right">
+            <span>${covenantPenaltyPct}% ($${penaltyAmt.toLocaleString()})</span>
+            ${canNegotiate && covenantPenaltyPct > 5 ? negBtn('negotiate-fee-btn') : ''}
+          </div>
+        </div>` : '';
+
+      return `
+        <div class="posting-form">
+          ${favorHtml}
+          <div class="loan-offer-row"><span>Amount</span><span>$${amount.toLocaleString()}</span></div>
+          <div class="loan-offer-row"><span>Term</span><span>${term} yr</span></div>
+          <div class="loan-offer-row loan-offer-rate">
+            <span>Interest Rate</span>
+            <div class="loan-offer-right">
+              <span>${rate}%</span>
+              ${canNegotiate ? negBtn('negotiate-rate-btn') : ''}
+            </div>
+          </div>
+          ${covenantRows}
+          ${feeRow}
+          <div class="form-actions">
+            <button id="loan-reject-btn" class="loan-reject-btn">Reject</button>
+            <button id="loan-accept-btn" class="loan-accept-btn">Accept</button>
+          </div>
+        </div>`;
+    }
+
+    if (appStatus === LOAN_STATUS.REVIEW) {
+      const { amount, term, rate, reviewWeeksRemaining } = app;
+      return `
+        <div class="posting-form">
+          <div class="loan-offer-row"><span>Amount</span><span>$${amount.toLocaleString()}</span></div>
+          <div class="loan-offer-row"><span>Term</span><span>${term} yr</span></div>
+          <div class="loan-offer-row loan-offer-rate"><span>Interest Rate</span><span>${rate}%</span></div>
+          <div class="loan-approaching-label">
+            Under Review — ${reviewWeeksRemaining} week${reviewWeeksRemaining !== 1 ? 's' : ''} remaining…
+          </div>
+        </div>`;
+    }
+
+    return `<div class="posting-form" id="loan-form">
+      <div class="form-field">
+        <label for="loan-amount">Desired Amount</label>
+        <input id="loan-amount" type="number" min="0" step="1000" placeholder="$0"
+               value="${app?.amount ?? ''}" ${dis}>
+      </div>
+      <div class="form-field">
+        <label for="loan-purpose">Purpose</label>
+        <select id="loan-purpose" ${dis}>${purposeOptions}</select>
+      </div>
+      <div class="form-field">
+        <label for="loan-term">Term (Years)</label>
+        <input id="loan-term" type="number" min="1" max="10" step="1" placeholder="1"
+               value="${app?.term ?? ''}" ${dis}>
+      </div>
+      ${favorHtml}
+      <div class="form-actions">${loanActionHtml}</div>
+    </div>`;
+  })();
+
+  document.getElementById('financial-panel-body').innerHTML = `
+    <div class="financial-section">
+      <div class="financial-section-header">Pricing Controls</div>
+      <div class="price-list">${rows}</div>
+    </div>
+    <div class="financial-section">
+      <div class="financial-section-header">Loan</div>
+      ${loanSectionHtml}
+    </div>`;
 
   document.querySelectorAll('.price-apply-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -476,4 +608,51 @@ function buildPricingPanel() {
       input.value = item.getValue();
     });
   });
+
+  if (appStatus === null) {
+    document.getElementById('loan-approach-btn').addEventListener('click', () => {
+      const amount  = Math.max(0, parseInt(document.getElementById('loan-amount').value)  || 0);
+      const purpose = document.getElementById('loan-purpose').value;
+      const term    = Math.max(1, parseInt(document.getElementById('loan-term').value)    || 1);
+      Finance.submitLoanApplication(amount, purpose, term);
+      document.getElementById('loan-amount').disabled  = true;
+      document.getElementById('loan-purpose').disabled = true;
+      document.getElementById('loan-term').disabled    = true;
+      document.querySelector('#loan-form .form-actions').innerHTML =
+        `<span class="loan-approaching-label">Approaching Banks…</span>`;
+    });
+  }
+
+  if (appStatus === LOAN_STATUS.OPEN) {
+    document.getElementById('loan-apply-btn').addEventListener('click', () => {
+      Finance.applyForLoan();
+      document.querySelector('#loan-form .form-actions').innerHTML =
+        `<span class="loan-approaching-label">Awaiting Offer…</span>`;
+    });
+  }
+
+  if (appStatus === LOAN_STATUS.OFFERED) {
+    document.getElementById('loan-reject-btn').addEventListener('click', () => {
+      Finance.rejectOffer();
+      buildFinancialPanel();
+    });
+    document.getElementById('loan-accept-btn').addEventListener('click', () => {
+      Finance.acceptOffer();
+      buildFinancialPanel();
+    });
+    document.getElementById('negotiate-rate-btn')?.addEventListener('click', () => {
+      Finance.negotiateRate();
+      buildFinancialPanel();
+    });
+    document.getElementById('negotiate-fee-btn')?.addEventListener('click', () => {
+      Finance.negotiateFee();
+      buildFinancialPanel();
+    });
+    document.querySelectorAll('[data-covenant-index]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        Finance.negotiateCovenant(parseInt(btn.dataset.covenantIndex));
+        buildFinancialPanel();
+      });
+    });
+  }
 }
