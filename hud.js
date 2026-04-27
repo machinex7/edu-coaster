@@ -35,7 +35,7 @@ function advanceRound() {
   const loanResult = Finance.processPendingLoan();
   History.record(report);
   Research.tickResearch();
-  if (round % 13 === 1 && round > 1) Awards.checkQuarterly(report);
+  if (round % 13 === 1 && round > 1) Awards.checkQuarterly();
   updateLockedPanels();
   updateHUD();
   refreshRidesPanel();

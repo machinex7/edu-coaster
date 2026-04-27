@@ -17,10 +17,12 @@ const Awards = {
     });
   },
 
-  // Called at quarter-end. Passes the last round's Finance report for per-week criteria.
-  checkQuarterly(report) {
+  // Called at quarter-end. Reads the last 13 rounds from History for criteria
+  // that span the whole quarter (mess, incidents, peak attendance).
+  checkQuarterly() {
+    const qr = History.rounds.slice(-13);
     for (const def of AWARD_DEFS) {
-      if (!this.earned.has(def.id) && def.check(report)) {
+      if (!this.earned.has(def.id) && def.check(qr)) {
         this.earn(def);
       }
     }
@@ -46,8 +48,8 @@ const Awards = {
 };
 
 // ── Award definitions ────────────────────────────────────────────────────────
-// Each award is tied to a specific qualifying ride being active at quarter-end.
-// Stats come from rides.json. The winning ride for each category is noted inline.
+// check(qr) receives History.rounds.slice(-13) — the last 13 recorded rounds.
+// Ride-record awards ignore qr and check current installed rides instead.
 
 const AWARD_DEFS = [
   {
@@ -91,5 +93,26 @@ const AWARD_DEFS = [
     name:        'Most Rides in the Region',
     description: 'With all 11 rides running, we offer more attractions than any other park in the region.',
     check:       () => installedRides.filter(r => r.status === STATUS.ACTIVE).length >= 11,
+  },
+  {
+    // No excess mess in any round of the quarter.
+    id:          AWARD_ID.CLEANEST_PARK,
+    name:        'Cleanest Park in the Region',
+    description: 'Not a trace of litter all quarter — the cleanest park in the region.',
+    check:       (qr) => qr.length > 0 && qr.every(r => !r.weeklyNetMess),
+  },
+  {
+    // Zero security incidents in every round of the quarter.
+    id:          AWARD_ID.SAFEST_PARK,
+    name:        'Safest Park in the Region',
+    description: 'Zero security incidents all quarter — the safest park in the region.',
+    check:       (qr) => qr.length > 0 && qr.every(r => r.securityIncidents === 0),
+  },
+  {
+    // Peak weekly attendance hit 10,000 in at least one round this quarter.
+    id:          AWARD_ID.MOST_GUESTS,
+    name:        'Most Guests in the Region',
+    description: 'Welcomed 10,000 guests in a single week — more than any park in the region.',
+    check:       (qr) => qr.some(r => r.attendance >= 10_000),
   },
 ];
