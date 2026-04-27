@@ -746,6 +746,10 @@ const Finance = {
       this.activeLoans.push({
         id: Date.now(),
         amount, purpose, term, rate, covenants, covenantPenaltyPct,
+        balance:            amount,
+        weeksRemaining:     term * 52,
+        totalInterestPaid:  0,
+        totalPrincipalPaid: 0,
       });
       this.loanApplication = null;
       Notifications.push({
@@ -757,6 +761,41 @@ const Finance = {
     }
 
     return null;
+  },
+
+  // ── Loan repayments ──────────────────────────────────────────────────────────
+  // Deducts the weekly payment from cash, splits it into interest and principal,
+  // and removes loans that have been fully repaid.
+  // Returns total cash deducted this round across all loans.
+  processLoanRepayments() {
+    let paid = 0;
+    for (let i = this.activeLoans.length - 1; i >= 0; i--) {
+      const loan = this.activeLoans[i];
+      const { total, principal } = this.calcLoanPayment(loan.balance, loan.rate, loan.weeksRemaining);
+      if (money >= total) {
+        money -= total;
+        paid  += total;
+        loan.balance           = Math.max(0, loan.balance - principal);
+        loan.weeksRemaining--;
+        loan.totalInterestPaid  += total - principal;
+        loan.totalPrincipalPaid += principal;
+        if (loan.weeksRemaining <= 0 || loan.balance <= 0) {
+          this.activeLoans.splice(i, 1);
+          Notifications.push({
+            label:   'Loan',
+            message: 'Loan fully repaid.',
+            action:  () => openPanel('financial'),
+          });
+        }
+      } else {
+        Notifications.push({
+          label:   'Loan',
+          message: `Missed loan payment of $${total.toLocaleString()} — insufficient funds.`,
+          action:  () => openPanel('financial'),
+        });
+      }
+    }
+    return paid;
   },
 
   // ── Round processing ─────────────────────────────────────────────────────────
@@ -787,6 +826,7 @@ const Finance = {
     money += foodRevenue;
 
     // Costs — income applied first so ability-to-pay reflects this week's revenue
+    const loanRepayments    = this.processLoanRepayments();
     const staffCosts        = this.calcStaffCosts();
     const utilityCosts      = this.payUtilityCosts();
     const constructionCosts = processConstruction();  // skips progress on unaffordable builds
@@ -834,7 +874,8 @@ const Finance = {
       utilityCosts,
       constructionCosts,
       shopItemsSold,
-      totalExpenses: staffCosts + utilityCosts + constructionCosts,
+      loanRepayments,
+      totalExpenses: staffCosts + utilityCosts + constructionCosts + loanRepayments,
       rideEfficiency: this.rideOpinion,
       security: { ...security, opinionAfter: Security.opinion },
       food: { ...food, mealSatisfaction: this.mealSatisfaction },
