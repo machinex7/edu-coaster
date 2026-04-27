@@ -7,6 +7,110 @@
 // Adding new cost sources:
 //   Same pattern — calc method, subtract in processRound.
 
+// Interest rate reduction per covenant on the loan agreement.
+const COVENANT_RATE_DISCOUNT = 0.4;
+
+// Each entry: { id, applicable: purpose[], generate(app) → covenant }
+// covenant shape: { id, description, weeks, value }
+//   weeks — duration or deadline in game-weeks
+//   value — contextual threshold/target (amount, count, etc.)
+const LOAN_COVENANT_TEMPLATES = [
+  {
+    id: 'MIN_CASH',
+    applicable: ['new_rides', 'staffing', 'emergency'],
+    generate(app) {
+      const value = Math.max(1000, Math.round(app.amount * 0.15 / 1000) * 1000);
+      return {
+        id: 'MIN_CASH',
+        description: `Maintain at least $${value.toLocaleString()} cash on hand`,
+        weeks: app.term * 52,
+        value,
+      };
+    },
+  },
+  {
+    id: 'NO_NEW_LOANS',
+    applicable: ['new_rides', 'staffing', 'emergency'],
+    generate(app) {
+      return {
+        id: 'NO_NEW_LOANS',
+        description: 'Do not take on additional loans during the term',
+        weeks: app.term * 52,
+        value: 1,
+      };
+    },
+  },
+  {
+    id: 'COMPLETE_RIDE',
+    applicable: ['new_rides'],
+    generate(app) {
+      const weeks = Math.max(8, Math.ceil(app.term * 52 * 0.25));
+      return {
+        id: 'COMPLETE_RIDE',
+        description: `Complete construction of at least 1 new ride within ${weeks} weeks`,
+        weeks,
+        value: 1,
+      };
+    },
+  },
+  {
+    id: 'NO_DEMOLISH',
+    applicable: ['new_rides'],
+    generate(app) {
+      return {
+        id: 'NO_DEMOLISH',
+        description: 'Do not demolish any rides for the duration of the loan',
+        weeks: app.term * 52,
+        value: 0,
+      };
+    },
+  },
+  {
+    id: 'HIRE_STAFF',
+    applicable: ['staffing'],
+    generate(app) {
+      const value = Math.max(2, Math.round(app.amount / 75000));
+      const weeks = Math.max(8, Math.ceil(app.term * 52 * 0.25));
+      return {
+        id: 'HIRE_STAFF',
+        description: `Hire at least ${value} new employee${value !== 1 ? 's' : ''} within ${weeks} weeks`,
+        weeks,
+        value,
+      };
+    },
+  },
+  {
+    id: 'RIDERSHIP_FLOOR',
+    applicable: ['new_rides', 'staffing'],
+    generate(app) {
+      const recent = History.rounds.slice(-4);
+      const avg    = recent.length > 0
+        ? recent.reduce((s, r) => s + r.attendance, 0) / recent.length
+        : 500;
+      const value = Math.max(100, Math.round(avg * 0.8 / 100) * 100);
+      return {
+        id: 'RIDERSHIP_FLOOR',
+        description: `Maintain weekly attendance of at least ${value.toLocaleString()} visitors`,
+        weeks: app.term * 52,
+        value,
+      };
+    },
+  },
+  {
+    id: 'SECURITY_THRESHOLD',
+    applicable: ['emergency'],
+    generate(app) {
+      const value = 10;
+      return {
+        id: 'SECURITY_THRESHOLD',
+        description: `Keep security opinion below ${value} for the duration`,
+        weeks: app.term * 52,
+        value,
+      };
+    },
+  },
+];
+
 const Finance = {
 
   // ── Park metrics ────────────────────────────────────────────────────────────
@@ -352,13 +456,21 @@ const Finance = {
       this.loanApplication.status = 'applying';
   },
 
+  pickCovenant() {
+    const { purpose } = this.loanApplication;
+    const pool = LOAN_COVENANT_TEMPLATES.filter(t => t.applicable.includes(purpose));
+    if (pool.length === 0) return null;
+    return pool[Math.floor(Math.random() * pool.length)].generate(this.loanApplication);
+  },
+
   // Annual interest rate for the pending loan.
-  // Base = inflation % + 1. Then four additive premiums:
+  // Base = inflation % + 1. Then four additive premiums and a covenant discount:
   //   LTV         — loan amount as share of park value (collateral risk)
   //   Coverage    — recent operating income vs expenses (repayment risk)
   //   Term        — longer terms carry more uncertainty
   //   Favor       — bank's industry sentiment (-0.5 favorable, 0 neutral, +0.5 unfavorable)
-  calcLoanRate() {
+  //   Covenants   — COVENANT_RATE_DISCOUNT per covenant on the agreement
+  calcLoanRate(covenants = []) {
     const { amount, term } = this.loanApplication;
     const baseRate = Population.inflationRate * 100 + 1;
 
@@ -393,7 +505,10 @@ const Finance = {
     const { bankFavor } = this.loanApplication;
     const favorPremium = bankFavor >= 3 ? -0.5 : bankFavor === 2 ? 0 : 0.5;
 
-    return Math.round((baseRate + ltvPremium + coveragePremium + termPremium + favorPremium) * 100) / 100;
+    // Covenant discount — each covenant the player accepts shaves off a fixed amount
+    const covenantDiscount = covenants.length * COVENANT_RATE_DISCOUNT;
+
+    return Math.round((baseRate + ltvPremium + coveragePremium + termPremium + favorPremium - covenantDiscount) * 100) / 100;
   },
 
   // Called once per round. Drives the loan state machine one step forward.
@@ -428,12 +543,14 @@ const Finance = {
     }
 
     if (status === 'applying') {
-      const rate = this.calcLoanRate();
-      this.loanApplication.status = 'offered';
-      this.loanApplication.rate   = rate;
+      const covenants = [this.pickCovenant()].filter(Boolean);
+      const rate      = this.calcLoanRate(covenants);
+      this.loanApplication.status    = 'offered';
+      this.loanApplication.rate      = rate;
+      this.loanApplication.covenants = covenants;
       Notifications.push({
         label:   'Loan',
-        message: `Bank offer: ${rate}% annual interest over ${this.loanApplication.term} yr.`,
+        message: `Bank offer: ${rate}% over ${this.loanApplication.term} yr — ${covenants.length} covenant${covenants.length !== 1 ? 's' : ''}.`,
         action:  () => openPanel('financial'),
       });
       return 'offered';
