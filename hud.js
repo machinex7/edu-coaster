@@ -512,22 +512,42 @@ function buildFinancialPanel() {
 
     if (appStatus === 'offered') {
       const { amount, term, rate, covenants, covenantPenaltyPct } = app;
-      const penaltyAmt = Math.round(amount * covenantPenaltyPct / 100);
-      const covenantRows = covenants.map(c => `
+      const canNegotiate = app.bankFavor > 0;
+      const negBtn       = (id, extra = '') =>
+        `<button class="negotiate-btn"${id ? ` id="${id}"` : ''} ${extra}>Negotiate</button>`;
+
+      const covenantRows = covenants.map((c, i) => `
         <div class="loan-offer-covenant">
-          <div class="loan-offer-covenant-desc">${c.description}</div>
-          <div class="loan-offer-covenant-penalty">
-            Breach penalty: ${covenantPenaltyPct}% of loan
-            ($${penaltyAmt.toLocaleString()})
+          <div class="loan-offer-covenant-header">
+            <span class="loan-offer-covenant-desc">${c.description}</span>
+            ${canNegotiate ? negBtn('', `data-covenant-index="${i}"`) : ''}
           </div>
         </div>`).join('');
+
+      const penaltyAmt = covenants.length > 0 ? Math.round(amount * covenantPenaltyPct / 100) : 0;
+      const feeRow = covenants.length > 0 ? `
+        <div class="loan-offer-row">
+          <span>Breach Fee</span>
+          <div class="loan-offer-right">
+            <span>${covenantPenaltyPct}% ($${penaltyAmt.toLocaleString()})</span>
+            ${canNegotiate && covenantPenaltyPct > 5 ? negBtn('negotiate-fee-btn') : ''}
+          </div>
+        </div>` : '';
+
       return `
         <div class="posting-form">
           ${favorHtml}
           <div class="loan-offer-row"><span>Amount</span><span>$${amount.toLocaleString()}</span></div>
           <div class="loan-offer-row"><span>Term</span><span>${term} yr</span></div>
-          <div class="loan-offer-row loan-offer-rate"><span>Interest Rate</span><span>${rate}%</span></div>
+          <div class="loan-offer-row loan-offer-rate">
+            <span>Interest Rate</span>
+            <div class="loan-offer-right">
+              <span>${rate}%</span>
+              ${canNegotiate ? negBtn('negotiate-rate-btn') : ''}
+            </div>
+          </div>
           ${covenantRows}
+          ${feeRow}
         </div>`;
     }
 
@@ -591,6 +611,23 @@ function buildFinancialPanel() {
       Finance.applyForLoan();
       document.querySelector('#loan-form .form-actions').innerHTML =
         `<span class="loan-approaching-label">Awaiting Offer…</span>`;
+    });
+  }
+
+  if (appStatus === 'offered') {
+    document.getElementById('negotiate-rate-btn')?.addEventListener('click', () => {
+      Finance.negotiateRate();
+      buildFinancialPanel();
+    });
+    document.getElementById('negotiate-fee-btn')?.addEventListener('click', () => {
+      Finance.negotiateFee();
+      buildFinancialPanel();
+    });
+    document.querySelectorAll('[data-covenant-index]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        Finance.negotiateCovenant(parseInt(btn.dataset.covenantIndex));
+        buildFinancialPanel();
+      });
     });
   }
 }

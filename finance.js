@@ -565,11 +565,47 @@ const Finance = {
     }
   },
 
-  pickCovenant() {
+  pickCovenant(excludeIds = []) {
     const { purpose } = this.loanApplication;
-    const pool = LOAN_COVENANT_TEMPLATES.filter(t => t.applicable.includes(purpose));
+    const pool = LOAN_COVENANT_TEMPLATES.filter(t =>
+      t.applicable.includes(purpose) && !excludeIds.includes(t.id)
+    );
     if (pool.length === 0) return null;
     return pool[Math.floor(Math.random() * pool.length)].generate(this.loanApplication);
+  },
+
+  // ── Negotiation ──────────────────────────────────────────────────────────────
+  // Each action costs 1 bank favor. Guards are no-ops if favor is exhausted.
+
+  negotiateCovenant(index) {
+    if (this.loanApplication.bankFavor <= 0) return;
+    this.loanApplication.covenants.splice(index, 1);
+    this.loanApplication.rate = Math.round((this.loanApplication.rate + 0.3) * 100) / 100;
+    this.loanApplication.bankFavor--;
+  },
+
+  negotiateRate() {
+    if (this.loanApplication.bankFavor <= 0) return;
+    const { covenants } = this.loanApplication;
+    if (covenants.length < 2) {
+      const newCovenant = this.pickCovenant(covenants.map(c => c.id));
+      if (newCovenant) {
+        covenants.push(newCovenant);
+        this.loanApplication.rate = Math.round((this.loanApplication.rate - 0.5) * 100) / 100;
+      } else {
+        this.loanApplication.rate = Math.round((this.loanApplication.rate - 0.2) * 100) / 100;
+      }
+    } else {
+      this.loanApplication.rate = Math.round((this.loanApplication.rate - 0.2) * 100) / 100;
+    }
+    this.loanApplication.bankFavor--;
+  },
+
+  negotiateFee() {
+    if (this.loanApplication.bankFavor <= 0) return;
+    if (this.loanApplication.covenantPenaltyPct <= 5) return;
+    this.loanApplication.covenantPenaltyPct -= 5;
+    this.loanApplication.bankFavor--;
   },
 
   // Annual interest rate for the pending loan.
