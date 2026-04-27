@@ -85,7 +85,12 @@ JOB            = { RIDE_OPERATOR, SECURITY, JANITOR, ENGINEER, BOOTH_ATTENDANT,
 FACILITY_ID    = { PARK_ENTRANCE, PATH, BATHROOM, STATUE, GARDEN, FOUNTAIN, STAFF_LOUNGE }
 SECURITY_FOCUS = { PATROL, GATE, SHOP }
 ENGINEER_FOCUS = { MAINTENANCE, CONSTRUCTION }
+LOAN_STATUS    = { APPROACHING, OPEN, APPLYING, OFFERED, REVIEW }
 MAX_EFFECTIVE_WEAR = 1000   // breakdown probability reaches 100% at this cumulative wear
+WEEKS_PER_YEAR     = 52
+COVENANT_RATE_DISCOUNT      = 0.4    // interest rate reduction per covenant accepted
+MISSED_PAYMENT_RATE_PENALTY = 0.15   // rate premium added per historical missed payment
+MISSED_PAYMENT_LTV_PENALTY  = 0.05   // LTV cap reduction per missed payment
 ```
 
 ---
@@ -235,14 +240,81 @@ Demolishing structures are excluded from all game calculations. Demolition takes
 4. `computeRideOpinion()` — updates `rideOpinion`; writes `lastRoundRiders/Capacity`
 5. `processWear()` — accumulate wear, roll for breakdown (probability = wear / `MAX_EFFECTIVE_WEAR`)
 6. `Shopping.calcFood()` — compute `mealsWanted` and `mealsServed`
-7. Calc income and costs; apply to `money`
-8. `processConstruction()` — deduct weekly payments, complete finished builds
-8a. `processDemolition()` — advance demolition timers, remove completed demolitions
-9. `Staff.processSickness()` — decrement absences, roll for new illness/injury/vacation
-10. `Staff.advanceExperience/applyInflation/updateMoods/advancePostings/generateCandidates/advanceCandidates()`
-11. Calc `weeklyNetMess`; compute `mealSatisfaction`; call `calcExcitement()`
-12. `advancePriceExhaustion()`
-13. `Security.advanceOpinion(unhandled)`
+7. `processLoanRepayments()` — deduct weekly amortized payments before other costs
+8. Calc income and remaining costs; apply to `money`
+9. `processConstruction()` — deduct weekly payments, complete finished builds
+9a. `processDemolition()` — advance demolition timers, remove completed demolitions
+10. `processCovenantBreaches()` — collect deferred breach fees; retire breached covenants
+11. `processActiveCovenants(weeklyAttendance)` — check ongoing covenants; call `breachCovenant` on violations
+12. `Staff.processSickness()` — decrement absences, roll for new illness/injury/vacation
+13. `Staff.advanceExperience/applyInflation/updateMoods/advancePostings/generateCandidates/advanceCandidates()`
+14. Calc `weeklyNetMess`; compute `mealSatisfaction`; call `calcExcitement()`
+15. `advancePriceExhaustion()`
+16. `Security.advanceOpinion(unhandled)`
+
+`advanceRound()` (in `hud.js`) calls `Finance.processPendingLoan()` each round to advance the loan application state machine.
+
+### Loans
+
+Players can apply for loans via the Financial panel. The full flow:
+
+```
+[form] → APPROACHING → (1 round risk check) → OPEN → [Apply] → APPLYING → (1 round) → OFFERED → [Accept] → REVIEW → (2 rounds) → disbursed
+```
+
+**State machine (`Finance.loanApplication`):**
+
+| State | Meaning |
+|---|---|
+| `APPROACHING` | Initial eligibility check pending (next round) |
+| `OPEN` | Bank accepted; player can click Apply For Loan |
+| `APPLYING` | Awaiting offer (next round) |
+| `OFFERED` | Bank has posted terms; player reviews and negotiates |
+| `REVIEW` | Accepted; 2-round final review before funds arrive |
+| `null` | No active application |
+
+**Eligibility (`processPendingLoan`, APPROACHING state):**
+
+`Finance.parkValue()` sums: active/closed building costs; in-construction payments made so far; broken-down rides at a 10%-per-repair-week discount; merchandise inventory value; current cash. The requested amount must be positive and below `effectiveLtvCap(purpose) × parkValue`. LTV caps by purpose: new rides 70%, staffing 50%, emergency 90%; each missed payment reduces the cap by `MISSED_PAYMENT_LTV_PENALTY`.
+
+**Interest rate (`Finance.calcLoanRate`):**
+
+`baseRate = Population.inflationRate × 100 + 1`, then additive premiums:
+
+| Component | Range |
+|---|---|
+| LTV premium | 0 / 0.75 / 1.75 / 3.5% depending on loan-to-value ratio |
+| Coverage premium | Based on recent income vs. expenses |
+| Term premium | 0 (≤1 yr) / 0.5 / 1.0 / 1.5% |
+| Favor premium | −0.5 to +0.5 based on bank favor (1–3) |
+| Covenant discount | −`COVENANT_RATE_DISCOUNT` per covenant accepted |
+| Missed payment penalty | +`MISSED_PAYMENT_RATE_PENALTY` per historical missed payment |
+
+**Bank favor (1–3):** Randomly generated at application time. Upper limit shrinks by 1 per existing active loan (floored at 1). Displayed on the offer panel; each negotiation action spends 1 favor point.
+
+**Covenants:** The bank includes one randomly chosen applicable covenant in its offer. Seven types:
+
+| ID | Applicable to | Enforcement |
+|---|---|---|
+| `MIN_CASH` | All | Must maintain a cash floor for the loan term |
+| `NO_NEW_LOANS` | All | Loan panel blocks new applications while active |
+| `COMPLETE_RIDE` | new_rides | Must complete 1 new ride within 25% of term |
+| `NO_DEMOLISH` | new_rides | Demolish panel blocked while active |
+| `HIRE_STAFF` | staffing | Must hire N new employees within 25% of term |
+| `RIDERSHIP_FLOOR` | new_rides, staffing | Must maintain attendance ≥ floor for the full term |
+| `SECURITY_THRESHOLD` | emergency | Security opinion must stay below threshold for full term |
+
+`MIN_CASH`, `RIDERSHIP_FLOOR`, and `SECURITY_THRESHOLD` are ongoing — checked every round. `COMPLETE_RIDE` and `HIRE_STAFF` are achievement-based — satisfied once met, breached at their deadline. `NO_NEW_LOANS` and `NO_DEMOLISH` are UI locks only. Breaching a covenant queues a deferred fee (5–20% of loan amount, set at offer time); the fee is collected the following round and the covenant is permanently retired (`breached = true`).
+
+**Negotiation:** Spending bank favor allows: removing a covenant (+0.3% rate), reducing the rate by 0.5% (with a free covenant) or 0.2% (without), or reducing the breach fee by 5% (floor 5%).
+
+**Repayment (`Finance.calcLoanPayment`):**
+
+Standard amortization: `PMT = P × r(1+r)^n / ((1+r)^n − 1)` where `r = annualRate/100/52` and `n = weeksRemaining`. Returns `{ total, principal }` where `principal = total − (balance × r)`. If `weeksRemaining ≤ 1` the full balance is returned as principal. Loans are fully paid off when `balance ≤ 0`; they are removed from `Finance.activeLoans` automatically.
+
+Missed payments increment `loan.missedPayments` and `Finance.totalMissedPayments`, which permanently penalise future loan rates and LTV caps.
+
+**History:** Each round's `History` entry records `loanBalance`, `loanInterestPaid`, and `loanPrincipalPaid` across all active loans.
 
 ---
 
@@ -495,12 +567,13 @@ Same shape as `facilities.json` plus:
 - Three food shop sizes: Snack Shop (1 tile), Quick Foods (2 tiles), Diner (4 tiles)
 - Food satisfaction system: `mealSatisfaction` multiplies park excitement based on concessions capacity vs. visitor demand
 - Facility utility costs: facilities with a `utilityCost` field are billed each round
-- Per-round history log (attendance, income, expenses, security, food metrics)
+- Per-round history log (attendance, income, expenses, security, food metrics, loan balance/interest/principal)
 - Merchandise inventory system: 12 items (3 tiers × 4 categories), demand-driven per-item sales, stock depletion
 - Supplier system: multiple suppliers with delivery time and surcharge; unlocked progressively
 - Restock orders with delivery countdown; Delivery notification on arrival
 - `Population.cumulativeInflation`: weekly compound tracker, multiplies restock order costs
 - Demographic `preferredCategory` on every bracket drives per-category purchase desire
+- Loan system: multi-round application flow (approach → open → apply → offer → review → disbursed); amortized weekly repayments; 7 covenant types with enforcement and deferred breach fees; rate/covenant/fee negotiation; missed payment penalties on future rates and LTV caps
 
 ## What's not yet implemented (see `reqs.md`)
 
