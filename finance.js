@@ -338,9 +338,12 @@ const Finance = {
   //   'applying'    → rate calculation pending (1 round)
   //   'offered'     → bank has posted a rate offer
   loanApplication: null,
+  activeLoans: [],  // disbursed loans currently being repaid
 
   submitLoanApplication(amount, purpose, term) {
-    const bankFavor = Math.floor(Math.random() * 3);  // 0 unfavorable, 1 neutral, 2 favorable
+    // Favor 1–3; upper limit shrinks by 1 per active loan (floored at 1).
+    const maxFavor  = Math.max(1, 3 - this.activeLoans.length);
+    const bankFavor = Math.floor(Math.random() * maxFavor) + 1;
     this.loanApplication = { amount, purpose, term, status: 'approaching', bankFavor };
   },
 
@@ -386,9 +389,9 @@ const Finance = {
     // Term premium
     const termPremium = term <= 2 ? 0 : term <= 5 ? 0.25 : 0.75;
 
-    // Favor premium
+    // Favor premium (1 unfavorable, 2 neutral, 3 favorable)
     const { bankFavor } = this.loanApplication;
-    const favorPremium = bankFavor >= 2 ? -0.5 : bankFavor === 1 ? 0 : 0.5;
+    const favorPremium = bankFavor >= 3 ? -0.5 : bankFavor === 2 ? 0 : 0.5;
 
     return Math.round((baseRate + ltvPremium + coveragePremium + termPremium + favorPremium) * 100) / 100;
   },

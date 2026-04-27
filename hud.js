@@ -487,9 +487,9 @@ function buildFinancialPanel() {
   const favorHtml = (appStatus === 'open' || appStatus === 'applying' || appStatus === 'offered')
     ? (() => {
         const f = app.bankFavor;
-        const cls  = f >= 2 ? 'loan-favor-good' : f === 1 ? 'loan-favor-neutral' : 'loan-favor-bad';
-        const text = f >= 2 ? 'The bank is favorable towards you.'
-                   : f === 1 ? 'The bank is neutral toward you.'
+        const cls  = f >= 3 ? 'loan-favor-good' : f === 2 ? 'loan-favor-neutral' : 'loan-favor-bad';
+        const text = f >= 3 ? 'The bank is favorable towards you.'
+                   : f === 2 ? 'The bank is neutral toward you.'
                    :           'The bank views you unfavorably.';
         return `<div class="${cls}">${text}</div>`;
       })()
