@@ -330,6 +330,43 @@ const Finance = {
     return buildingValue + inventoryValue + money;
   },
 
+  // ── Loan applications ────────────────────────────────────────────────────────
+  // Null when no application is pending; set to { amount, purpose, term } while
+  // the player is waiting for a bank response.
+  loanApplication: null,
+
+  submitLoanApplication(amount, purpose, term) {
+    this.loanApplication = { amount, purpose, term };
+  },
+
+  // Called once per round. Evaluates any pending application using the park's
+  // net worth as the only signal a bank has at this stage. Returns 'approved',
+  // 'rejected', or null if nothing was pending.
+  processPendingLoan() {
+    if (!this.loanApplication) return null;
+    const { amount, purpose } = this.loanApplication;
+    const netWorth = this.parkValue();
+    let ok = amount > 0 && amount < netWorth;
+    if (ok && purpose === 'emergency') ok = amount < netWorth * 0.25;
+    if (ok && purpose === 'staffing')  ok = amount < netWorth * 0.50;
+
+    if (ok) {
+      Notifications.push({
+        label:  'Loan',
+        message: 'A bank is open for applications on your requested loan.',
+        action:  () => openPanel('financial'),
+      });
+    } else {
+      Notifications.push({
+        label:  'Loan',
+        message: 'No banks wanted to pursue your offer at this time.',
+        action:  () => openPanel('financial'),
+      });
+      this.loanApplication = null;
+    }
+    return ok ? 'approved' : 'rejected';
+  },
+
   // ── Round processing ─────────────────────────────────────────────────────────
   // Called once per round advancement. Order matters: collect income before
   // deducting costs so the budget display reflects net change.

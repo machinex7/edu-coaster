@@ -31,7 +31,8 @@ function openPark() {
 
 function advanceRound() {
   round++;
-  const report = Finance.processRound();
+  const report     = Finance.processRound();
+  const loanResult = Finance.processPendingLoan();
   History.record(report);
   Research.tickResearch();
   updateLockedPanels();
@@ -40,6 +41,7 @@ function advanceRound() {
   Staff.refreshPanel();
   Security.refreshPanel();
   Research.refreshPanel();
+  if (loanResult === 'rejected' && activePanel === 'financial') buildFinancialPanel();
   showRoundSummary(report);
   nextWeekForecast   = futurecastForecast;
   futurecastForecast = forecastForRound(round + 2);
@@ -463,6 +465,16 @@ function buildFinancialPanel() {
       </div>
     </div>`).join('');
 
+  const app     = Finance.loanApplication;
+  const locked  = app !== null;
+  const dis     = locked ? 'disabled' : '';
+  const purpose = app?.purpose ?? 'new_rides';
+  const purposeOptions = [
+    ['new_rides', 'New Rides'],
+    ['staffing',  'Staffing'],
+    ['emergency', 'Emergency'],
+  ].map(([v, l]) => `<option value="${v}"${v === purpose ? ' selected' : ''}>${l}</option>`).join('');
+
   document.getElementById('financial-panel-body').innerHTML = `
     <div class="financial-section">
       <div class="financial-section-header">Pricing Controls</div>
@@ -473,22 +485,22 @@ function buildFinancialPanel() {
       <div class="posting-form" id="loan-form">
         <div class="form-field">
           <label for="loan-amount">Desired Amount</label>
-          <input id="loan-amount" type="number" min="0" step="1000" placeholder="$0">
+          <input id="loan-amount" type="number" min="0" step="1000" placeholder="$0"
+                 value="${app?.amount ?? ''}" ${dis}>
         </div>
         <div class="form-field">
           <label for="loan-purpose">Purpose</label>
-          <select id="loan-purpose">
-            <option value="new_rides">New Rides</option>
-            <option value="staffing">Staffing</option>
-            <option value="emergency">Emergency</option>
-          </select>
+          <select id="loan-purpose" ${dis}>${purposeOptions}</select>
         </div>
         <div class="form-field">
           <label for="loan-term">Term (Years)</label>
-          <input id="loan-term" type="number" min="1" max="30" step="1" placeholder="1">
+          <input id="loan-term" type="number" min="1" max="10" step="1" placeholder="1"
+                 value="${app?.term ?? ''}" ${dis}>
         </div>
         <div class="form-actions">
-          <button id="loan-approach-btn">Approach Banks</button>
+          ${locked
+            ? `<span class="loan-approaching-label">Approaching Banks…</span>`
+            : `<button id="loan-approach-btn">Approach Banks</button>`}
         </div>
       </div>
     </div>`;
@@ -504,11 +516,17 @@ function buildFinancialPanel() {
     });
   });
 
-  document.getElementById('loan-approach-btn').addEventListener('click', () => {
-    document.getElementById('loan-amount').disabled  = true;
-    document.getElementById('loan-purpose').disabled = true;
-    document.getElementById('loan-term').disabled    = true;
-    const actions = document.querySelector('#loan-form .form-actions');
-    actions.innerHTML = `<span class="loan-approaching-label">Approaching Banks…</span>`;
-  });
+  if (!locked) {
+    document.getElementById('loan-approach-btn').addEventListener('click', () => {
+      const amount  = Math.max(0, parseInt(document.getElementById('loan-amount').value)  || 0);
+      const purpose = document.getElementById('loan-purpose').value;
+      const term    = Math.max(1, parseInt(document.getElementById('loan-term').value)    || 1);
+      Finance.submitLoanApplication(amount, purpose, term);
+      document.getElementById('loan-amount').disabled  = true;
+      document.getElementById('loan-purpose').disabled = true;
+      document.getElementById('loan-term').disabled    = true;
+      const actions = document.querySelector('#loan-form .form-actions');
+      actions.innerHTML = `<span class="loan-approaching-label">Approaching Banks…</span>`;
+    });
+  }
 }
