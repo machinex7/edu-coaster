@@ -258,10 +258,13 @@ const Finance = {
   // Called each round after computeRideOpinion() so lastRoundRiders is current.
   // Accumulates rider wear then rolls for breakdown; probability reaches 100% at MAX_EFFECTIVE_WEAR.
   processWear() {
+    const wearMult = WEATHER_WET_EMOJIS.includes(nextWeekForecast) ? WEATHER_WEAR_MULTIPLIER : 1;
+    installedRides
+      .filter(r => r.status === STATUS.CLOSED && isRideConnected(r))
+      .forEach(r => { r.wear += 10 * wearMult; });
     installedRides
       .filter(r => r.status === STATUS.ACTIVE && isRideConnected(r))
       .forEach(r => {
-        const wearMult = WEATHER_WET_EMOJIS.includes(nextWeekForecast) ? WEATHER_WEAR_MULTIPLIER : 1;
         r.wear += (r.lastRoundRiders ?? 0) * wearMult;
         if (Math.random() < r.wear / MAX_EFFECTIVE_WEAR) {
           r.status        = STATUS.BROKEN_DOWN;
