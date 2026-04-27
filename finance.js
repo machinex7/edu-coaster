@@ -460,6 +460,39 @@ const Finance = {
       this.loanApplication.status = 'applying';
   },
 
+  // Mark a covenant as breached and warn the player. The fee is not taken
+  // until the following round so the player sees it coming. Once the fee
+  // is collected the covenant is retired and cannot fire again.
+  breachCovenant(loan, covenant) {
+    if (covenant.breachPending || covenant.breached) return;
+    covenant.breachPending = true;
+    const penaltyAmt = Math.round(loan.amount * loan.covenantPenaltyPct / 100);
+    Notifications.push({
+      label:   'Covenant',
+      message: `In breach: "${covenant.description}". A $${penaltyAmt.toLocaleString()} fee will be assessed next round.`,
+      action:  () => openPanel('financial'),
+    });
+  },
+
+  // Called each round. Collects any pending breach fees and retires those
+  // covenants so they cannot be triggered again.
+  processCovenantBreaches() {
+    for (const loan of this.activeLoans) {
+      for (const covenant of loan.covenants ?? []) {
+        if (!covenant.breachPending) continue;
+        const penaltyAmt = Math.round(loan.amount * loan.covenantPenaltyPct / 100);
+        money -= penaltyAmt;
+        covenant.breachPending = false;
+        covenant.breached      = true;
+        Notifications.push({
+          label:   'Covenant',
+          message: `Breach fee of $${penaltyAmt.toLocaleString()} assessed for: "${covenant.description}".`,
+          action:  () => openPanel('financial'),
+        });
+      }
+    }
+  },
+
   pickCovenant() {
     const { purpose } = this.loanApplication;
     const pool = LOAN_COVENANT_TEMPLATES.filter(t => t.applicable.includes(purpose));
@@ -598,6 +631,7 @@ const Finance = {
     const utilityCosts      = this.payUtilityCosts();
     const constructionCosts = processConstruction();  // skips progress on unaffordable builds
     processDemolition();              // advances demolition timers, clears finished structures
+    this.processCovenantBreaches();   // collect any pending breach fees and retire those covenants
 
     Staff.advanceMedicalInsurance();  // tick quote countdown; tick policy duration
     Staff.processSickness();          // roll for new illness, decrement existing sick time
