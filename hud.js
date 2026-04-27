@@ -41,7 +41,7 @@ function advanceRound() {
   Staff.refreshPanel();
   Security.refreshPanel();
   Research.refreshPanel();
-  if (loanResult === 'rejected' && activePanel === 'financial') buildFinancialPanel();
+  if (loanResult && activePanel === 'financial') buildFinancialPanel();
   showRoundSummary(report);
   nextWeekForecast   = futurecastForecast;
   futurecastForecast = forecastForRound(round + 2);
@@ -466,6 +466,7 @@ function buildFinancialPanel() {
     </div>`).join('');
 
   const app     = Finance.loanApplication;
+  const appStatus = app?.status ?? null;
   const locked  = app !== null;
   const dis     = locked ? 'disabled' : '';
   const purpose = app?.purpose ?? 'new_rides';
@@ -474,6 +475,14 @@ function buildFinancialPanel() {
     ['staffing',  'Staffing'],
     ['emergency', 'Emergency'],
   ].map(([v, l]) => `<option value="${v}"${v === purpose ? ' selected' : ''}>${l}</option>`).join('');
+
+  const loanActionHtml = appStatus === 'open'
+    ? `<button id="loan-apply-btn">Apply For Loan</button>`
+    : appStatus === 'applying'
+    ? `<span class="loan-approaching-label">Awaiting Offer…</span>`
+    : locked
+    ? `<span class="loan-approaching-label">Approaching Banks…</span>`
+    : `<button id="loan-approach-btn">Approach Banks</button>`;
 
   document.getElementById('financial-panel-body').innerHTML = `
     <div class="financial-section">
@@ -497,11 +506,7 @@ function buildFinancialPanel() {
           <input id="loan-term" type="number" min="1" max="10" step="1" placeholder="1"
                  value="${app?.term ?? ''}" ${dis}>
         </div>
-        <div class="form-actions">
-          ${locked
-            ? `<span class="loan-approaching-label">Approaching Banks…</span>`
-            : `<button id="loan-approach-btn">Approach Banks</button>`}
-        </div>
+        <div class="form-actions">${loanActionHtml}</div>
       </div>
     </div>`;
 
@@ -516,7 +521,7 @@ function buildFinancialPanel() {
     });
   });
 
-  if (!locked) {
+  if (appStatus === null) {
     document.getElementById('loan-approach-btn').addEventListener('click', () => {
       const amount  = Math.max(0, parseInt(document.getElementById('loan-amount').value)  || 0);
       const purpose = document.getElementById('loan-purpose').value;
@@ -525,8 +530,16 @@ function buildFinancialPanel() {
       document.getElementById('loan-amount').disabled  = true;
       document.getElementById('loan-purpose').disabled = true;
       document.getElementById('loan-term').disabled    = true;
-      const actions = document.querySelector('#loan-form .form-actions');
-      actions.innerHTML = `<span class="loan-approaching-label">Approaching Banks…</span>`;
+      document.querySelector('#loan-form .form-actions').innerHTML =
+        `<span class="loan-approaching-label">Approaching Banks…</span>`;
+    });
+  }
+
+  if (appStatus === 'open') {
+    document.getElementById('loan-apply-btn').addEventListener('click', () => {
+      Finance.applyForLoan();
+      document.querySelector('#loan-form .form-actions').innerHTML =
+        `<span class="loan-approaching-label">Awaiting Offer…</span>`;
     });
   }
 }

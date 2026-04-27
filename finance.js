@@ -331,40 +331,106 @@ const Finance = {
   },
 
   // ── Loan applications ────────────────────────────────────────────────────────
-  // Null when no application is pending; set to { amount, purpose, term } while
-  // the player is waiting for a bank response.
+  // status lifecycle:
+  //   null          → no application
+  //   'approaching' → initial check pending (1 round)
+  //   'open'        → bank accepted; player can click Apply For Loan
+  //   'applying'    → rate calculation pending (1 round)
+  //   'offered'     → bank has posted a rate offer
   loanApplication: null,
 
   submitLoanApplication(amount, purpose, term) {
-    this.loanApplication = { amount, purpose, term };
+    this.loanApplication = { amount, purpose, term, status: 'approaching' };
   },
 
-  // Called once per round. Evaluates any pending application using the park's
-  // net worth as the only signal a bank has at this stage. Returns 'approved',
-  // 'rejected', or null if nothing was pending.
+  applyForLoan() {
+    if (this.loanApplication?.status === 'open')
+      this.loanApplication.status = 'applying';
+  },
+
+  // Annual interest rate for the pending loan.
+  // Base = inflation % + 1. Then three additive premiums:
+  //   LTV         — loan amount as share of park value (collateral risk)
+  //   Coverage    — recent operating income vs expenses (repayment risk)
+  //   Term        — longer terms carry more uncertainty
+  calcLoanRate() {
+    const { amount, term } = this.loanApplication;
+    const baseRate = Population.inflationRate * 100 + 1;
+
+    // LTV premium
+    const netWorth = this.parkValue();
+    const ltv      = netWorth > 0 ? amount / netWorth : 1;
+    const ltvPremium = ltv < 0.25 ? 0
+                     : ltv < 0.50 ? 0.75
+                     : ltv < 0.75 ? 1.75
+                     :              3.5;
+
+    // Coverage premium — avg operating income vs avg operating expenses (last 4 rounds)
+    const recent = History.rounds.slice(-4);
+    let coveragePremium;
+    if (recent.length === 0) {
+      coveragePremium = 0.5;
+    } else {
+      const avgIncome = recent.reduce((s, r) => s + r.gateIncome + r.parkingIncome + r.shopIncome, 0) / recent.length;
+      const avgOpEx   = recent.reduce((s, r) => s + r.staffExpense + r.utilityExpense, 0) / recent.length;
+      const ratio     = avgOpEx > 0 ? avgIncome / avgOpEx : (avgIncome > 0 ? 2 : 0);
+      coveragePremium = ratio >= 2.0 ? -0.5
+                      : ratio >= 1.5 ?  0
+                      : ratio >= 1.0 ?  0.5
+                      : ratio >= 0.5 ?  1.5
+                      :                 3.0;
+    }
+
+    // Term premium
+    const termPremium = term <= 2 ? 0 : term <= 5 ? 0.25 : 0.75;
+
+    return Math.round((baseRate + ltvPremium + coveragePremium + termPremium) * 100) / 100;
+  },
+
+  // Called once per round. Drives the loan state machine one step forward.
+  // Returns the transition that fired, or null if nothing was pending.
   processPendingLoan() {
     if (!this.loanApplication) return null;
-    const { amount, purpose } = this.loanApplication;
-    const netWorth = this.parkValue();
-    let ok = amount > 0 && amount < netWorth;
-    if (ok && purpose === 'emergency') ok = amount < netWorth * 0.25;
-    if (ok && purpose === 'staffing')  ok = amount < netWorth * 0.50;
+    const { amount, purpose, status } = this.loanApplication;
 
-    if (ok) {
-      Notifications.push({
-        label:  'Loan',
-        message: 'A bank is open for applications on your requested loan.',
-        action:  () => openPanel('financial'),
-      });
-    } else {
-      Notifications.push({
-        label:  'Loan',
-        message: 'No banks wanted to pursue your offer at this time.',
-        action:  () => openPanel('financial'),
-      });
-      this.loanApplication = null;
+    if (status === 'approaching') {
+      const netWorth = this.parkValue();
+      let ok = amount > 0 && amount < netWorth;
+      if (ok && purpose === 'emergency') ok = amount < netWorth * 0.25;
+      if (ok && purpose === 'staffing')  ok = amount < netWorth * 0.50;
+
+      if (ok) {
+        this.loanApplication.status = 'open';
+        Notifications.push({
+          label:   'Loan',
+          message: 'A bank is open for applications on your requested loan.',
+          action:  () => openPanel('financial'),
+        });
+        return 'approved';
+      } else {
+        this.loanApplication = null;
+        Notifications.push({
+          label:   'Loan',
+          message: 'No banks wanted to pursue your offer at this time.',
+          action:  () => openPanel('financial'),
+        });
+        return 'rejected';
+      }
     }
-    return ok ? 'approved' : 'rejected';
+
+    if (status === 'applying') {
+      const rate = this.calcLoanRate();
+      this.loanApplication.status = 'offered';
+      this.loanApplication.rate   = rate;
+      Notifications.push({
+        label:   'Loan',
+        message: `Bank offer: ${rate}% annual interest over ${this.loanApplication.term} yr.`,
+        action:  () => openPanel('financial'),
+      });
+      return 'offered';
+    }
+
+    return null;
   },
 
   // ── Round processing ─────────────────────────────────────────────────────────
