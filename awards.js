@@ -115,4 +115,11 @@ const AWARD_DEFS = [
     description: 'Welcomed 10,000 guests in a single week — more than any park in the region.',
     check:       (qr) => qr.some(r => r.attendance >= 10_000),
   },
+  {
+    // 10 or more bathrooms installed and active.
+    id:          AWARD_ID.MOST_BATHROOMS,
+    name:        'Most Bathrooms in the Region',
+    description: 'With 10 bathrooms on the grounds, nobody has ever waited in line — probably.',
+    check:       () => installedFacilities.filter(f => f.facilityId === FACILITY_ID.BATHROOM && f.status === STATUS.ACTIVE).length >= 10,
+  },
 ];

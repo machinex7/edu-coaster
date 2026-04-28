@@ -98,7 +98,8 @@ const AWARD_ID = Object.freeze({
   MOST_RIDES:    'most_rides',
   CLEANEST_PARK: 'cleanest_park',
   SAFEST_PARK:   'safest_park',
-  MOST_GUESTS:   'most_guests',
+  MOST_GUESTS:    'most_guests',
+  MOST_BATHROOMS: 'most_bathrooms',
 });
 
 // Interest rate reduction per covenant on the loan agreement.
