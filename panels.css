@@ -1178,6 +1178,172 @@
 }
 .loan-accept-btn:hover { background: #166534; }
 
+/* ── Marketing panel ── */
+#panel-marketing { width: 320px; }
+
+#marketing-panel-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.mkt-option-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.mkt-option-btn {
+  padding: 6px 12px;
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 4px;
+  color: #9ca3af;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.1s, color 0.1s, background 0.1s;
+}
+
+.mkt-option-btn:hover {
+  border-color: #6b7280;
+  color: #d1d5db;
+}
+
+.mkt-option-btn.active {
+  border-color: #fbbf24;
+  color: #fde68a;
+  background: #1c1508;
+}
+
+.mkt-option-group--col {
+  flex-direction: column;
+}
+
+.mkt-option-btn--wide {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  text-align: left;
+}
+
+.mkt-option-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.mkt-option-sub {
+  font-size: 0.68rem;
+  font-weight: 400;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.mkt-option-btn--wide.active .mkt-option-sub {
+  color: #ca8a04;
+}
+
+.mkt-launch-btn {
+  flex: 1;
+  padding: 8px;
+  background: #1d4ed8;
+  color: #eff6ff;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mkt-launch-btn:hover:not(:disabled) { background: #2563eb; }
+
+.mkt-launch-btn:disabled {
+  background: #374151;
+  color: #6b7280;
+  cursor: default;
+}
+
+.mkt-estimate {
+  font-size: 0.72rem;
+  color: #9ca3af;
+  margin-top: 4px;
+}
+
+.mkt-cost-line {
+  font-size: 0.78rem;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+}
+
+.mkt-cost-line span {
+  color: #fde68a;
+  font-weight: 700;
+}
+
+.mkt-demo-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.mkt-demo-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.mkt-demo-cat {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #6b7280;
+}
+
+.mkt-demo-cells {
+  display: flex;
+}
+
+.mkt-cell {
+  flex: 1;
+  padding: 5px 2px;
+  background: #1f2937;
+  border: 1px solid #374151;
+  margin-left: -1px;
+  color: #9ca3af;
+  font-size: 0.62rem;
+  font-weight: 600;
+  line-height: 1.15;
+  cursor: pointer;
+  text-align: center;
+  white-space: normal;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+}
+
+.mkt-cell:first-child { margin-left: 0; border-radius: 3px 0 0 3px; }
+.mkt-cell:last-child  { border-radius: 0 3px 3px 0; }
+
+.mkt-cell:hover:not(.selected) {
+  background: #374151;
+  color: #d1d5db;
+}
+
+.mkt-cell.selected {
+  background: #78350f;
+  border-color: #d97706;
+  color: #fde68a;
+  position: relative;
+  z-index: 1;
+}
+
 /* ── Awards panel ── */
 .awards-panel-body {
   flex: 1;
