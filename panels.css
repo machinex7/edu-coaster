@@ -1179,7 +1179,7 @@
 .loan-accept-btn:hover { background: #166534; }
 
 /* ── Marketing panel ── */
-#panel-marketing { width: 620px; }
+#panel-marketing { width: 820px; }
 
 #marketing-panel-body {
   display: flex;
