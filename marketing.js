@@ -35,6 +35,9 @@ const Marketing = {
   // Step size for the impressions input.
   IMPRESSIONS_STEP: 10_000,
 
+  // Maximum number of crowd dots in the most-populated cloud cell.
+  MAX_CROWD_DOTS: 24,
+
   MEDIUMS: [
     { value: 'tv',     label: 'TV'     },
     { value: 'radio',  label: 'Radio'  },
@@ -62,6 +65,18 @@ const Marketing = {
     { key: 'distance',  label: 'Distance',  brackets: Population.DISTANCE_BRACKETS },
     { key: 'area',      label: 'Area',      brackets: Population.AREA_TYPES        },
   ],
+
+  // Generates deterministic pseudo-random dot positions for a cloud cell,
+  // seeded by (xi, yi) so positions stay stable across selection re-renders.
+  _seededPositions(xi, yi, count) {
+    let s = xi * 31337 + yi * 6271 + 1;
+    const rand = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
+    const positions = [];
+    for (let i = 0; i < count; i++) {
+      positions.push({ x: Math.round(8 + rand() * 76), y: Math.round(8 + rand() * 76) });
+    }
+    return positions;
+  },
 
   // Returns weeks needed to deliver draftImpressions via the selected medium.
   estimatedWeeks() {
@@ -96,12 +111,11 @@ const Marketing = {
     return xSet ? inX : inY;
   },
 
-  // Redraws selected/unselected state on all cloud dots without rebuilding the panel.
+  // Redraws selected/unselected state on all crowd dots without rebuilding the panel.
   _refreshCloudSelection() {
-    document.querySelectorAll('.mkt-cloud-dot').forEach(dot => {
-      dot.classList.toggle('selected', this._isCellSelected(
-        parseInt(dot.dataset.xi), parseInt(dot.dataset.yi)
-      ));
+    document.querySelectorAll('.mkt-cloud-cell[data-xi]').forEach(cell => {
+      const sel = this._isCellSelected(parseInt(cell.dataset.xi), parseInt(cell.dataset.yi));
+      cell.querySelectorAll('.mkt-crowd-dot').forEach(dot => dot.classList.toggle('selected', sel));
     });
   },
 
@@ -175,10 +189,12 @@ const Marketing = {
     const cloudRows = yCat.brackets.map((yb, yi) => {
       const yRangeSel = this.draftYRange.min !== null && yi >= this.draftYRange.min && yi <= this.draftYRange.max;
       const cells = xCat.brackets.map((xb, xi) => {
-        const pct = Math.round(25 + 55 * (weights[yi][xi] / maxWeight));
-        const sel = this._isCellSelected(xi, yi) ? ' selected' : '';
-        return `<div class="mkt-cloud-cell"><div class="mkt-cloud-dot${sel}"
-          data-xi="${xi}" data-yi="${yi}" style="width:${pct}%;aspect-ratio:1"></div></div>`;
+        const count = Math.max(2, Math.round((weights[yi][xi] / maxWeight) * this.MAX_CROWD_DOTS));
+        const sel   = this._isCellSelected(xi, yi);
+        const dots  = this._seededPositions(xi, yi, count).map(p =>
+          `<div class="mkt-crowd-dot${sel ? ' selected' : ''}" style="left:${p.x}%;top:${p.y}%"></div>`
+        ).join('');
+        return `<div class="mkt-cloud-cell" data-xi="${xi}" data-yi="${yi}">${dots}</div>`;
       }).join('');
       return `
         <button class="mkt-cell-vert${yRangeSel ? ' selected' : ''}"

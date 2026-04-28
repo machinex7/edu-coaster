@@ -1258,20 +1258,21 @@
 .mkt-cloud-cell {
   width: 100%;
   aspect-ratio: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  position: relative;
+  overflow: hidden;
 }
 
-.mkt-cloud-dot {
+.mkt-crowd-dot {
+  position: absolute;
+  width: 5px;
+  height: 5px;
   border-radius: 50%;
-  background: #2d3748;
-  transition: background 0.15s, transform 0.12s;
+  background: #4b5563;
+  transition: background 0.15s;
 }
 
-.mkt-cloud-dot.selected {
+.mkt-crowd-dot.selected {
   background: #f59e0b;
-  transform: scale(1.12);
 }
 
 /* Vertical Y-range selector strip embedded in the cloud grid column. */
