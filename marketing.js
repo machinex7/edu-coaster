@@ -167,24 +167,30 @@ const Marketing = {
       `<option value="${c.key}"${c.key === selectedKey ? ' selected' : ''}${c.key === otherKey ? ' disabled' : ''}>${c.label}</option>`
     ).join('');
 
-    // Point cloud grid: corner + x-labels row, then one row per y-bracket.
-    const xLabels  = xCat.brackets.map(b =>
+    // Point cloud grid: two corners + x-labels header, then one row per y-bracket.
+    // The first grid column is a narrow Y-range selector strip.
+    const xLabels   = xCat.brackets.map(b =>
       `<div class="mkt-cloud-xlabel">${b.short}</div>`
     ).join('');
     const cloudRows = yCat.brackets.map((yb, yi) => {
+      const yRangeSel = this.draftYRange.min !== null && yi >= this.draftYRange.min && yi <= this.draftYRange.max;
       const cells = xCat.brackets.map((xb, xi) => {
         const pct = Math.round(25 + 55 * (weights[yi][xi] / maxWeight));
         const sel = this._isCellSelected(xi, yi) ? ' selected' : '';
         return `<div class="mkt-cloud-cell"><div class="mkt-cloud-dot${sel}"
           data-xi="${xi}" data-yi="${yi}" style="width:${pct}%;aspect-ratio:1"></div></div>`;
       }).join('');
-      return `<div class="mkt-cloud-ylabel">${yb.short}</div>${cells}`;
+      return `
+        <button class="mkt-cell-vert${yRangeSel ? ' selected' : ''}"
+          data-range-axis="y" data-idx="${yi}" title="${yb.name}"></button>
+        <div class="mkt-cloud-ylabel">${yb.short}</div>
+        ${cells}`;
     }).join('');
 
-    // Range bars below the cloud.
-    const rangeBar = (axis, cat, range) => cat.brackets.map((b, i) => {
-      const sel = range.min !== null && i >= range.min && i <= range.max;
-      return `<button class="mkt-cell${sel ? ' selected' : ''}" data-range-axis="${axis}" data-idx="${i}" title="${b.name}">${b.short}</button>`;
+    // Only the X range bar sits below the chart; Y range is the grid's first column.
+    const xRangeBar = xCat.brackets.map((b, i) => {
+      const sel = this.draftXRange.min !== null && i >= this.draftXRange.min && i <= this.draftXRange.max;
+      return `<button class="mkt-cell${sel ? ' selected' : ''}" data-range-axis="x" data-idx="${i}" title="${b.name}">${b.short}</button>`;
     }).join('');
 
     document.getElementById('marketing-panel-body').innerHTML = `
@@ -222,17 +228,15 @@ const Marketing = {
               <select id="mkt-y-axis">${axisOptions(this.draftYAxis, this.draftXAxis)}</select>
             </div>
           </div>
-          <div class="mkt-cloud-grid" style="grid-template-columns:auto repeat(${xCat.brackets.length},1fr)">
-            <div class="mkt-cloud-corner"></div>${xLabels}${cloudRows}
+          <div class="mkt-cloud-grid" style="grid-template-columns:12px auto repeat(${xCat.brackets.length},1fr)">
+            <div class="mkt-cloud-corner"></div>
+            <div class="mkt-cloud-corner"></div>
+            ${xLabels}${cloudRows}
           </div>
           <div class="mkt-range-bars">
             <div class="mkt-demo-row">
               <div class="mkt-demo-cat">${xCat.label}</div>
-              <div class="mkt-demo-cells">${rangeBar('x', xCat, this.draftXRange)}</div>
-            </div>
-            <div class="mkt-demo-row">
-              <div class="mkt-demo-cat">${yCat.label}</div>
-              <div class="mkt-demo-cells">${rangeBar('y', yCat, this.draftYRange)}</div>
+              <div class="mkt-demo-cells">${xRangeBar}</div>
             </div>
           </div>
         </div>
