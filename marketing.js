@@ -4,13 +4,12 @@ const Marketing = {
   draftMedium:      'tv',
   draftHook:        'jingle',
   draftMessageType: 'informational',
-  draftTargets: {
-    age:       { min: null, max: null },
-    income:    { min: null, max: null },
-    household: { min: null, max: null },
-    distance:  { min: null, max: null },
-    area:      { min: null, max: null },
-  },
+  // Keys of the Population bracket arrays mapped to each chart axis.
+  draftXAxis:  'age',
+  draftYAxis:  'income',
+  // Selected range on each axis; null means no selection.
+  draftXRange: { min: null, max: null },
+  draftYRange: { min: null, max: null },
 
   // Flat weekly cost before medium and inflation adjustments.
   BASE_MARKETING_COST: 100,
@@ -26,7 +25,6 @@ const Marketing = {
   },
 
   // Impressions delivered per week at the base spend level for each medium.
-  // TV reaches large audiences quickly; online volume is high but spread thin.
   IMPRESSIONS_PER_WEEK: {
     tv:     50_000,
     radio:  30_000,
@@ -56,6 +54,15 @@ const Marketing = {
     { value: 'urgency',       label: 'Urgency-Driven', sub: 'this weekend only'              },
   ],
 
+  // Demographic categories available as point cloud axes.
+  DEMO_CATS: [
+    { key: 'age',       label: 'Age',       brackets: Population.AGE_BRACKETS      },
+    { key: 'income',    label: 'Income',    brackets: Population.INCOME_BRACKETS   },
+    { key: 'household', label: 'Household', brackets: Population.HOUSEHOLD_SIZES   },
+    { key: 'distance',  label: 'Distance',  brackets: Population.DISTANCE_BRACKETS },
+    { key: 'area',      label: 'Area',      brackets: Population.AREA_TYPES        },
+  ],
+
   // Returns weeks needed to deliver draftImpressions via the selected medium.
   estimatedWeeks() {
     return Math.ceil(this.draftImpressions / this.IMPRESSIONS_PER_WEEK[this.draftMedium]);
@@ -63,24 +70,44 @@ const Marketing = {
 
   // Returns the total upfront cost to launch the current draft campaign.
   calcCost() {
-    const mediaCost    = this.estimatedWeeks() * this.BASE_MARKETING_COST * this.MEDIUM_MULTIPLIERS[this.draftMedium];
+    const mediaCost     = this.estimatedWeeks() * this.BASE_MARKETING_COST * this.MEDIUM_MULTIPLIERS[this.draftMedium];
     const celebrityCost = this.draftHook === 'celebrity' ? this.CELEBRITY_COST : 0;
     return Math.round((mediaCost + celebrityCost) * Population.cumulativeInflation);
   },
 
-  // Updates the estimated-duration and cost lines without rebuilding the panel.
+  // Updates the estimated-duration and cost displays without rebuilding the panel.
   _refreshEstimate() {
     const weeks = this.estimatedWeeks();
-    const cost  = this.calcCost();
     const weeksEl = document.getElementById('mkt-est-weeks');
     const costEl  = document.getElementById('mkt-est-cost');
     if (weeksEl) weeksEl.textContent = `~${weeks} week${weeks !== 1 ? 's' : ''}`;
-    if (costEl)  costEl.textContent  = `$${cost.toLocaleString()}`;
+    if (costEl)  costEl.textContent  = `$${this.calcCost().toLocaleString()}`;
   },
 
-  // Applies the range-selection click rules to a single category and redraws its cells.
-  _handleCellClick(catKey, idx) {
-    const t = this.draftTargets[catKey];
+  // Returns true if the chart cell at (xi, yi) should be highlighted.
+  // One axis set: highlights all cells on that axis. Both set: intersection only.
+  _isCellSelected(xi, yi) {
+    const xr = this.draftXRange, yr = this.draftYRange;
+    const xSet = xr.min !== null, ySet = yr.min !== null;
+    const inX  = xSet && xi >= xr.min && xi <= xr.max;
+    const inY  = ySet && yi >= yr.min && yi <= yr.max;
+    if (!xSet && !ySet) return false;
+    if (xSet && ySet)   return inX && inY;
+    return xSet ? inX : inY;
+  },
+
+  // Redraws selected/unselected state on all cloud dots without rebuilding the panel.
+  _refreshCloudSelection() {
+    document.querySelectorAll('.mkt-cloud-dot').forEach(dot => {
+      dot.classList.toggle('selected', this._isCellSelected(
+        parseInt(dot.dataset.xi), parseInt(dot.dataset.yi)
+      ));
+    });
+  },
+
+  // Applies the range-selection click rules for a chart axis and redraws affected UI.
+  _handleRangeClick(axis, idx) {
+    const t = axis === 'x' ? this.draftXRange : this.draftYRange;
     if (t.min === null) {
       t.min = idx; t.max = idx;
     } else if (idx > t.max) {
@@ -94,13 +121,14 @@ const Marketing = {
     } else if (idx === t.max) {
       t.max = idx - 1;
     }
-    this._refreshDemoCells(catKey);
+    this._refreshRangeBar(axis);
+    this._refreshCloudSelection();
   },
 
-  // Syncs the selected class on all cells for a category to match draftTargets.
-  _refreshDemoCells(catKey) {
-    const t = this.draftTargets[catKey];
-    document.querySelectorAll(`.mkt-cell[data-cat="${catKey}"]`).forEach(btn => {
+  // Syncs the selected class on all cells of a range bar to match the stored range.
+  _refreshRangeBar(axis) {
+    const t = axis === 'x' ? this.draftXRange : this.draftYRange;
+    document.querySelectorAll(`[data-range-axis="${axis}"]`).forEach(btn => {
       const i = parseInt(btn.dataset.idx);
       btn.classList.toggle('selected', t.min !== null && i >= t.min && i <= t.max);
     });
@@ -108,14 +136,16 @@ const Marketing = {
 
   // Renders the full panel from current draft state and wires up all event listeners.
   buildPanel() {
-    // Categories and their Population bracket arrays used for demographic targeting.
-    const DEMO_CATS = [
-      { key: 'age',       label: 'Age',       brackets: Population.AGE_BRACKETS      },
-      { key: 'income',    label: 'Income',    brackets: Population.INCOME_BRACKETS   },
-      { key: 'household', label: 'Household', brackets: Population.HOUSEHOLD_SIZES   },
-      { key: 'distance',  label: 'Distance',  brackets: Population.DISTANCE_BRACKETS },
-      { key: 'area',      label: 'Area',      brackets: Population.AREA_TYPES        },
-    ];
+    const xCat = this.DEMO_CATS.find(c => c.key === this.draftXAxis);
+    const yCat = this.DEMO_CATS.find(c => c.key === this.draftYAxis);
+
+    // Compute joint probability weights for dot sizing (independent-axis approximation).
+    const xTotal  = xCat.brackets.reduce((s, b) => s + b.count, 0);
+    const yTotal  = yCat.brackets.reduce((s, b) => s + b.count, 0);
+    const weights = yCat.brackets.map(yb =>
+      xCat.brackets.map(xb => (xb.count / xTotal) * (yb.count / yTotal))
+    );
+    const maxWeight = Math.max(...weights.flat());
 
     const mediumBtns = this.MEDIUMS.map(m =>
       `<button class="mkt-option-btn${this.draftMedium === m.value ? ' active' : ''}" data-mkt-medium="${m.value}">${m.label}</button>`
@@ -132,47 +162,85 @@ const Marketing = {
       </button>`
     ).join('');
 
-    const demoRows = DEMO_CATS.map(cat => {
-      const t = this.draftTargets[cat.key];
-      const cells = cat.brackets.map((b, i) => {
-        const sel = t.min !== null && i >= t.min && i <= t.max;
-        return `<button class="mkt-cell${sel ? ' selected' : ''}" data-cat="${cat.key}" data-idx="${i}" title="${b.name}">${b.short}</button>`;
+    // Dropdown options for axis pickers — each axis excludes the other's current selection.
+    const axisOptions = (selectedKey, otherKey) => this.DEMO_CATS.map(c =>
+      `<option value="${c.key}"${c.key === selectedKey ? ' selected' : ''}${c.key === otherKey ? ' disabled' : ''}>${c.label}</option>`
+    ).join('');
+
+    // Point cloud grid: corner + x-labels row, then one row per y-bracket.
+    const xLabels  = xCat.brackets.map(b =>
+      `<div class="mkt-cloud-xlabel">${b.short}</div>`
+    ).join('');
+    const cloudRows = yCat.brackets.map((yb, yi) => {
+      const cells = xCat.brackets.map((xb, xi) => {
+        const pct = Math.round(25 + 55 * (weights[yi][xi] / maxWeight));
+        const sel = this._isCellSelected(xi, yi) ? ' selected' : '';
+        return `<div class="mkt-cloud-cell"><div class="mkt-cloud-dot${sel}"
+          data-xi="${xi}" data-yi="${yi}" style="width:${pct}%;aspect-ratio:1"></div></div>`;
       }).join('');
-      return `
-        <div class="mkt-demo-row">
-          <div class="mkt-demo-cat">${cat.label}</div>
-          <div class="mkt-demo-cells">${cells}</div>
-        </div>`;
+      return `<div class="mkt-cloud-ylabel">${yb.short}</div>${cells}`;
+    }).join('');
+
+    // Range bars below the cloud.
+    const rangeBar = (axis, cat, range) => cat.brackets.map((b, i) => {
+      const sel = range.min !== null && i >= range.min && i <= range.max;
+      return `<button class="mkt-cell${sel ? ' selected' : ''}" data-range-axis="${axis}" data-idx="${i}" title="${b.name}">${b.short}</button>`;
     }).join('');
 
     document.getElementById('marketing-panel-body').innerHTML = `
       <div class="panel-section-header">Campaign Designer</div>
-      <div class="posting-form">
-        <div class="form-field">
-          <label for="mkt-impressions">Target Impressions</label>
-          <input id="mkt-impressions" type="number" min="${this.IMPRESSIONS_STEP}" step="${this.IMPRESSIONS_STEP}" value="${this.draftImpressions}">
-          <div class="mkt-estimate">Est. duration: <span id="mkt-est-weeks"></span></div>
+      <div class="mkt-layout">
+
+        <div class="mkt-settings-col">
+          <div class="form-field">
+            <label for="mkt-impressions">Target Impressions</label>
+            <input id="mkt-impressions" type="number" min="${this.IMPRESSIONS_STEP}" step="${this.IMPRESSIONS_STEP}" value="${this.draftImpressions}">
+            <div class="mkt-estimate">Est. <span id="mkt-est-weeks"></span></div>
+          </div>
+          <div class="form-field">
+            <label>Medium</label>
+            <div class="mkt-option-group">${mediumBtns}</div>
+          </div>
+          <div class="form-field">
+            <label>Hook</label>
+            <div class="mkt-option-group">${hookBtns}</div>
+          </div>
+          <div class="form-field">
+            <label>Message Type</label>
+            <div class="mkt-option-group mkt-option-group--col">${messageTypeBtns}</div>
+          </div>
         </div>
-        <div class="form-field">
-          <label>Medium</label>
-          <div class="mkt-option-group">${mediumBtns}</div>
+
+        <div class="mkt-cloud-col">
+          <div class="mkt-axis-pickers">
+            <div class="form-field">
+              <label for="mkt-x-axis">Horizontal</label>
+              <select id="mkt-x-axis">${axisOptions(this.draftXAxis, this.draftYAxis)}</select>
+            </div>
+            <div class="form-field">
+              <label for="mkt-y-axis">Vertical</label>
+              <select id="mkt-y-axis">${axisOptions(this.draftYAxis, this.draftXAxis)}</select>
+            </div>
+          </div>
+          <div class="mkt-cloud-grid" style="grid-template-columns:auto repeat(${xCat.brackets.length},1fr)">
+            <div class="mkt-cloud-corner"></div>${xLabels}${cloudRows}
+          </div>
+          <div class="mkt-range-bars">
+            <div class="mkt-demo-row">
+              <div class="mkt-demo-cat">${xCat.label}</div>
+              <div class="mkt-demo-cells">${rangeBar('x', xCat, this.draftXRange)}</div>
+            </div>
+            <div class="mkt-demo-row">
+              <div class="mkt-demo-cat">${yCat.label}</div>
+              <div class="mkt-demo-cells">${rangeBar('y', yCat, this.draftYRange)}</div>
+            </div>
+          </div>
         </div>
-        <div class="form-field">
-          <label>Hook</label>
-          <div class="mkt-option-group">${hookBtns}</div>
-        </div>
-        <div class="form-field">
-          <label>Message Type</label>
-          <div class="mkt-option-group mkt-option-group--col">${messageTypeBtns}</div>
-        </div>
-        <div class="form-field">
-          <label>Target Demographics</label>
-          <div class="mkt-demo-rows">${demoRows}</div>
-        </div>
-        <div class="form-actions">
-          <div class="mkt-cost-line">Cost: <span id="mkt-est-cost"></span></div>
-          <button class="mkt-launch-btn" disabled>Launch Campaign</button>
-        </div>
+
+      </div>
+      <div class="mkt-launch-row">
+        <div class="mkt-cost-line">Cost: <span id="mkt-est-cost"></span></div>
+        <button class="mkt-launch-btn" disabled>Launch Campaign</button>
       </div>`;
 
     this._refreshEstimate();
@@ -206,9 +274,21 @@ const Marketing = {
       });
     });
 
-    document.querySelectorAll('.mkt-cell').forEach(btn => {
+    document.getElementById('mkt-x-axis').addEventListener('change', e => {
+      this.draftXAxis  = e.target.value;
+      this.draftXRange = { min: null, max: null };
+      this.buildPanel();
+    });
+
+    document.getElementById('mkt-y-axis').addEventListener('change', e => {
+      this.draftYAxis  = e.target.value;
+      this.draftYRange = { min: null, max: null };
+      this.buildPanel();
+    });
+
+    document.querySelectorAll('[data-range-axis]').forEach(btn => {
       btn.addEventListener('click', () => {
-        this._handleCellClick(btn.dataset.cat, parseInt(btn.dataset.idx));
+        this._handleRangeClick(btn.dataset.rangeAxis, parseInt(btn.dataset.idx));
       });
     });
   },

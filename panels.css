@@ -1179,14 +1179,111 @@
 .loan-accept-btn:hover { background: #166534; }
 
 /* ── Marketing panel ── */
-#panel-marketing { width: 320px; }
+#panel-marketing { width: 620px; }
 
 #marketing-panel-body {
   display: flex;
   flex-direction: column;
   flex: 1;
+  min-height: 0;
+}
+
+.mkt-layout {
+  display: flex;
+  gap: 0;
+  flex: 1;
   overflow-y: auto;
   min-height: 0;
+  padding: 12px;
+}
+
+.mkt-settings-col {
+  width: 210px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-right: 14px;
+  border-right: 1px solid #374151;
+}
+
+.mkt-cloud-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-left: 14px;
+  min-width: 0;
+}
+
+.mkt-axis-pickers {
+  display: flex;
+  gap: 8px;
+}
+
+.mkt-axis-pickers .form-field { flex: 1; }
+
+/* Point cloud grid — column count set inline per render */
+.mkt-cloud-grid {
+  display: grid;
+  gap: 3px;
+  align-items: center;
+  justify-items: center;
+}
+
+.mkt-cloud-corner { /* empty grid corner cell */ }
+
+.mkt-cloud-xlabel {
+  font-size: 0.58rem;
+  color: #6b7280;
+  text-align: center;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mkt-cloud-ylabel {
+  font-size: 0.58rem;
+  color: #6b7280;
+  text-align: right;
+  padding-right: 5px;
+  white-space: nowrap;
+  justify-self: end;
+}
+
+.mkt-cloud-cell {
+  width: 100%;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mkt-cloud-dot {
+  border-radius: 50%;
+  background: #2d3748;
+  transition: background 0.15s, transform 0.12s;
+}
+
+.mkt-cloud-dot.selected {
+  background: #f59e0b;
+  transform: scale(1.12);
+}
+
+.mkt-range-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mkt-launch-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-top: 1px solid #374151;
+  flex-shrink: 0;
 }
 
 .mkt-option-group {
