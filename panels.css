@@ -1280,14 +1280,14 @@
   width: 100%;
   height: 100%;
   padding: 0;
-  background: #1f2937;
-  border: 1px solid #374151;
+  background: #374151;
+  border: 1px solid #4b5563;
   border-radius: 2px;
   cursor: pointer;
   transition: background 0.1s, border-color 0.1s;
 }
 
-.mkt-cell-vert:hover:not(.selected) { background: #374151; }
+.mkt-cell-vert:hover:not(.selected) { background: #4b5563; }
 
 .mkt-cell-vert.selected {
   background: #78350f;

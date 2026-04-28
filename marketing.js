@@ -244,7 +244,7 @@ const Marketing = {
               <select id="mkt-y-axis">${axisOptions(this.draftYAxis, this.draftXAxis)}</select>
             </div>
           </div>
-          <div class="mkt-cloud-grid" style="grid-template-columns:12px auto repeat(${xCat.brackets.length},1fr)">
+          <div class="mkt-cloud-grid" style="grid-template-columns:18px auto repeat(${xCat.brackets.length},1fr)">
             <div class="mkt-cloud-corner"></div>
             <div class="mkt-cloud-corner"></div>
             ${xLabels}${cloudRows}
