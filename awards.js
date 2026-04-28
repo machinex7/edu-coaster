@@ -10,6 +10,8 @@ const Awards = {
     if (this.earned.has(def.id)) return;
     this.earned.add(def.id);
     this.list.push({ id: def.id, name: def.name, description: def.description, date: getDateLabel() });
+    if (this.list.length === 1)
+      document.querySelector('.tool-btn[data-panel="awards"]')?.classList.remove('hidden');
     Notifications.push({
       label:   'Award',
       message: `Award earned: ${def.name}`,
