@@ -38,43 +38,43 @@ const Population = {
   //   favor:         0–2 earned goodwill toward this park specifically — set at runtime via initDemographics()
 
   AGE_BRACKETS: [
-    { name: 'Child (0–12)',        chance: 1.6, annualVisits: 4.0, count:  80_000, intensityBias: 0.7, preferredCategory: 'toy' },
-    { name: 'Teen (13–17)',        chance: 1.3, annualVisits: 2.5, count:  30_000, intensityBias: 1.8, preferredCategory: 'apparel' },
-    { name: 'Young Adult (18–34)', chance: 1.2, annualVisits: 2.0, count: 110_000, intensityBias: 1.5, preferredCategory: 'practical' },
-    { name: 'Adult (35–54)',       chance: 1.1, annualVisits: 1.5, count: 125_000, intensityBias: 1.0, preferredCategory: 'souvenir' },
-    { name: 'Senior (55+)',        chance: 0.5, annualVisits: 0.1, count: 155_000, intensityBias: 0.4, preferredCategory: 'souvenir' },
+    { name: 'Child (0–12)',        short: 'Child',       chance: 1.6, annualVisits: 4.0, count:  80_000, intensityBias: 0.7, preferredCategory: 'toy' },
+    { name: 'Teen (13–17)',        short: 'Teen',        chance: 1.3, annualVisits: 2.5, count:  30_000, intensityBias: 1.8, preferredCategory: 'apparel' },
+    { name: 'Young Adult (18–34)', short: 'Young Adult', chance: 1.2, annualVisits: 2.0, count: 110_000, intensityBias: 1.5, preferredCategory: 'practical' },
+    { name: 'Adult (35–54)',       short: 'Adult',       chance: 1.1, annualVisits: 1.5, count: 125_000, intensityBias: 1.0, preferredCategory: 'souvenir' },
+    { name: 'Senior (55+)',        short: 'Senior',      chance: 0.5, annualVisits: 0.1, count: 155_000, intensityBias: 0.4, preferredCategory: 'souvenir' },
   ],
 
   INCOME_BRACKETS: [
-    { name: 'Low Income',    chance: 0.5, annualVisits: 0.5, count:  80_000, preferredCategory: 'practical' },
-    { name: 'Lower-Middle',  chance: 0.9, annualVisits: 0.8, count: 125_000, preferredCategory: 'toy' },
-    { name: 'Middle',        chance: 1.2, annualVisits: 1.5, count: 165_000, preferredCategory: 'souvenir' },
-    { name: 'Upper-Middle',  chance: 1.5, annualVisits: 2.5, count:  95_000, preferredCategory: 'apparel' },
-    { name: 'High Income',   chance: 1.6, annualVisits: 3.0, count:  35_000, preferredCategory: 'souvenir' },
+    { name: 'Low Income',    short: 'Low',     chance: 0.5, annualVisits: 0.5, count:  80_000, preferredCategory: 'practical' },
+    { name: 'Lower-Middle',  short: 'Low-Mid', chance: 0.9, annualVisits: 0.8, count: 125_000, preferredCategory: 'toy' },
+    { name: 'Middle',        short: 'Mid',     chance: 1.2, annualVisits: 1.5, count: 165_000, preferredCategory: 'souvenir' },
+    { name: 'Upper-Middle',  short: 'Up-Mid',  chance: 1.5, annualVisits: 2.5, count:  95_000, preferredCategory: 'apparel' },
+    { name: 'High Income',   short: 'High',    chance: 1.6, annualVisits: 3.0, count:  35_000, preferredCategory: 'souvenir' },
   ],
 
   // count = people who live within that distance band
   DISTANCE_BRACKETS: [
-    { name: 'Local (< 10 mi)',       chance: 1.8, annualVisits: 6.0, count:  75_000, preferredCategory: 'practical' },
-    { name: 'Nearby (10–30 mi)',     chance: 1.4, annualVisits: 3.0, count: 150_000, preferredCategory: 'toy' },
-    { name: 'Regional (30–100 mi)',  chance: 0.9, annualVisits: 1.0, count: 175_000, preferredCategory: 'apparel' },
-    { name: 'Destination (100+ mi)', chance: 0.5, annualVisits: 0.2, count: 100_000, preferredCategory: 'souvenir' },
+    { name: 'Local (< 10 mi)',       short: 'Local',    chance: 1.8, annualVisits: 6.0, count:  75_000, preferredCategory: 'practical' },
+    { name: 'Nearby (10–30 mi)',     short: 'Nearby',   chance: 1.4, annualVisits: 3.0, count: 150_000, preferredCategory: 'toy' },
+    { name: 'Regional (30–100 mi)',  short: 'Regional', chance: 0.9, annualVisits: 1.0, count: 175_000, preferredCategory: 'apparel' },
+    { name: 'Destination (100+ mi)', short: 'Dest.',    chance: 0.5, annualVisits: 0.2, count: 100_000, preferredCategory: 'souvenir' },
   ],
 
   // count = people who live in that household-size type (not number of households)
   // intensityBias pulled toward mild by youngest member present in family groups
   HOUSEHOLD_SIZES: [
-    { name: 'Solo (1)',          chance: 0.7, annualVisits: 1.0, count:  75_000, intensityBias: 1.3, preferredCategory: 'practical' },
-    { name: 'Couple (2)',        chance: 1.1, annualVisits: 1.5, count: 150_000, intensityBias: 1.2, preferredCategory: 'souvenir' },
-    { name: 'Small Family (3–4)',chance: 1.6, annualVisits: 2.5, count: 200_000, intensityBias: 0.9, preferredCategory: 'toy' },
-    { name: 'Large Family (5+)', chance: 1.4, annualVisits: 2.0, count:  75_000, intensityBias: 0.7, preferredCategory: 'apparel' },
+    { name: 'Solo (1)',          short: 'Solo',    chance: 0.7, annualVisits: 1.0, count:  75_000, intensityBias: 1.3, preferredCategory: 'practical' },
+    { name: 'Couple (2)',        short: 'Couple',  chance: 1.1, annualVisits: 1.5, count: 150_000, intensityBias: 1.2, preferredCategory: 'souvenir' },
+    { name: 'Small Family (3–4)',short: 'Sm. Fam', chance: 1.6, annualVisits: 2.5, count: 200_000, intensityBias: 0.9, preferredCategory: 'toy' },
+    { name: 'Large Family (5+)', short: 'Lg. Fam', chance: 1.4, annualVisits: 2.0, count:  75_000, intensityBias: 0.7, preferredCategory: 'apparel' },
   ],
 
   // Urban/suburban/rural reflects density and lifestyle, not just distance
   AREA_TYPES: [
-    { name: 'Urban',    chance: 0.8, annualVisits: 1.2, count: 125_000, preferredCategory: 'practical' },
-    { name: 'Suburban', chance: 1.4, annualVisits: 2.5, count: 275_000, preferredCategory: 'toy' },
-    { name: 'Rural',    chance: 0.9, annualVisits: 1.0, count: 100_000, preferredCategory: 'souvenir' },
+    { name: 'Urban',    short: 'Urban',    chance: 0.8, annualVisits: 1.2, count: 125_000, preferredCategory: 'practical' },
+    { name: 'Suburban', short: 'Suburban', chance: 1.4, annualVisits: 2.5, count: 275_000, preferredCategory: 'toy' },
+    { name: 'Rural',    short: 'Rural',    chance: 0.9, annualVisits: 1.0, count: 100_000, preferredCategory: 'souvenir' },
   ],
 
   // Employment status affects both disposable income and schedule flexibility

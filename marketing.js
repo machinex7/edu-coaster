@@ -1,11 +1,3 @@
-const DEMO_CATEGORIES = [
-  { key: 'age',       label: 'Age',       brackets: Population.AGE_BRACKETS,      shorts: ['Child', 'Teen', 'Young Adult', 'Adult', 'Senior']  },
-  { key: 'income',    label: 'Income',    brackets: Population.INCOME_BRACKETS,   shorts: ['Low', 'Low-Mid', 'Mid', 'Up-Mid', 'High']          },
-  { key: 'household', label: 'Household', brackets: Population.HOUSEHOLD_SIZES,   shorts: ['Solo', 'Couple', 'Sm. Fam', 'Lg. Fam']            },
-  { key: 'distance',  label: 'Distance',  brackets: Population.DISTANCE_BRACKETS, shorts: ['Local', 'Nearby', 'Regional', 'Dest.']             },
-  { key: 'area',      label: 'Area',      brackets: Population.AREA_TYPES,        shorts: ['Urban', 'Suburban', 'Rural']                       },
-];
-
 const Marketing = {
   draftDuration:    4,
   draftMedium:      'tv',
@@ -19,6 +11,7 @@ const Marketing = {
     area:      { min: null, max: null },
   },
 
+  // Applies the range-selection click rules to a single category and redraws its cells.
   _handleCellClick(catKey, idx) {
     const t = this.draftTargets[catKey];
     if (t.min === null) {
@@ -37,6 +30,7 @@ const Marketing = {
     this._refreshDemoCells(catKey);
   },
 
+  // Syncs the selected class on all cells for a category to match draftTargets.
   _refreshDemoCells(catKey) {
     const t = this.draftTargets[catKey];
     document.querySelectorAll(`.mkt-cell[data-cat="${catKey}"]`).forEach(btn => {
@@ -45,6 +39,7 @@ const Marketing = {
     });
   },
 
+  // Renders the full panel from current draft state and wires up all event listeners.
   buildPanel() {
     const DURATIONS = [
       { value: 1,  label: '1 week'               },
@@ -69,6 +64,13 @@ const Marketing = {
       { value: 'emotional',     label: 'Emotional',      sub: 'make memories with your family' },
       { value: 'urgency',       label: 'Urgency-Driven', sub: 'this weekend only'              },
     ];
+    const DEMO_CATS = [
+      { key: 'age',       label: 'Age',       brackets: Population.AGE_BRACKETS      },
+      { key: 'income',    label: 'Income',    brackets: Population.INCOME_BRACKETS   },
+      { key: 'household', label: 'Household', brackets: Population.HOUSEHOLD_SIZES   },
+      { key: 'distance',  label: 'Distance',  brackets: Population.DISTANCE_BRACKETS },
+      { key: 'area',      label: 'Area',      brackets: Population.AREA_TYPES        },
+    ];
 
     const durationOptions = DURATIONS.map(d =>
       `<option value="${d.value}"${d.value === this.draftDuration ? ' selected' : ''}>${d.label}</option>`
@@ -89,11 +91,11 @@ const Marketing = {
       </button>`
     ).join('');
 
-    const demoRows = DEMO_CATEGORIES.map(cat => {
+    const demoRows = DEMO_CATS.map(cat => {
       const t = this.draftTargets[cat.key];
       const cells = cat.brackets.map((b, i) => {
         const sel = t.min !== null && i >= t.min && i <= t.max;
-        return `<button class="mkt-cell${sel ? ' selected' : ''}" data-cat="${cat.key}" data-idx="${i}" title="${b.name}">${cat.shorts[i]}</button>`;
+        return `<button class="mkt-cell${sel ? ' selected' : ''}" data-cat="${cat.key}" data-idx="${i}" title="${b.name}">${b.short}</button>`;
       }).join('');
       return `
         <div class="mkt-demo-row">
