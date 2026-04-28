@@ -35,6 +35,12 @@ When adding a new panel, put its content styles in `panels.css`.
 
 ---
 
+## Code style
+
+- **Comments on every function and constant.** Add a short comment above every function and every named constant explaining what it is or does. This is a project preference that overrides the default "only comment the non-obvious" guideline.
+
+---
+
 ## Key architecture rules
 
 - **No build step.** Edit files directly; refresh browser to test.
