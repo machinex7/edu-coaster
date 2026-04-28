@@ -11,6 +11,25 @@ const Marketing = {
     area:      { min: null, max: null },
   },
 
+  MEDIUMS: [
+    { value: 'tv',     label: 'TV'     },
+    { value: 'radio',  label: 'Radio'  },
+    { value: 'online', label: 'Online' },
+    { value: 'print',  label: 'Print'  },
+  ],
+
+  HOOKS: [
+    { value: 'jingle',    label: 'Catchy Jingle'   },
+    { value: 'tagline',   label: 'Tagline'         },
+    { value: 'celebrity', label: 'Celebrity Cameo' },
+  ],
+
+  MESSAGE_TYPES: [
+    { value: 'informational', label: 'Informational',  sub: 'biggest rides in the state'     },
+    { value: 'emotional',     label: 'Emotional',      sub: 'make memories with your family' },
+    { value: 'urgency',       label: 'Urgency-Driven', sub: 'this weekend only'              },
+  ],
+
   // Applies the range-selection click rules to a single category and redraws its cells.
   _handleCellClick(catKey, idx) {
     const t = this.draftTargets[catKey];
@@ -41,29 +60,6 @@ const Marketing = {
 
   // Renders the full panel from current draft state and wires up all event listeners.
   buildPanel() {
-    const DURATIONS = [
-      { value: 1,  label: '1 week'               },
-      { value: 2,  label: '2 weeks'              },
-      { value: 4,  label: '4 weeks'              },
-      { value: 8,  label: '8 weeks'              },
-      { value: 13, label: '13 weeks (1 quarter)' },
-    ];
-    const MEDIUMS = [
-      { value: 'tv',     label: 'TV'     },
-      { value: 'radio',  label: 'Radio'  },
-      { value: 'online', label: 'Online' },
-      { value: 'print',  label: 'Print'  },
-    ];
-    const HOOKS = [
-      { value: 'jingle',    label: 'Catchy Jingle'   },
-      { value: 'tagline',   label: 'Tagline'         },
-      { value: 'celebrity', label: 'Celebrity Cameo' },
-    ];
-    const MESSAGE_TYPES = [
-      { value: 'informational', label: 'Informational',  sub: 'biggest rides in the state'     },
-      { value: 'emotional',     label: 'Emotional',      sub: 'make memories with your family' },
-      { value: 'urgency',       label: 'Urgency-Driven', sub: 'this weekend only'              },
-    ];
     const DEMO_CATS = [
       { key: 'age',       label: 'Age',       brackets: Population.AGE_BRACKETS      },
       { key: 'income',    label: 'Income',    brackets: Population.INCOME_BRACKETS   },
@@ -72,19 +68,15 @@ const Marketing = {
       { key: 'area',      label: 'Area',      brackets: Population.AREA_TYPES        },
     ];
 
-    const durationOptions = DURATIONS.map(d =>
-      `<option value="${d.value}"${d.value === this.draftDuration ? ' selected' : ''}>${d.label}</option>`
-    ).join('');
-
-    const mediumBtns = MEDIUMS.map(m =>
+    const mediumBtns = this.MEDIUMS.map(m =>
       `<button class="mkt-option-btn${this.draftMedium === m.value ? ' active' : ''}" data-mkt-medium="${m.value}">${m.label}</button>`
     ).join('');
 
-    const hookBtns = HOOKS.map(h =>
+    const hookBtns = this.HOOKS.map(h =>
       `<button class="mkt-option-btn${this.draftHook === h.value ? ' active' : ''}" data-mkt-hook="${h.value}">${h.label}</button>`
     ).join('');
 
-    const messageTypeBtns = MESSAGE_TYPES.map(m =>
+    const messageTypeBtns = this.MESSAGE_TYPES.map(m =>
       `<button class="mkt-option-btn mkt-option-btn--wide${this.draftMessageType === m.value ? ' active' : ''}" data-mkt-message="${m.value}">
         <span class="mkt-option-label">${m.label}</span>
         <span class="mkt-option-sub">${m.sub}</span>
@@ -108,8 +100,8 @@ const Marketing = {
       <div class="panel-section-header">Campaign Designer</div>
       <div class="posting-form">
         <div class="form-field">
-          <label for="mkt-duration">Duration</label>
-          <select id="mkt-duration">${durationOptions}</select>
+          <label for="mkt-duration">Duration (weeks)</label>
+          <input id="mkt-duration" type="number" min="1" step="1" value="${this.draftDuration}">
         </div>
         <div class="form-field">
           <label>Medium</label>
@@ -133,7 +125,8 @@ const Marketing = {
       </div>`;
 
     document.getElementById('mkt-duration').addEventListener('change', e => {
-      this.draftDuration = parseInt(e.target.value);
+      this.draftDuration = Math.max(1, parseInt(e.target.value) || 1);
+      e.target.value = this.draftDuration;
     });
 
     document.querySelectorAll('[data-mkt-medium]').forEach(btn => {
