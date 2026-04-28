@@ -1,5 +1,6 @@
 const Marketing = {
-  draftDuration:    4,
+  // Default impressions for a new campaign draft.
+  draftImpressions: 50_000,
   draftMedium:      'tv',
   draftHook:        'jingle',
   draftMessageType: 'informational',
@@ -11,15 +12,30 @@ const Marketing = {
     area:      { min: null, max: null },
   },
 
+  // Flat weekly cost before medium and inflation adjustments.
   BASE_MARKETING_COST: 100,
-  CELEBRITY_COST:      10_000,
+  // One-time fee added when the hook is a celebrity cameo.
+  CELEBRITY_COST: 10_000,
 
+  // Cost multiplier per medium — reflects real-world relative ad rates.
   MEDIUM_MULTIPLIERS: {
     tv:     6,
     print:  3,
     radio:  2,
     online: 1,
   },
+
+  // Impressions delivered per week at the base spend level for each medium.
+  // TV reaches large audiences quickly; online volume is high but spread thin.
+  IMPRESSIONS_PER_WEEK: {
+    tv:     50_000,
+    radio:  30_000,
+    print:  15_000,
+    online: 100_000,
+  },
+
+  // Step size for the impressions input.
+  IMPRESSIONS_STEP: 10_000,
 
   MEDIUMS: [
     { value: 'tv',     label: 'TV'     },
@@ -40,11 +56,26 @@ const Marketing = {
     { value: 'urgency',       label: 'Urgency-Driven', sub: 'this weekend only'              },
   ],
 
+  // Returns weeks needed to deliver draftImpressions via the selected medium.
+  estimatedWeeks() {
+    return Math.ceil(this.draftImpressions / this.IMPRESSIONS_PER_WEEK[this.draftMedium]);
+  },
+
   // Returns the total upfront cost to launch the current draft campaign.
   calcCost() {
-    const mediaCost    = this.draftDuration * this.BASE_MARKETING_COST * this.MEDIUM_MULTIPLIERS[this.draftMedium];
+    const mediaCost    = this.estimatedWeeks() * this.BASE_MARKETING_COST * this.MEDIUM_MULTIPLIERS[this.draftMedium];
     const celebrityCost = this.draftHook === 'celebrity' ? this.CELEBRITY_COST : 0;
     return Math.round((mediaCost + celebrityCost) * Population.cumulativeInflation);
+  },
+
+  // Updates the estimated-duration and cost lines without rebuilding the panel.
+  _refreshEstimate() {
+    const weeks = this.estimatedWeeks();
+    const cost  = this.calcCost();
+    const weeksEl = document.getElementById('mkt-est-weeks');
+    const costEl  = document.getElementById('mkt-est-cost');
+    if (weeksEl) weeksEl.textContent = `~${weeks} week${weeks !== 1 ? 's' : ''}`;
+    if (costEl)  costEl.textContent  = `$${cost.toLocaleString()}`;
   },
 
   // Applies the range-selection click rules to a single category and redraws its cells.
@@ -77,6 +108,7 @@ const Marketing = {
 
   // Renders the full panel from current draft state and wires up all event listeners.
   buildPanel() {
+    // Categories and their Population bracket arrays used for demographic targeting.
     const DEMO_CATS = [
       { key: 'age',       label: 'Age',       brackets: Population.AGE_BRACKETS      },
       { key: 'income',    label: 'Income',    brackets: Population.INCOME_BRACKETS   },
@@ -117,8 +149,9 @@ const Marketing = {
       <div class="panel-section-header">Campaign Designer</div>
       <div class="posting-form">
         <div class="form-field">
-          <label for="mkt-duration">Duration (weeks)</label>
-          <input id="mkt-duration" type="number" min="1" step="1" value="${this.draftDuration}">
+          <label for="mkt-impressions">Target Impressions</label>
+          <input id="mkt-impressions" type="number" min="${this.IMPRESSIONS_STEP}" step="${this.IMPRESSIONS_STEP}" value="${this.draftImpressions}">
+          <div class="mkt-estimate">Est. duration: <span id="mkt-est-weeks"></span></div>
         </div>
         <div class="form-field">
           <label>Medium</label>
@@ -137,19 +170,24 @@ const Marketing = {
           <div class="mkt-demo-rows">${demoRows}</div>
         </div>
         <div class="form-actions">
+          <div class="mkt-cost-line">Cost: <span id="mkt-est-cost"></span></div>
           <button class="mkt-launch-btn" disabled>Launch Campaign</button>
         </div>
       </div>`;
 
-    document.getElementById('mkt-duration').addEventListener('change', e => {
-      this.draftDuration = Math.max(1, parseInt(e.target.value) || 1);
-      e.target.value = this.draftDuration;
+    this._refreshEstimate();
+
+    document.getElementById('mkt-impressions').addEventListener('change', e => {
+      this.draftImpressions = Math.max(this.IMPRESSIONS_STEP, Math.round((parseInt(e.target.value) || this.IMPRESSIONS_STEP) / this.IMPRESSIONS_STEP) * this.IMPRESSIONS_STEP);
+      e.target.value = this.draftImpressions;
+      this._refreshEstimate();
     });
 
     document.querySelectorAll('[data-mkt-medium]').forEach(btn => {
       btn.addEventListener('click', () => {
         this.draftMedium = btn.dataset.mktMedium;
         document.querySelectorAll('[data-mkt-medium]').forEach(b => b.classList.toggle('active', b === btn));
+        this._refreshEstimate();
       });
     });
 
@@ -157,6 +195,7 @@ const Marketing = {
       btn.addEventListener('click', () => {
         this.draftHook = btn.dataset.mktHook;
         document.querySelectorAll('[data-mkt-hook]').forEach(b => b.classList.toggle('active', b === btn));
+        this._refreshEstimate();
       });
     });
 

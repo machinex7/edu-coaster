@@ -1267,6 +1267,26 @@
   cursor: default;
 }
 
+.mkt-estimate {
+  font-size: 0.72rem;
+  color: #9ca3af;
+  margin-top: 4px;
+}
+
+.mkt-cost-line {
+  font-size: 0.78rem;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+}
+
+.mkt-cost-line span {
+  color: #fde68a;
+  font-weight: 700;
+}
+
 .mkt-demo-rows {
   display: flex;
   flex-direction: column;
