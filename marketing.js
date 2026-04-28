@@ -1,50 +1,9 @@
 const DEMO_CATEGORIES = [
-  {
-    key: 'age', label: 'Age',
-    brackets: [
-      { short: 'Child',       full: 'Child (0–12)'        },
-      { short: 'Teen',        full: 'Teen (13–17)'        },
-      { short: 'Young Adult', full: 'Young Adult (18–34)' },
-      { short: 'Adult',       full: 'Adult (35–54)'       },
-      { short: 'Senior',      full: 'Senior (55+)'        },
-    ],
-  },
-  {
-    key: 'income', label: 'Income',
-    brackets: [
-      { short: 'Low',     full: 'Low Income'   },
-      { short: 'Low-Mid', full: 'Lower-Middle' },
-      { short: 'Mid',     full: 'Middle'       },
-      { short: 'Up-Mid',  full: 'Upper-Middle' },
-      { short: 'High',    full: 'High Income'  },
-    ],
-  },
-  {
-    key: 'household', label: 'Household',
-    brackets: [
-      { short: 'Solo',    full: 'Solo (1)'           },
-      { short: 'Couple',  full: 'Couple (2)'         },
-      { short: 'Sm. Fam', full: 'Small Family (3–4)' },
-      { short: 'Lg. Fam', full: 'Large Family (5+)'  },
-    ],
-  },
-  {
-    key: 'distance', label: 'Distance',
-    brackets: [
-      { short: 'Local',    full: 'Local (< 10 mi)'       },
-      { short: 'Nearby',   full: 'Nearby (10–30 mi)'     },
-      { short: 'Regional', full: 'Regional (30–100 mi)'  },
-      { short: 'Dest.',    full: 'Destination (100+ mi)' },
-    ],
-  },
-  {
-    key: 'area', label: 'Area',
-    brackets: [
-      { short: 'Urban',    full: 'Urban'    },
-      { short: 'Suburban', full: 'Suburban' },
-      { short: 'Rural',    full: 'Rural'    },
-    ],
-  },
+  { key: 'age',       label: 'Age',       brackets: Population.AGE_BRACKETS,      shorts: ['Child', 'Teen', 'Young Adult', 'Adult', 'Senior']  },
+  { key: 'income',    label: 'Income',    brackets: Population.INCOME_BRACKETS,   shorts: ['Low', 'Low-Mid', 'Mid', 'Up-Mid', 'High']          },
+  { key: 'household', label: 'Household', brackets: Population.HOUSEHOLD_SIZES,   shorts: ['Solo', 'Couple', 'Sm. Fam', 'Lg. Fam']            },
+  { key: 'distance',  label: 'Distance',  brackets: Population.DISTANCE_BRACKETS, shorts: ['Local', 'Nearby', 'Regional', 'Dest.']             },
+  { key: 'area',      label: 'Area',      brackets: Population.AREA_TYPES,        shorts: ['Urban', 'Suburban', 'Rural']                       },
 ];
 
 const Marketing = {
@@ -134,7 +93,7 @@ const Marketing = {
       const t = this.draftTargets[cat.key];
       const cells = cat.brackets.map((b, i) => {
         const sel = t.min !== null && i >= t.min && i <= t.max;
-        return `<button class="mkt-cell${sel ? ' selected' : ''}" data-cat="${cat.key}" data-idx="${i}" title="${b.full}">${b.short}</button>`;
+        return `<button class="mkt-cell${sel ? ' selected' : ''}" data-cat="${cat.key}" data-idx="${i}" title="${b.name}">${cat.shorts[i]}</button>`;
       }).join('');
       return `
         <div class="mkt-demo-row">
