@@ -103,3 +103,6 @@ Demographics: Min Age, Max Age, Gender, Min Income, Max Income, Veteran, Rural v
 
 Brand Partnerships
 Partner with other companies for special products, product placement, co-marketing.
+
+
+Also be cool to jave some map overlays, maybe a quick way to view tide status, ride demand, demographic appeal of each ride, money generation.
