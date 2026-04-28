@@ -11,6 +11,16 @@ const Marketing = {
     area:      { min: null, max: null },
   },
 
+  BASE_MARKETING_COST: 100,
+  CELEBRITY_COST:      10_000,
+
+  MEDIUM_MULTIPLIERS: {
+    tv:     6,
+    print:  3,
+    radio:  2,
+    online: 1,
+  },
+
   MEDIUMS: [
     { value: 'tv',     label: 'TV'     },
     { value: 'radio',  label: 'Radio'  },
@@ -29,6 +39,13 @@ const Marketing = {
     { value: 'emotional',     label: 'Emotional',      sub: 'make memories with your family' },
     { value: 'urgency',       label: 'Urgency-Driven', sub: 'this weekend only'              },
   ],
+
+  // Returns the total upfront cost to launch the current draft campaign.
+  calcCost() {
+    const mediaCost    = this.draftDuration * this.BASE_MARKETING_COST * this.MEDIUM_MULTIPLIERS[this.draftMedium];
+    const celebrityCost = this.draftHook === 'celebrity' ? this.CELEBRITY_COST : 0;
+    return Math.round((mediaCost + celebrityCost) * Population.cumulativeInflation);
+  },
 
   // Applies the range-selection click rules to a single category and redraws its cells.
   _handleCellClick(catKey, idx) {
