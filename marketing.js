@@ -1,7 +1,8 @@
 const Marketing = {
-  draftDuration: 4,
-  draftMedium:   'tv',
-  draftHook:     'jingle',
+  draftDuration:    4,
+  draftMedium:      'tv',
+  draftHook:        'jingle',
+  draftMessageType: 'informational',
 
   buildPanel() {
     const DURATIONS = [
@@ -22,6 +23,11 @@ const Marketing = {
       { value: 'tagline',   label: 'Tagline'         },
       { value: 'celebrity', label: 'Celebrity Cameo' },
     ];
+    const MESSAGE_TYPES = [
+      { value: 'informational', label: 'Informational', sub: 'biggest rides in the state'    },
+      { value: 'emotional',     label: 'Emotional',     sub: 'make memories with your family' },
+      { value: 'urgency',       label: 'Urgency-Driven', sub: 'this weekend only'             },
+    ];
 
     const durationOptions = DURATIONS.map(d =>
       `<option value="${d.value}"${d.value === this.draftDuration ? ' selected' : ''}>${d.label}</option>`
@@ -33,6 +39,13 @@ const Marketing = {
 
     const hookBtns = HOOKS.map(h =>
       `<button class="mkt-option-btn${this.draftHook === h.value ? ' active' : ''}" data-mkt-hook="${h.value}">${h.label}</button>`
+    ).join('');
+
+    const messageTypeBtns = MESSAGE_TYPES.map(m =>
+      `<button class="mkt-option-btn mkt-option-btn--wide${this.draftMessageType === m.value ? ' active' : ''}" data-mkt-message="${m.value}">
+        <span class="mkt-option-label">${m.label}</span>
+        <span class="mkt-option-sub">${m.sub}</span>
+      </button>`
     ).join('');
 
     document.getElementById('marketing-panel-body').innerHTML = `
@@ -49,6 +62,10 @@ const Marketing = {
         <div class="form-field">
           <label>Hook</label>
           <div class="mkt-option-group">${hookBtns}</div>
+        </div>
+        <div class="form-field">
+          <label>Message Type</label>
+          <div class="mkt-option-group mkt-option-group--col">${messageTypeBtns}</div>
         </div>
         <div class="form-actions">
           <button class="mkt-launch-btn" disabled>Launch Campaign</button>
@@ -70,6 +87,13 @@ const Marketing = {
       btn.addEventListener('click', () => {
         this.draftHook = btn.dataset.mktHook;
         document.querySelectorAll('[data-mkt-hook]').forEach(b => b.classList.toggle('active', b === btn));
+      });
+    });
+
+    document.querySelectorAll('[data-mkt-message]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.draftMessageType = btn.dataset.mktMessage;
+        document.querySelectorAll('[data-mkt-message]').forEach(b => b.classList.toggle('active', b === btn));
       });
     });
   },

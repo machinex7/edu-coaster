@@ -1219,6 +1219,34 @@
   background: #1c1508;
 }
 
+.mkt-option-group--col {
+  flex-direction: column;
+}
+
+.mkt-option-btn--wide {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  text-align: left;
+}
+
+.mkt-option-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.mkt-option-sub {
+  font-size: 0.68rem;
+  font-weight: 400;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.mkt-option-btn--wide.active .mkt-option-sub {
+  color: #ca8a04;
+}
+
 .mkt-launch-btn {
   flex: 1;
   padding: 8px;
