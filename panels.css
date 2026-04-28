@@ -1178,6 +1178,67 @@
 }
 .loan-accept-btn:hover { background: #166534; }
 
+/* ── Marketing panel ── */
+#panel-marketing { width: 320px; }
+
+#marketing-panel-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.mkt-option-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.mkt-option-btn {
+  padding: 6px 12px;
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 4px;
+  color: #9ca3af;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.1s, color 0.1s, background 0.1s;
+}
+
+.mkt-option-btn:hover {
+  border-color: #6b7280;
+  color: #d1d5db;
+}
+
+.mkt-option-btn.active {
+  border-color: #fbbf24;
+  color: #fde68a;
+  background: #1c1508;
+}
+
+.mkt-launch-btn {
+  flex: 1;
+  padding: 8px;
+  background: #1d4ed8;
+  color: #eff6ff;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mkt-launch-btn:hover:not(:disabled) { background: #2563eb; }
+
+.mkt-launch-btn:disabled {
+  background: #374151;
+  color: #6b7280;
+  cursor: default;
+}
+
 /* ── Awards panel ── */
 .awards-panel-body {
   flex: 1;
