@@ -106,3 +106,8 @@ Partner with other companies for special products, product placement, co-marketi
 
 
 Also be cool to jave some map overlays, maybe a quick way to view tide status, ride demand, demographic appeal of each ride, money generation.
+
+
+What about other park installations? Security cameras. Water fountains. Vending machines. Photo booth or ride photos. Things that overlay on top of existing construction.
+
+Robotic security to replace people. AI cameras to count age metrics of riders vs staff.
