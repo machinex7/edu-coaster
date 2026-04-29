@@ -124,7 +124,6 @@ const Population = {
       ...this.VISITOR_STATUS,
     ];
     for (const bracket of allBrackets) bracket.favor = 1.0;
-    this.compositeFavor = 1.0;
 
     // Parallel confidence arrays for each category (0–100 %).
     // Separate from the bracket objects because this is runtime-observed state.
@@ -137,25 +136,16 @@ const Population = {
       EMPLOYMENT: Array(this.EMPLOYMENT_STATUS.length).fill(0),
       STATUS:     Array(this.VISITOR_STATUS.length).fill(0),
     };
+
+    // Store the neutral baseline so calcDemandMultiplier() can normalise against it.
+    this.baselineFavorablePopulation = this.calcFavorablePopulation();
   },
 
-  // Tick all brackets in one category toward 100% confidence.
-  // delta scales with weekly attendance so busier parks learn faster.
-  tickConfidence(categoryKey, weeklyAttendance) {
-    const delta = (weeklyAttendance / this.CONFIDENCE_VISIT_CAPACITY) * 100;
-    this.confidence[categoryKey] = this.confidence[categoryKey]
-      .map(c => Math.min(100, c + delta));
-  },
-
-  // Weighted average favor for a single category.
-  _categoryFavor(brackets) {
-    const totalCount = brackets.reduce((s, b) => s + b.count, 0);
-    return brackets.reduce((s, b) => s + b.favor * b.count, 0) / totalCount;
-  },
-
-  // Recompute and store compositeFavor. Call whenever any bracket's favor changes.
-  // Result is an average of each category's weighted-average favor, so 1.0 = neutral baseline.
-  calcCompositeFavor() {
+  // Sum of (chance × favor × count) across every bracket in every category,
+  // divided by 7 because each person appears once per category.
+  // At neutral (all favors = 1.0) this reflects the raw chance-weighted market size.
+  // As favor changes, high-chance and high-count brackets move the result more.
+  calcFavorablePopulation() {
     const categories = [
       this.AGE_BRACKETS,
       this.INCOME_BRACKETS,
@@ -165,9 +155,23 @@ const Population = {
       this.EMPLOYMENT_STATUS,
       this.VISITOR_STATUS,
     ];
-    const sum = categories.reduce((s, cat) => s + this._categoryFavor(cat), 0);
-    this.compositeFavor = sum / categories.length;
-    return this.compositeFavor;
+    const total = categories.reduce((s, cat) =>
+      s + cat.reduce((cs, b) => cs + b.chance * b.favor * b.count, 0), 0);
+    return total / categories.length;
+  },
+
+  // Demand multiplier: ratio of current favorable population to the neutral baseline.
+  // 1.0 at a neutral park; rises when high-chance, high-count brackets gain favor.
+  calcDemandMultiplier() {
+    return this.calcFavorablePopulation() / this.baselineFavorablePopulation;
+  },
+
+  // Tick all brackets in one category toward 100% confidence.
+  // delta scales with weekly attendance so busier parks learn faster.
+  tickConfidence(categoryKey, weeklyAttendance) {
+    const delta = (weeklyAttendance / this.CONFIDENCE_VISIT_CAPACITY) * 100;
+    this.confidence[categoryKey] = this.confidence[categoryKey]
+      .map(c => Math.min(100, c + delta));
   },
 
 };
