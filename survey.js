@@ -184,31 +184,6 @@ const Survey = {
          </div>`
       : '';
 
-    const totalAttendance = History.rounds.reduce((s, r) => s + r.attendance, 0);
-    const gateSection = History.rounds.length > 0
-      ? `<div class="panel-section-header">Gate Analytics</div>
-         <div class="gate-analytics-body">
-           <div class="gate-analytics-stat">${totalAttendance.toLocaleString()} total visitors</div>
-           <button class="ride-action-btn" id="gate-demographics-btn">View Group Size Demographics</button>
-           <button class="ride-action-btn" id="gate-quarterly-btn"
-                   ${completedQuarters < 1 ? 'disabled title="Available after your first full quarter"' : ''}>
-             View Quarterly Demographics
-           </button>
-         </div>`
-      : '';
-
-    const totalCars  = History.rounds.reduce((s, r) => s + Math.round(r.parkingIncome / Finance.parkingPrice), 0);
-    const hasParking = Staff.roster.some(s => s.jobId === JOB.SECURITY && s.focus === SECURITY_FOCUS.PARKING_OBS && s.weeksOut === 0);
-    const parkingSection = History.rounds.length > 0 && Research.completed.has(RESEARCH_ID.LICENSE_PLATE_MONITORING)
-      ? `<div class="panel-section-header">Parking</div>
-         <div class="gate-analytics-body">
-           <div class="gate-analytics-stat">${totalCars.toLocaleString()} total cars parked</div>
-           ${hasParking
-             ? '<button class="ride-action-btn" id="parking-location-btn">View Location Demographics</button>'
-             : '<p class="empty-note">Assign a guard to Parking to unlock location data.</p>'}
-         </div>`
-      : '';
-
     el.innerHTML = `
       <div class="panel-section-header">Incentive</div>
       <div class="survey-incentive-group">${incentiveRows}</div>
@@ -227,9 +202,7 @@ const Survey = {
         </button>
       </div>
       ${inProgressSection}
-      ${resultsSection}
-      ${gateSection}
-      ${parkingSection}`;
+      ${resultsSection}`;
 
     el.querySelectorAll('input[name="survey-incentive"]').forEach(radio => {
       radio.addEventListener('change', () => {
@@ -296,45 +269,6 @@ const Survey = {
       });
     });
 
-    el.querySelector('#gate-demographics-btn')?.addEventListener('click', () => {
-      const fractions = Survey._demographicFractions(Population.HOUSEHOLD_SIZES);
-      Charts.showModal({
-        title:       'Group Size Demographics',
-        items:       Population.HOUSEHOLD_SIZES.map((b, i) => ({
-          label: b.name,
-          value: Math.round(fractions[i] * 100),
-        })),
-        formatValue: v => `${v}%`,
-      });
-    });
-
-    el.querySelector('#gate-quarterly-btn')?.addEventListener('click', () => {
-      const completedQ    = Math.floor(History.rounds.length / 13);
-      const qRounds       = History.rounds.slice((completedQ - 1) * 13, completedQ * 13);
-      const avgAttendance = qRounds.reduce((s, r) => s + r.attendance, 0) / qRounds.length;
-      const fractions     = Survey._demographicFractions(Population.HOUSEHOLD_SIZES);
-      Charts.showModal({
-        title:       `Quarterly Demographics — ${Survey._quarterLabel(completedQ)}`,
-        subtitle:    `Avg. ${Math.round(avgAttendance).toLocaleString()} visitors/week`,
-        items:       Population.HOUSEHOLD_SIZES.map((b, i) => ({
-          label: b.name,
-          value: Math.round(fractions[i] * avgAttendance),
-        })),
-        formatValue: v => v.toLocaleString(),
-      });
-    });
-
-    el.querySelector('#parking-location-btn')?.addEventListener('click', () => {
-      const fractions = Survey._demographicFractions(Population.DISTANCE_BRACKETS);
-      Charts.showModal({
-        title:       'Location Demographics',
-        items:       Population.DISTANCE_BRACKETS.map((b, i) => ({
-          label: b.name,
-          value: Math.round(fractions[i] * 100),
-        })),
-        formatValue: v => `${v}%`,
-      });
-    });
   },
 
 };

@@ -24,6 +24,11 @@ const Population = {
   MESS_EXTREME_RIDER_RATE: 0.05,  // 1 per 20 riders on each extreme-intensity ride
   MESS_FOOD_RATE:          0.10,  // 1 per 10 meals sold
 
+  // ── Demographic confidence ────────────────────────────────────────────────
+  // Total visitor-observations needed for a category to reach 100% confidence.
+  // Scales naturally with attendance: more visitors per week → faster learning.
+  CONFIDENCE_VISIT_CAPACITY: 5000,
+
   // ── External economic conditions ───────────────────────────────────────────
   utilityMultiplier:    1,     // applied to all ride utility costs each round
   inflationRate:        0.02,  // annual rate; applied weekly to staff cost-of-living
@@ -120,6 +125,26 @@ const Population = {
     ];
     for (const bracket of allBrackets) bracket.favor = 1.0;
     this.compositeFavor = 1.0;
+
+    // Parallel confidence arrays for each category (0–100 %).
+    // Separate from the bracket objects because this is runtime-observed state.
+    this.confidence = {
+      HOUSEHOLD:  Array(this.HOUSEHOLD_SIZES.length).fill(0),
+      DISTANCE:   Array(this.DISTANCE_BRACKETS.length).fill(0),
+      AGE:        Array(this.AGE_BRACKETS.length).fill(0),
+      INCOME:     Array(this.INCOME_BRACKETS.length).fill(0),
+      AREA:       Array(this.AREA_TYPES.length).fill(0),
+      EMPLOYMENT: Array(this.EMPLOYMENT_STATUS.length).fill(0),
+      STATUS:     Array(this.VISITOR_STATUS.length).fill(0),
+    };
+  },
+
+  // Tick all brackets in one category toward 100% confidence.
+  // delta scales with weekly attendance so busier parks learn faster.
+  tickConfidence(categoryKey, weeklyAttendance) {
+    const delta = (weeklyAttendance / this.CONFIDENCE_VISIT_CAPACITY) * 100;
+    this.confidence[categoryKey] = this.confidence[categoryKey]
+      .map(c => Math.min(100, c + delta));
   },
 
   // Weighted average favor for a single category.

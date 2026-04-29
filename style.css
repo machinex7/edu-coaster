@@ -263,7 +263,23 @@ header h1 {
   color: #6b7280;
   border-bottom: 1px solid #374151;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
+
+/* Close button shown in panels that cover the full screen */
+.panel-close-btn {
+  background: none;
+  border: none;
+  color: #6b7280;
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+  flex-shrink: 0;
+}
+.panel-close-btn:hover { color: #e5e7eb; }
 
 /* ── Park View ── */
 #park-view {

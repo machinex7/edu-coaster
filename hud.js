@@ -2,6 +2,9 @@
 let activePanel = null;
 
 function initHUD() {
+  // Pin the research panel below the header by measuring it once at startup.
+  const headerEl = document.querySelector('header');
+  document.documentElement.style.setProperty('--header-h', headerEl.offsetHeight + 'px');
   updateHUD();
   document.getElementById('open-park-btn').addEventListener('click', openPark);
   document.getElementById('next-round-btn').addEventListener('click', advanceRound);
@@ -39,6 +42,7 @@ function advanceRound() {
   Survey.processPendingSend();
   History.record(report);
   Research.tickResearch();
+  _tickDemographicConfidence(report.weeklyAttendance);
   if (round % 13 === 1 && round > 1) Awards.checkQuarterly();
   updateLockedPanels();
   updateHUD();
@@ -52,6 +56,17 @@ function advanceRound() {
   showRoundSummary(report);
   nextWeekForecast   = futurecastForecast;
   futurecastForecast = forecastForRound(round + 2);
+}
+
+// Tick demographic confidence for every active data-collection source.
+// HOUSEHOLD is always collected at the gate; DISTANCE requires the
+// license-plate research and a guard assigned to parking observation.
+function _tickDemographicConfidence(weeklyAttendance) {
+  if (weeklyAttendance <= 0) return;
+  Population.tickConfidence('HOUSEHOLD', weeklyAttendance);
+  const hasParkingObs = Research.completed.has(RESEARCH_ID.LICENSE_PLATE_MONITORING) &&
+    Staff.roster.some(s => s.jobId === JOB.SECURITY && s.focus === SECURITY_FOCUS.PARKING_OBS && s.weeksOut === 0);
+  if (hasParkingObs) Population.tickConfidence('DISTANCE', weeklyAttendance);
 }
 
 function showRoundSummary(report) {
