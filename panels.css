@@ -1257,7 +1257,8 @@
 
 .mkt-cloud-cell {
   width: 100%;
-  aspect-ratio: 1;
+  aspect-ratio: 4 / 3;
+  max-height: 56px;
   position: relative;
   overflow: hidden;
 }

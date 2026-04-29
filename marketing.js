@@ -36,7 +36,7 @@ const Marketing = {
   IMPRESSIONS_STEP: 10_000,
 
   // Maximum number of crowd dots in the most-populated cloud cell.
-  MAX_CROWD_DOTS: 24,
+  MAX_CROWD_DOTS: 40,
 
   MEDIUMS: [
     { value: 'tv',     label: 'TV'     },
