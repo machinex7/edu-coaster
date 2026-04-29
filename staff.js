@@ -103,6 +103,26 @@ const Staff = {
       emp.mood         = 50;
       this.roster.push(emp);
     });
+    this.generateSetupCandidates();
+  },
+
+  // Populates the candidate pool before the park opens so the player can hire
+  // freely during setup without posting a job. Generates 3 candidates per job
+  // type at low-to-medium quality. All are flagged isSetupCandidate so they
+  // bypass the posting requirement and are cleared when play begins.
+  generateSetupCandidates() {
+    this.JOB_TYPES.forEach(jobDef => {
+      for (let i = 0; i < 3; i++) {
+        const emp = this.generateEmployee(30);
+        emp.jobId           = jobDef.id;
+        emp.focus           = jobDef.id === JOB.ENGINEER ? ENGINEER_FOCUS.MAINTENANCE : SECURITY_FOCUS.PATROL;
+        emp.costOfLiving    = Math.round(jobDef.weeklySalary * (0.80 + Math.random() * 0.40));
+        emp.salary          = emp.costOfLiving;
+        emp.weeksAsCandidate = 0;
+        emp.isSetupCandidate = true;
+        this.candidates.push(emp);
+      }
+    });
   },
 
   totalWeeklySalary() {
@@ -330,13 +350,17 @@ const Staff = {
   hireCandidate(instanceId) {
     const candidate = this.candidates.find(c => c.instanceId === instanceId);
     if (!candidate) return;
-    const posting = this.findMatchingPosting(candidate);
-    if (!posting) return;
+
+    // Setup candidates don't require a posting — hire directly.
+    if (!candidate.isSetupCandidate) {
+      const posting = this.findMatchingPosting(candidate);
+      if (!posting) return;
+      this.postings = this.postings.filter(p => p.instanceId !== posting.instanceId);
+    }
 
     const emp = { ...candidate, events: [...(candidate.events ?? [])] };
     emp.events.push({ moodModifier: 20, comment: 'Excited to start a new job.' });
     this.roster.push(emp);
-    this.postings   = this.postings.filter(p => p.instanceId !== posting.instanceId);
     this.candidates = this.candidates.filter(c => c.instanceId !== instanceId);
     this.buildCandidatesView();
   },
