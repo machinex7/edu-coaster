@@ -241,13 +241,16 @@ const Survey = {
       const result = Survey._lastSurveyResult();
       if (!result) return;
       Charts.showModal({
-        title:       'Survey Results',
-        subtitle:    `${result.completed} of ${result.batchSize.toLocaleString()} responded · Round ${result.round}`,
-        items:       Object.entries(result.reportedScores).map(([cat, score]) => ({
+        title:         'Survey Results',
+        subtitle:      `${result.completed} of ${result.batchSize.toLocaleString()} responded · Round ${result.round}`,
+        items:         Object.entries(result.reportedScores).map(([cat, score]) => ({
           label: Survey.CATEGORY_LABELS[cat] ?? cat,
           value: Math.round(score),
         })),
-        formatValue: v => `${v}%`,
+        formatValue:   v => `${v}%`,
+        max:           100,
+        sentimentAxis: true,
+        coloredBars:   true,
       });
     });
 
@@ -267,8 +270,11 @@ const Survey = {
               value: Math.round(allSurveys.reduce((s, r) => s + r.reportedScores[cat], 0) / allSurveys.length),
             }))
           : [],
-        formatValue:  v => `${v}%`,
-        emptyMessage: 'No surveys were sent during this quarter.',
+        formatValue:   v => `${v}%`,
+        emptyMessage:  'No surveys were sent during this quarter.',
+        max:           100,
+        sentimentAxis: true,
+        coloredBars:   true,
       });
     });
 
