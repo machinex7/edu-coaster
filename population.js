@@ -128,13 +128,13 @@ const Population = {
     // Parallel confidence arrays for each category (0–100 %).
     // Separate from the bracket objects because this is runtime-observed state.
     this.confidence = {
-      HOUSEHOLD:  Array(this.HOUSEHOLD_SIZES.length).fill(50),
-      DISTANCE:   Array(this.DISTANCE_BRACKETS.length).fill(50),
-      AGE:        Array(this.AGE_BRACKETS.length).fill(50),
-      INCOME:     Array(this.INCOME_BRACKETS.length).fill(50),
-      AREA:       Array(this.AREA_TYPES.length).fill(50),
-      EMPLOYMENT: Array(this.EMPLOYMENT_STATUS.length).fill(50),
-      STATUS:     Array(this.VISITOR_STATUS.length).fill(50),
+      HOUSEHOLD:  Array(this.HOUSEHOLD_SIZES.length).fill(0),
+      DISTANCE:   Array(this.DISTANCE_BRACKETS.length).fill(0),
+      AGE:        Array(this.AGE_BRACKETS.length).fill(0),
+      INCOME:     Array(this.INCOME_BRACKETS.length).fill(0),
+      AREA:       Array(this.AREA_TYPES.length).fill(0),
+      EMPLOYMENT: Array(this.EMPLOYMENT_STATUS.length).fill(0),
+      STATUS:     Array(this.VISITOR_STATUS.length).fill(0),
     };
 
     // Store the neutral baseline so calcDemandMultiplier() can normalise against it.
