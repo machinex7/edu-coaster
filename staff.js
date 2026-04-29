@@ -284,7 +284,8 @@ const Staff = {
   // ── Candidates ─────────────────────────────────────────────────────────────
   // Generates a pool of candidates each round when postings exist. Pool size and
   // candidate quality both scale with the number of active HR staff and their
-  // experience tier. Candidates without a matching posting are discarded immediately.
+  // experience tier. Benefits also raise quality: 401(k) match adds a flat
+  // bonus, and each week of vacation or parental leave adds a per-week bonus.
   // Fires a single notification if any new matching candidates arrived this round.
   generateCandidates() {
     if (this.postings.length === 0) return;
@@ -296,6 +297,11 @@ const Staff = {
       count   += tier;
       quality += tier * 5;
     });
+
+    // Benefits attract better candidates.
+    if (this.RETIREMENT_MATCH_PCT > 0) quality += 10;
+    quality += this.VACATION_WEEKS * 5;
+    quality += this.PARENTAL_LEAVE_WEEKS * 5;
 
     const before = this.candidates.length;
     for (let i = 0; i < count; i++) {
