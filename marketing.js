@@ -7,9 +7,10 @@ const Marketing = {
   // Keys of the Population bracket arrays mapped to each chart axis.
   draftXAxis:  'age',
   draftYAxis:  'income',
-  // Selected range on each axis; null means no selection.
-  draftXRange: { min: null, max: null },
-  draftYRange: { min: null, max: null },
+  // Selected range on each axis; initialized to full selection (all brackets).
+  // Age and Income each have 5 brackets → indices 0–4.
+  draftXRange: { min: 0, max: 4 },
+  draftYRange: { min: 0, max: 4 },
 
   // Flat weekly cost before medium and inflation adjustments.
   BASE_MARKETING_COST: 100,
@@ -65,6 +66,12 @@ const Marketing = {
     { key: 'distance',  label: 'Distance',  brackets: Population.DISTANCE_BRACKETS },
     { key: 'area',      label: 'Area',      brackets: Population.AREA_TYPES        },
   ],
+
+  // Returns a range covering all brackets for the given category key.
+  _fullRange(catKey) {
+    const cat = this.DEMO_CATS.find(c => c.key === catKey);
+    return { min: 0, max: cat.brackets.length - 1 };
+  },
 
   // Generates deterministic pseudo-random dot positions for a cloud cell,
   // seeded by (xi, yi) so positions stay stable across selection re-renders.
@@ -296,13 +303,13 @@ const Marketing = {
 
     document.getElementById('mkt-x-axis').addEventListener('change', e => {
       this.draftXAxis  = e.target.value;
-      this.draftXRange = { min: null, max: null };
+      this.draftXRange = this._fullRange(e.target.value);
       this.buildPanel();
     });
 
     document.getElementById('mkt-y-axis').addEventListener('change', e => {
       this.draftYAxis  = e.target.value;
-      this.draftYRange = { min: null, max: null };
+      this.draftYRange = this._fullRange(e.target.value);
       this.buildPanel();
     });
 
