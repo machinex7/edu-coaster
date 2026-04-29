@@ -873,10 +873,27 @@
   color: #fff;
 }
 
-/* ── Business Research panel ── */
-#panel-research,
+/* ── Business Research panel — full-screen fixed overlay ──
+   Uses position:fixed to escape the overflow:hidden ancestors.
+   Closed state switches to display:none instead of the width-collapse used
+   by other panels, because a fixed element can't animate width cleanly. */
+#panel-research {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 100;
+  transition: none;
+}
+
+#panel-research.closed {
+  display: none;
+}
+
 #panel-research .side-panel-inner {
-  width: 660px;
+  width: 100%;
+  border-right: none;
 }
 
 .research-panel-body {
@@ -1179,14 +1196,136 @@
 .loan-accept-btn:hover { background: #166534; }
 
 /* ── Marketing panel ── */
-#panel-marketing { width: 320px; }
+#panel-marketing,
+#panel-marketing .side-panel-inner {
+  width: 1000px;
+}
 
 #marketing-panel-body {
   display: flex;
   flex-direction: column;
   flex: 1;
+  min-height: 0;
+}
+
+.mkt-layout {
+  display: flex;
+  gap: 0;
+  flex: 1;
   overflow-y: auto;
   min-height: 0;
+  padding: 12px;
+}
+
+.mkt-settings-col {
+  width: 210px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-right: 14px;
+  border-right: 1px solid #374151;
+}
+
+.mkt-cloud-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-left: 14px;
+  min-width: 0;
+}
+
+.mkt-axis-pickers {
+  display: flex;
+  gap: 8px;
+}
+
+.mkt-axis-pickers .form-field { flex: 1; }
+
+/* Point cloud grid — column count set inline per render */
+.mkt-cloud-grid {
+  display: grid;
+  gap: 3px;
+  align-items: center;
+  justify-items: center;
+}
+
+.mkt-cloud-corner { /* empty grid corner cell */ }
+
+.mkt-cloud-xlabel {
+  font-size: 0.58rem;
+  color: #6b7280;
+  text-align: center;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mkt-cloud-ylabel {
+  font-size: 0.58rem;
+  color: #6b7280;
+  text-align: right;
+  padding-right: 5px;
+  white-space: nowrap;
+  justify-self: end;
+}
+
+.mkt-cloud-cell {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  max-height: 56px;
+  position: relative;
+  overflow: hidden;
+}
+
+.mkt-crowd-dot {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #4b5563;
+  transition: background 0.15s;
+}
+
+.mkt-crowd-dot.selected {
+  background: #f59e0b;
+}
+
+/* Vertical Y-range selector strip embedded in the cloud grid column. */
+.mkt-cell-vert {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  background: #374151;
+  border: 1px solid #4b5563;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.mkt-cell-vert:hover:not(.selected) { background: #4b5563; }
+
+.mkt-cell-vert.selected {
+  background: #78350f;
+  border-color: #d97706;
+}
+
+/* Only the X range bar remains below the chart; Y range is in the grid. */
+.mkt-range-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mkt-launch-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-top: 1px solid #374151;
+  flex-shrink: 0;
 }
 
 .mkt-option-group {
@@ -1217,6 +1356,12 @@
   border-color: #fbbf24;
   color: #fde68a;
   background: #1c1508;
+}
+
+/* Locked options are dimmed and non-interactive — research required to enable. */
+.mkt-option-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .mkt-option-group--col {
