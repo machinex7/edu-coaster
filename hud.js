@@ -398,19 +398,25 @@ function _buildInvStockView() {
       .map((item, i) => ({ item, inv: merchandiseInventory[i], idx: i }))
       .filter(({ item }) => item.category === cat);
     const rows = items.map(({ item, inv, idx }) => {
-      const orderBtns = [10, 50, 100].map(qty => {
-        const cost = Math.round(qty * inv.price * Population.cumulativeInflation + (supplier?.surcharge ?? 0));
-        const canAfford = money >= cost;
-        return `<button class="inv-order-btn${canAfford ? '' : ' cant-afford'}"
-          data-idx="${idx}" data-qty="${qty}">+${qty} $${cost.toLocaleString()}</button>`;
-      }).join('');
+      const pendingOrder = orders.find(o => o.itemIndex === idx);
+      let orderBtnsHtml;
+      if (pendingOrder) {
+        orderBtnsHtml = `<span class="inv-order-pending">Order pending: ${pendingOrder.count} units (${pendingOrder.weeksRemaining}w)</span>`;
+      } else {
+        orderBtnsHtml = [10, 50, 100].map(qty => {
+          const cost = Math.round(qty * inv.price * Population.cumulativeInflation + (supplier?.surcharge ?? 0));
+          const canAfford = money >= cost;
+          return `<button class="inv-order-btn${canAfford ? '' : ' cant-afford'}"
+            data-idx="${idx}" data-qty="${qty}">+${qty} $${cost.toLocaleString()}</button>`;
+        }).join('');
+      }
       return `
         <div class="inv-item-row">
           <div class="inv-item-header">
             <span class="price-label">${item.name}</span>
             <span class="price-value">${inv.count}</span>
           </div>
-          <div class="inv-order-btns">${orderBtns}</div>
+          <div class="inv-order-btns">${orderBtnsHtml}</div>
         </div>`;
     }).join('');
     return `<div class="panel-section-header">${CATEGORY_LABELS[cat]}</div>${rows}`;
