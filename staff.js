@@ -113,7 +113,7 @@ const Staff = {
   generateSetupCandidates() {
     this.JOB_TYPES.forEach(jobDef => {
       for (let i = 0; i < 3; i++) {
-        const emp = this.generateEmployee(30);
+        const emp = this.generateEmployee(0);
         emp.jobId           = jobDef.id;
         emp.focus           = jobDef.id === JOB.ENGINEER ? ENGINEER_FOCUS.MAINTENANCE : SECURITY_FOCUS.PATROL;
         emp.costOfLiving    = Math.round(jobDef.weeklySalary * (0.80 + Math.random() * 0.40));
