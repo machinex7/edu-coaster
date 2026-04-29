@@ -873,10 +873,27 @@
   color: #fff;
 }
 
-/* ── Business Research panel ── */
-#panel-research,
+/* ── Business Research panel — full-screen fixed overlay ──
+   Uses position:fixed to escape the overflow:hidden ancestors.
+   Closed state switches to display:none instead of the width-collapse used
+   by other panels, because a fixed element can't animate width cleanly. */
+#panel-research {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 100;
+  transition: none;
+}
+
+#panel-research.closed {
+  display: none;
+}
+
 #panel-research .side-panel-inner {
-  width: 660px;
+  width: 100%;
+  border-right: none;
 }
 
 .research-panel-body {
