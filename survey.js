@@ -39,7 +39,8 @@ const Survey = {
       security:    Math.max(0, 1 - Math.sqrt(Security.opinion) / 100) * 100,
       food:        (Finance.mealSatisfaction - 0.5) * 200,
       cleanliness: Math.max(0, (2 - Finance.calcMessFactor()) * 100),
-      shopping:    Shopping.calcStaffingState().staffRatio * 100,
+      // No stores means guests are dissatisfied; staffRatio alone returns 1 when needed=0.
+      shopping:    Shopping.calcWorkersNeeded() > 0 ? Shopping.calcStaffingState().staffRatio * 100 : 0,
     };
   },
 
