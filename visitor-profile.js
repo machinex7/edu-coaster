@@ -45,11 +45,15 @@ const VisitorProfile = {
   _buildBracketRow(bracket, bracketIndex, confidence, maxCount, seed) {
     const dotCount     = Math.max(1, Math.round((bracket.count / maxCount) * this.MAX_DOTS));
     const coloredCount = Math.round(dotCount * (confidence / 100));
-    const color        = this._chanceColor(bracket.chance);
+
+    // Green fraction = chance / 2: chance 1.0 → 50/50, chance 2.0 → all green, 0 → all red.
+    const greenCount = Math.round(coloredCount * (bracket.chance / 2));
+    const redCount   = coloredCount - greenCount;
 
     // Build shuffled array of dot colours so the reveal order is stable across redraws.
-    const states  = [
-      ...Array(coloredCount).fill(color),
+    const states = [
+      ...Array(greenCount).fill('green'),
+      ...Array(redCount).fill('red'),
       ...Array(dotCount - coloredCount).fill('gray'),
     ];
     const dots = this._seededShuffle(states, seed).map(c => this._personSvg(c)).join('');
@@ -62,13 +66,6 @@ const VisitorProfile = {
       </div>
       <div class="vp-dot-field">${dots}</div>
     </div>`;
-  },
-
-  // Map a chance value (0–2 scale) to a colour tier.
-  _chanceColor(chance) {
-    if (chance >= 1.2) return 'green';
-    if (chance >= 0.8) return 'amber';
-    return 'red';
   },
 
   // Tiny SVG person silhouette. fill="currentColor" makes the shapes inherit
