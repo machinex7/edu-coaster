@@ -446,7 +446,19 @@ function _buildInvStockView() {
       const cost = Math.round(qty * merchandiseInventory[idx].price * Population.cumulativeInflation + (sup?.surcharge ?? 0));
       if (money < cost) return;
       money -= cost;
+      totalOrderSpend += cost;
       orders.push({ itemIndex: idx, itemName: merchandise[idx].name, count: qty, weeksRemaining: sup?.deliveryTime ?? 1 });
+      // Unlock suppliers whose spend threshold is now met.
+      for (const s of suppliers) {
+        if (s.unlockThreshold != null && !unlockedSupplierIds.has(s.id) && totalOrderSpend >= s.unlockThreshold) {
+          unlockedSupplierIds.add(s.id);
+          Notifications.push({
+            label:   'New Supplier',
+            message: `${s.name} is now available. Check the Suppliers tab.`,
+            action:  () => { _activeInvTab = 'suppliers'; openPanel('inventory'); },
+          });
+        }
+      }
       updateHUD();
       _buildInvStockView();
     });
