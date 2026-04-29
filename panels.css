@@ -283,6 +283,8 @@
   cursor: pointer; white-space: nowrap; }
 .inv-order-btn:hover { background: #2563eb; }
 .inv-order-btn.cant-afford { background: #374151; color: #6b7280; cursor: default; }
+.inv-order-btn.inv-order-locked { background: #1f2937; color: #4b5563; cursor: default; }
+.inv-order-pending { font-size: 0.68rem; color: #fbbf24; font-style: italic; align-self: center; }
 
 .inv-supplier-list { padding: 8px 0; }
 .inv-supplier-row { padding: 10px 14px; border-bottom: 1px solid #1f2937; cursor: pointer;
@@ -762,6 +764,17 @@
 
 .survey-sent-list { padding: 4px 0; }
 
+.survey-in-progress {
+  margin: 0 12px 8px;
+  padding: 8px 10px;
+  background: #1e3a5f;
+  border: 1px solid #2563eb;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  color: #93c5fd;
+  line-height: 1.4;
+}
+
 .survey-results-wrap { padding: 4px 12px 8px; }
 
 .gate-analytics-body {
@@ -788,8 +801,10 @@
 }
 .chart-row-label { font-size: 0.76rem; color: #d1d5db; }
 .chart-bar-wrap  { height: 8px; background: #374151; border-radius: 4px; overflow: hidden; }
-.chart-bar       { height: 100%; background: #60a5fa; border-radius: 4px; }
+.chart-bar       { height: 100%; background: #60a5fa; border-radius: 4px; transition: background 0.2s; }
 .chart-row-value { font-size: 0.72rem; color: #9ca3af; text-align: right; }
+.chart-sentiment-axis { margin-top: -2px; }
+.chart-sentiment-labels { display: flex; justify-content: space-between; font-size: 0.85rem; line-height: 1; }
 .survey-sent-row {
   padding: 5px 12px;
   font-size: 0.76rem;

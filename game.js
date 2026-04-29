@@ -65,6 +65,7 @@ let suppliers            = [];  // from suppliers.json
 let selectedSupplierId   = null;
 let unlockedSupplierIds  = new Set();
 let orders               = [];  // { itemIndex, itemName, count, weeksRemaining }
+let totalOrderSpend      = 0;  // cumulative dollars spent placing merchandise orders
 
 let gridCells = [];   // [row][col] → <div>
 let gridState = [];   // [row][col] → instanceId string, or null
@@ -118,6 +119,7 @@ async function init() {
 
   unlockedSupplierIds = new Set([suppliers[0].id]);
   selectedSupplierId  = suppliers[0].id;
+  totalOrderSpend     = 0;
 
   gridState = Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS).fill(null));
 

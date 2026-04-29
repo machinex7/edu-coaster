@@ -39,6 +39,7 @@ function advanceRound() {
   round++;
   const report     = Finance.processRound();
   const loanResult = Finance.processPendingLoan();
+  Survey.processPendingSend();
   History.record(report);
   Research.tickResearch();
   _tickDemographicConfidence(report.weeklyAttendance);
@@ -51,6 +52,7 @@ function advanceRound() {
   Research.refreshPanel();
   Awards.refreshPanel();
   if (loanResult && activePanel === 'financial') buildFinancialPanel();
+  if (activePanel === 'survey') Survey.buildPanel();
   showRoundSummary(report);
   nextWeekForecast   = futurecastForecast;
   futurecastForecast = forecastForRound(round + 2);
@@ -413,19 +415,29 @@ function _buildInvStockView() {
       .map((item, i) => ({ item, inv: merchandiseInventory[i], idx: i }))
       .filter(({ item }) => item.category === cat);
     const rows = items.map(({ item, inv, idx }) => {
-      const orderBtns = [10, 50, 100].map(qty => {
-        const cost = Math.round(qty * inv.price * Population.cumulativeInflation + (supplier?.surcharge ?? 0));
-        const canAfford = money >= cost;
-        return `<button class="inv-order-btn${canAfford ? '' : ' cant-afford'}"
-          data-idx="${idx}" data-qty="${qty}">+${qty} $${cost.toLocaleString()}</button>`;
-      }).join('');
+      const pendingOrder = orders.find(o => o.itemIndex === idx);
+      let orderBtnsHtml;
+      if (pendingOrder) {
+        orderBtnsHtml = `<span class="inv-order-pending">Order pending: ${pendingOrder.count} units (${pendingOrder.weeksRemaining}w)</span>`;
+      } else {
+        const hasBulk = Research.completed.has(RESEARCH_ID.BULK_ORDERING);
+        orderBtnsHtml = [10, 50, 100].map(qty => {
+          if (qty === 100 && !hasBulk) {
+            return `<button class="inv-order-btn inv-order-locked" disabled title="Requires Bulk Ordering research">+100 🔒</button>`;
+          }
+          const cost = Math.round(qty * inv.price * Population.cumulativeInflation + (supplier?.surcharge ?? 0));
+          const canAfford = money >= cost;
+          return `<button class="inv-order-btn${canAfford ? '' : ' cant-afford'}"
+            data-idx="${idx}" data-qty="${qty}">+${qty} $${cost.toLocaleString()}</button>`;
+        }).join('');
+      }
       return `
         <div class="inv-item-row">
           <div class="inv-item-header">
             <span class="price-label">${item.name}</span>
             <span class="price-value">${inv.count}</span>
           </div>
-          <div class="inv-order-btns">${orderBtns}</div>
+          <div class="inv-order-btns">${orderBtnsHtml}</div>
         </div>`;
     }).join('');
     return `<div class="panel-section-header">${CATEGORY_LABELS[cat]}</div>${rows}`;
@@ -451,7 +463,19 @@ function _buildInvStockView() {
       const cost = Math.round(qty * merchandiseInventory[idx].price * Population.cumulativeInflation + (sup?.surcharge ?? 0));
       if (money < cost) return;
       money -= cost;
+      totalOrderSpend += cost;
       orders.push({ itemIndex: idx, itemName: merchandise[idx].name, count: qty, weeksRemaining: sup?.deliveryTime ?? 1 });
+      // Unlock suppliers whose spend threshold is now met.
+      for (const s of suppliers) {
+        if (s.unlockThreshold != null && !unlockedSupplierIds.has(s.id) && totalOrderSpend >= s.unlockThreshold) {
+          unlockedSupplierIds.add(s.id);
+          Notifications.push({
+            label:   'New Supplier',
+            message: `${s.name} is now available. Check the Suppliers tab.`,
+            action:  () => { _activeInvTab = 'suppliers'; openPanel('inventory'); },
+          });
+        }
+      }
       updateHUD();
       _buildInvStockView();
     });
