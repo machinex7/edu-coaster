@@ -762,6 +762,17 @@
 
 .survey-sent-list { padding: 4px 0; }
 
+.survey-in-progress {
+  margin: 0 12px 8px;
+  padding: 8px 10px;
+  background: #1e3a5f;
+  border: 1px solid #2563eb;
+  border-radius: 6px;
+  font-size: 0.78rem;
+  color: #93c5fd;
+  line-height: 1.4;
+}
+
 .survey-results-wrap { padding: 4px 12px 8px; }
 
 .gate-analytics-body {

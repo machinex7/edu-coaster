@@ -36,6 +36,7 @@ function advanceRound() {
   round++;
   const report     = Finance.processRound();
   const loanResult = Finance.processPendingLoan();
+  Survey.processPendingSend();
   History.record(report);
   Research.tickResearch();
   if (round % 13 === 1 && round > 1) Awards.checkQuarterly();
@@ -47,6 +48,7 @@ function advanceRound() {
   Research.refreshPanel();
   Awards.refreshPanel();
   if (loanResult && activePanel === 'financial') buildFinancialPanel();
+  if (activePanel === 'survey') Survey.buildPanel();
   showRoundSummary(report);
   nextWeekForecast   = futurecastForecast;
   futurecastForecast = forecastForRound(round + 2);
