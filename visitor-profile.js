@@ -71,9 +71,10 @@ const VisitorProfile = {
     return 'red';
   },
 
-  // Tiny SVG person silhouette using CSS currentColor so colour is set by class.
+  // Tiny SVG person silhouette. fill="currentColor" makes the shapes inherit
+  // the CSS color property set by the vp-person--* class.
   _personSvg(color) {
-    return `<svg class="vp-person vp-person--${color}" viewBox="0 0 10 16" width="11" height="17" aria-hidden="true"><circle cx="5" cy="3.5" r="2.8"/><path d="M0.5 16 Q0.5 9.5 5 9.5 Q9.5 9.5 9.5 16 Z"/></svg>`;
+    return `<svg class="vp-person vp-person--${color}" viewBox="0 0 10 16" width="11" height="17" fill="currentColor" aria-hidden="true"><circle cx="5" cy="3.5" r="2.8"/><path d="M0.5 16 Q0.5 9.5 5 9.5 Q9.5 9.5 9.5 16 Z"/></svg>`;
   },
 
   // Deterministic Fisher-Yates shuffle using a seed so layout is stable across redraws.
@@ -81,7 +82,7 @@ const VisitorProfile = {
     const a = [...arr];
     let s = (seed + 1) >>> 0;
     for (let i = a.length - 1; i > 0; i--) {
-      s = Math.imul(s, 1664525) + 1013904223 >>> 0;
+      s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
       const j = s % (i + 1);
       [a[i], a[j]] = [a[j], a[i]];
     }
