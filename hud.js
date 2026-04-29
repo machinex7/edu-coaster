@@ -2,6 +2,9 @@
 let activePanel = null;
 
 function initHUD() {
+  // Pin the research panel below the header by measuring it once at startup.
+  const headerEl = document.querySelector('header');
+  document.documentElement.style.setProperty('--header-h', headerEl.offsetHeight + 'px');
   updateHUD();
   document.getElementById('open-park-btn').addEventListener('click', openPark);
   document.getElementById('next-round-btn').addEventListener('click', advanceRound);

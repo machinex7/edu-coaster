@@ -879,10 +879,10 @@
    by other panels, because a fixed element can't animate width cleanly. */
 #panel-research {
   position: fixed;
-  top: 0;
+  top: var(--header-h, 52px);
   left: 0;
   width: 100vw;
-  height: 100vh;
+  height: calc(100vh - var(--header-h, 52px));
   z-index: 100;
   transition: none;
 }
