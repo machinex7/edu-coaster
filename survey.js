@@ -2,7 +2,8 @@
 //
 // Players pay to send surveys to guests. Only a fraction respond.
 // Results are noisy: accuracy improves with more responses following 1/√n.
-// Completed results accumulate in pendingResults until History.record() drains them.
+// Sending a survey locks the Send button for the round; results are computed
+// at round-end by processPendingSend() and drained into History by drainPending().
 
 const Survey = {
 
@@ -24,7 +25,10 @@ const Survey = {
     shopping:    'Shopping',
   }),
 
-  // Surveys run this round, not yet recorded in History.
+  // Survey queued this round but not yet processed (locked until round end).
+  pendingSend: null,
+
+  // Surveys processed this round, not yet recorded in History.
   pendingResults: [],
 
   // True satisfaction per category derived from current game state, 0–100.
@@ -35,21 +39,41 @@ const Survey = {
       security:    Math.max(0, 1 - Math.sqrt(Security.opinion) / 100) * 100,
       food:        (Finance.mealSatisfaction - 0.5) * 200,
       cleanliness: Math.max(0, (2 - Finance.calcMessFactor()) * 100),
-      shopping:    Shopping.calcStaffingState().staffRatio * 100,
+      // No stores means guests are dissatisfied; staffRatio alone returns 1 when needed=0.
+      shopping:    Shopping.calcWorkersNeeded() > 0 ? Shopping.calcStaffingState().staffRatio * 100 : 0,
     };
   },
 
-  // Deducts cost, computes noisy reported scores, pushes result to pendingResults.
-  // Returns null if not in play stage or insufficient funds.
+  // Deducts cost and queues the survey. Results are computed at round-end by
+  // processPendingSend(). Returns false if already pending, not in play, or broke.
   run(batchSize, incentiveId) {
-    if (gameStage !== STAGE.PLAY) return null;
+    if (gameStage !== STAGE.PLAY) return false;
+    if (this.pendingSend) return false;
     const incentive = this.INCENTIVES.find(i => i.id === incentiveId) ?? this.INCENTIVES[0];
     const cost      = Math.round(batchSize * incentive.costPerSurvey);
-    if (money < cost) return null;
+    if (money < cost) return false;
 
-    money -= cost;
+    const lastAttendance = this._lastAttendance();
+    const clampedSize    = lastAttendance !== null ? Math.min(batchSize, lastAttendance) : batchSize;
+    const clampedCost    = Math.round(clampedSize * incentive.costPerSurvey);
+
+    money -= clampedCost;
     updateHUD();
 
+    this.pendingSend = { batchSize: clampedSize, incentiveId, cost: clampedCost };
+
+    if (document.getElementById('survey-panel-body')) Survey.buildPanel();
+    return true;
+  },
+
+  // Called by advanceRound() before History.record(). Resolves any queued survey
+  // into a noisy result and pushes it to pendingResults for History to drain.
+  processPendingSend() {
+    if (!this.pendingSend) return;
+    const { batchSize, incentiveId, cost } = this.pendingSend;
+    this.pendingSend = null;
+
+    const incentive  = this.INCENTIVES.find(i => i.id === incentiveId) ?? this.INCENTIVES[0];
     const rateJitter = (Math.random() - 0.5) * 2 * (incentive.costPerSurvey / 100);
     const completed  = Math.round(batchSize * Math.max(0, incentive.completionRate + rateJitter));
     const noiseRange = completed > 0 ? this.NOISE_K / Math.sqrt(completed) : 50;
@@ -61,11 +85,12 @@ const Survey = {
       reportedScores[cat] = Math.max(0, Math.min(100, trueVal + jitter));
     }
 
-    const result = { round, batchSize, completed, incentiveId, cost, noiseRange, reportedScores };
-    this.pendingResults.push(result);
+    this.pendingResults.push({ round, batchSize, completed, incentiveId, cost, noiseRange, reportedScores });
+  },
 
-    if (document.getElementById('survey-panel-body')) Survey.buildPanel();
-    return result;
+  // Returns last round's attendance, or null if no rounds have completed yet.
+  _lastAttendance() {
+    return History.rounds.length > 0 ? History.rounds[History.rounds.length - 1].attendance : null;
   },
 
   // Returns the most recent survey result from this round or past history, or null.
@@ -110,6 +135,14 @@ const Survey = {
       return;
     }
 
+    const isSurveyPending = !!this.pendingSend;
+
+    const lastAttendance = this._lastAttendance();
+
+    // Clamp stored batch size down to last round's attendance.
+    if (lastAttendance !== null && _surveyBatchSize > lastAttendance)
+      _surveyBatchSize = lastAttendance;
+
     const available = this.INCENTIVES.filter(inc => {
       if (inc.id === SURVEY_INCENTIVE.DISCOUNT) return Research.completed.has(RESEARCH_ID.SURVEY_COUPON_INCENTIVE);
       if (inc.id === SURVEY_INCENTIVE.PRIZE)    return Research.completed.has(RESEARCH_ID.SURVEY_PRIZE_INCENTIVE);
@@ -118,24 +151,24 @@ const Survey = {
     const incentive = available.find(i => i.id === _surveyIncentive) ?? available[0];
     const cost      = Math.round(_surveyBatchSize * incentive.costPerSurvey);
     const canAfford = money >= cost;
+    const sendDisabled = isSurveyPending || !canAfford;
 
     const incentiveRows = available.map(inc => `
       <label class="survey-incentive-row">
         <input type="radio" name="survey-incentive" value="${inc.id}"
-               ${inc.id === _surveyIncentive ? 'checked' : ''}>
+               ${inc.id === _surveyIncentive ? 'checked' : ''}
+               ${isSurveyPending ? 'disabled' : ''}>
         <div class="survey-incentive-info">
           <span class="survey-incentive-label">${inc.label}</span>
           <span class="survey-incentive-meta">$${inc.costPerSurvey}/survey &middot; ${inc.completionRate * 100}% respond</span>
         </div>
       </label>`).join('');
 
-    const last = this.pendingResults[this.pendingResults.length - 1];
-    const sentSection = this.pendingResults.length > 0
-      ? `<div class="panel-section-header">Sent This Round</div>
-         ${last ? `<div class="survey-last-response">${last.completed} people responded to your last survey.</div>` : ''}
-         <div class="survey-sent-list">${this.pendingResults.map(r =>
-           `<div class="survey-sent-row">${r.batchSize.toLocaleString()} surveys &middot; ${r.completed} responses &middot; $${r.cost.toLocaleString()}</div>`
-         ).join('')}</div>`
+    const inProgressSection = isSurveyPending
+      ? `<div class="survey-in-progress">
+           Survey in progress &mdash; ${this.pendingSend.batchSize.toLocaleString()} surveys sent.
+           Results will be available after the round ends.
+         </div>`
       : '';
 
     const lastResult        = this._lastSurveyResult();
@@ -182,15 +215,18 @@ const Survey = {
       <div class="panel-section-header">Batch Size</div>
       <div class="survey-batch-row">
         <input class="survey-batch-input" type="number" id="survey-batch-input"
-               min="10" step="10" value="${_surveyBatchSize}">
+               min="10" step="10" value="${_surveyBatchSize}"
+               ${lastAttendance !== null ? `max="${lastAttendance}"` : ''}
+               ${isSurveyPending ? 'disabled' : ''}>
+        ${lastAttendance !== null ? `<span class="survey-batch-meta">max ${lastAttendance.toLocaleString()} (last week's visitors)</span>` : ''}
       </div>
       <div class="survey-send-wrap">
-        <button class="ride-action-btn${canAfford ? '' : ' ride-action-danger'}"
-                id="survey-send-btn"${canAfford ? '' : ' disabled'}>
-          Send ($${cost.toLocaleString()})
+        <button class="ride-action-btn${!isSurveyPending && !canAfford ? ' ride-action-danger' : ''}"
+                id="survey-send-btn" ${sendDisabled ? 'disabled' : ''}>
+          ${isSurveyPending ? 'Survey Sent' : `Send ($${cost.toLocaleString()})`}
         </button>
       </div>
-      ${sentSection}
+      ${inProgressSection}
       ${resultsSection}
       ${gateSection}
       ${parkingSection}`;
@@ -203,7 +239,8 @@ const Survey = {
     });
 
     el.querySelector('#survey-batch-input').addEventListener('input', e => {
-      const val    = Math.max(10, parseInt(e.target.value) || 10);
+      const attendance = Survey._lastAttendance();
+      const val    = Math.max(10, Math.min(parseInt(e.target.value) || 10, attendance ?? Infinity));
       _surveyBatchSize = val;
       const inc    = Survey.INCENTIVES.find(i => i.id === _surveyIncentive) ?? Survey.INCENTIVES[0];
       const c      = Math.round(val * inc.costPerSurvey);
@@ -222,13 +259,16 @@ const Survey = {
       const result = Survey._lastSurveyResult();
       if (!result) return;
       Charts.showModal({
-        title:       'Survey Results',
-        subtitle:    `${result.completed} of ${result.batchSize.toLocaleString()} responded · Round ${result.round}`,
-        items:       Object.entries(result.reportedScores).map(([cat, score]) => ({
+        title:         'Survey Results',
+        subtitle:      `${result.completed} of ${result.batchSize.toLocaleString()} responded · Round ${result.round}`,
+        items:         Object.entries(result.reportedScores).map(([cat, score]) => ({
           label: Survey.CATEGORY_LABELS[cat] ?? cat,
           value: Math.round(score),
         })),
-        formatValue: v => `${v}%`,
+        formatValue:   v => `${v}%`,
+        max:           100,
+        sentimentAxis: true,
+        coloredBars:   true,
       });
     });
 
@@ -248,8 +288,11 @@ const Survey = {
               value: Math.round(allSurveys.reduce((s, r) => s + r.reportedScores[cat], 0) / allSurveys.length),
             }))
           : [],
-        formatValue:  v => `${v}%`,
-        emptyMessage: 'No surveys were sent during this quarter.',
+        formatValue:   v => `${v}%`,
+        emptyMessage:  'No surveys were sent during this quarter.',
+        max:           100,
+        sentimentAxis: true,
+        coloredBars:   true,
       });
     });
 
