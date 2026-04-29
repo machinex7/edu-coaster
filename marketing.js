@@ -49,23 +49,31 @@ const Marketing = {
   HOOKS: [
     { value: 'jingle',    label: 'Catchy Jingle'   },
     { value: 'tagline',   label: 'Tagline'         },
-    { value: 'celebrity', label: 'Celebrity Cameo' },
+    // Celebrity Cameo requires the mkt_celebrity_hook research node.
+    { value: 'celebrity', label: 'Celebrity Cameo', unlock: 'mkt_celebrity_hook' },
   ],
 
   MESSAGE_TYPES: [
     { value: 'informational', label: 'Informational',  sub: 'biggest rides in the state'     },
-    { value: 'emotional',     label: 'Emotional',      sub: 'make memories with your family' },
-    { value: 'urgency',       label: 'Urgency-Driven', sub: 'this weekend only'              },
+    // Emotional and Urgency-Driven each require a research node before use.
+    { value: 'emotional',     label: 'Emotional',      sub: 'make memories with your family', unlock: 'mkt_emotional_messaging' },
+    { value: 'urgency',       label: 'Urgency-Driven', sub: 'this weekend only',              unlock: 'mkt_urgency_messaging'   },
   ],
 
   // Demographic categories available as point cloud axes.
+  // Age and Income are always available; the rest require research unlocks.
   DEMO_CATS: [
     { key: 'age',       label: 'Age',       brackets: Population.AGE_BRACKETS      },
     { key: 'income',    label: 'Income',    brackets: Population.INCOME_BRACKETS   },
-    { key: 'household', label: 'Household', brackets: Population.HOUSEHOLD_SIZES   },
-    { key: 'distance',  label: 'Distance',  brackets: Population.DISTANCE_BRACKETS },
-    { key: 'area',      label: 'Area',      brackets: Population.AREA_TYPES        },
+    { key: 'household', label: 'Household', brackets: Population.HOUSEHOLD_SIZES,   unlock: 'mkt_household_targeting' },
+    { key: 'distance',  label: 'Distance',  brackets: Population.DISTANCE_BRACKETS, unlock: 'mkt_distance_targeting'  },
+    { key: 'area',      label: 'Area',      brackets: Population.AREA_TYPES,        unlock: 'mkt_area_targeting'      },
   ],
+
+  // Returns true if the entry's research unlock has been completed (or has none).
+  _isUnlocked(entry) {
+    return !entry.unlock || Research.completed.has(entry.unlock);
+  },
 
   // Returns a range covering all brackets for the given category key.
   _fullRange(catKey) {
@@ -172,21 +180,28 @@ const Marketing = {
       `<button class="mkt-option-btn${this.draftMedium === m.value ? ' active' : ''}" data-mkt-medium="${m.value}">${m.label}</button>`
     ).join('');
 
-    const hookBtns = this.HOOKS.map(h =>
-      `<button class="mkt-option-btn${this.draftHook === h.value ? ' active' : ''}" data-mkt-hook="${h.value}">${h.label}</button>`
-    ).join('');
+    const hookBtns = this.HOOKS.map(h => {
+      const locked = !this._isUnlocked(h);
+      return `<button class="mkt-option-btn${this.draftHook === h.value ? ' active' : ''}"
+        data-mkt-hook="${h.value}"${locked ? ' disabled title="Research required"' : ''}>${h.label}${locked ? ' 🔒' : ''}</button>`;
+    }).join('');
 
-    const messageTypeBtns = this.MESSAGE_TYPES.map(m =>
-      `<button class="mkt-option-btn mkt-option-btn--wide${this.draftMessageType === m.value ? ' active' : ''}" data-mkt-message="${m.value}">
-        <span class="mkt-option-label">${m.label}</span>
-        <span class="mkt-option-sub">${m.sub}</span>
-      </button>`
-    ).join('');
+    const messageTypeBtns = this.MESSAGE_TYPES.map(m => {
+      const locked = !this._isUnlocked(m);
+      return `<button class="mkt-option-btn mkt-option-btn--wide${this.draftMessageType === m.value ? ' active' : ''}"
+        data-mkt-message="${m.value}"${locked ? ' disabled title="Research required"' : ''}>
+        <span class="mkt-option-label">${m.label}${locked ? ' 🔒' : ''}</span>
+        <span class="mkt-option-sub">${locked ? 'Research required' : m.sub}</span>
+      </button>`;
+    }).join('');
 
-    // Dropdown options for axis pickers — each axis excludes the other's current selection.
-    const axisOptions = (selectedKey, otherKey) => this.DEMO_CATS.map(c =>
-      `<option value="${c.key}"${c.key === selectedKey ? ' selected' : ''}${c.key === otherKey ? ' disabled' : ''}>${c.label}</option>`
-    ).join('');
+    // Dropdown options for axis pickers — each axis excludes the other's current selection
+    // and hides any category not yet unlocked via research.
+    const axisOptions = (selectedKey, otherKey) => this.DEMO_CATS.map(c => {
+      const locked   = !this._isUnlocked(c);
+      const disabled = c.key === otherKey || locked;
+      return `<option value="${c.key}"${c.key === selectedKey ? ' selected' : ''}${disabled ? ' disabled' : ''}>${locked ? '🔒 ' : ''}${c.label}</option>`;
+    }).join('');
 
     // Point cloud grid: two corners + x-labels header, then one row per y-bracket.
     // The first grid column is a narrow Y-range selector strip.

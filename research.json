@@ -75,5 +75,48 @@
     "description": "Offer employer-sponsored health insurance. Significantly boosts staff morale and reduces turnover.",
     "cost": 6,
     "requires": ["401k"]
+  },
+
+  {
+    "id": "mkt_emotional_messaging",
+    "name": "Emotional Messaging",
+    "description": "Train your team to craft emotionally resonant campaigns. Unlocks the Emotional message type.",
+    "cost": 2,
+    "requires": []
+  },
+  {
+    "id": "mkt_urgency_messaging",
+    "name": "Urgency Marketing",
+    "description": "Design time-limited campaigns that drive immediate action. Unlocks the Urgency-Driven message type.",
+    "cost": 3,
+    "requires": ["mkt_emotional_messaging"]
+  },
+  {
+    "id": "mkt_celebrity_hook",
+    "name": "Celebrity Partnerships",
+    "description": "Build industry relationships needed to negotiate celebrity endorsements. Unlocks Celebrity Cameo as a campaign hook.",
+    "cost": 4,
+    "requires": []
+  },
+  {
+    "id": "mkt_household_targeting",
+    "name": "Household Segmentation",
+    "description": "Analyze campaigns by household size to reach families and couples more effectively. Unlocks Household as a demographic axis.",
+    "cost": 2,
+    "requires": []
+  },
+  {
+    "id": "mkt_distance_targeting",
+    "name": "Geographic Reach Analysis",
+    "description": "Segment your market by travel distance to calibrate regional advertising spend. Unlocks Distance as a demographic axis.",
+    "cost": 3,
+    "requires": ["mkt_household_targeting"]
+  },
+  {
+    "id": "mkt_area_targeting",
+    "name": "Urban/Rural Segmentation",
+    "description": "Tailor campaigns to urban and rural audiences with different travel and leisure habits. Unlocks Area as a demographic axis.",
+    "cost": 4,
+    "requires": ["mkt_distance_targeting"]
   }
 ]

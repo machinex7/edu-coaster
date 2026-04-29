@@ -1341,6 +1341,12 @@
   background: #1c1508;
 }
 
+/* Locked options are dimmed and non-interactive — research required to enable. */
+.mkt-option-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .mkt-option-group--col {
   flex-direction: column;
 }
