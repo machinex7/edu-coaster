@@ -120,6 +120,13 @@
     "requires": ["mkt_celebrity_hook"]
   },
   {
+    "id": "demographic_population",
+    "name": "Population Census Data",
+    "description": "Commission a regional demographic study to reveal the true population size of each visitor segment. Unlocks population counts in the Visitor Profile.",
+    "cost": 3,
+    "requires": ["surveys"]
+  },
+  {
     "id": "bulk_ordering",
     "name": "Bulk Ordering",
     "description": "Negotiate volume purchasing agreements with suppliers. Unlocks the +100 unit order size for merchandise restocking.",

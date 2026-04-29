@@ -150,13 +150,14 @@ const Finance = {
 
   // Returns how many people want to visit based on last round's excitement.
   // priceExhaustion cuts demand by 1% per point (10 exhaustion = −10%).
-  // Population.compositeFavor scales demand by earned demographic goodwill.
+  // Population.calcDemandMultiplier() scales demand by the ratio of current
+  // favorable population (chance × favor × count) to the neutral baseline.
   // Security and mess penalties are applied to excitement at end-of-round instead.
   calcDailyDemand() {
     const exhaustionFactor = Math.max(0, 1 - this.priceExhaustion / 100);
     const eventFactor      = Population.populationEvents.reduce((f, e) => f * (1 + e.modifier / 100), 1);
     const weatherFactor    = 1 - (WEATHER_DEMAND_REDUCTION[nextWeekForecast] ?? 0);
-    return this.parkExcitement * exhaustionFactor * eventFactor * Population.compositeFavor * weatherFactor;
+    return this.parkExcitement * exhaustionFactor * eventFactor * Population.calcDemandMultiplier() * weatherFactor;
   },
 
   // Recomputes parkExcitement at end of round for use next round.
