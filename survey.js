@@ -53,10 +53,14 @@ const Survey = {
     const cost      = Math.round(batchSize * incentive.costPerSurvey);
     if (money < cost) return false;
 
-    money -= cost;
+    const lastAttendance = this._lastAttendance();
+    const clampedSize    = lastAttendance !== null ? Math.min(batchSize, lastAttendance) : batchSize;
+    const clampedCost    = Math.round(clampedSize * incentive.costPerSurvey);
+
+    money -= clampedCost;
     updateHUD();
 
-    this.pendingSend = { batchSize, incentiveId, cost };
+    this.pendingSend = { batchSize: clampedSize, incentiveId, cost: clampedCost };
 
     if (document.getElementById('survey-panel-body')) Survey.buildPanel();
     return true;
@@ -82,6 +86,11 @@ const Survey = {
     }
 
     this.pendingResults.push({ round, batchSize, completed, incentiveId, cost, noiseRange, reportedScores });
+  },
+
+  // Returns last round's attendance, or null if no rounds have completed yet.
+  _lastAttendance() {
+    return History.rounds.length > 0 ? History.rounds[History.rounds.length - 1].attendance : null;
   },
 
   // Returns the most recent survey result from this round or past history, or null.
@@ -127,6 +136,12 @@ const Survey = {
     }
 
     const isSurveyPending = !!this.pendingSend;
+
+    const lastAttendance = this._lastAttendance();
+
+    // Clamp stored batch size down to last round's attendance.
+    if (lastAttendance !== null && _surveyBatchSize > lastAttendance)
+      _surveyBatchSize = lastAttendance;
 
     const available = this.INCENTIVES.filter(inc => {
       if (inc.id === SURVEY_INCENTIVE.DISCOUNT) return Research.completed.has(RESEARCH_ID.SURVEY_COUPON_INCENTIVE);
@@ -201,7 +216,9 @@ const Survey = {
       <div class="survey-batch-row">
         <input class="survey-batch-input" type="number" id="survey-batch-input"
                min="10" step="10" value="${_surveyBatchSize}"
+               ${lastAttendance !== null ? `max="${lastAttendance}"` : ''}
                ${isSurveyPending ? 'disabled' : ''}>
+        ${lastAttendance !== null ? `<span class="survey-batch-meta">max ${lastAttendance.toLocaleString()} (last week's visitors)</span>` : ''}
       </div>
       <div class="survey-send-wrap">
         <button class="ride-action-btn${!isSurveyPending && !canAfford ? ' ride-action-danger' : ''}"
@@ -222,7 +239,8 @@ const Survey = {
     });
 
     el.querySelector('#survey-batch-input').addEventListener('input', e => {
-      const val    = Math.max(10, parseInt(e.target.value) || 10);
+      const attendance = Survey._lastAttendance();
+      const val    = Math.max(10, Math.min(parseInt(e.target.value) || 10, attendance ?? Infinity));
       _surveyBatchSize = val;
       const inc    = Survey.INCENTIVES.find(i => i.id === _surveyIncentive) ?? Survey.INCENTIVES[0];
       const c      = Math.round(val * inc.costPerSurvey);
