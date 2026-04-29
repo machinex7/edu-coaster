@@ -1545,3 +1545,127 @@
   font-size: 0.78rem;
   line-height: 1.6;
 }
+
+/* ── Visitor Profile panel — full-screen fixed overlay ── */
+#panel-visitor-profile {
+  position: fixed;
+  top: var(--header-h, 52px);
+  left: 0;
+  width: 100vw;
+  height: calc(100vh - var(--header-h, 52px));
+  z-index: 100;
+  transition: none;
+}
+
+#panel-visitor-profile.closed {
+  display: none;
+}
+
+#panel-visitor-profile .side-panel-inner {
+  width: 100%;
+  border-right: none;
+}
+
+/* Legend in panel header */
+.vp-legend {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  font-size: 0.72rem;
+  color: #9ca3af;
+}
+
+.vp-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.vp-legend-swatch {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.vp-legend-swatch--green { background: #22c55e; }
+.vp-legend-swatch--amber { background: #f59e0b; }
+.vp-legend-swatch--red   { background: #ef4444; }
+.vp-legend-swatch--gray  { background: #4b5563; }
+
+/* Scrollable body */
+.vp-body {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding-bottom: 32px;
+}
+
+/* Category section */
+.vp-category {
+  margin-bottom: 4px;
+}
+
+.vp-category-header {
+  padding: 8px 20px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #9ca3af;
+  background: #111827;
+  border-top: 1px solid #374151;
+  border-bottom: 1px solid #374151;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+/* Bracket row: label column + dot field */
+.vp-bracket-row {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 16px;
+  padding: 10px 20px;
+  border-bottom: 1px solid #1e2535;
+  align-items: start;
+}
+
+.vp-bracket-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 2px;
+}
+
+.vp-bracket-name {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #f3f4f6;
+}
+
+.vp-bracket-pop {
+  font-size: 0.72rem;
+  color: #6b7280;
+}
+
+.vp-bracket-conf {
+  font-size: 0.68rem;
+  color: #4b5563;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Dot field — wrapping row of person SVGs */
+.vp-dot-field {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  align-content: flex-start;
+}
+
+.vp-person            { flex-shrink: 0; display: block; }
+.vp-person--green     { color: #22c55e; }
+.vp-person--amber     { color: #f59e0b; }
+.vp-person--red       { color: #ef4444; }
+.vp-person--gray      { color: #4b5563; }

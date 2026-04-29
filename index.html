@@ -61,6 +61,7 @@
           <button class="tool-btn" data-panel="survey" disabled>Park Surveys</button>
           <button class="tool-btn" data-panel="research">Research</button>
           <button class="tool-btn" data-panel="marketing">Marketing</button>
+          <button class="tool-btn" data-panel="visitor-profile">Visitor Profile</button>
           <button class="tool-btn hidden" data-panel="awards">Awards</button>
         </nav>
 
@@ -173,6 +174,23 @@
             <div id="financial-panel-body"></div>
           </div>
         </div>
+
+        <!-- Visitor Profile full-screen panel -->
+        <div id="panel-visitor-profile" class="side-panel closed">
+          <div class="side-panel-inner">
+            <div class="panel-header">
+              Visitor Profile
+              <div class="vp-legend">
+                <span class="vp-legend-item"><span class="vp-legend-swatch vp-legend-swatch--green"></span>Likely</span>
+                <span class="vp-legend-item"><span class="vp-legend-swatch vp-legend-swatch--amber"></span>Neutral</span>
+                <span class="vp-legend-item"><span class="vp-legend-swatch vp-legend-swatch--red"></span>Unlikely</span>
+                <span class="vp-legend-item"><span class="vp-legend-swatch vp-legend-swatch--gray"></span>Unknown</span>
+              </div>
+              <button class="panel-close-btn" onclick="closePanels()">✕</button>
+            </div>
+            <div id="visitor-profile-body" class="vp-body"></div>
+          </div>
+        </div>
       </div>
 
       <div id="park-view">
@@ -247,6 +265,7 @@
   <script src="research.js"></script>
   <script src="awards.js"></script>
   <script src="marketing.js"></script>
+  <script src="visitor-profile.js"></script>
   <script src="hud.js"></script>
 </body>
 </html>

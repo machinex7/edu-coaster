@@ -52,7 +52,8 @@ function advanceRound() {
   Research.refreshPanel();
   Awards.refreshPanel();
   if (loanResult && activePanel === 'financial') buildFinancialPanel();
-  if (activePanel === 'survey') Survey.buildPanel();
+  if (activePanel === 'survey')          Survey.buildPanel();
+  if (activePanel === 'visitor-profile') VisitorProfile.buildPanel();
   showRoundSummary(report);
   nextWeekForecast   = futurecastForecast;
   futurecastForecast = forecastForRound(round + 2);
@@ -193,9 +194,10 @@ function openPanel(panelId) {
   if (panelId === 'financial')  buildFinancialPanel();
   if (panelId === 'inventory')  buildInventoryPanel();
   if (panelId === 'survey')     Survey.buildPanel();
-  if (panelId === 'research')   Research.buildPanel();
-  if (panelId === 'awards')     Awards.buildPanel();
-  if (panelId === 'marketing')  Marketing.buildPanel();
+  if (panelId === 'research')        Research.buildPanel();
+  if (panelId === 'awards')          Awards.buildPanel();
+  if (panelId === 'marketing')       Marketing.buildPanel();
+  if (panelId === 'visitor-profile') VisitorProfile.buildPanel();
 }
 
 function closePanels() {
