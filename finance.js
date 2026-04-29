@@ -830,7 +830,8 @@ const Finance = {
     this.computeRideOpinion(daily);   // updates rideOpinion for next round; sets lastRoundRiders
     this.processWear();               // accumulate wear then roll for breakdown
 
-    const weeklyAttendance  = Math.round(daily * 7);
+    // Always at least 35 visitors per week — a few souls wander in regardless.
+    const weeklyAttendance  = Math.max(35, Math.round(daily * 7));
     const gateRevenue       = this.calcGateRevenue(daily);
     const parkingRevenue    = this.calcParkingRevenue(dailyDemand);
     const { revenue: shopRevenue, itemsSold: shopItemsSold } = Shopping.calcRevenue(weeklyAttendance);
