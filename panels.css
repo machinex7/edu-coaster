@@ -283,6 +283,8 @@
   cursor: pointer; white-space: nowrap; }
 .inv-order-btn:hover { background: #2563eb; }
 .inv-order-btn.cant-afford { background: #374151; color: #6b7280; cursor: default; }
+.inv-order-btn.inv-order-locked { background: #1f2937; color: #4b5563; cursor: default; }
+.inv-order-pending { font-size: 0.68rem; color: #fbbf24; font-style: italic; align-self: center; }
 
 .inv-supplier-list { padding: 8px 0; }
 .inv-supplier-row { padding: 10px 14px; border-bottom: 1px solid #1f2937; cursor: pointer;
