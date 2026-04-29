@@ -403,7 +403,11 @@ function _buildInvStockView() {
       if (pendingOrder) {
         orderBtnsHtml = `<span class="inv-order-pending">Order pending: ${pendingOrder.count} units (${pendingOrder.weeksRemaining}w)</span>`;
       } else {
+        const hasBulk = Research.completed.has(RESEARCH_ID.BULK_ORDERING);
         orderBtnsHtml = [10, 50, 100].map(qty => {
+          if (qty === 100 && !hasBulk) {
+            return `<button class="inv-order-btn inv-order-locked" disabled title="Requires Bulk Ordering research">+100 🔒</button>`;
+          }
           const cost = Math.round(qty * inv.price * Population.cumulativeInflation + (supplier?.surcharge ?? 0));
           const canAfford = money >= cost;
           return `<button class="inv-order-btn${canAfford ? '' : ' cant-afford'}"

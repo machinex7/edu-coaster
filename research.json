@@ -118,5 +118,12 @@
     "description": "Tailor campaigns to urban and rural audiences with different travel and leisure habits. Unlocks Area as a demographic axis.",
     "cost": 4,
     "requires": ["mkt_celebrity_hook"]
+  },
+  {
+    "id": "bulk_ordering",
+    "name": "Bulk Ordering",
+    "description": "Negotiate volume purchasing agreements with suppliers. Unlocks the +100 unit order size for merchandise restocking.",
+    "cost": 3,
+    "requires": []
   }
 ]
