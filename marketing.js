@@ -89,7 +89,7 @@ const Marketing = {
     const rand = () => { s = (s * 16807) % 2147483647; return s / 2147483647; };
     const positions = [];
     for (let i = 0; i < count; i++) {
-      positions.push({ x: Math.round(rand() * 100), y: Math.round(rand() * 100) });
+      positions.push({ x: Math.round(2 + rand() * 96), y: Math.round(2 + rand() * 96) });
     }
     return positions;
   },
