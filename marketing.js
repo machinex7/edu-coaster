@@ -17,12 +17,13 @@ const Marketing = {
   // One-time fee added when the hook is a celebrity cameo.
   CELEBRITY_COST: 10_000,
 
-  // Cost multiplier per medium — reflects real-world relative ad rates.
-  MEDIUM_MULTIPLIERS: {
-    tv:     6,
-    print:  3,
-    radio:  2,
-    online: 1,
+  // Dollar cost per impression for each medium — TV is most expensive,
+  // online cheapest, matching real-world CPM relative rates.
+  COST_PER_IMPRESSION: {
+    tv:     0.04,
+    print:  0.02,
+    radio:  0.01,
+    online: 0.003,
   },
 
   // Impressions delivered per week at the base spend level for each medium.
@@ -99,8 +100,10 @@ const Marketing = {
   },
 
   // Returns the total upfront cost to launch the current draft campaign.
+  // Media cost is impression-based (impressions × rate), so switching medium
+  // changes cost directly rather than via estimated run time.
   calcCost() {
-    const mediaCost     = this.estimatedWeeks() * this.BASE_MARKETING_COST * this.MEDIUM_MULTIPLIERS[this.draftMedium];
+    const mediaCost     = this.draftImpressions * this.COST_PER_IMPRESSION[this.draftMedium];
     const celebrityCost = this.draftHook === 'celebrity' ? this.CELEBRITY_COST : 0;
     return Math.round((mediaCost + celebrityCost) * Population.cumulativeInflation);
   },
