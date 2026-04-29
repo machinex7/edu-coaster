@@ -358,7 +358,10 @@ Object.assign(Staff, {
   buildCandidatesView() {
     const container = document.getElementById('staff-candidates-view');
     if (this.candidates.length === 0) {
-      container.innerHTML = '<p class="empty-note">No candidates yet. Post a job to attract applicants.</p>';
+      const msg = gameStage === STAGE.SETUP
+        ? 'No candidates available.'
+        : 'No candidates yet. Post a job to attract applicants.';
+      container.innerHTML = `<p class="empty-note">${msg}</p>`;
       return;
     }
 
@@ -367,7 +370,7 @@ Object.assign(Staff, {
       const years    = Math.floor(c.weeksEmployed / 52);
       const expStr   = years === 0 ? 'No exp.' : `${years} yr exp`;
       const weeksStr = c.weeksAsCandidate === 0 ? 'Just applied' : `${c.weeksAsCandidate} wk ago`;
-      const matched  = this.findMatchingPosting(c) !== null;
+      const canHire  = c.isSetupCandidate || this.findMatchingPosting(c) !== null;
       return `<div class="candidate-card">
         <div class="candidate-name">${c.name}</div>
         <div class="candidate-details">
@@ -377,7 +380,7 @@ Object.assign(Staff, {
           <span class="posting-meta">Applied ${weeksStr}</span>
         </div>
         <div class="candidate-actions">
-          <button class="hire-btn" data-id="${c.instanceId}" ${matched ? '' : 'disabled'}>Hire</button>
+          <button class="hire-btn" data-id="${c.instanceId}" ${canHire ? '' : 'disabled'}>Hire</button>
           <button class="decline-btn" data-id="${c.instanceId}">Decline</button>
         </div>
       </div>`;

@@ -103,6 +103,26 @@ const Staff = {
       emp.mood         = 50;
       this.roster.push(emp);
     });
+    this.generateSetupCandidates();
+  },
+
+  // Populates the candidate pool before the park opens so the player can hire
+  // freely during setup without posting a job. Generates 3 candidates per job
+  // type at low-to-medium quality. All are flagged isSetupCandidate so they
+  // bypass the posting requirement and are cleared when play begins.
+  generateSetupCandidates() {
+    this.JOB_TYPES.forEach(jobDef => {
+      for (let i = 0; i < 3; i++) {
+        const emp = this.generateEmployee(0);
+        emp.jobId           = jobDef.id;
+        emp.focus           = jobDef.id === JOB.ENGINEER ? ENGINEER_FOCUS.MAINTENANCE : SECURITY_FOCUS.PATROL;
+        emp.costOfLiving    = Math.round(jobDef.weeklySalary * (0.80 + Math.random() * 0.40));
+        emp.salary          = emp.costOfLiving;
+        emp.weeksAsCandidate = 0;
+        emp.isSetupCandidate = true;
+        this.candidates.push(emp);
+      }
+    });
   },
 
   totalWeeklySalary() {
@@ -284,7 +304,8 @@ const Staff = {
   // ── Candidates ─────────────────────────────────────────────────────────────
   // Generates a pool of candidates each round when postings exist. Pool size and
   // candidate quality both scale with the number of active HR staff and their
-  // experience tier. Candidates without a matching posting are discarded immediately.
+  // experience tier. Benefits also raise quality: 401(k) match adds a flat
+  // bonus, and each week of vacation or parental leave adds a per-week bonus.
   // Fires a single notification if any new matching candidates arrived this round.
   generateCandidates() {
     if (this.postings.length === 0) return;
@@ -296,6 +317,11 @@ const Staff = {
       count   += tier;
       quality += tier * 5;
     });
+
+    // Benefits attract better candidates.
+    if (this.RETIREMENT_MATCH_PCT > 0) quality += 10;
+    quality += this.VACATION_WEEKS * 5;
+    quality += this.PARENTAL_LEAVE_WEEKS * 5;
 
     const before = this.candidates.length;
     for (let i = 0; i < count; i++) {
@@ -324,13 +350,17 @@ const Staff = {
   hireCandidate(instanceId) {
     const candidate = this.candidates.find(c => c.instanceId === instanceId);
     if (!candidate) return;
-    const posting = this.findMatchingPosting(candidate);
-    if (!posting) return;
+
+    // Setup candidates don't require a posting — hire directly.
+    if (!candidate.isSetupCandidate) {
+      const posting = this.findMatchingPosting(candidate);
+      if (!posting) return;
+      this.postings = this.postings.filter(p => p.instanceId !== posting.instanceId);
+    }
 
     const emp = { ...candidate, events: [...(candidate.events ?? [])] };
     emp.events.push({ moodModifier: 20, comment: 'Excited to start a new job.' });
     this.roster.push(emp);
-    this.postings   = this.postings.filter(p => p.instanceId !== posting.instanceId);
     this.candidates = this.candidates.filter(c => c.instanceId !== instanceId);
     this.buildCandidatesView();
   },
