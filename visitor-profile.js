@@ -31,9 +31,12 @@ const VisitorProfile = {
 
   // Render one demographic category section with a sticky header and bracket rows.
   _buildCategory(cat, catIndex) {
-    const maxCount = Math.max(...cat.brackets.map(b => b.count));
+    const hasPopulation = Research.completed.has(RESEARCH_ID.DEMOGRAPHIC_POPULATION);
+    // Without population research all brackets use the same dot count so
+    // relative sizes stay hidden while the green/red ratios remain accurate.
+    const maxCount = hasPopulation ? Math.max(...cat.brackets.map(b => b.count)) : 1;
     const rows = cat.brackets.map((b, bi) =>
-      this._buildBracketRow(b, bi, Population.confidence[cat.key][bi], maxCount, catIndex * 10 + bi)
+      this._buildBracketRow(b, bi, Population.confidence[cat.key][bi], maxCount, hasPopulation, catIndex * 10 + bi)
     ).join('');
     return `<div class="vp-category">
       <div class="vp-category-header">${cat.label}</div>
@@ -42,7 +45,9 @@ const VisitorProfile = {
   },
 
   // Render one bracket row: label + population count + confidence % + dot field.
-  _buildBracketRow(bracket, bracketIndex, confidence, maxCount, seed) {
+  _buildBracketRow(bracket, bracketIndex, confidence, maxCount, showPopulation, seed) {
+    // When population research is unlocked, scale dots to bracket size.
+    // Otherwise every bracket gets MAX_DOTS so relative sizes are not revealed.
     const dotCount     = Math.max(1, Math.round((bracket.count / maxCount) * this.MAX_DOTS));
     const coloredCount = Math.round(dotCount * (confidence / 100));
 
@@ -58,10 +63,14 @@ const VisitorProfile = {
     ];
     const dots = this._seededShuffle(states, seed).map(c => this._personSvg(c)).join('');
 
+    const popLabel = showPopulation
+      ? `<span class="vp-bracket-pop">${bracket.count.toLocaleString()} people</span>`
+      : '';
+
     return `<div class="vp-bracket-row">
       <div class="vp-bracket-meta">
         <span class="vp-bracket-name">${bracket.name}</span>
-        <span class="vp-bracket-pop">${bracket.count.toLocaleString()} people</span>
+        ${popLabel}
         <span class="vp-bracket-conf">${Math.round(confidence)}% observed</span>
       </div>
       <div class="vp-dot-field">${dots}</div>
