@@ -122,6 +122,12 @@ function clearSecurityOverlay() {
   svg.innerHTML = '';
 }
 
+// Redraws the security overlay only when security mode is currently active.
+// Call this whenever the guard roster or focus assignments change.
+function refreshSecurityOverlay() {
+  if (currentViewMode === 'security') drawSecurityOverlay();
+}
+
 // Wires up the construction bar's Attractions / Shopping / Facilities tabs.
 function initCbarTabs() {
   document.querySelectorAll('.cbar-tab-btn').forEach(btn => {

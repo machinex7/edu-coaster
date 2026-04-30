@@ -363,6 +363,7 @@ const Staff = {
     this.roster.push(emp);
     this.candidates = this.candidates.filter(c => c.instanceId !== instanceId);
     this.buildCandidatesView();
+    refreshSecurityOverlay();
   },
 
   declineCandidate(instanceId) {
