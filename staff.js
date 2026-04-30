@@ -100,7 +100,8 @@ const Staff = {
       emp.focus        = jobId === JOB.ENGINEER ? ENGINEER_FOCUS.MAINTENANCE : SECURITY_FOCUS.PATROL;
       emp.costOfLiving = Math.round(jobDef.weeklySalary * (0.80 + Math.random() * 0.40));
       emp.salary       = emp.costOfLiving;
-      emp.mood         = 50;
+      emp.mood         = 70;
+      emp.events.push({ moodModifier: 20, comment: 'Excited to start a new job.' });
       this.roster.push(emp);
     });
     this.generateSetupCandidates();
