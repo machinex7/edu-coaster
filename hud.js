@@ -3,11 +3,12 @@ let activePanel = null;
 
 // ── View mode bar ──────────────────────────────────────────────────────────
 
-// The currently active grid view mode. 'build' is the default.
-let currentViewMode = 'build';
+// The currently active grid view mode. 'play' is the default.
+let currentViewMode = 'play';
 
 // Ordered list of view modes displayed in the toolbar.
 const VIEW_MODES = [
+  { id: 'play',     icon: '🎮', label: 'Play'     },
   { id: 'build',    icon: '🏗️', label: 'Build'    },
   { id: 'demolish', icon: '💣', label: 'Demolish' },
 ];
@@ -26,22 +27,34 @@ function initViewModeBar() {
   });
 }
 
-// Switches the active view mode, updating button state and demolish mode.
+// Switches the active view mode, updating button state, construction bar, and demolish mode.
 function setViewMode(modeId) {
   if (modeId === 'demolish' && Finance.hasActiveCovenant('NO_DEMOLISH')) {
     Notifications.push({ label: 'Covenant', message: 'Your loan covenant prohibits demolishing rides.' });
     return;
   }
-  if (modeId === currentViewMode) {
-    // Clicking the active mode again resets to build.
-    modeId = 'build';
-  }
+  // Clicking the active mode again resets to play.
+  if (modeId === currentViewMode) modeId = 'play';
   currentViewMode = modeId;
   document.querySelectorAll('.view-mode-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.viewMode === modeId);
   });
-  if (modeId === 'demolish') deselectItem();
+  document.getElementById('construction-bar').classList.toggle('hidden', modeId !== 'build');
+  if (modeId !== 'build') deselectItem();
   setDemolishMode(modeId === 'demolish');
+}
+
+// Wires up the construction bar's Attractions / Shopping / Facilities tabs.
+function initCbarTabs() {
+  document.querySelectorAll('.cbar-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.cbar-tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.cbar-panel').forEach(p => p.classList.add('hidden'));
+      btn.classList.add('active');
+      document.getElementById(`${btn.dataset.cbarTab}-panel`).classList.remove('hidden');
+      deselectItem();
+    });
+  });
 }
 
 function initHUD() {
@@ -57,6 +70,7 @@ function initHUD() {
   Charts.initModal();
   initPanelBtns();
   initViewModeBar();
+  initCbarTabs();
   updateLockedPanels();
 }
 
@@ -361,19 +375,6 @@ function getRideCondition(record) {
 
 function refreshRidesPanel() {
   if (activePanel === 'rides') buildRidesPanel();
-}
-
-// ── Sidebar sub-tabs ───────────────────────────────────────────────────────
-function initSubTabs() {
-  document.querySelectorAll('.sub-tab-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      document.querySelectorAll('.sub-tab-btn').forEach(b => b.classList.remove('active'));
-      document.querySelectorAll('.tab-panel').forEach(p => p.classList.add('hidden'));
-      btn.classList.add('active');
-      document.getElementById(`${btn.dataset.tab}-panel`).classList.remove('hidden');
-      deselectItem();
-    });
-  });
 }
 
 // ── Financial panel ────────────────────────────────────────────────────────

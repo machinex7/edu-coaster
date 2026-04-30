@@ -133,7 +133,6 @@ async function init() {
   Shopping.buildCatalog();
   Staff.init();
   Population.initDemographics();
-  initSubTabs();
   initHUD();
 }
 
