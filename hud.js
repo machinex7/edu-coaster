@@ -1,6 +1,49 @@
 // ── HUD & stage management ─────────────────────────────────────────────────
 let activePanel = null;
 
+// ── View mode bar ──────────────────────────────────────────────────────────
+
+// The currently active grid view mode. 'build' is the default.
+let currentViewMode = 'build';
+
+// Ordered list of view modes displayed in the toolbar.
+const VIEW_MODES = [
+  { id: 'build',    icon: '🏗️', label: 'Build'    },
+  { id: 'demolish', icon: '💣', label: 'Demolish' },
+];
+
+// Builds pill buttons in #view-mode-bar and wires up click handlers.
+function initViewModeBar() {
+  const bar = document.getElementById('view-mode-bar');
+  const legend = document.getElementById('view-mode-legend');
+  VIEW_MODES.forEach(mode => {
+    const btn = document.createElement('button');
+    btn.className = 'view-mode-btn' + (mode.id === currentViewMode ? ' active' : '');
+    btn.dataset.viewMode = mode.id;
+    btn.innerHTML = `<span class="vm-icon">${mode.icon}</span><span>${mode.label}</span>`;
+    btn.addEventListener('click', () => setViewMode(mode.id));
+    bar.insertBefore(btn, legend);
+  });
+}
+
+// Switches the active view mode, updating button state and demolish mode.
+function setViewMode(modeId) {
+  if (modeId === 'demolish' && Finance.hasActiveCovenant('NO_DEMOLISH')) {
+    Notifications.push({ label: 'Covenant', message: 'Your loan covenant prohibits demolishing rides.' });
+    return;
+  }
+  if (modeId === currentViewMode) {
+    // Clicking the active mode again resets to build.
+    modeId = 'build';
+  }
+  currentViewMode = modeId;
+  document.querySelectorAll('.view-mode-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.viewMode === modeId);
+  });
+  if (modeId === 'demolish') deselectItem();
+  setDemolishMode(modeId === 'demolish');
+}
+
 function initHUD() {
   // Pin the research panel below the header by measuring it once at startup.
   const headerEl = document.querySelector('header');
@@ -13,6 +56,7 @@ function initHUD() {
   initInventoryPanel();
   Charts.initModal();
   initPanelBtns();
+  initViewModeBar();
   updateLockedPanels();
 }
 
@@ -157,11 +201,11 @@ function updateLockedPanels() {
     if (!benefitsUnlocked && Staff._activeView === 'benefits') Staff.setView('roster');
   }
 
-  const demolishBtn = document.querySelector('.tool-btn[data-panel="demolish"]');
-  if (demolishBtn) {
+  const demolishModeBtn = document.querySelector('.view-mode-btn[data-view-mode="demolish"]');
+  if (demolishModeBtn) {
     const demolishLocked = Finance.hasActiveCovenant('NO_DEMOLISH');
-    demolishBtn.disabled = demolishLocked;
-    demolishBtn.title    = demolishLocked ? 'Locked by loan covenant' : '';
+    demolishModeBtn.disabled = demolishLocked;
+    demolishModeBtn.title    = demolishLocked ? 'Locked by loan covenant' : '';
   }
 
   document.getElementById('weather-panel').classList.toggle('hidden', !Research.completed.has(RESEARCH_ID.WEATHER_SENSOR));
@@ -174,19 +218,13 @@ function togglePanel(panelId) {
 }
 
 function openPanel(panelId) {
-  if (panelId === 'demolish' && Finance.hasActiveCovenant('NO_DEMOLISH')) {
-    Notifications.push({ label: 'Covenant', message: 'Your loan covenant prohibits demolishing rides.' });
-    return;
-  }
   if (activePanel && activePanel !== panelId) {
-    if (activePanel === 'demolish') setDemolishMode(false);
-    else document.getElementById(`panel-${activePanel}`).classList.add('closed');
+    document.getElementById(`panel-${activePanel}`).classList.add('closed');
     document.querySelector(`.tool-btn[data-panel="${activePanel}"]`)?.classList.remove('active');
     deselectItem();
   }
   activePanel = panelId;
   document.querySelector(`.tool-btn[data-panel="${panelId}"]`)?.classList.add('active');
-  if (panelId === 'demolish') { setDemolishMode(true); return; }
   document.getElementById(`panel-${panelId}`).classList.remove('closed');
   if (panelId === 'rides')      buildRidesPanel();
   if (panelId === 'staffing')   Staff.openPanel();
@@ -202,8 +240,7 @@ function openPanel(panelId) {
 
 function closePanels() {
   if (!activePanel) return;
-  if (activePanel === 'demolish') setDemolishMode(false);
-  else document.getElementById(`panel-${activePanel}`).classList.add('closed');
+  document.getElementById(`panel-${activePanel}`).classList.add('closed');
   document.querySelector(`.tool-btn[data-panel="${activePanel}"]`)?.classList.remove('active');
   activePanel = null;
   deselectItem();

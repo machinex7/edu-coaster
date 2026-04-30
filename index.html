@@ -52,7 +52,6 @@
         <!-- Tool button bar -->
         <nav id="btn-bar">
           <button class="tool-btn" data-panel="construction">Construction</button>
-          <button class="tool-btn demolish-btn" data-panel="demolish">Demolish</button>
           <button class="tool-btn" data-panel="rides">Rides</button>
           <button class="tool-btn" data-panel="staffing">Staffing</button>
           <button class="tool-btn" data-panel="security">Security</button>
@@ -193,7 +192,13 @@
       </div>
 
       <div id="park-view">
-        <div id="grid"></div>
+        <div id="view-mode-bar">
+          <!-- View mode pill buttons injected by initViewModeBar() -->
+          <div id="view-mode-legend"></div>
+        </div>
+        <div id="park-scroll">
+          <div id="grid"></div>
+        </div>
       </div>
 
     </div>
