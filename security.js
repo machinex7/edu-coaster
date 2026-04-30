@@ -46,9 +46,10 @@ const Security = {
     return {
       totalPath,
       coveredPath,
-      uncoveredPath: totalPath - coveredPath,
-      staffedPosts:  staffedCount,
-      totalPosts:    posts.length,
+      uncoveredPath:    totalPath - coveredPath,
+      staffedPosts:     staffedCount,
+      totalPosts:       posts.length,
+      staffedPostsList: staffedPosts,
     };
   },
 
@@ -72,7 +73,7 @@ const Security = {
 
     const total = fromOverflow + fromUnridden + fromRandom + fromShop;
 
-    const { totalPath, coveredPath, uncoveredPath, staffedPosts, totalPosts } = this.calcCoverage();
+    const { totalPath, coveredPath, uncoveredPath, staffedPosts, totalPosts, staffedPostsList } = this.calcCoverage();
     const coveredFraction    = totalPath > 0 ? coveredPath / totalPath : 0;
     const coveredIncidents   = Math.round(total * coveredFraction);
     const uncoveredIncidents = total - coveredIncidents;
@@ -105,6 +106,33 @@ const Security = {
       const handledUncovered = Math.min(uncoveredIncidents, Math.floor(capacity * uncoveredIncidents / effectiveLoad));
       handled   = handledCovered + handledUncovered;
       unhandled = total - handled;
+    }
+
+    // When guards have surplus capacity, they observe nearby rides and build
+    // intensity-preference knowledge for each demographic bracket.
+    if (capacity > effectiveLoad) {
+      // Build a set of all active ride tile positions using their footprints.
+      const rideTilePositions = new Set();
+      for (const ride of installedRides.filter(r => r.status === STATUS.ACTIVE)) {
+        for (let r = 0; r < ride.footprint.length; r++) {
+          for (let c = 0; c < ride.footprint[r].length; c++) {
+            if (ride.footprint[r][c]) rideTilePositions.add(`${ride.row + r},${ride.col + c}`);
+          }
+        }
+      }
+      // Count unique ride tiles within GUARD_RADIUS of any staffed post.
+      const observedTiles = new Set();
+      for (const post of staffedPostsList) {
+        for (const key of rideTilePositions) {
+          const [tr, tc] = key.split(',').map(Number);
+          const dr = tr - post.row;
+          const dc = tc - post.col;
+          if (Math.sqrt(dr * dr + dc * dc) <= GUARD_RADIUS) observedTiles.add(key);
+        }
+      }
+      const delta = observedTiles.size / 100;
+      Population.observedIntensity.AGE       = Population.observedIntensity.AGE.map(v => Math.min(1, v + delta));
+      Population.observedIntensity.HOUSEHOLD = Population.observedIntensity.HOUSEHOLD.map(v => Math.min(1, v + delta));
     }
 
     // Shop theft: scale unhandled shop incidents by the overall unhandled rate.
