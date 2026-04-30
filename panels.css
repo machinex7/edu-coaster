@@ -813,21 +813,44 @@
 }
 
 /* ── Security panel ── */
-.sec-focus-legend {
+.sec-coverage-bar {
   padding: 8px 12px 10px;
   border-bottom: 1px solid #1f2937;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 2px;
 }
 
-.sec-legend-row {
-  font-size: 0.74rem;
+.sec-coverage-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
+.sec-coverage-label {
+  font-size: 0.78rem;
+  color: #9ca3af;
+}
+
+.sec-coverage-pct {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #e5e7eb;
+}
+
+.sec-coverage-detail {
+  font-size: 0.72rem;
   color: #6b7280;
 }
 
-.sec-legend-row strong {
-  color: #9ca3af;
+.sec-assignment {
+  font-size: 0.72rem;
+  color: #6b7280;
+  margin-left: 6px;
+}
+
+.sec-assignment.sec-excess {
+  color: #f59e0b;
 }
 
 .security-guard-list {
