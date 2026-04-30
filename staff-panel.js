@@ -253,6 +253,7 @@ Object.assign(Staff, {
         this.roster = this.roster.filter(e => e.instanceId !== instanceId);
         this._selectedStaffId = null;
         this.buildRosterView();
+        refreshSecurityOverlay();
       });
       document.getElementById('sdx-fire-cancel').addEventListener('click', () => {
         this.buildStaffDetail(instanceId);
