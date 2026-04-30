@@ -48,7 +48,9 @@ const VisitorProfile = {
   _buildBracketRow(bracket, bracketIndex, confidence, maxCount, showPopulation, seed) {
     // When population research is unlocked, scale dots to bracket size.
     // Otherwise every bracket gets MAX_DOTS so relative sizes are not revealed.
-    const dotCount     = Math.max(1, Math.round((bracket.count / maxCount) * this.MAX_DOTS));
+    const dotCount = showPopulation
+      ? Math.max(1, Math.round((bracket.count / maxCount) * this.MAX_DOTS))
+      : this.MAX_DOTS;
     const coloredCount = Math.round(dotCount * (confidence / 100));
 
     // Green fraction = chance / 2: chance 1.0 → 50/50, chance 2.0 → all green, 0 → all red.
