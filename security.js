@@ -130,9 +130,9 @@ const Security = {
           if (Math.sqrt(dr * dr + dc * dc) <= GUARD_RADIUS) observedTiles.add(key);
         }
       }
-      const delta = observedTiles.size / 100;
-      Population.observedIntensity.AGE       = Population.observedIntensity.AGE.map(v => Math.min(1, v + delta));
-      Population.observedIntensity.HOUSEHOLD = Population.observedIntensity.HOUSEHOLD.map(v => Math.min(1, v + delta));
+      const delta = observedTiles.size * (capacity - effectiveLoad) / INTENSITY_OBSERVATION_DIVISOR;
+      Population.observedIntensity.AGE       = Population.observedIntensity.AGE.map(v => v + delta);
+      Population.observedIntensity.HOUSEHOLD = Population.observedIntensity.HOUSEHOLD.map(v => v + delta);
     }
 
     // Shop theft: scale unhandled shop incidents by the overall unhandled rate.
