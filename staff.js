@@ -101,6 +101,7 @@ const Staff = {
       emp.costOfLiving = Math.round(jobDef.weeklySalary * (0.80 + Math.random() * 0.40));
       emp.salary       = emp.costOfLiving;
       emp.mood         = 50;
+      emp.events.push({ moodModifier: 20, comment: 'Excited to start a new job.' });
       this.roster.push(emp);
     });
     this.generateSetupCandidates();
