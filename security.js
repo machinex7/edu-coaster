@@ -191,10 +191,10 @@ const Security = {
     container.innerHTML = `
       <div class="sec-coverage-bar">
         <div class="sec-coverage-top">
-          <span class="sec-coverage-label">Path coverage</span>
+          <span class="sec-coverage-label">Park coverage</span>
           <span class="sec-coverage-pct">${coveragePct}%</span>
         </div>
-        <span class="sec-coverage-detail">${coverage.coveredPath} / ${coverage.totalPath} tiles &nbsp;·&nbsp; ${coverage.staffedPosts} / ${coverage.totalPosts} posts staffed</span>
+        <span class="sec-coverage-detail">${coverage.staffedPosts} / ${coverage.totalPosts} posts staffed</span>
       </div>
       <div class="security-guard-list">${guardRows}</div>`;
 
