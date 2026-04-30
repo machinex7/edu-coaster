@@ -388,7 +388,8 @@ header h1 {
 }
 
 /* Transparent SVG drawn over the grid for security (and future) overlays. */
-#security-overlay {
+#security-overlay,
+#dirt-overlay {
   position: absolute;
   top: 0;
   left: 0;

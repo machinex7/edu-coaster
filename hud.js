@@ -12,6 +12,7 @@ const VIEW_MODES = [
   { id: 'build',    icon: '🏗️', label: 'Build'    },
   { id: 'demolish', icon: '💣', label: 'Demolish' },
   { id: 'security', icon: '🛡️', label: 'Security' },
+  { id: 'dirt',     icon: '🟫', label: 'Dirt'     },
 ];
 
 // Builds pill buttons in #view-mode-bar and wires up click handlers.
@@ -45,6 +46,8 @@ function setViewMode(modeId) {
   setDemolishMode(modeId === 'demolish');
   if (modeId === 'security') drawSecurityOverlay();
   else clearSecurityOverlay();
+  if (modeId === 'dirt') drawDirtOverlay();
+  else clearDirtOverlay();
   _updateViewModeLegend(modeId);
 }
 
@@ -55,6 +58,10 @@ function _updateViewModeLegend(modeId) {
     legend.innerHTML = `
       <span class="vml-item"><span class="vml-dot" style="background:#3b82f6"></span>Staffed post + radius</span>
       <span class="vml-item"><span class="vml-dot" style="background:#f59e0b"></span>Unstaffed post</span>`;
+  } else if (modeId === 'dirt') {
+    legend.innerHTML = `
+      <span class="vml-item"><span class="vml-dot" style="background:rgba(120,60,20,0.25)"></span>Low mess</span>
+      <span class="vml-item"><span class="vml-dot" style="background:rgba(120,60,20,0.85)"></span>High mess</span>`;
   } else {
     legend.innerHTML = '';
   }
@@ -128,6 +135,49 @@ function refreshSecurityOverlay() {
   if (currentViewMode === 'security') drawSecurityOverlay();
 }
 
+// ── Dirt overlay ────────────────────────────────────────────────────────────
+
+// Mess units per tile at which the circle reaches full cell size.
+const DIRT_MAX_MESS = 10;
+
+// Draws brown circles on each path tile scaled to its current mess value.
+function drawDirtOverlay() {
+  const svg = document.getElementById('dirt-overlay');
+  svg.setAttribute('width',  OVERLAY_W);
+  svg.setAttribute('height', OVERLAY_H);
+  svg.innerHTML = '';
+
+  const NS        = 'http://www.w3.org/2000/svg';
+  const maxRadius = CELL_SIZE / 2 - 2;
+
+  for (const { row, col } of pathTiles) {
+    const mess = pathTileMess[`${row},${col}`] ?? 0;
+    if (mess <= 0) continue;
+    const t = Math.min(1, mess / DIRT_MAX_MESS);
+    const { x, y } = _cellCentre(row, col);
+    const circle = document.createElementNS(NS, 'circle');
+    circle.setAttribute('cx',   x);
+    circle.setAttribute('cy',   y);
+    circle.setAttribute('r',    t * maxRadius);
+    circle.setAttribute('fill', `rgba(120,60,20,${0.25 + t * 0.6})`);
+    svg.appendChild(circle);
+  }
+}
+
+// Clears the dirt overlay canvas.
+function clearDirtOverlay() {
+  const svg = document.getElementById('dirt-overlay');
+  svg.removeAttribute('width');
+  svg.removeAttribute('height');
+  svg.innerHTML = '';
+}
+
+// Redraws the dirt overlay only when dirt mode is currently active.
+// Call this after each round's mess is distributed.
+function refreshDirtOverlay() {
+  if (currentViewMode === 'dirt') drawDirtOverlay();
+}
+
 // Wires up the construction bar's Attractions / Shopping / Facilities tabs.
 function initCbarTabs() {
   document.querySelectorAll('.cbar-tab-btn').forEach(btn => {
@@ -183,6 +233,8 @@ function advanceRound() {
   const loanResult = Finance.processPendingLoan();
   Survey.processPendingSend();
   History.record(report);
+  distributeMessToTiles(report.weeklyAttendance * Population.MESS_GUEST_RATE);
+  refreshDirtOverlay();
   Research.tickResearch();
   _tickDemographicConfidence(report.weeklyAttendance);
   if (round % 13 === 1 && round > 1) Awards.checkQuarterly();
