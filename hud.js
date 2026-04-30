@@ -11,6 +11,7 @@ const VIEW_MODES = [
   { id: 'play',     icon: '🎮', label: 'Play'     },
   { id: 'build',    icon: '🏗️', label: 'Build'    },
   { id: 'demolish', icon: '💣', label: 'Demolish' },
+  { id: 'security', icon: '🛡️', label: 'Security' },
 ];
 
 // Builds pill buttons in #view-mode-bar and wires up click handlers.
@@ -27,7 +28,7 @@ function initViewModeBar() {
   });
 }
 
-// Switches the active view mode, updating button state, construction bar, and demolish mode.
+// Switches the active view mode, updating button state, construction bar, demolish mode, and overlays.
 function setViewMode(modeId) {
   if (modeId === 'demolish' && Finance.hasActiveCovenant('NO_DEMOLISH')) {
     Notifications.push({ label: 'Covenant', message: 'Your loan covenant prohibits demolishing rides.' });
@@ -42,6 +43,89 @@ function setViewMode(modeId) {
   document.getElementById('construction-bar').classList.toggle('hidden', modeId !== 'build');
   if (modeId !== 'build') deselectItem();
   setDemolishMode(modeId === 'demolish');
+  if (modeId === 'security') drawSecurityOverlay();
+  else clearSecurityOverlay();
+  _updateViewModeLegend(modeId);
+}
+
+// Populates the right-side legend area when an overlay mode is active.
+function _updateViewModeLegend(modeId) {
+  const legend = document.getElementById('view-mode-legend');
+  if (modeId === 'security') {
+    legend.innerHTML = `
+      <span class="vml-item"><span class="vml-dot" style="background:#3b82f6"></span>Staffed post + radius</span>
+      <span class="vml-item"><span class="vml-dot" style="background:#f59e0b"></span>Unstaffed post</span>`;
+  } else {
+    legend.innerHTML = '';
+  }
+}
+
+// Total SVG canvas size in px — matches the grid exactly.
+const OVERLAY_W = GRID_COLS * CELL_STEP - CELL_GAP;
+const OVERLAY_H = GRID_ROWS * CELL_STEP - CELL_GAP;
+
+// Returns the pixel centre of a grid cell.
+function _cellCentre(row, col) {
+  return { x: col * CELL_STEP + CELL_SIZE / 2, y: row * CELL_STEP + CELL_SIZE / 2 };
+}
+
+// Draws security post markers and patrol radius circles onto the SVG overlay.
+function drawSecurityOverlay() {
+  const svg = document.getElementById('security-overlay');
+  svg.setAttribute('width',  OVERLAY_W);
+  svg.setAttribute('height', OVERLAY_H);
+  svg.innerHTML = '';
+
+  const NS = 'http://www.w3.org/2000/svg';
+
+  const coverage     = Security.calcCoverage();
+  const staffedIds   = new Set(coverage.staffedPostsList.map(p => p.instanceId));
+  const activePosts  = installedFacilities.filter(
+    f => (f.facilityId === FACILITY_ID.GUARD_STATION || f.facilityId === FACILITY_ID.PARK_ENTRANCE)
+      && f.status === STATUS.ACTIVE
+  );
+
+  // Radius circles drawn first so they appear behind the post markers.
+  activePosts.forEach(post => {
+    if (!staffedIds.has(post.instanceId)) return;
+    const { x, y } = _cellCentre(post.row, post.col);
+    const circle = document.createElementNS(NS, 'circle');
+    circle.setAttribute('cx', x);
+    circle.setAttribute('cy', y);
+    circle.setAttribute('r',  GUARD_RADIUS * CELL_STEP);
+    circle.setAttribute('fill',         'rgba(59, 130, 246, 0.13)');
+    circle.setAttribute('stroke',       'rgba(59, 130, 246, 0.45)');
+    circle.setAttribute('stroke-width', '1.5');
+    svg.appendChild(circle);
+  });
+
+  // Post markers — blue for staffed, amber for unstaffed.
+  activePosts.forEach(post => {
+    const { x, y }  = _cellCentre(post.row, post.col);
+    const isStaffed = staffedIds.has(post.instanceId);
+    const dot = document.createElementNS(NS, 'circle');
+    dot.setAttribute('cx', x);
+    dot.setAttribute('cy', y);
+    dot.setAttribute('r',  9);
+    dot.setAttribute('fill',         isStaffed ? '#3b82f6' : '#f59e0b');
+    dot.setAttribute('stroke',       '#fff');
+    dot.setAttribute('stroke-width', '2');
+    svg.appendChild(dot);
+  });
+}
+
+// Removes all security overlay content and resets the SVG canvas size.
+function clearSecurityOverlay() {
+  const svg = document.getElementById('security-overlay');
+  svg.removeAttribute('width');
+  svg.removeAttribute('height');
+  svg.innerHTML = '';
+}
+
+// Redraws the security overlay only when security mode is currently active.
+// Call this whenever the guard roster or focus assignments change.
+function refreshSecurityOverlay() {
+  if (currentViewMode === 'security') drawSecurityOverlay();
 }
 
 // Wires up the construction bar's Attractions / Shopping / Facilities tabs.

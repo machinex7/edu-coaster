@@ -33,7 +33,7 @@ python3 -m http.server
 | `staff-panel.js` | All staffing panel UI — roster, postings, candidates, benefits views (extends `Staff` via `Object.assign`) |
 | `security.js` | Security opinion state, incident calculation, panel UI (`Security` object) |
 | `history.js` | Append-only per-round data log for future reports/graphs (`History` object) |
-| `hud.js` | HUD display, stage transitions, panel management, round summary modal, pricing panel |
+| `hud.js` | HUD display, stage transitions, panel management, view mode toolbar, construction bottom bar, security SVG overlay, round summary modal, pricing panel |
 | `rides.json` | Ride catalogue |
 | `facilities.json` | Facility catalogue |
 | `shops.json` | Shop catalogue |
@@ -124,21 +124,28 @@ Centralises all tunable rates so game balance changes are made in one place.
 ## UI layout
 
 ```
-<header>           — HUD: budget, date, stage badge
+<header>           — HUD: budget, date, stage badge, weather, staff/ride counts
 <div id="main">
   <div id="left-nav">            — position:relative container
     <nav id="btn-bar">           — narrow vertical button bar; always visible
-    <div class="side-panel">     — Construction (Attractions / Shopping / Facilities tabs)
     <div class="side-panel">     — Rides (master-detail)
     <div class="side-panel">     — Staffing (Roster / Postings / Candidates / Benefits tabs)
     <div class="side-panel">     — Security (guard list with focus assignment)
-    <div class="side-panel">     — Pricing
-  <div id="park-view">           — flex:1, centers the grid
-    <div id="grid">              — CSS grid of 20×20 cells
+    <div class="side-panel">     — Financial (pricing + loan)
+    … (other side panels)
+  <div id="park-view">           — flex column
+    <div id="view-mode-bar">     — pill-button toolbar: Play / Build / Demolish / Security / …
+    <div id="park-scroll">       — flex:1, scrollable, centers the grid wrapper
+      <div id="grid-wrapper">    — position:relative; holds grid + SVG overlay
+        <div id="grid">          — CSS grid of 20×20 cells
+        <svg id="security-overlay"> — absolute, pointer-events:none; drawn in security mode
+    <div id="construction-bar">  — horizontal build menu; visible only in Build mode
+      <div id="cbar-tabs">       — Attractions / Shopping / Facilities tabs
+      <div id="cbar-content">    — horizontally scrolling item cards
 <div id="round-modal">           — fixed overlay, shown after each round
 ```
 
-Panels slide open at `left: 100%` of `#btn-bar` (overlaying the park). Width transitions 0 ↔ 275px. Only one panel open at a time.
+Side panels slide open at `left: 100%` of `#btn-bar` (overlaying the park). Width transitions 0 ↔ 275px. Only one panel open at a time. The construction menu is a bottom bar, not a side panel.
 
 ---
 
@@ -547,10 +554,13 @@ Same shape as `facilities.json` plus:
 - Two-stage game: Setup → Play with weekly construction payments
 - Park-open prerequisites: Park Entrance + at least one connected ride
 - Ride conditions: Running, Unconnected, Under Construction, Paused, Closed, Broken Down, Demolishing
-- Demolish tool: activates a grid mode where hovering highlights a structure's full footprint in red; clicking starts demolition (irrevocable); takes `ceil(buildWeeks / 2)` rounds; paths and setup-built items are instant; Park Entrance is indestructible
+- Grid view mode toolbar: Play (default), Build (shows construction bar), Demolish, Security overlay; pill-shaped buttons with legend; adding future modes requires only a `VIEW_MODES` entry + handler in `setViewMode()`
+- Construction bottom bar: horizontal scrolling item cards (Attractions / Shopping / Facilities tabs) pinned to bottom of park view; replaces the former side panel
+- Demolish mode: activates via view mode bar; hovering highlights a structure's full footprint in red; clicking starts demolition (irrevocable); takes `ceil(buildWeeks / 2)` rounds; paths and setup-built items are instant; Park Entrance is indestructible
+- Security overlay: SVG drawn over the grid in Security mode showing patrol-radius circles (blue = staffed, amber = unstaffed); redraws live on hire, fire, or focus change
 - Ride detail panel: pause/resume, close/reopen, ridership bar, utility cost
 - Engineer system: repair broken rides and reduce wear; focus on construction or maintenance
-- Five overlay panels: Construction, Rides, Staffing, Security, Pricing
+- Side panels: Rides, Staffing, Security, Financial, Inventory, Survey, Research, Marketing, Visitor Profile, Awards
 - HUD: budget, date (Week W, QN, YYYY), stage badge
 - Finance: gate/parking/shop revenue; staff/utility/construction/theft costs; round summary modal
 - Pricing panel: gate, parking, merchandise upcharge; price exhaustion suppresses demand

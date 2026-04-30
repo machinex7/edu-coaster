@@ -165,6 +165,7 @@ const Security = {
 
   // ── Panel UI ────────────────────────────────────────────────────────────────
   buildPanel() {
+    refreshSecurityOverlay();
     const container = document.getElementById('security-overview');
     const guards    = Staff.roster.filter(s => s.jobId === JOB.SECURITY);
 
