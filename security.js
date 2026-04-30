@@ -131,8 +131,14 @@ const Security = {
         }
       }
       const delta = observedTiles.size * (capacity - effectiveLoad) / INTENSITY_OBSERVATION_DIVISOR;
-      Population.observedIntensity.AGE       = Population.observedIntensity.AGE.map(v => Math.min(100, v + delta));
-      Population.observedIntensity.HOUSEHOLD = Population.observedIntensity.HOUSEHOLD.map(v => Math.min(100, v + delta));
+      Population.observedIntensity.AGE       = Population.observedIntensity.AGE.map((v, i) => {
+        const b = Population.AGE_BRACKETS[i];
+        return Math.min(100, v + delta * b.chance * b.favor);
+      });
+      Population.observedIntensity.HOUSEHOLD = Population.observedIntensity.HOUSEHOLD.map((v, i) => {
+        const b = Population.HOUSEHOLD_SIZES[i];
+        return Math.min(100, v + delta * b.chance * b.favor);
+      });
     }
 
     // Shop theft: scale unhandled shop incidents by the overall unhandled rate.
