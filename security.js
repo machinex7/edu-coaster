@@ -78,10 +78,16 @@ const Security = {
     const uncoveredIncidents = total - coveredIncidents;
 
     // Weekly capacity: (3 + experienceTier) × 7 per active guard.
-    const guards   = Staff.roster.filter(s => s.jobId === JOB.SECURITY && s.weeksOut === 0);
+    // Excess patrol guards (more guards than posts) and parking-obs guards
+    // contribute half capacity — they help but aren't on a dedicated post.
+    const guards       = Staff.roster.filter(s => s.jobId === JOB.SECURITY && s.weeksOut === 0);
+    const patrolGuards = guards.filter(s => s.focus !== SECURITY_FOCUS.PARKING_OBS);
+    const excessSet    = new Set(patrolGuards.slice(staffedPosts).map(s => s.instanceId));
     const capacity = guards.reduce((sum, s) => {
       const { tier } = Staff.getExperienceTier(s.weeksEmployed);
-      return sum + (3 + tier) * 7;
+      const base     = (3 + tier) * 7;
+      const reduced  = s.focus === SECURITY_FOCUS.PARKING_OBS || excessSet.has(s.instanceId);
+      return sum + (reduced ? Math.floor(base / 2) : base);
     }, 0);
 
     // Effective load: uncovered incidents count as 2 against capacity.
