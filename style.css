@@ -284,8 +284,74 @@ header h1 {
 /* ── Park View ── */
 #park-view {
   flex: 1;
-  overflow: auto;
+  overflow: hidden;
   background: #14532d;
+  display: flex;
+  flex-direction: column;
+}
+
+/* View mode toolbar pinned above the scrollable grid */
+#view-mode-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: rgba(0, 0, 0, 0.28);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  flex-shrink: 0;
+}
+
+/* Pill-shaped mode toggle buttons */
+.view-mode-btn {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 13px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  background: rgba(255, 255, 255, 0.06);
+  color: #bbf7d0;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.view-mode-btn:hover {
+  background: rgba(255, 255, 255, 0.13);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.view-mode-btn.active {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: rgba(255, 255, 255, 0.45);
+  color: #fff;
+}
+
+.view-mode-btn:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+
+.view-mode-btn .vm-icon {
+  font-size: 15px;
+  line-height: 1;
+}
+
+/* Legend appears on the right when an overlay mode is active */
+#view-mode-legend {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+  color: #a7f3d0;
+}
+
+/* Scrollable area containing the grid */
+#park-scroll {
+  flex: 1;
+  overflow: auto;
   padding: 20px;
   display: flex;
   justify-content: center;

@@ -51,8 +51,6 @@
       <div id="left-nav">
         <!-- Tool button bar -->
         <nav id="btn-bar">
-          <button class="tool-btn" data-panel="construction">Construction</button>
-          <button class="tool-btn demolish-btn" data-panel="demolish">Demolish</button>
           <button class="tool-btn" data-panel="rides">Rides</button>
           <button class="tool-btn" data-panel="staffing">Staffing</button>
           <button class="tool-btn" data-panel="security">Security</button>
@@ -64,27 +62,6 @@
           <button class="tool-btn" data-panel="visitor-profile">Visitor Profile</button>
           <button class="tool-btn hidden" data-panel="awards">Awards</button>
         </nav>
-
-        <!-- Construction slide panel -->
-        <div id="panel-construction" class="side-panel closed">
-          <div class="side-panel-inner">
-            <div class="panel-header">Construction</div>
-            <div id="sub-tabs">
-              <button class="sub-tab-btn active" data-tab="attractions">Attractions</button>
-              <button class="sub-tab-btn" data-tab="shopping">Shopping</button>
-              <button class="sub-tab-btn" data-tab="facilities">Facilities</button>
-            </div>
-            <div id="attractions-panel" class="tab-panel">
-              <div id="ride-list"></div>
-            </div>
-            <div id="shopping-panel" class="tab-panel hidden">
-              <div id="shop-list"></div>
-            </div>
-            <div id="facilities-panel" class="tab-panel hidden">
-              <div id="facility-list"></div>
-            </div>
-          </div>
-        </div>
 
         <!-- Rides overview slide panel -->
         <div id="panel-rides" class="side-panel closed">
@@ -193,7 +170,31 @@
       </div>
 
       <div id="park-view">
-        <div id="grid"></div>
+        <div id="view-mode-bar">
+          <!-- View mode pill buttons injected by initViewModeBar() -->
+          <div id="view-mode-legend"></div>
+        </div>
+        <div id="park-scroll">
+          <div id="grid"></div>
+        </div>
+        <div id="construction-bar" class="hidden">
+          <div id="cbar-tabs">
+            <button class="cbar-tab-btn active" data-cbar-tab="attractions">Attractions</button>
+            <button class="cbar-tab-btn" data-cbar-tab="shopping">Shopping</button>
+            <button class="cbar-tab-btn" data-cbar-tab="facilities">Facilities</button>
+          </div>
+          <div id="cbar-content">
+            <div id="attractions-panel" class="cbar-panel">
+              <div id="ride-list"></div>
+            </div>
+            <div id="shopping-panel" class="cbar-panel hidden">
+              <div id="shop-list"></div>
+            </div>
+            <div id="facilities-panel" class="cbar-panel hidden">
+              <div id="facility-list"></div>
+            </div>
+          </div>
+        </div>
       </div>
 
     </div>
