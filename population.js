@@ -137,6 +137,14 @@ const Population = {
       STATUS:     Array(this.VISITOR_STATUS.length).fill(0),
     };
 
+    // How well we understand each bracket's ride-intensity preference (0–100).
+    // Populated by Security.calcIncidents() when guards have surplus capacity.
+    // Parallel to AGE_BRACKETS and HOUSEHOLD_SIZES respectively.
+    this.observedIntensity = {
+      AGE:       Array(this.AGE_BRACKETS.length).fill(0),
+      HOUSEHOLD: Array(this.HOUSEHOLD_SIZES.length).fill(0),
+    };
+
     // Store the neutral baseline so calcDemandMultiplier() can normalise against it.
     this.baselineFavorablePopulation = this.calcFavorablePopulation();
   },

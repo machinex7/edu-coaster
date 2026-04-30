@@ -3,6 +3,8 @@ const GRID_COLS = 20;
 const GRID_ROWS = 20;
 // Euclidean tile radius covered by each staffed guard post.
 const GUARD_RADIUS = 5;
+// Divisor for converting observed ride tiles × surplus capacity into an intensity-observation delta.
+const INTENSITY_OBSERVATION_DIVISOR = 1000;
 const CELL_SIZE = 40;  // px
 const CELL_GAP  = 1;   // px — must match the CSS gap on #grid
 const CELL_STEP = CELL_SIZE + CELL_GAP;
