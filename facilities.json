@@ -60,6 +60,15 @@
     "limit": null
   },
   {
+    "id": "guard_station",
+    "name": "Guard Station",
+    "color": "#fcd34d",
+    "footprint": [[1]],
+    "buildCost": 1500,
+    "buildWeeks": 1,
+    "limit": null
+  },
+  {
     "id": "staff_lounge",
     "name": "Staff Lounge",
     "color": "#fca5a5",
