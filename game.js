@@ -477,8 +477,9 @@ function startDemolition(row, col) {
 
   if (record.status === STATUS.DEMOLISHING) return;
 
-  // Paths and items built instantly (no weeksTotal) are removed immediately.
-  const demolishWeeks = Math.ceil((record.weeksTotal || 0) / 2);
+  // Paths are removed immediately; everything else takes at least 1 round.
+  const isPath = record.facilityId === FACILITY_ID.PATH;
+  const demolishWeeks = isPath ? 0 : Math.max(1, Math.ceil((record.weeksTotal || 0) / 2));
   if (demolishWeeks === 0) {
     completeDemolition(record);
     return;
@@ -513,6 +514,15 @@ function completeDemolition(record) {
   if (record.rideId !== undefined) {
     const idx = installedRides.indexOf(record);
     if (idx !== -1) installedRides.splice(idx, 1);
+    // Re-add to build catalog if no other instance of this ride is still placed.
+    if (!installedRides.some(r => r.rideId === record.rideId)) {
+      const rideDef = rides.find(r => r.id === record.rideId);
+      if (rideDef) {
+        const card = createItemCard(rideDef, 'ride');
+        card.dataset.rideId = rideDef.id;
+        document.getElementById('ride-list').appendChild(card);
+      }
+    }
   } else if (record.shopId !== undefined) {
     const idx = Shopping.installed.indexOf(record);
     if (idx !== -1) Shopping.installed.splice(idx, 1);
@@ -544,7 +554,9 @@ function completeDemolition(record) {
     }
   }
 
-  Notifications.push({ label: 'Demolish', message: `${name} has been demolished.` });
+  if (record.facilityId !== FACILITY_ID.PATH) {
+    Notifications.push({ label: 'Demolish', message: `${name} has been demolished.` });
+  }
   updateHUD();
   refreshRidesPanel();
 }
