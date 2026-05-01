@@ -124,12 +124,13 @@ const Finance = {
 
   // Security.opinion is in security.js — read here by calcDailyDemand().
 
-  // How well-staffed running rides are vs the crowd trying to ride them.
+  // Guest ride satisfaction: did people get as many rides as they wanted?
   // staffRatio = actual operators / needed operators (capped at 1).
-  // dailyRideCapacity = sum(ridesPerHour for Running rides) * staffRatio.
-  // score = min(1, dailyRideCapacity / dailyAttendance).
-  // rideOpinion is averaged with the new score so it shifts gradually.
-  computeRideOpinion(dailyAttendance) {
+  // Each running ride contributes rph * staffRatio * 7 actual weekly riders,
+  // discounted by rideAgeFactor (decays after 5 years). ridesPerPerson is that
+  // total divided by weekly attendance. rideOpinion = min(1, ridesPerPerson /
+  // DESIRED_RIDES) — 1.0 means guests rode at least as much as they wanted.
+  computeRideOpinion(weeklyAttendance) {
     const runningRides = installedRides.filter(r => r.status === STATUS.ACTIVE && isRideConnected(r));
     if (runningRides.length === 0) return;
 
@@ -137,19 +138,21 @@ const Finance = {
     const actual     = Staff.roster.filter(s => s.jobId === JOB.RIDE_OPERATOR && s.weeksOut === 0).length;
     const staffRatio = needed > 0 ? Math.min(1, actual / needed) : 1;
 
-    let totalDailyCapacity = 0;
+    let totalWeeklyRiders = 0;
     runningRides.forEach(record => {
       const rph = rides.find(r => r.id === record.rideId)?.ridesPerHour ?? 0;
-      totalDailyCapacity       += rph;
       record.lastRoundCapacity  = Math.round(rph * 7);
       record.lastRoundRiders    = Math.round(rph * staffRatio * 7);
+      totalWeeklyRiders        += record.lastRoundRiders * rideAgeFactor(record);
     });
 
-    this.rideOpinion = dailyAttendance > 0 ? Math.min(1, totalDailyCapacity * staffRatio / dailyAttendance) : 1;
+    const ridesPerPerson = weeklyAttendance > 0 ? totalWeeklyRiders / weeklyAttendance : 0;
+    this.rideOpinion = Math.min(1, ridesPerPerson / Population.DESIRED_RIDES);
     console.log(
       '[rides]',
       'staffRatio:', staffRatio.toFixed(4),
       '| operators:', actual + '/' + needed,
+      '| ridesPerPerson:', ridesPerPerson.toFixed(4),
       '| rideOpinion:', this.rideOpinion.toFixed(4)
     );
   },
@@ -180,17 +183,12 @@ const Finance = {
   },
 
   // Recomputes parkExcitement at end of round for use next round.
-  // Base = weekly attendance × (rides per person / desired rides), capped at 1.
+  // Uses rideOpinion (set by computeRideOpinion this round) as the ride satisfaction factor.
   // Security opinion and mess density degrade the result.
   // Mess penalty: unhandled mess spread across path tiles; 1.25^(mess per path) as divisor.
   calcExcitement(weeklyAttendance) {
-    const runningRides      = installedRides.filter(r => r.status === STATUS.ACTIVE && isRideConnected(r));
-    const totalWeeklyRides  = runningRides.reduce((s, r) => s + (r.lastRoundRiders ?? 0) * rideAgeFactor(r), 0);
-    const ridesPerPerson    = weeklyAttendance > 0 ? totalWeeklyRides / weeklyAttendance : 0;
-    const satisfactionRatio = Math.min(1, ridesPerPerson / Population.DESIRED_RIDES);
-    const securityFactor    = Math.max(0, 1 - Math.sqrt(Security.opinion) / 100);
-
-    this.parkExcitement = Math.max(0, (weeklyAttendance * satisfactionRatio * securityFactor * this.mealSatisfaction) / this.calcMessFactor());
+    const securityFactor = Math.max(0, 1 - Math.sqrt(Security.opinion) / 100);
+    this.parkExcitement  = Math.max(0, (weeklyAttendance * this.rideOpinion * securityFactor * this.mealSatisfaction) / this.calcMessFactor());
   },
 
   // How many people can actually enter: booth attendants are the bottleneck.
@@ -938,7 +936,7 @@ const Finance = {
     const dailyThroughput = this.calcGateThroughput();
     const daily           = Math.min(dailyDemand, dailyThroughput);
 
-    this.computeRideOpinion(daily);   // updates rideOpinion for next round; sets lastRoundRiders
+    this.computeRideOpinion(daily * 7); // updates rideOpinion for next round; sets lastRoundRiders
     this.processWear();               // accumulate wear then roll for breakdown
 
     // Always at least 35 visitors per week — a few souls wander in regardless.
