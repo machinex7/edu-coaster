@@ -221,6 +221,12 @@
 .ride-utility-cost { font-size: 0.75rem; color: #9ca3af; margin-top: 2px; }
 .ride-wear         { font-size: 0.75rem; color: #9ca3af; margin-top: 2px; }
 
+.ride-staff        { display: flex; flex-direction: column; gap: 2px; }
+.ride-staff-needs  { font-size: 0.75rem; color: #9ca3af; }
+.ride-staff-status { font-size: 0.75rem; }
+.ride-staff-ok     { color: #4ade80; }
+.ride-staff-under  { color: #f87171; }
+
 .ride-detail-weeks { font-size: 0.8rem; color: #9ca3af; margin: 0; }
 
 .ride-detail-actions { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
