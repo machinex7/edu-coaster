@@ -147,6 +147,13 @@ const Finance = {
 
     const score = dailyAttendance > 0 ? Math.min(1, totalDailyCapacity * staffRatio / dailyAttendance) : 1;
     this.rideOpinion = (this.rideOpinion + score) / 2;
+    console.log(
+      '[rides]',
+      'staffRatio:', staffRatio.toFixed(4),
+      '| operators:', actual + '/' + needed,
+      '| score:', score.toFixed(4),
+      '| rideOpinion:', this.rideOpinion.toFixed(4)
+    );
   },
 
   // ── Attendance ──────────────────────────────────────────────────────────────
