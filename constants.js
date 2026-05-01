@@ -80,7 +80,7 @@ const RESEARCH_ID = Object.freeze({
 });
 
 // Breakdown probability reaches 100% at this cumulative wear value.
-const MAX_EFFECTIVE_WEAR = 1000;
+const MAX_EFFECTIVE_WEAR = 10000;
 
 const WEEKS_PER_YEAR = 52;
 
