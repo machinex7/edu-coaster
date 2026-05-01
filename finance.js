@@ -108,6 +108,9 @@ const LOAN_COVENANT_TEMPLATES = [
   },
 ];
 
+// Max Euclidean tile distance from a shop that receives IDW shopper mess.
+const MAX_SHOP_MESS_RADIUS = 5;
+
 const Finance = {
 
   // ── Park metrics ────────────────────────────────────────────────────────────
@@ -297,20 +300,97 @@ const Finance = {
     return Math.pow(1.25, messPerPath);
   },
 
-  calcMessGenerated(weeklyAttendance, mealsSold = 0) {
+  calcMessGenerated(weeklyAttendance, mealsSold = 0, itemsSold = 0) {
     const fromGuests   = weeklyAttendance * Population.MESS_GUEST_RATE;
-    const fromShoppers = weeklyAttendance * Population.BUYER_RATE * Population.MESS_SHOPPER_RATE;
+    const fromShoppers = itemsSold * Population.MESS_ITEM_RATE;
     const fromFood     = mealsSold * Population.MESS_FOOD_RATE;
 
     const fromExtremeRides = installedRides
       .filter(r => r.status === STATUS.ACTIVE && isRideConnected(r)
                 && rides.find(d => d.id === r.rideId)?.intensity === 'extreme')
       .reduce((sum, r) => {
-        const dist = nearestBathroomDist(r);
+        const { dist } = nearestBathroom(r);
         return sum + (r.lastRoundRiders ?? 0) * Population.MESS_EXTREME_RIDER_RATE * dist;
       }, 0);
 
     return Math.floor(fromGuests + fromShoppers + fromFood + fromExtremeRides);
+  },
+
+  // Distributes mess to path tiles each round.
+  // fromGuests is split equally across all paths.
+  // fromShoppers and fromFood each use IDW: each path tile is weighted by the
+  // sum of 1/(dist+1)² over the relevant active shop cells within
+  // MAX_SHOP_MESS_RADIUS tiles (Euclidean). Tiles outside that radius from
+  // every shop of a given type receive none of that type's mess.
+  // Extreme-ride mess is spread along the actual path to the nearest bathroom:
+  // only tiles on that route receive mess, weighted by IDW from the ride so
+  // the mess diminishes toward the bathroom end of the route.
+  distributeMessToTiles(fromGuests, fromShoppers = 0, fromFood = 0) {
+    const paths = installedFacilities.filter(f => f.facilityId === FACILITY_ID.PATH);
+    if (paths.length === 0) return;
+
+    const guestPerTile = fromGuests / paths.length;
+
+    // Separate active shop cells by type.
+    const foodIds = new Set(Shopping.catalog.filter(s => s.shopType === 'food').map(s => s.id));
+    const merchCells = [];
+    const foodCells  = [];
+    for (const s of Shopping.installed) {
+      if (s.status !== STATUS.ACTIVE) continue;
+      const target = foodIds.has(s.shopId) ? foodCells : merchCells;
+      for (let r = 0; r < s.footprint.length; r++) {
+        for (let c = 0; c < s.footprint[r].length; c++) {
+          if (s.footprint[r][c] === 1)
+            target.push({ row: s.row + r, col: s.col + c });
+        }
+      }
+    }
+
+    // Returns an IDW weight array for the given source cells and radius.
+    const idwWeights = (sourceCells, radius) => paths.map(p => {
+      let w = 0;
+      for (const sc of sourceCells) {
+        const dist = Math.sqrt((p.row - sc.row) ** 2 + (p.col - sc.col) ** 2);
+        if (dist <= radius) w += 1 / (dist + 1) ** 2;
+      }
+      return w;
+    });
+
+    const shopWeights = idwWeights(merchCells, MAX_SHOP_MESS_RADIUS);
+    const foodWeights = idwWeights(foodCells,  MAX_SHOP_MESS_RADIUS);
+    const totalShop   = shopWeights.reduce((a, b) => a + b, 0);
+    const totalFood   = foodWeights.reduce((a, b) => a + b, 0);
+
+    for (let i = 0; i < paths.length; i++) {
+      const shopperShare = totalShop > 0 ? fromShoppers * shopWeights[i] / totalShop : 0;
+      const foodShare    = totalFood > 0 ? fromFood    * foodWeights[i]  / totalFood  : 0;
+      paths[i].mess = guestPerTile + shopperShare + foodShare;
+    }
+
+    // Extreme-ride mess: spread along the actual bathroom route using a
+    // triangular weighting. Tile at path index i (0 = nearest ride exit)
+    // gets weight (n - i), so the total is n*(n+1)/2 and mess diminishes
+    // linearly from the ride toward the bathroom.
+    const activeExtremeRides = installedRides.filter(r =>
+      r.status === STATUS.ACTIVE &&
+      isRideConnected(r) &&
+      rides.find(d => d.id === r.rideId)?.intensity === 'extreme'
+    );
+    for (const ride of activeExtremeRides) {
+      const { dist, path: bathroomPath } = nearestBathroom(ride);
+      const amount = (ride.lastRoundRiders ?? 0) * Population.MESS_EXTREME_RIDER_RATE * dist;
+      if (amount <= 0 || bathroomPath.length === 0) continue;
+
+      const n           = bathroomPath.length;
+      const totalWeight = n * (n + 1) / 2;
+      const routeIndex  = new Map(bathroomPath.map((t, i) => [`${t.row},${t.col}`, i]));
+
+      for (const p of paths) {
+        const i = routeIndex.get(`${p.row},${p.col}`);
+        if (i === undefined) continue;
+        p.mess += amount * (n - i) / totalWeight;
+      }
+    }
   },
 
   // ── Cost sources ─────────────────────────────────────────────────────────────
@@ -864,7 +944,12 @@ const Finance = {
     Staff.advancePostings();          // increment weeksActive for all postings
     Staff.generateCandidates();       // new applicants per round when postings exist
     Staff.advanceCandidates();        // withdrawal check, then increment weeksAsCandidate
-    this.weeklyNetMess = Math.max(0, this.calcMessGenerated(weeklyAttendance, food.mealsSold) - Staff.calcJanitorCapacity());
+    this.weeklyNetMess = Math.max(0, this.calcMessGenerated(weeklyAttendance, food.mealsSold, shopItemsSold) - Staff.calcJanitorCapacity());
+    this.distributeMessToTiles(
+      weeklyAttendance * Population.MESS_GUEST_RATE,
+      shopItemsSold * Population.MESS_ITEM_RATE,
+      food.mealsSold * Population.MESS_FOOD_RATE
+    );
     this.mealSatisfaction = food.mealsWanted > 0
       ? Math.min(1, 0.5 + 0.5 * food.mealsServed / food.mealsWanted)
       : 0.5;

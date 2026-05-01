@@ -12,6 +12,7 @@ const VIEW_MODES = [
   { id: 'build',    icon: '🏗️', label: 'Build'    },
   { id: 'demolish', icon: '💣', label: 'Demolish' },
   { id: 'security', icon: '🛡️', label: 'Security' },
+  { id: 'dirt',     icon: '🟫', label: 'Mess'     },
 ];
 
 // Builds pill buttons in #view-mode-bar and wires up click handlers.
@@ -45,6 +46,8 @@ function setViewMode(modeId) {
   setDemolishMode(modeId === 'demolish');
   if (modeId === 'security') drawSecurityOverlay();
   else clearSecurityOverlay();
+  if (modeId === 'dirt') drawDirtOverlay();
+  else clearDirtOverlay();
   _updateViewModeLegend(modeId);
 }
 
@@ -55,6 +58,8 @@ function _updateViewModeLegend(modeId) {
     legend.innerHTML = `
       <span class="vml-item"><span class="vml-dot" style="background:#3b82f6"></span>Staffed post + radius</span>
       <span class="vml-item"><span class="vml-dot" style="background:#f59e0b"></span>Unstaffed post</span>`;
+  } else if (modeId === 'dirt') {
+    legend.innerHTML = '';
   } else {
     legend.innerHTML = '';
   }
@@ -128,6 +133,66 @@ function refreshSecurityOverlay() {
   if (currentViewMode === 'security') drawSecurityOverlay();
 }
 
+// ── Dirt overlay ────────────────────────────────────────────────────────────
+
+// Maximum number of speck circles drawn per path tile.
+const DIRT_MAX_SPECKS = 8;
+
+// Deterministic pseudo-random in [0,1) from an integer seed.
+// Using sine-hash so speck positions stay consistent across redraws.
+const _dirtRand = seed => {
+  const x = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
+  return x - Math.floor(x);
+};
+
+// Draws brown speck circles on each path tile. Count = floor(f.mess), capped
+// at DIRT_MAX_SPECKS. Positions are deterministic per tile so they don't shift
+// on each redraw.
+function drawDirtOverlay() {
+  const svg = document.getElementById('dirt-overlay');
+  svg.setAttribute('width',  OVERLAY_W);
+  svg.setAttribute('height', OVERLAY_H);
+  svg.innerHTML = '';
+
+  const NS     = 'http://www.w3.org/2000/svg';
+  const SPECK_R = 3;
+  const SPREAD  = CELL_SIZE / 2 - SPECK_R - 2;
+
+  for (const f of installedFacilities) {
+    if (f.facilityId !== FACILITY_ID.PATH) continue;
+    const count = Math.min(Math.floor(f.mess ?? 0), DIRT_MAX_SPECKS);
+    if (count <= 0) continue;
+
+    const { x, y } = _cellCentre(f.row, f.col);
+    const seed = f.row * 997 + f.col * 31;
+
+    for (let i = 0; i < count; i++) {
+      const ox = (_dirtRand(seed + i * 2)     * 2 - 1) * SPREAD;
+      const oy = (_dirtRand(seed + i * 2 + 1) * 2 - 1) * SPREAD;
+      const circle = document.createElementNS(NS, 'circle');
+      circle.setAttribute('cx',   x + ox);
+      circle.setAttribute('cy',   y + oy);
+      circle.setAttribute('r',    SPECK_R);
+      circle.setAttribute('fill', 'rgba(120,60,20,0.7)');
+      svg.appendChild(circle);
+    }
+  }
+}
+
+// Clears the dirt overlay canvas.
+function clearDirtOverlay() {
+  const svg = document.getElementById('dirt-overlay');
+  svg.removeAttribute('width');
+  svg.removeAttribute('height');
+  svg.innerHTML = '';
+}
+
+// Redraws the dirt overlay only when dirt mode is currently active.
+// Call this after each round's mess is distributed.
+function refreshDirtOverlay() {
+  if (currentViewMode === 'dirt') drawDirtOverlay();
+}
+
 // Wires up the construction bar's Attractions / Shopping / Facilities tabs.
 function initCbarTabs() {
   document.querySelectorAll('.cbar-tab-btn').forEach(btn => {
@@ -183,6 +248,7 @@ function advanceRound() {
   const loanResult = Finance.processPendingLoan();
   Survey.processPendingSend();
   History.record(report);
+  refreshDirtOverlay();
   Research.tickResearch();
   _tickDemographicConfidence(report.weeklyAttendance);
   if (round % 13 === 1 && round > 1) Awards.checkQuarterly();
