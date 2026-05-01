@@ -22,6 +22,7 @@ const Population = {
   MESS_GUEST_RATE:         0.01,  // 1 per 100 guests
   MESS_ITEM_RATE:          0.05,  // 1 per 20 merchandise items sold
   MESS_EXTREME_RIDER_RATE: 0.05,  // 1 per 20 riders on each extreme-intensity ride
+  MESS_HIGH_RIDER_RATE:   0.025, // 1 per 40 riders on each high-intensity ride (half of extreme)
   MESS_FOOD_RATE:          0.10,  // 1 per 10 meals sold
 
   // ── Demographic confidence ────────────────────────────────────────────────

@@ -331,7 +331,15 @@ const Finance = {
         return sum + (r.lastRoundRiders ?? 0) * Population.MESS_EXTREME_RIDER_RATE * dist;
       }, 0);
 
-    return Math.floor(fromGuests + fromShoppers + fromFood + fromExtremeRides);
+    const fromHighRides = installedRides
+      .filter(r => r.status === STATUS.ACTIVE && isRideConnected(r)
+                && rides.find(d => d.id === r.rideId)?.intensity === 'high')
+      .reduce((sum, r) => {
+        const { dist } = nearestBathroom(r);
+        return sum + (r.lastRoundRiders ?? 0) * Population.MESS_HIGH_RIDER_RATE * dist;
+      }, 0);
+
+    return Math.floor(fromGuests + fromShoppers + fromFood + fromExtremeRides + fromHighRides);
   },
 
   // Distributes mess to path tiles each round.
@@ -389,14 +397,18 @@ const Finance = {
     // triangular weighting. Tile at path index i (0 = nearest ride exit)
     // gets weight (n - i), so the total is n*(n+1)/2 and mess diminishes
     // linearly from the ride toward the bathroom.
-    const activeExtremeRides = installedRides.filter(r =>
-      r.status === STATUS.ACTIVE &&
-      isRideConnected(r) &&
-      rides.find(d => d.id === r.rideId)?.intensity === 'extreme'
-    );
-    for (const ride of activeExtremeRides) {
+    // Extreme and high-intensity rides spread mess along the path to the nearest bathroom.
+    // Extreme generates twice the mess of high (MESS_EXTREME_RIDER_RATE = 2× MESS_HIGH_RIDER_RATE).
+    const activeIntenseRides = installedRides.filter(r => {
+      const intensity = rides.find(d => d.id === r.rideId)?.intensity;
+      return r.status === STATUS.ACTIVE && isRideConnected(r)
+          && (intensity === 'extreme' || intensity === 'high');
+    });
+    for (const ride of activeIntenseRides) {
+      const intensity = rides.find(d => d.id === ride.rideId)?.intensity;
+      const rate      = intensity === 'extreme' ? Population.MESS_EXTREME_RIDER_RATE : Population.MESS_HIGH_RIDER_RATE;
       const { dist, path: bathroomPath } = nearestBathroom(ride);
-      const amount = (ride.lastRoundRiders ?? 0) * Population.MESS_EXTREME_RIDER_RATE * dist;
+      const amount = (ride.lastRoundRiders ?? 0) * rate * dist;
       if (amount <= 0 || bathroomPath.length === 0) continue;
 
       const n           = bathroomPath.length;
