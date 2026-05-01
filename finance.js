@@ -147,6 +147,13 @@ const Finance = {
 
     const score = dailyAttendance > 0 ? Math.min(1, totalDailyCapacity * staffRatio / dailyAttendance) : 1;
     this.rideOpinion = (this.rideOpinion + score) / 2;
+    console.log(
+      '[rides]',
+      'staffRatio:', staffRatio.toFixed(4),
+      '| operators:', actual + '/' + needed,
+      '| score:', score.toFixed(4),
+      '| rideOpinion:', this.rideOpinion.toFixed(4)
+    );
   },
 
   // ── Attendance ──────────────────────────────────────────────────────────────
@@ -157,10 +164,21 @@ const Finance = {
   // favorable population (chance × favor × count) to the neutral baseline.
   // Security and mess penalties are applied to excitement at end-of-round instead.
   calcDailyDemand() {
-    const exhaustionFactor = Math.max(0, 1 - this.priceExhaustion / 100);
-    const eventFactor      = Population.populationEvents.reduce((f, e) => f * (1 + e.modifier / 100), 1);
-    const weatherFactor    = 1 - (WEATHER_DEMAND_REDUCTION[nextWeekForecast] ?? 0);
-    return this.parkExcitement * exhaustionFactor * eventFactor * Population.calcDemandMultiplier() * weatherFactor;
+    const exhaustionFactor  = Math.max(0, 1 - this.priceExhaustion / 100);
+    const eventFactor       = Population.populationEvents.reduce((f, e) => f * (1 + e.modifier / 100), 1);
+    const weatherFactor     = 1 - (WEATHER_DEMAND_REDUCTION[nextWeekForecast] ?? 0);
+    const demandMultiplier  = Population.calcDemandMultiplier();
+    const result            = this.parkExcitement * exhaustionFactor * eventFactor * demandMultiplier * weatherFactor;
+    console.log(
+      '[demand]',
+      'excitement:', this.parkExcitement.toFixed(2),
+      '| exhaustion:', exhaustionFactor.toFixed(4),
+      '| event:', eventFactor.toFixed(4),
+      '| demandMult:', demandMultiplier.toFixed(4),
+      '| weather:', weatherFactor.toFixed(4),
+      '| dailyDemand:', result.toFixed(2)
+    );
+    return result;
   },
 
   // Recomputes parkExcitement at end of round for use next round.
@@ -260,7 +278,7 @@ const Finance = {
 
   // ── Wear & breakdown ─────────────────────────────────────────────────────────
   // Called each round after computeRideOpinion() so lastRoundRiders is current.
-  // Accumulates rider wear then rolls for breakdown; probability reaches 100% at MAX_EFFECTIVE_WEAR.
+  // Accumulates rider wear then rolls for breakdown; probability = (wear/MAX_EFFECTIVE_WEAR)^2, reaching 100% at max.
   processWear() {
     const wearMult = WEATHER_WET_EMOJIS.includes(nextWeekForecast) ? WEATHER_WEAR_MULTIPLIER : 1;
     installedRides
@@ -270,7 +288,7 @@ const Finance = {
       .filter(r => r.status === STATUS.ACTIVE && isRideConnected(r))
       .forEach(r => {
         r.wear += (r.lastRoundRiders ?? 0) * wearMult * rideWearFactor(r);
-        if (Math.random() < r.wear / MAX_EFFECTIVE_WEAR) {
+        if (Math.random() < (r.wear / MAX_EFFECTIVE_WEAR) ** 2) {
           r.status        = STATUS.BROKEN_DOWN;
           // Repair time scales with wear: more wear = longer repair, minimum 1 week.
           r.weeksToRepair = Math.floor(Math.random() * Math.floor(r.wear / 100)) + 1;

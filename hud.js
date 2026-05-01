@@ -455,6 +455,22 @@ function buildRideDetail(record) {
   const { label, cls } = getRideCondition(record);
   const def = rides.find(r => r.id === record.rideId);
 
+  // Wear as a percentage of MAX_EFFECTIVE_WEAR.
+  const wearPct = Math.min(100, Math.round((record.wear ?? 0) / MAX_EFFECTIVE_WEAR * 100));
+
+  // Per-ride operator requirement and park-wide staffing status.
+  const rideNeeds   = Staff.operatorsNeededForRide(record);
+  const parkNeeded  = Staff.rideOperatorsNeeded();
+  const parkActual  = Staff.roster.filter(s => s.jobId === JOB.RIDE_OPERATOR && s.weeksOut === 0).length;
+  const understaffed = parkActual < parkNeeded;
+  const staffStatusLabel = understaffed ? 'Understaffed' : 'Fully staffed';
+  const staffStatusCls   = understaffed ? 'ride-staff-under' : 'ride-staff-ok';
+  const staffHtml = `
+    <div class="ride-staff">
+      <div class="ride-staff-needs">Needs ${rideNeeds} operator${rideNeeds !== 1 ? 's' : ''}</div>
+      <div class="ride-staff-status ${staffStatusCls}">Park operators: ${parkActual}/${parkNeeded} — ${staffStatusLabel}</div>
+    </div>`;
+
   let ridership = '';
   if (record.lastRoundCapacity != null) {
     const pct = record.lastRoundCapacity > 0
@@ -501,7 +517,8 @@ function buildRideDetail(record) {
       <div class="ride-detail-name">${record.name}</div>
       <span class="cond-badge ${cls}">${label}</span>
       <div class="ride-utility-cost">Utility: $${(def?.utilityCost ?? 0).toLocaleString()}/wk</div>
-      <div class="ride-wear">Wear: ${(record.wear ?? 0).toLocaleString()}</div>
+      <div class="ride-wear">Wear: ${wearPct}%</div>
+      ${staffHtml}
       ${ridership}
       <div class="ride-detail-actions">${actionsHtml}</div>
     </div>`;
