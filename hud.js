@@ -12,7 +12,7 @@ const VIEW_MODES = [
   { id: 'build',    icon: '🏗️', label: 'Build'    },
   { id: 'demolish', icon: '💣', label: 'Demolish' },
   { id: 'security', icon: '🛡️', label: 'Security' },
-  { id: 'dirt',     icon: '🟫', label: 'Dirt'     },
+  { id: 'dirt',     icon: '🟫', label: 'Mess'     },
 ];
 
 // Builds pill buttons in #view-mode-bar and wires up click handlers.
@@ -59,8 +59,7 @@ function _updateViewModeLegend(modeId) {
       <span class="vml-item"><span class="vml-dot" style="background:#3b82f6"></span>Staffed post + radius</span>
       <span class="vml-item"><span class="vml-dot" style="background:#f59e0b"></span>Unstaffed post</span>`;
   } else if (modeId === 'dirt') {
-    legend.innerHTML = `
-      <span class="vml-item"><span class="vml-dot" style="background:rgba(120,60,20,0.7)"></span>Each speck = 1 mess unit</span>`;
+    legend.innerHTML = '';
   } else {
     legend.innerHTML = '';
   }
