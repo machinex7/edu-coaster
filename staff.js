@@ -250,7 +250,8 @@ const Staff = {
   },
 
   processQuits() {
-    const quitting = this.roster.filter(s => s.mood === 0);
+    // Employees on any leave (weeksOut > 0) cannot quit mid-absence.
+    const quitting = this.roster.filter(s => s.mood === 0 && s.weeksOut === 0);
     if (quitting.length === 0) return;
     this.roster = this.roster.filter(s => s.mood !== 0);
     for (const s of quitting) {
