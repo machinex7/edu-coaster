@@ -119,7 +119,7 @@ async function init() {
     ride._color = RIDE_COLORS[i % RIDE_COLORS.length];
   });
 
-  merchandiseInventory = merchandise.map(item => ({ count: 100, price: item.basePrice }));
+  merchandiseInventory = merchandise.map(item => ({ count: 500, price: item.basePrice }));
 
   unlockedSupplierIds = new Set([suppliers[0].id]);
   selectedSupplierId  = suppliers[0].id;
