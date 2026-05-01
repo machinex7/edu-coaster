@@ -51,11 +51,14 @@ const Staff = {
 
   // ── Employee generation ────────────────────────────────────────────────────
   // quality 0–100: controls the ceiling of skillModifier and yearsExperience.
-  generateEmployee(quality) {
+  // jobId optionally pins the candidate to a specific job type; random otherwise.
+  generateEmployee(quality, jobId = null) {
     const q            = Math.max(0, Math.min(100, quality)) / 100;
     const firstName    = this.FIRST_NAMES[Math.floor(Math.random() * this.FIRST_NAMES.length)];
     const lastName     = String.fromCharCode(65 + Math.floor(Math.random() * 26));
-    const job          = this.JOB_TYPES[Math.floor(Math.random() * this.JOB_TYPES.length)];
+    const job          = jobId
+      ? this.JOB_TYPES.find(j => j.id === jobId)
+      : this.JOB_TYPES[Math.floor(Math.random() * this.JOB_TYPES.length)];
     const skillModifier = 0.75 + Math.random() * 0.5 * q;
     const costOfLiving  = Math.round(job.weeklySalary * (0.80 + Math.random() * 0.40));
     const maxYears      = Math.round(5 * q);
@@ -303,19 +306,16 @@ const Staff = {
   },
 
   // ── Candidates ─────────────────────────────────────────────────────────────
-  // Generates a pool of candidates each round when postings exist. Pool size and
-  // candidate quality both scale with the number of active HR staff and their
-  // experience tier. Benefits also raise quality: 401(k) match adds a flat
-  // bonus, and each week of vacation or parental leave adds a per-week bonus.
+  // Generates one candidate per posted job type each round.
+  // Candidates whose salary or experience don't match the posting are discarded.
+  // Quality scales with active HR staff tier and benefits.
   // Fires a single notification if any new matching candidates arrived this round.
   generateCandidates() {
     if (this.postings.length === 0) return;
 
-    let count   = 6;
     let quality = 0;
     this.roster.filter(s => s.jobId === JOB.HR && s.weeksOut === 0).forEach(s => {
       const { tier } = this.getExperienceTier(s.weeksEmployed);
-      count   += tier;
       quality += tier * 5;
     });
 
@@ -324,9 +324,11 @@ const Staff = {
     quality += this.VACATION_WEEKS * 5;
     quality += this.PARENTAL_LEAVE_WEEKS * 5;
 
+    // One candidate per unique posted job type; skip types with no open posting.
+    const postedJobIds = [...new Set(this.postings.map(p => p.jobId))];
     const before = this.candidates.length;
-    for (let i = 0; i < count; i++) {
-      const emp       = this.generateEmployee(quality);
+    for (const jobId of postedJobIds) {
+      const emp       = this.generateEmployee(quality, jobId);
       const candidate = { ...emp, weeksAsCandidate: 0 };
       if (this.findMatchingPosting(candidate)) this.candidates.push(candidate);
     }
