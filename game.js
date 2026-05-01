@@ -94,38 +94,15 @@ const facilityTypeAtCell = {};
 
 // ── Dirt tracking ──────────────────────────────────────────────────────────
 
-// 1D list of {row, col} for every active path tile in the park.
-let pathTiles = [];
-
-// Per-tile mess accumulated this round. Key: "row,col", value: mess units (float).
-let pathTileMess = {};
-
-// Rebuilds pathTiles from installedFacilities and prunes stale mess entries.
-function updatePathTileList() {
-  pathTiles = [];
-  for (const f of installedFacilities) {
-    if (f.facilityId !== FACILITY_ID.PATH) continue;
-    for (let r = 0; r < f.footprint.length; r++) {
-      for (let c = 0; c < f.footprint[r].length; c++) {
-        if (f.footprint[r][c] === 1)
-          pathTiles.push({ row: f.row + r, col: f.col + c });
-      }
-    }
-  }
-  const activeKeys = new Set(pathTiles.map(t => `${t.row},${t.col}`));
-  for (const key of Object.keys(pathTileMess)) {
-    if (!activeKeys.has(key)) delete pathTileMess[key];
-  }
-}
-
-// Sets each path tile's mess to fromGuests divided equally across all tiles.
+// Sets each path facility's .mess to fromGuests divided equally across all paths.
 // Called once per round so the value reflects the current week's guest mess rate.
+// Demolition cleanup is automatic — removing the record from installedFacilities
+// removes its mess data with it.
 function distributeMessToTiles(fromGuests) {
-  if (pathTiles.length === 0) return;
-  const perTile = fromGuests / pathTiles.length;
-  for (const { row, col } of pathTiles) {
-    pathTileMess[`${row},${col}`] = perTile;
-  }
+  const paths = installedFacilities.filter(f => f.facilityId === FACILITY_ID.PATH);
+  if (paths.length === 0) return;
+  const perTile = fromGuests / paths.length;
+  for (const f of paths) f.mess = perTile;
 }
 
 // ── Selection State ────────────────────────────────────────────────────────
@@ -439,7 +416,6 @@ function _commitPlace(item, category, startRow, startCol, status) {
           facilityTypeAtCell[`${startRow + r},${startCol + c}`] = item.id;
       }
     }
-    if (item.id === FACILITY_ID.PATH) updatePathTileList();
   }
 
   paintCells(item.footprint, startRow, startCol, color, instanceId, item.name, status);
@@ -566,7 +542,6 @@ function completeDemolition(record) {
   } else {
     const idx = installedFacilities.indexOf(record);
     if (idx !== -1) installedFacilities.splice(idx, 1);
-    if (record.facilityId === FACILITY_ID.PATH) updatePathTileList();
   }
 
   for (let r = 0; r < record.footprint.length; r++) {

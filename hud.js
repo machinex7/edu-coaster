@@ -140,7 +140,7 @@ function refreshSecurityOverlay() {
 // Mess units per tile at which the circle reaches full cell size.
 const DIRT_MAX_MESS = 10;
 
-// Draws brown circles on each path tile scaled to its current mess value.
+// Draws brown circles on each path facility record scaled to its .mess value.
 function drawDirtOverlay() {
   const svg = document.getElementById('dirt-overlay');
   svg.setAttribute('width',  OVERLAY_W);
@@ -150,11 +150,12 @@ function drawDirtOverlay() {
   const NS        = 'http://www.w3.org/2000/svg';
   const maxRadius = CELL_SIZE / 2 - 2;
 
-  for (const { row, col } of pathTiles) {
-    const mess = pathTileMess[`${row},${col}`] ?? 0;
+  for (const f of installedFacilities) {
+    if (f.facilityId !== FACILITY_ID.PATH) continue;
+    const mess = f.mess ?? 0;
     if (mess <= 0) continue;
     const t = Math.min(1, mess / DIRT_MAX_MESS);
-    const { x, y } = _cellCentre(row, col);
+    const { x, y } = _cellCentre(f.row, f.col);
     const circle = document.createElementNS(NS, 'circle');
     circle.setAttribute('cx',   x);
     circle.setAttribute('cy',   y);
