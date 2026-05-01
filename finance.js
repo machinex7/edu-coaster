@@ -322,9 +322,9 @@ const Finance = {
   // sum of 1/(dist+1)² over the relevant active shop cells within
   // MAX_SHOP_MESS_RADIUS tiles (Euclidean). Tiles outside that radius from
   // every shop of a given type receive none of that type's mess.
-  // Extreme-ride mess is handled per-ride: IDW from that ride's cells with the
-  // radius capped at nearestBathroom().dist so mess spreads further when the
-  // bathroom is farther away.
+  // Extreme-ride mess is spread along the actual path to the nearest bathroom:
+  // only tiles on that route receive mess, weighted by IDW from the ride so
+  // the mess diminishes toward the bathroom end of the route.
   distributeMessToTiles(fromGuests, fromShoppers = 0, fromFood = 0) {
     const paths = installedFacilities.filter(f => f.facilityId === FACILITY_ID.PATH);
     if (paths.length === 0) return;
@@ -361,18 +361,26 @@ const Finance = {
     const totalShop   = shopWeights.reduce((a, b) => a + b, 0);
     const totalFood   = foodWeights.reduce((a, b) => a + b, 0);
 
-    // Per-ride extreme mess: IDW from ride cells, radius = path-distance to nearest bathroom.
-    // Amount mirrors calcMessGenerated: riders × MESS_EXTREME_RIDER_RATE × radius.
-    const extremeContrib = new Array(paths.length).fill(0);
+    for (let i = 0; i < paths.length; i++) {
+      const shopperShare = totalShop > 0 ? fromShoppers * shopWeights[i] / totalShop : 0;
+      const foodShare    = totalFood > 0 ? fromFood    * foodWeights[i]  / totalFood  : 0;
+      paths[i].mess = guestPerTile + shopperShare + foodShare;
+    }
+
+    // Extreme-ride mess: per-ride pass along the actual bathroom route.
+    // Only path tiles on the route receive mess; IDW from the ride's footprint
+    // cells ensures tiles near the ride get more mess than tiles near the bathroom.
     const activeExtremeRides = installedRides.filter(r =>
       r.status === STATUS.ACTIVE &&
       isRideConnected(r) &&
       rides.find(d => d.id === r.rideId)?.intensity === 'extreme'
     );
     for (const ride of activeExtremeRides) {
-      const { dist: radius } = nearestBathroom(ride);
-      const amount = (ride.lastRoundRiders ?? 0) * Population.MESS_EXTREME_RIDER_RATE * radius;
-      if (amount <= 0) continue;
+      const { dist, path: bathroomPath } = nearestBathroom(ride);
+      const amount = (ride.lastRoundRiders ?? 0) * Population.MESS_EXTREME_RIDER_RATE * dist;
+      if (amount <= 0 || bathroomPath.length === 0) continue;
+
+      const routeKeys = new Set(bathroomPath.map(t => `${t.row},${t.col}`));
       const rideCells = [];
       for (let r = 0; r < ride.footprint.length; r++) {
         for (let c = 0; c < ride.footprint[r].length; c++) {
@@ -380,18 +388,24 @@ const Finance = {
             rideCells.push({ row: ride.row + r, col: ride.col + c });
         }
       }
-      const rideWeights = idwWeights(rideCells, radius);
-      const totalRide   = rideWeights.reduce((a, b) => a + b, 0);
-      if (totalRide === 0) continue;
-      for (let i = 0; i < paths.length; i++) {
-        extremeContrib[i] += amount * rideWeights[i] / totalRide;
-      }
-    }
 
-    for (let i = 0; i < paths.length; i++) {
-      const shopperShare = totalShop > 0 ? fromShoppers * shopWeights[i] / totalShop : 0;
-      const foodShare    = totalFood > 0 ? fromFood    * foodWeights[i]  / totalFood  : 0;
-      paths[i].mess = guestPerTile + shopperShare + foodShare + extremeContrib[i];
+      // Weight only tiles that lie on the bathroom route.
+      let totalWeight = 0;
+      const routeWeights = paths.map(p => {
+        if (!routeKeys.has(`${p.row},${p.col}`)) return 0;
+        let w = 0;
+        for (const rc of rideCells) {
+          const d = Math.sqrt((p.row - rc.row) ** 2 + (p.col - rc.col) ** 2);
+          w += 1 / (d + 1) ** 2;
+        }
+        totalWeight += w;
+        return w;
+      });
+      if (totalWeight === 0) continue;
+
+      for (let i = 0; i < paths.length; i++) {
+        paths[i].mess += amount * routeWeights[i] / totalWeight;
+      }
     }
   },
 
