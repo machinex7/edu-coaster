@@ -20,7 +20,7 @@ const Population = {
 
   // Mess generation rates (mess units per week).
   MESS_GUEST_RATE:         0.01,  // 1 per 100 guests
-  MESS_SHOPPER_RATE:       0.20,  // 1 per 5 shoppers (guests × BUYER_RATE)
+  MESS_ITEM_RATE:          0.05,  // 1 per 20 merchandise items sold
   MESS_EXTREME_RIDER_RATE: 0.05,  // 1 per 20 riders on each extreme-intensity ride
   MESS_FOOD_RATE:          0.10,  // 1 per 10 meals sold
 

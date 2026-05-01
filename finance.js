@@ -297,9 +297,9 @@ const Finance = {
     return Math.pow(1.25, messPerPath);
   },
 
-  calcMessGenerated(weeklyAttendance, mealsSold = 0) {
+  calcMessGenerated(weeklyAttendance, mealsSold = 0, itemsSold = 0) {
     const fromGuests   = weeklyAttendance * Population.MESS_GUEST_RATE;
-    const fromShoppers = weeklyAttendance * Population.BUYER_RATE * Population.MESS_SHOPPER_RATE;
+    const fromShoppers = itemsSold * Population.MESS_ITEM_RATE;
     const fromFood     = mealsSold * Population.MESS_FOOD_RATE;
 
     const fromExtremeRides = installedRides
@@ -872,7 +872,7 @@ const Finance = {
     Staff.advancePostings();          // increment weeksActive for all postings
     Staff.generateCandidates();       // new applicants per round when postings exist
     Staff.advanceCandidates();        // withdrawal check, then increment weeksAsCandidate
-    this.weeklyNetMess = Math.max(0, this.calcMessGenerated(weeklyAttendance, food.mealsSold) - Staff.calcJanitorCapacity());
+    this.weeklyNetMess = Math.max(0, this.calcMessGenerated(weeklyAttendance, food.mealsSold, shopItemsSold) - Staff.calcJanitorCapacity());
     this.distributeMessToTiles(weeklyAttendance * Population.MESS_GUEST_RATE);
     this.mealSatisfaction = food.mealsWanted > 0
       ? Math.min(1, 0.5 + 0.5 * food.mealsServed / food.mealsWanted)
