@@ -119,7 +119,7 @@ async function init() {
     ride._color = RIDE_COLORS[i % RIDE_COLORS.length];
   });
 
-  merchandiseInventory = merchandise.map(item => ({ count: 100, price: item.basePrice }));
+  merchandiseInventory = merchandise.map(item => ({ count: 500, price: item.basePrice }));
 
   unlockedSupplierIds = new Set([suppliers[0].id]);
   selectedSupplierId  = suppliers[0].id;
@@ -380,6 +380,7 @@ function _commitPlace(item, category, startRow, startCol, status) {
     row: startRow, col: startCol,
     footprint: item.footprint,
     color, status,
+    buildCost: item.buildCost ?? 0,
   };
 
   if (category === CATEGORY.RIDE) {
@@ -475,6 +476,13 @@ function startDemolition(row, col) {
   }
 
   if (record.status === STATUS.DEMOLISHING) return;
+
+  // In setup stage demolition is instant and refunds the full build cost.
+  if (gameStage === STAGE.SETUP) {
+    money += record.buildCost ?? 0;
+    completeDemolition(record);
+    return;
+  }
 
   // Paths are removed immediately; everything else takes at least 1 round.
   const isPath = record.facilityId === FACILITY_ID.PATH;

@@ -188,6 +188,12 @@
 .cond-repair       { background: #4c1d95; color: #c4b5fd; }
 .cond-demolishing  { background: #450a0a; color: #fca5a5; }
 
+.ride-list-staff-summary {
+  padding: 8px 14px;
+  border-bottom: 1px solid #374151;
+  font-size: 0.78rem;
+}
+
 .ride-list { display: flex; flex-direction: column; }
 
 .ride-list-row {

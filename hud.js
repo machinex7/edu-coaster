@@ -430,8 +430,22 @@ function buildRidesPanel() {
 
 function buildRideList() {
   const container = document.getElementById('rides-overview');
+
+  // Park-wide operator staffing summary shown at the top of the list.
+  const parkNeeded    = Staff.rideOperatorsNeeded();
+  const parkActual    = Staff.roster.filter(s => s.jobId === JOB.RIDE_OPERATOR && s.weeksOut === 0).length;
+  const understaffed  = parkActual < parkNeeded;
+  const staffStatusCls   = understaffed ? 'ride-staff-under' : 'ride-staff-ok';
+  const staffStatusLabel = understaffed ? 'Understaffed' : 'Fully staffed';
+  const summaryHtml = `
+    <div class="ride-list-staff-summary">
+      <span class="ride-staff-status ${staffStatusCls}">
+        Ride Operators: ${parkActual}/${parkNeeded} — ${staffStatusLabel}
+      </span>
+    </div>`;
+
   if (installedRides.length === 0) {
-    container.innerHTML = '<p class="empty-note">No rides placed yet.</p>';
+    container.innerHTML = summaryHtml + '<p class="empty-note">No rides placed yet.</p>';
     return;
   }
   const rows = installedRides.map(record => {
@@ -441,7 +455,7 @@ function buildRideList() {
       <span class="cond-badge ${cls}">${label}</span>
     </div>`;
   }).join('');
-  container.innerHTML = `<div class="ride-list">${rows}</div>`;
+  container.innerHTML = summaryHtml + `<div class="ride-list">${rows}</div>`;
   container.querySelectorAll('.ride-list-row').forEach(row =>
     row.addEventListener('click', () => {
       _selectedRideId = row.dataset.id;
@@ -458,17 +472,11 @@ function buildRideDetail(record) {
   // Wear as a percentage of MAX_EFFECTIVE_WEAR.
   const wearPct = Math.min(100, Math.round((record.wear ?? 0) / MAX_EFFECTIVE_WEAR * 100));
 
-  // Per-ride operator requirement and park-wide staffing status.
-  const rideNeeds   = Staff.operatorsNeededForRide(record);
-  const parkNeeded  = Staff.rideOperatorsNeeded();
-  const parkActual  = Staff.roster.filter(s => s.jobId === JOB.RIDE_OPERATOR && s.weeksOut === 0).length;
-  const understaffed = parkActual < parkNeeded;
-  const staffStatusLabel = understaffed ? 'Understaffed' : 'Fully staffed';
-  const staffStatusCls   = understaffed ? 'ride-staff-under' : 'ride-staff-ok';
+  // Per-ride operator requirement.
+  const rideNeeds = Staff.operatorsNeededForRide(record);
   const staffHtml = `
     <div class="ride-staff">
       <div class="ride-staff-needs">Needs ${rideNeeds} operator${rideNeeds !== 1 ? 's' : ''}</div>
-      <div class="ride-staff-status ${staffStatusCls}">Park operators: ${parkActual}/${parkNeeded} — ${staffStatusLabel}</div>
     </div>`;
 
   let ridership = '';
@@ -636,9 +644,9 @@ function _buildInvStockView() {
         orderBtnsHtml = `<span class="inv-order-pending">Order pending: ${pendingOrder.count} units (${pendingOrder.weeksRemaining}w)</span>`;
       } else {
         const hasBulk = Research.completed.has(RESEARCH_ID.BULK_ORDERING);
-        orderBtnsHtml = [10, 50, 100].map(qty => {
-          if (qty === 100 && !hasBulk) {
-            return `<button class="inv-order-btn inv-order-locked" disabled title="Requires Bulk Ordering research">+100 🔒</button>`;
+        orderBtnsHtml = [100, 500, 1000].map(qty => {
+          if (qty === 1000 && !hasBulk) {
+            return `<button class="inv-order-btn inv-order-locked" disabled title="Requires Bulk Ordering research">+1000 🔒</button>`;
           }
           const cost = Math.round(qty * inv.price * Population.cumulativeInflation + (supplier?.surcharge ?? 0));
           const canAfford = money >= cost;

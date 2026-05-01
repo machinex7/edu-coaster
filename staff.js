@@ -14,16 +14,18 @@ const Staff = {
     'Kendall', 'Emerson', 'Rowan', 'Charlie', 'Sage', 'Harley', 'River',
   ],
 
+  // weeklySalary is the base used to generate each employee's costOfLiving (±20%).
+  // Service roles start at or just above the federal minimum wage ($7.25/hr = $290/wk).
   JOB_TYPES: [
-    { id: JOB.RIDE_OPERATOR,    label: 'Ride Operator',    plural: 'Ride Operators',    weeklySalary: 520  },
-    { id: JOB.SECURITY,         label: 'Security',         plural: 'Security',          weeklySalary: 640  },
-    { id: JOB.JANITOR,          label: 'Janitor',          plural: 'Janitors',          weeklySalary: 480  },
-    { id: JOB.ENGINEER,         label: 'Engineer',         plural: 'Engineers',         weeklySalary: 1200 },
-    { id: JOB.BOOTH_ATTENDANT,       label: 'Booth Attendant',       plural: 'Booth Attendants',       weeklySalary: 480                           },
-    { id: JOB.MERCHANDISE_ATTENDANT, label: 'Merchandise Attendant', plural: 'Merchandise Attendants', weeklySalary: Population.MINIMUM_WAGE_WEEKLY },
-    { id: JOB.CONCESSIONS_WORKER,    label: 'Concessions Worker',    plural: 'Concessions Workers',    weeklySalary: Population.MINIMUM_WAGE_WEEKLY },
-    { id: JOB.BUSINESS_ANALYST,      label: 'Business Analyst',      plural: 'Business Analysts',      weeklySalary: 1400                          },
-    { id: JOB.HR,               label: 'HR',               plural: 'HR',                weeklySalary: 1600 },
+    { id: JOB.RIDE_OPERATOR,    label: 'Ride Operator',    plural: 'Ride Operators',    weeklySalary: Population.MINIMUM_WAGE_WEEKLY      }, // ~$7.25/hr
+    { id: JOB.SECURITY,         label: 'Security',         plural: 'Security',          weeklySalary: 460                                 }, // ~$11.50/hr
+    { id: JOB.JANITOR,          label: 'Janitor',          plural: 'Janitors',          weeklySalary: 380                                 }, // ~$9.50/hr
+    { id: JOB.ENGINEER,         label: 'Engineer',         plural: 'Engineers',         weeklySalary: 880                                 }, // ~$22/hr
+    { id: JOB.BOOTH_ATTENDANT,       label: 'Booth Attendant',       plural: 'Booth Attendants',       weeklySalary: Population.MINIMUM_WAGE_WEEKLY      }, // ~$7.25/hr
+    { id: JOB.MERCHANDISE_ATTENDANT, label: 'Merchandise Attendant', plural: 'Merchandise Attendants', weeklySalary: 320                                 }, // ~$8/hr, just above minimum
+    { id: JOB.CONCESSIONS_WORKER,    label: 'Concessions Worker',    plural: 'Concessions Workers',    weeklySalary: 320                                 }, // ~$8/hr, just above minimum
+    { id: JOB.BUSINESS_ANALYST,      label: 'Business Analyst',      plural: 'Business Analysts',      weeklySalary: 1000                                }, // ~$25/hr
+    { id: JOB.HR,               label: 'HR',               plural: 'HR',                weeklySalary: 1120                                }, // ~$28/hr
   ],
 
   POSTING_WEEKLY_COST: 75,
