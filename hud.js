@@ -60,8 +60,7 @@ function _updateViewModeLegend(modeId) {
       <span class="vml-item"><span class="vml-dot" style="background:#f59e0b"></span>Unstaffed post</span>`;
   } else if (modeId === 'dirt') {
     legend.innerHTML = `
-      <span class="vml-item"><span class="vml-dot" style="background:rgba(120,60,20,0.25)"></span>Low mess</span>
-      <span class="vml-item"><span class="vml-dot" style="background:rgba(120,60,20,0.85)"></span>High mess</span>`;
+      <span class="vml-item"><span class="vml-dot" style="background:rgba(120,60,20,0.7)"></span>Each speck = 1 mess unit</span>`;
   } else {
     legend.innerHTML = '';
   }
@@ -137,31 +136,47 @@ function refreshSecurityOverlay() {
 
 // ── Dirt overlay ────────────────────────────────────────────────────────────
 
-// Mess units per tile at which the circle reaches full cell size.
-const DIRT_MAX_MESS = 10;
+// Maximum number of speck circles drawn per path tile.
+const DIRT_MAX_SPECKS = 8;
 
-// Draws brown circles on each path facility record scaled to its .mess value.
+// Deterministic pseudo-random in [0,1) from an integer seed.
+// Using sine-hash so speck positions stay consistent across redraws.
+const _dirtRand = seed => {
+  const x = Math.sin(seed * 127.1 + 311.7) * 43758.5453;
+  return x - Math.floor(x);
+};
+
+// Draws brown speck circles on each path tile. Count = floor(f.mess), capped
+// at DIRT_MAX_SPECKS. Positions are deterministic per tile so they don't shift
+// on each redraw.
 function drawDirtOverlay() {
   const svg = document.getElementById('dirt-overlay');
   svg.setAttribute('width',  OVERLAY_W);
   svg.setAttribute('height', OVERLAY_H);
   svg.innerHTML = '';
 
-  const NS        = 'http://www.w3.org/2000/svg';
-  const maxRadius = CELL_SIZE / 2 - 2;
+  const NS     = 'http://www.w3.org/2000/svg';
+  const SPECK_R = 3;
+  const SPREAD  = CELL_SIZE / 2 - SPECK_R - 2;
 
   for (const f of installedFacilities) {
     if (f.facilityId !== FACILITY_ID.PATH) continue;
-    const mess = f.mess ?? 0;
-    if (mess <= 0) continue;
-    const t = Math.min(1, mess / DIRT_MAX_MESS);
+    const count = Math.min(Math.floor(f.mess ?? 0), DIRT_MAX_SPECKS);
+    if (count <= 0) continue;
+
     const { x, y } = _cellCentre(f.row, f.col);
-    const circle = document.createElementNS(NS, 'circle');
-    circle.setAttribute('cx',   x);
-    circle.setAttribute('cy',   y);
-    circle.setAttribute('r',    t * maxRadius);
-    circle.setAttribute('fill', `rgba(120,60,20,${0.25 + t * 0.6})`);
-    svg.appendChild(circle);
+    const seed = f.row * 997 + f.col * 31;
+
+    for (let i = 0; i < count; i++) {
+      const ox = (_dirtRand(seed + i * 2)     * 2 - 1) * SPREAD;
+      const oy = (_dirtRand(seed + i * 2 + 1) * 2 - 1) * SPREAD;
+      const circle = document.createElementNS(NS, 'circle');
+      circle.setAttribute('cx',   x + ox);
+      circle.setAttribute('cy',   y + oy);
+      circle.setAttribute('r',    SPECK_R);
+      circle.setAttribute('fill', 'rgba(120,60,20,0.7)');
+      svg.appendChild(circle);
+    }
   }
 }
 
