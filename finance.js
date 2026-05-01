@@ -238,7 +238,7 @@ const Finance = {
   // Run at the very start of each round, before excitement recalc and wear.
   // Each engineer either repairs one broken ride (most-worn first) or, if
   // none are broken, reduces wear on the 2 most-worn running rides by
-  // 100 × tier per ride.
+  // 500 × tier per ride. Completing a repair cuts the ride's wear to 15%.
   processEngineers() {
     Staff.roster
       .filter(s => s.jobId === JOB.ENGINEER && s.weeksOut === 0)
@@ -262,8 +262,10 @@ const Finance = {
           const target = broken[0];
           target.weeksToRepair--;
           if (target.weeksToRepair <= 0) {
-            target.status = STATUS.ACTIVE;
+            target.status       = STATUS.ACTIVE;
             target.weeksToRepair = 0;
+            // Major overhaul on repair — severely cut accumulated wear.
+            target.wear = Math.round(target.wear * 0.15);
           }
         } else {
           const { tier } = Staff.getExperienceTier(eng.weeksEmployed);
@@ -271,7 +273,7 @@ const Finance = {
             .filter(r => r.status === STATUS.ACTIVE && isRideConnected(r))
             .sort((a, b) => b.wear - a.wear)
             .slice(0, 2)
-            .forEach(r => { r.wear = Math.max(0, r.wear - 100 * tier); });
+            .forEach(r => { r.wear = Math.max(0, r.wear - 500 * tier); });
         }
       });
   },

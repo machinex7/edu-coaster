@@ -245,10 +245,6 @@ const Staff = {
       s.events.forEach(e => { e.moodModifier -= Math.sign(e.moodModifier) * 2; });
       s.events = s.events.filter(e => Math.abs(e.moodModifier) >= 2);
     });
-    const jobLabel = id => this.JOB_TYPES.find(j => j.id === id)?.label ?? id;
-    console.log('[mood] ' + this.roster
-      .map(s => `${s.name} (${jobLabel(s.jobId)}): ${s.mood} [events: ${s.events.map(e => e.moodModifier).join(', ') || 'none'}]`)
-      .join(' | '));
   },
 
   processQuits() {
