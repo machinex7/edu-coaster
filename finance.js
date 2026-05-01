@@ -157,10 +157,21 @@ const Finance = {
   // favorable population (chance × favor × count) to the neutral baseline.
   // Security and mess penalties are applied to excitement at end-of-round instead.
   calcDailyDemand() {
-    const exhaustionFactor = Math.max(0, 1 - this.priceExhaustion / 100);
-    const eventFactor      = Population.populationEvents.reduce((f, e) => f * (1 + e.modifier / 100), 1);
-    const weatherFactor    = 1 - (WEATHER_DEMAND_REDUCTION[nextWeekForecast] ?? 0);
-    return this.parkExcitement * exhaustionFactor * eventFactor * Population.calcDemandMultiplier() * weatherFactor;
+    const exhaustionFactor  = Math.max(0, 1 - this.priceExhaustion / 100);
+    const eventFactor       = Population.populationEvents.reduce((f, e) => f * (1 + e.modifier / 100), 1);
+    const weatherFactor     = 1 - (WEATHER_DEMAND_REDUCTION[nextWeekForecast] ?? 0);
+    const demandMultiplier  = Population.calcDemandMultiplier();
+    const result            = this.parkExcitement * exhaustionFactor * eventFactor * demandMultiplier * weatherFactor;
+    console.log(
+      '[demand]',
+      'excitement:', this.parkExcitement.toFixed(2),
+      '| exhaustion:', exhaustionFactor.toFixed(4),
+      '| event:', eventFactor.toFixed(4),
+      '| demandMult:', demandMultiplier.toFixed(4),
+      '| weather:', weatherFactor.toFixed(4),
+      '| dailyDemand:', result.toFixed(2)
+    );
+    return result;
   },
 
   // Recomputes parkExcitement at end of round for use next round.
