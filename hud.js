@@ -234,7 +234,6 @@ function advanceRound() {
   const loanResult = Finance.processPendingLoan();
   Survey.processPendingSend();
   History.record(report);
-  distributeMessToTiles(report.weeklyAttendance * Population.MESS_GUEST_RATE);
   refreshDirtOverlay();
   Research.tickResearch();
   _tickDemographicConfidence(report.weeklyAttendance);

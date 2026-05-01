@@ -92,19 +92,6 @@ let placedRideIds       = new Set(); // rideIds ever placed (persists through de
 // Maps "row,col" → facilityId for fast adjacency lookups.
 const facilityTypeAtCell = {};
 
-// ── Dirt tracking ──────────────────────────────────────────────────────────
-
-// Sets each path facility's .mess to fromGuests divided equally across all paths.
-// Called once per round so the value reflects the current week's guest mess rate.
-// Demolition cleanup is automatic — removing the record from installedFacilities
-// removes its mess data with it.
-function distributeMessToTiles(fromGuests) {
-  const paths = installedFacilities.filter(f => f.facilityId === FACILITY_ID.PATH);
-  if (paths.length === 0) return;
-  const perTile = fromGuests / paths.length;
-  for (const f of paths) f.mess = perTile;
-}
-
 // ── Selection State ────────────────────────────────────────────────────────
 let selected         = null;  // { item, category: 'ride'|'facility', cardEl }
 let currentPlacement = null;  // { startRow, startCol, valid }

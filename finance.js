@@ -313,6 +313,14 @@ const Finance = {
     return Math.floor(fromGuests + fromShoppers + fromFood + fromExtremeRides);
   },
 
+  // Sets each path facility's .mess to fromGuests divided equally across all paths.
+  distributeMessToTiles(fromGuests) {
+    const paths = installedFacilities.filter(f => f.facilityId === FACILITY_ID.PATH);
+    if (paths.length === 0) return;
+    const perTile = fromGuests / paths.length;
+    for (const f of paths) f.mess = perTile;
+  },
+
   // ── Cost sources ─────────────────────────────────────────────────────────────
   // Deducts posting fees first, then pays each employee's salary + 401(k) match
   // if money allows (mood penalty event for any skipped paycheck), then attempts
@@ -865,6 +873,7 @@ const Finance = {
     Staff.generateCandidates();       // new applicants per round when postings exist
     Staff.advanceCandidates();        // withdrawal check, then increment weeksAsCandidate
     this.weeklyNetMess = Math.max(0, this.calcMessGenerated(weeklyAttendance, food.mealsSold) - Staff.calcJanitorCapacity());
+    this.distributeMessToTiles(weeklyAttendance * Population.MESS_GUEST_RATE);
     this.mealSatisfaction = food.mealsWanted > 0
       ? Math.min(1, 0.5 + 0.5 * food.mealsServed / food.mealsWanted)
       : 0.5;
