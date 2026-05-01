@@ -367,9 +367,10 @@ const Finance = {
       paths[i].mess = guestPerTile + shopperShare + foodShare;
     }
 
-    // Extreme-ride mess: per-ride pass along the actual bathroom route.
-    // Only path tiles on the route receive mess; IDW from the ride's footprint
-    // cells ensures tiles near the ride get more mess than tiles near the bathroom.
+    // Extreme-ride mess: spread along the actual bathroom route using a
+    // triangular weighting. Tile at path index i (0 = nearest ride exit)
+    // gets weight (n - i), so the total is n*(n+1)/2 and mess diminishes
+    // linearly from the ride toward the bathroom.
     const activeExtremeRides = installedRides.filter(r =>
       r.status === STATUS.ACTIVE &&
       isRideConnected(r) &&
@@ -380,31 +381,14 @@ const Finance = {
       const amount = (ride.lastRoundRiders ?? 0) * Population.MESS_EXTREME_RIDER_RATE * dist;
       if (amount <= 0 || bathroomPath.length === 0) continue;
 
-      const routeKeys = new Set(bathroomPath.map(t => `${t.row},${t.col}`));
-      const rideCells = [];
-      for (let r = 0; r < ride.footprint.length; r++) {
-        for (let c = 0; c < ride.footprint[r].length; c++) {
-          if (ride.footprint[r][c] === 1)
-            rideCells.push({ row: ride.row + r, col: ride.col + c });
-        }
-      }
+      const n           = bathroomPath.length;
+      const totalWeight = n * (n + 1) / 2;
+      const routeIndex  = new Map(bathroomPath.map((t, i) => [`${t.row},${t.col}`, i]));
 
-      // Weight only tiles that lie on the bathroom route.
-      let totalWeight = 0;
-      const routeWeights = paths.map(p => {
-        if (!routeKeys.has(`${p.row},${p.col}`)) return 0;
-        let w = 0;
-        for (const rc of rideCells) {
-          const d = Math.sqrt((p.row - rc.row) ** 2 + (p.col - rc.col) ** 2);
-          w += 1 / (d + 1) ** 2;
-        }
-        totalWeight += w;
-        return w;
-      });
-      if (totalWeight === 0) continue;
-
-      for (let i = 0; i < paths.length; i++) {
-        paths[i].mess += amount * routeWeights[i] / totalWeight;
+      for (const p of paths) {
+        const i = routeIndex.get(`${p.row},${p.col}`);
+        if (i === undefined) continue;
+        p.mess += amount * (n - i) / totalWeight;
       }
     }
   },
