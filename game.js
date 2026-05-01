@@ -406,7 +406,6 @@ function _commitPlace(item, category, startRow, startCol, status) {
   }
 
   paintCells(item.footprint, startRow, startCol, color, instanceId, item.name, status);
-  console.log(`[${status}] "${item.name}" @ (${startRow}, ${startCol})`);
   return record;
 }
 
