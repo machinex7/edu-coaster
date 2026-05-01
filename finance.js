@@ -145,13 +145,11 @@ const Finance = {
       record.lastRoundRiders    = Math.round(rph * staffRatio * 7);
     });
 
-    const score = dailyAttendance > 0 ? Math.min(1, totalDailyCapacity * staffRatio / dailyAttendance) : 1;
-    this.rideOpinion = (this.rideOpinion + score) / 2;
+    this.rideOpinion = dailyAttendance > 0 ? Math.min(1, totalDailyCapacity * staffRatio / dailyAttendance) : 1;
     console.log(
       '[rides]',
       'staffRatio:', staffRatio.toFixed(4),
       '| operators:', actual + '/' + needed,
-      '| score:', score.toFixed(4),
       '| rideOpinion:', this.rideOpinion.toFixed(4)
     );
   },
