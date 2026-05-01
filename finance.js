@@ -322,6 +322,9 @@ const Finance = {
   // sum of 1/(dist+1)² over the relevant active shop cells within
   // MAX_SHOP_MESS_RADIUS tiles (Euclidean). Tiles outside that radius from
   // every shop of a given type receive none of that type's mess.
+  // Extreme-ride mess is handled per-ride: IDW from that ride's cells with the
+  // radius capped at nearestBathroomDist so mess spreads further when the
+  // bathroom is farther away.
   distributeMessToTiles(fromGuests, fromShoppers = 0, fromFood = 0) {
     const paths = installedFacilities.filter(f => f.facilityId === FACILITY_ID.PATH);
     if (paths.length === 0) return;
@@ -343,25 +346,52 @@ const Finance = {
       }
     }
 
-    // Returns an IDW weight array for the given set of source cells.
-    const idwWeights = sourceCells => paths.map(p => {
+    // Returns an IDW weight array for the given source cells and radius.
+    const idwWeights = (sourceCells, radius) => paths.map(p => {
       let w = 0;
       for (const sc of sourceCells) {
         const dist = Math.sqrt((p.row - sc.row) ** 2 + (p.col - sc.col) ** 2);
-        if (dist <= MAX_SHOP_MESS_RADIUS) w += 1 / (dist + 1) ** 2;
+        if (dist <= radius) w += 1 / (dist + 1) ** 2;
       }
       return w;
     });
 
-    const shopWeights = idwWeights(merchCells);
-    const foodWeights = idwWeights(foodCells);
+    const shopWeights = idwWeights(merchCells, MAX_SHOP_MESS_RADIUS);
+    const foodWeights = idwWeights(foodCells,  MAX_SHOP_MESS_RADIUS);
     const totalShop   = shopWeights.reduce((a, b) => a + b, 0);
     const totalFood   = foodWeights.reduce((a, b) => a + b, 0);
+
+    // Per-ride extreme mess: IDW from ride cells, radius = path-distance to nearest bathroom.
+    // Amount mirrors calcMessGenerated: riders × MESS_EXTREME_RIDER_RATE × radius.
+    const extremeContrib = new Array(paths.length).fill(0);
+    const activeExtremeRides = installedRides.filter(r =>
+      r.status === STATUS.ACTIVE &&
+      isRideConnected(r) &&
+      rides.find(d => d.id === r.rideId)?.intensity === 'extreme'
+    );
+    for (const ride of activeExtremeRides) {
+      const radius = nearestBathroomDist(ride);
+      const amount = (ride.lastRoundRiders ?? 0) * Population.MESS_EXTREME_RIDER_RATE * radius;
+      if (amount <= 0) continue;
+      const rideCells = [];
+      for (let r = 0; r < ride.footprint.length; r++) {
+        for (let c = 0; c < ride.footprint[r].length; c++) {
+          if (ride.footprint[r][c] === 1)
+            rideCells.push({ row: ride.row + r, col: ride.col + c });
+        }
+      }
+      const rideWeights = idwWeights(rideCells, radius);
+      const totalRide   = rideWeights.reduce((a, b) => a + b, 0);
+      if (totalRide === 0) continue;
+      for (let i = 0; i < paths.length; i++) {
+        extremeContrib[i] += amount * rideWeights[i] / totalRide;
+      }
+    }
 
     for (let i = 0; i < paths.length; i++) {
       const shopperShare = totalShop > 0 ? fromShoppers * shopWeights[i] / totalShop : 0;
       const foodShare    = totalFood > 0 ? fromFood    * foodWeights[i]  / totalFood  : 0;
-      paths[i].mess = guestPerTile + shopperShare + foodShare;
+      paths[i].mess = guestPerTile + shopperShare + foodShare + extremeContrib[i];
     }
   },
 
