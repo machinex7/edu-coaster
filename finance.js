@@ -309,7 +309,7 @@ const Finance = {
       .filter(r => r.status === STATUS.ACTIVE && isRideConnected(r)
                 && rides.find(d => d.id === r.rideId)?.intensity === 'extreme')
       .reduce((sum, r) => {
-        const dist = nearestBathroomDist(r);
+        const { dist } = nearestBathroom(r);
         return sum + (r.lastRoundRiders ?? 0) * Population.MESS_EXTREME_RIDER_RATE * dist;
       }, 0);
 
@@ -323,7 +323,7 @@ const Finance = {
   // MAX_SHOP_MESS_RADIUS tiles (Euclidean). Tiles outside that radius from
   // every shop of a given type receive none of that type's mess.
   // Extreme-ride mess is handled per-ride: IDW from that ride's cells with the
-  // radius capped at nearestBathroomDist so mess spreads further when the
+  // radius capped at nearestBathroom().dist so mess spreads further when the
   // bathroom is farther away.
   distributeMessToTiles(fromGuests, fromShoppers = 0, fromFood = 0) {
     const paths = installedFacilities.filter(f => f.facilityId === FACILITY_ID.PATH);
@@ -370,7 +370,7 @@ const Finance = {
       rides.find(d => d.id === r.rideId)?.intensity === 'extreme'
     );
     for (const ride of activeExtremeRides) {
-      const radius = nearestBathroomDist(ride);
+      const { dist: radius } = nearestBathroom(ride);
       const amount = (ride.lastRoundRiders ?? 0) * Population.MESS_EXTREME_RIDER_RATE * radius;
       if (amount <= 0) continue;
       const rideCells = [];

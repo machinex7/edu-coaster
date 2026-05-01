@@ -98,10 +98,10 @@ function shortestPathToTile(rideRecord, destRow, destCol) {
   return null; // destination unreachable
 }
 
-// Returns the path-distance from rideRecord to the nearest bathroom tile.
-// Checks every cell of every installed bathroom and returns the minimum.
-// Falls back to GRID_COLS if no bathroom exists or none is reachable.
-function nearestBathroomDist(rideRecord) {
+// Returns { dist, path } for the walk from rideRecord to the nearest bathroom tile.
+// Checks every cell of every installed bathroom and returns the shortest result.
+// Falls back to { dist: GRID_COLS, path: [] } if no bathroom exists or none is reachable.
+function nearestBathroom(rideRecord) {
   let best = null;
   for (const fac of installedFacilities) {
     if (fac.facilityId !== FACILITY_ID.BATHROOM) continue;
@@ -109,9 +109,9 @@ function nearestBathroomDist(rideRecord) {
       for (let c = 0; c < fac.footprint[r].length; c++) {
         if (fac.footprint[r][c] !== 1) continue;
         const result = shortestPathToTile(rideRecord, fac.row + r, fac.col + c);
-        if (result !== null && (best === null || result.dist < best)) best = result.dist;
+        if (result !== null && (best === null || result.dist < best.dist)) best = result;
       }
     }
   }
-  return best ?? GRID_COLS;
+  return best ?? { dist: GRID_COLS, path: [] };
 }
