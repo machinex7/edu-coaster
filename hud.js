@@ -59,7 +59,9 @@ function _updateViewModeLegend(modeId) {
       <span class="vml-item"><span class="vml-dot" style="background:#3b82f6"></span>Staffed post + radius</span>
       <span class="vml-item"><span class="vml-dot" style="background:#f59e0b"></span>Unstaffed post</span>`;
   } else if (modeId === 'dirt') {
-    legend.innerHTML = '';
+    legend.innerHTML = `
+      <span class="vml-item"><span class="vml-dot" style="background:rgba(160,160,160,0.7)"></span>Cleaned</span>
+      <span class="vml-item"><span class="vml-dot" style="background:rgba(120,60,20,0.7)"></span>Excess</span>`;
   } else {
     legend.innerHTML = '';
   }
@@ -158,22 +160,28 @@ function drawDirtOverlay() {
   const SPECK_R = 3;
   const SPREAD  = CELL_SIZE / 2 - SPECK_R - 2;
 
-  for (const f of installedFacilities) {
-    if (f.facilityId !== FACILITY_ID.PATH) continue;
-    const count = Math.min(Math.floor(f.mess ?? 0), DIRT_MAX_SPECKS);
-    if (count <= 0) continue;
+  const pathFacilities = installedFacilities.filter(f => f.facilityId === FACILITY_ID.PATH);
+  const cleaningPerTile = pathFacilities.length > 0
+    ? Staff.calcJanitorCapacity() / pathFacilities.length
+    : 0;
+
+  for (const f of pathFacilities) {
+    const total   = Math.min(Math.floor(f.mess ?? 0), DIRT_MAX_SPECKS);
+    if (total <= 0) continue;
+    const cleaned = Math.min(total, Math.floor(cleaningPerTile));
 
     const { x, y } = _cellCentre(f.row, f.col);
     const seed = f.row * 997 + f.col * 31;
 
-    for (let i = 0; i < count; i++) {
-      const ox = (_dirtRand(seed + i * 2)     * 2 - 1) * SPREAD;
-      const oy = (_dirtRand(seed + i * 2 + 1) * 2 - 1) * SPREAD;
+    for (let i = 0; i < total; i++) {
+      const ox   = (_dirtRand(seed + i * 2)     * 2 - 1) * SPREAD;
+      const oy   = (_dirtRand(seed + i * 2 + 1) * 2 - 1) * SPREAD;
+      const color = i < cleaned ? 'rgba(160,160,160,0.7)' : 'rgba(120,60,20,0.7)';
       const circle = document.createElementNS(NS, 'circle');
       circle.setAttribute('cx',   x + ox);
       circle.setAttribute('cy',   y + oy);
       circle.setAttribute('r',    SPECK_R);
-      circle.setAttribute('fill', 'rgba(120,60,20,0.7)');
+      circle.setAttribute('fill', color);
       svg.appendChild(circle);
     }
   }
