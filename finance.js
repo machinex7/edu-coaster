@@ -318,41 +318,50 @@ const Finance = {
 
   // Distributes mess to path tiles each round.
   // fromGuests is split equally across all paths.
-  // fromShoppers uses IDW: each path tile is weighted by the sum of 1/(dist+1)²
-  // over all active shop cells within MAX_SHOP_MESS_RADIUS tiles (Euclidean).
-  // Tiles beyond that radius from every shop receive no shopper mess.
-  distributeMessToTiles(fromGuests, fromShoppers = 0) {
+  // fromShoppers and fromFood each use IDW: each path tile is weighted by the
+  // sum of 1/(dist+1)² over the relevant active shop cells within
+  // MAX_SHOP_MESS_RADIUS tiles (Euclidean). Tiles outside that radius from
+  // every shop of a given type receive none of that type's mess.
+  distributeMessToTiles(fromGuests, fromShoppers = 0, fromFood = 0) {
     const paths = installedFacilities.filter(f => f.facilityId === FACILITY_ID.PATH);
     if (paths.length === 0) return;
 
     const guestPerTile = fromGuests / paths.length;
 
-    // Collect every cell occupied by an active shop.
-    const shopCells = [];
+    // Separate active shop cells by type.
+    const foodIds = new Set(Shopping.catalog.filter(s => s.shopType === 'food').map(s => s.id));
+    const merchCells = [];
+    const foodCells  = [];
     for (const s of Shopping.installed) {
       if (s.status !== STATUS.ACTIVE) continue;
+      const target = foodIds.has(s.shopId) ? foodCells : merchCells;
       for (let r = 0; r < s.footprint.length; r++) {
         for (let c = 0; c < s.footprint[r].length; c++) {
           if (s.footprint[r][c] === 1)
-            shopCells.push({ row: s.row + r, col: s.col + c });
+            target.push({ row: s.row + r, col: s.col + c });
         }
       }
     }
 
-    // IDW weight for each path tile: sum contributions from nearby shop cells.
-    const weights = paths.map(p => {
+    // Returns an IDW weight array for the given set of source cells.
+    const idwWeights = sourceCells => paths.map(p => {
       let w = 0;
-      for (const sc of shopCells) {
+      for (const sc of sourceCells) {
         const dist = Math.sqrt((p.row - sc.row) ** 2 + (p.col - sc.col) ** 2);
         if (dist <= MAX_SHOP_MESS_RADIUS) w += 1 / (dist + 1) ** 2;
       }
       return w;
     });
-    const totalWeight = weights.reduce((a, b) => a + b, 0);
+
+    const shopWeights = idwWeights(merchCells);
+    const foodWeights = idwWeights(foodCells);
+    const totalShop   = shopWeights.reduce((a, b) => a + b, 0);
+    const totalFood   = foodWeights.reduce((a, b) => a + b, 0);
 
     for (let i = 0; i < paths.length; i++) {
-      const shopperShare = totalWeight > 0 ? fromShoppers * weights[i] / totalWeight : 0;
-      paths[i].mess = guestPerTile + shopperShare;
+      const shopperShare = totalShop > 0 ? fromShoppers * shopWeights[i] / totalShop : 0;
+      const foodShare    = totalFood > 0 ? fromFood    * foodWeights[i]  / totalFood  : 0;
+      paths[i].mess = guestPerTile + shopperShare + foodShare;
     }
   },
 
@@ -910,7 +919,8 @@ const Finance = {
     this.weeklyNetMess = Math.max(0, this.calcMessGenerated(weeklyAttendance, food.mealsSold, shopItemsSold) - Staff.calcJanitorCapacity());
     this.distributeMessToTiles(
       weeklyAttendance * Population.MESS_GUEST_RATE,
-      shopItemsSold * Population.MESS_ITEM_RATE
+      shopItemsSold * Population.MESS_ITEM_RATE,
+      food.mealsSold * Population.MESS_FOOD_RATE
     );
     this.mealSatisfaction = food.mealsWanted > 0
       ? Math.min(1, 0.5 + 0.5 * food.mealsServed / food.mealsWanted)
