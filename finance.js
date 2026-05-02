@@ -972,10 +972,11 @@ const Finance = {
     Staff.advancePostings();          // increment weeksActive for all postings
     Staff.generateCandidates();       // new applicants per round when postings exist
     Staff.advanceCandidates();        // withdrawal check, then increment weeksAsCandidate
-    this.weeklyNetMess = Math.max(0, this.calcMessGenerated(weeklyAttendance, food.mealsSold, shopItemsSold) - Staff.calcJanitorCapacity());
+    const merchItemsSold = Unlock.MERCHANDISE ? shopItemsSold : 0;
+    this.weeklyNetMess = Math.max(0, this.calcMessGenerated(weeklyAttendance, food.mealsSold, merchItemsSold) - Staff.calcJanitorCapacity());
     this.distributeMessToTiles(
       weeklyAttendance * Population.MESS_GUEST_RATE,
-      shopItemsSold * Population.MESS_ITEM_RATE,
+      merchItemsSold * Population.MESS_ITEM_RATE,
       food.mealsSold * Population.MESS_FOOD_RATE
     );
     this.mealSatisfaction = !Unlock.FOOD ? 1

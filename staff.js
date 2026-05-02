@@ -262,6 +262,18 @@ const Staff = {
     }
   },
 
+  // Removes any hired staff whose job type belongs to a locked feature.
+  // Called at park open so a teacher-configured lock takes effect before play starts.
+  purgeLockedRoles() {
+    const lockedJobs = [
+      ...(Unlock.MERCHANDISE ? [] : [JOB.MERCHANDISE_ATTENDANT]),
+      ...(Unlock.FOOD        ? [] : [JOB.CONCESSIONS_WORKER]),
+      ...(Unlock.SECURITY    ? [] : [JOB.SECURITY]),
+    ];
+    if (lockedJobs.length === 0) return;
+    this.roster = this.roster.filter(s => !lockedJobs.includes(s.jobId));
+  },
+
   // ── Staffing requirements ──────────────────────────────────────────────────
   operatorsNeededForRide(record) {
     const tiles = record.footprint.flat().filter(v => v === 1).length;
