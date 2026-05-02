@@ -188,7 +188,8 @@ const Finance = {
   // Mess penalty: unhandled mess spread across path tiles; 1.25^(mess per path) as divisor.
   calcExcitement(weeklyAttendance) {
     const securityFactor = Unlock.SECURITY ? Math.max(0, 1 - Math.sqrt(Security.opinion) / 100) : 1;
-    this.parkExcitement  = Math.max(0, (weeklyAttendance * this.rideOpinion * securityFactor * this.mealSatisfaction) / this.calcMessFactor());
+    const messFactor     = Unlock.MESSES   ? this.calcMessFactor() : 1;
+    this.parkExcitement  = Math.max(0, (weeklyAttendance * this.rideOpinion * securityFactor * this.mealSatisfaction) / messFactor);
   },
 
   // How many people can actually enter: booth attendants are the bottleneck.
