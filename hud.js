@@ -258,6 +258,7 @@ function advanceRound() {
   History.record(report);
   refreshDirtOverlay();
   Research.tickResearch();
+  Unlock.tick();
   _tickDemographicConfidence(report.weeklyAttendance);
   if (round % 13 === 1 && round > 1) Awards.checkQuarterly();
   updateLockedPanels();
