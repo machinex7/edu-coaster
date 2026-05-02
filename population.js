@@ -130,10 +130,21 @@ const Population = {
 
   // Tick all brackets in one category toward 100% confidence.
   // delta scales with weekly attendance so busier parks learn faster.
+  // When brackets have a count, each bracket's delta is further scaled by
+  // avgCount / bracket.count so larger populations accrue confidence more slowly.
   tickConfidence(categoryKey, weeklyAttendance) {
-    const delta = (weeklyAttendance / this.CONFIDENCE_VISIT_CAPACITY) * 100;
+    const bracketMap = {
+      HOUSEHOLD: this.HOUSEHOLD_SIZES,
+      DISTANCE:  this.DISTANCE_BRACKETS,
+    };
+    const brackets  = bracketMap[categoryKey];
+    const baseRate  = weeklyAttendance / this.CONFIDENCE_VISIT_CAPACITY;
+    const avgCount  = brackets.reduce((s, b) => s + b.count, 0) / brackets.length;
     this.confidence[categoryKey] = this.confidence[categoryKey]
-      .map(c => Math.min(100, c + delta));
+      .map((c, i) => {
+        const scale = avgCount / brackets[i].count;
+        return Math.min(100, c + baseRate * scale * 100);
+      });
   },
 
 };
