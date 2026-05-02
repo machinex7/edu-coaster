@@ -132,6 +132,13 @@
     "requires": ["surveys"]
   },
   {
+    "id": "demographic_segmentation_display",
+    "name": "Demographic Segmentation Display",
+    "description": "Restructure visitor profile charts so icons are grouped by sentiment: unfavorable (red) first, unknown (grey) in the middle, and favorable (green) last. Makes the health of each segment instantly scannable.",
+    "cost": 2,
+    "requires": ["demographic_population"]
+  },
+  {
     "id": "bulk_ordering",
     "name": "Bulk Ordering",
     "description": "Negotiate volume purchasing agreements with suppliers. Unlocks the +100 unit order size for merchandise restocking.",

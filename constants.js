@@ -76,7 +76,8 @@ const RESEARCH_ID = Object.freeze({
   FOUR_OH_ONE_K:            '401k',
   MEDICAL_COVERAGE:         'medical_coverage',
   BULK_ORDERING:            'bulk_ordering',
-  DEMOGRAPHIC_POPULATION:   'demographic_population',
+  DEMOGRAPHIC_POPULATION:             'demographic_population',
+  DEMOGRAPHIC_SEGMENTATION_DISPLAY:   'demographic_segmentation_display',
 });
 
 // Breakdown probability reaches 100% at this cumulative wear value.

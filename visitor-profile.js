@@ -57,13 +57,21 @@ const VisitorProfile = {
     const greenCount = Math.round(coloredCount * (bracket.chance / 2));
     const redCount   = coloredCount - greenCount;
 
-    // Build shuffled array of dot colours so the reveal order is stable across redraws.
-    const states = [
-      ...Array(greenCount).fill('green'),
-      ...Array(redCount).fill('red'),
-      ...Array(dotCount - coloredCount).fill('gray'),
-    ];
-    const dots = this._seededShuffle(states, seed).map(c => this._personSvg(c)).join('');
+    // When segmentation display research is unlocked, icons are grouped by colour
+    // (red → gray → green) instead of shuffled, so the breakdown is scannable at a glance.
+    const ordered = Research.completed.has(RESEARCH_ID.DEMOGRAPHIC_SEGMENTATION_DISPLAY);
+    const states = ordered
+      ? [
+          ...Array(redCount).fill('red'),
+          ...Array(dotCount - coloredCount).fill('gray'),
+          ...Array(greenCount).fill('green'),
+        ]
+      : this._seededShuffle([
+          ...Array(greenCount).fill('green'),
+          ...Array(redCount).fill('red'),
+          ...Array(dotCount - coloredCount).fill('gray'),
+        ], seed);
+    const dots = states.map(c => this._personSvg(c)).join('');
 
     const popLabel = showPopulation
       ? `<span class="vp-bracket-pop">${bracket.count.toLocaleString()} people</span>`
