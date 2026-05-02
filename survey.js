@@ -34,14 +34,15 @@ const Survey = {
   // True satisfaction per category derived from current game state, 0–100.
   // Each formula mirrors how that category already affects demand/excitement.
   trueSatisfaction() {
-    return {
+    const sat = {
       rides:       Finance.rideOpinion * 100,
       security:    Math.max(0, 1 - Math.sqrt(Security.opinion) / 100) * 100,
-      food:        (Finance.mealSatisfaction - 0.5) * 200,
       cleanliness: Math.max(0, (2 - Finance.calcMessFactor()) * 100),
       // No stores means guests are dissatisfied; staffRatio alone returns 1 when needed=0.
       shopping:    Shopping.calcWorkersNeeded() > 0 ? Shopping.calcStaffingState().staffRatio * 100 : 0,
     };
+    if (Unlock.FOOD) sat.food = (Finance.mealSatisfaction - 0.5) * 200;
+    return sat;
   },
 
   // Deducts cost and queues the survey. Results are computed at round-end by
@@ -249,7 +250,7 @@ const Survey = {
       const completedQ = Math.floor(History.rounds.length / 13);
       const qRounds    = History.rounds.slice((completedQ - 1) * 13, completedQ * 13);
       const allSurveys = qRounds.flatMap(r => r.surveys ?? []);
-      const categories = Object.keys(Survey.CATEGORY_LABELS);
+      const categories = Object.keys(Survey.CATEGORY_LABELS).filter(cat => cat !== 'food' || Unlock.FOOD);
       Charts.showModal({
         title:        `Quarterly Survey Results — ${Survey._quarterLabel(completedQ)}`,
         subtitle:     allSurveys.length > 0

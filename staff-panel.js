@@ -53,7 +53,7 @@ Object.assign(Staff, {
 
     const container = document.getElementById('staff-overview');
 
-    const bodyRows = this.JOB_TYPES.flatMap(job => {
+    const bodyRows = this.JOB_TYPES.filter(job => Unlock.FOOD || job.id !== JOB.CONCESSIONS_WORKER).flatMap(job => {
       const members = this.roster.filter(s => s.jobId === job.id);
       const header  = `<tr class="job-group-header">
         <td colspan="3">${job.plural} <span class="group-count">(${members.length})</span></td>
@@ -272,9 +272,10 @@ Object.assign(Staff, {
   buildPostingsView() {
     const container = document.getElementById('staff-postings-view');
 
-    const jobOptions = this.JOB_TYPES.map(j =>
-      `<option value="${j.id}" data-salary="${j.weeklySalary}">${j.label}</option>`
-    ).join('');
+    const jobOptions = this.JOB_TYPES
+      .filter(j => Unlock.FOOD || j.id !== JOB.CONCESSIONS_WORKER)
+      .map(j => `<option value="${j.id}" data-salary="${j.weeklySalary}">${j.label}</option>`)
+      .join('');
 
     const defaultJob = this.JOB_TYPES[0];
 

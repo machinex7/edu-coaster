@@ -258,6 +258,7 @@ function advanceRound() {
   History.record(report);
   refreshDirtOverlay();
   Research.tickResearch();
+  Unlock.tick();
   _tickDemographicConfidence(report.weeklyAttendance);
   if (round % 13 === 1 && round > 1) Awards.checkQuarterly();
   updateLockedPanels();
@@ -862,10 +863,10 @@ function buildFinancialPanel() {
       <div class="financial-section-header">Pricing Controls</div>
       <div class="price-list">${rows}</div>
     </div>
-    <div class="financial-section">
+    ${Unlock.LOANS ? `<div class="financial-section">
       <div class="financial-section-header">Loan</div>
       ${loanSectionHtml}
-    </div>`;
+    </div>` : ''}`;
 
   document.querySelectorAll('.price-apply-btn').forEach(btn => {
     btn.addEventListener('click', () => {
