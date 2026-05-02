@@ -1,57 +1,31 @@
 // unlock.js — Progressive feature unlock system.
 // Features are revealed gradually so new players learn one system at a time.
-// Wire up Unlock.isUnlocked() calls in each feature's panel/module when ready.
-
-// Identifiers for every lockable feature.
-const FEATURE_ID = Object.freeze({
-  SECURITY:    'security',
-  MESSES:      'messes',
-  LOANS:       'loans',
-  STAFFING:    'staffing',
-  MERCHANDISE: 'merchandise',
-  FOOD:        'food',
-});
-
-// Each entry: afterWeek (rounds of play until auto-unlock), name (display label).
+// Read feature state directly: Unlock.SECURITY (boolean).
 // Set afterWeek to null to permanently disable a feature — useful for teachers
 // who want to focus on a single concept without other systems appearing.
-const UNLOCK_DEFS = Object.freeze({
-  [FEATURE_ID.STAFFING]:    { afterWeek: 4,  name: 'Staffing' },
-  [FEATURE_ID.MESSES]:      { afterWeek: 6,  name: 'Messes' },
-  [FEATURE_ID.MERCHANDISE]: { afterWeek: 6,  name: 'Merchandise' },
-  [FEATURE_ID.SECURITY]:    { afterWeek: 8,  name: 'Security' },
-  [FEATURE_ID.FOOD]:        { afterWeek: 8,  name: 'Food & Dining' },
-  [FEATURE_ID.LOANS]:       { afterWeek: 10, name: 'Business Loans' },
-});
 
-// Mutable per-feature state: unlocked boolean and weeksLeft countdown.
-// Initialised assuming round 1 is the first week of play.
-const _unlockState = {};
-for (const [id, def] of Object.entries(UNLOCK_DEFS)) {
-  _unlockState[id] = { unlocked: false, weeksLeft: def.afterWeek != null ? def.afterWeek - 1 : null };
-}
+// Private config: afterWeek (rounds of play until auto-unlock), name (for notifications).
+const _DEFS = {
+  STAFFING:    { afterWeek: 4,  name: 'Staffing' },
+  MESSES:      { afterWeek: 6,  name: 'Messes' },
+  MERCHANDISE: { afterWeek: 6,  name: 'Merchandise' },
+  SECURITY:    { afterWeek: 8,  name: 'Security' },
+  FOOD:        { afterWeek: 8,  name: 'Food & Dining' },
+  LOANS:       { afterWeek: 10, name: 'Business Loans' },
+};
 
-// Unlock — query and advance feature availability.
+// Rounds remaining until each feature unlocks. null = permanently locked.
+const UnlockWeeks = {};
+
+// Boolean unlock flags — read directly: Unlock.SECURITY, Unlock.STAFFING, etc.
 const Unlock = {
-  // Returns true if the feature is currently available.
-  isUnlocked(featureId) {
-    return _unlockState[featureId]?.unlocked ?? true;
-  },
-
-  // Returns rounds remaining until the feature unlocks, or 0 if already unlocked.
-  weeksLeft(featureId) {
-    return _unlockState[featureId]?.weeksLeft ?? 0;
-  },
-
-  // Call once per round after incrementing round. Decrements each locked
-  // feature's countdown and fires a notification on unlock.
+  // Call once per round. Decrements countdowns and fires a notification on unlock.
   tick() {
-    for (const [id, def] of Object.entries(UNLOCK_DEFS)) {
-      const s = _unlockState[id];
-      if (s.unlocked || s.weeksLeft === null) continue;
-      s.weeksLeft = Math.max(0, s.weeksLeft - 1);
-      if (s.weeksLeft === 0) {
-        s.unlocked = true;
+    for (const [key, def] of Object.entries(_DEFS)) {
+      if (Unlock[key] || UnlockWeeks[key] === null) continue;
+      UnlockWeeks[key]--;
+      if (UnlockWeeks[key] === 0) {
+        Unlock[key] = true;
         Notifications.push({
           label:   'Unlocked',
           message: `${def.name} is now available!`,
@@ -60,3 +34,9 @@ const Unlock = {
     }
   },
 };
+
+// Initialise boolean flags and week countdowns from _DEFS.
+for (const [key, def] of Object.entries(_DEFS)) {
+  Unlock[key]      = false;
+  UnlockWeeks[key] = def.afterWeek != null ? def.afterWeek - 1 : null;
+}
