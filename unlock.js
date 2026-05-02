@@ -13,6 +13,8 @@ const FEATURE_ID = Object.freeze({
 });
 
 // Each entry: afterWeek (rounds of play until auto-unlock), name (display label).
+// Set afterWeek to null to permanently disable a feature — useful for teachers
+// who want to focus on a single concept without other systems appearing.
 const UNLOCK_DEFS = Object.freeze({
   [FEATURE_ID.STAFFING]:    { afterWeek: 4,  name: 'Staffing' },
   [FEATURE_ID.MESSES]:      { afterWeek: 6,  name: 'Messes' },
@@ -26,7 +28,7 @@ const UNLOCK_DEFS = Object.freeze({
 // Initialised assuming round 1 is the first week of play.
 const _unlockState = {};
 for (const [id, def] of Object.entries(UNLOCK_DEFS)) {
-  _unlockState[id] = { unlocked: false, weeksLeft: def.afterWeek - 1 };
+  _unlockState[id] = { unlocked: false, weeksLeft: def.afterWeek != null ? def.afterWeek - 1 : null };
 }
 
 // Unlock — query and advance feature availability.
@@ -46,7 +48,7 @@ const Unlock = {
   tick() {
     for (const [id, def] of Object.entries(UNLOCK_DEFS)) {
       const s = _unlockState[id];
-      if (s.unlocked) continue;
+      if (s.unlocked || s.weeksLeft === null) continue;
       s.weeksLeft = Math.max(0, s.weeksLeft - 1);
       if (s.weeksLeft === 0) {
         s.unlocked = true;
