@@ -946,13 +946,7 @@ const Finance = {
     const { revenue: shopRevenue, itemsSold: shopItemsSold } = Shopping.calcRevenue(weeklyAttendance);
     const food              = Shopping.calcFood(weeklyAttendance);
     const foodRevenue       = Math.round(food.mealsSold * (Shopping.MEAL_BASE_PRICE + this.foodUpcharge));
-    const security = Unlock.SECURITY
-      ? Security.calcIncidents(weeklyAttendance, dailyDemand, dailyThroughput)
-      : { fromOverflow: 0, fromUnridden: 0, fromRandom: 0, fromShop: 0, total: 0,
-          totalPath: 0, coveredPath: 0, uncoveredPath: 0, coveredFraction: 0,
-          coveredIncidents: 0, uncoveredIncidents: 0, staffedPosts: 0, totalPosts: 0,
-          capacity: 0, effectiveLoad: 0, handled: 0, unhandled: 0,
-          unhandledShop: 0, theftItemsStolen: 0 };
+    const security = Security.calcIncidents(weeklyAttendance, dailyDemand, dailyThroughput);
 
     // Income
     money += gateRevenue;
