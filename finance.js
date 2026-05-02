@@ -187,7 +187,7 @@ const Finance = {
   // Security opinion and mess density degrade the result.
   // Mess penalty: unhandled mess spread across path tiles; 1.25^(mess per path) as divisor.
   calcExcitement(weeklyAttendance) {
-    const securityFactor = Math.max(0, 1 - Math.sqrt(Security.opinion) / 100);
+    const securityFactor = Unlock.SECURITY ? Math.max(0, 1 - Math.sqrt(Security.opinion) / 100) : 1;
     this.parkExcitement  = Math.max(0, (weeklyAttendance * this.rideOpinion * securityFactor * this.mealSatisfaction) / this.calcMessFactor());
   },
 
@@ -946,7 +946,13 @@ const Finance = {
     const { revenue: shopRevenue, itemsSold: shopItemsSold } = Shopping.calcRevenue(weeklyAttendance);
     const food              = Shopping.calcFood(weeklyAttendance);
     const foodRevenue       = Math.round(food.mealsSold * (Shopping.MEAL_BASE_PRICE + this.foodUpcharge));
-    const security = Security.calcIncidents(weeklyAttendance, dailyDemand, dailyThroughput);
+    const security = Unlock.SECURITY
+      ? Security.calcIncidents(weeklyAttendance, dailyDemand, dailyThroughput)
+      : { fromOverflow: 0, fromUnridden: 0, fromRandom: 0, fromShop: 0, total: 0,
+          totalPath: 0, coveredPath: 0, uncoveredPath: 0, coveredFraction: 0,
+          coveredIncidents: 0, uncoveredIncidents: 0, staffedPosts: 0, totalPosts: 0,
+          capacity: 0, effectiveLoad: 0, handled: 0, unhandled: 0,
+          unhandledShop: 0, theftItemsStolen: 0 };
 
     // Income
     money += gateRevenue;
@@ -984,7 +990,7 @@ const Finance = {
       : 0.5;
     this.calcExcitement(weeklyAttendance); // uses this round's mess, security, and meal satisfaction
     this.advancePriceExhaustion();    // decay price fatigue by 1
-    Security.advanceOpinion(security.unhandled); // decay then add unhandled incidents
+    if (Unlock.SECURITY) Security.advanceOpinion(security.unhandled); // decay then add unhandled incidents
     const populationEvents = Population.populationEvents.map(e => ({ ...e }));
     Population.tickEvents();          // tick population event modifiers toward 0
 
