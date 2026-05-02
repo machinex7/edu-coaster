@@ -389,6 +389,18 @@ function updateLockedPanels() {
   const inventoryNavBtn = document.querySelector('.tool-btn[data-panel="inventory"]');
   if (inventoryNavBtn) inventoryNavBtn.classList.toggle('hidden', !Unlock.MERCHANDISE);
 
+  const shoppingTabBtn = document.querySelector('.cbar-tab-btn[data-cbar-tab="shopping"]');
+  if (shoppingTabBtn) {
+    const hideShoppingTab = !Unlock.FOOD && !Unlock.MERCHANDISE;
+    shoppingTabBtn.classList.toggle('hidden', hideShoppingTab);
+    if (hideShoppingTab && shoppingTabBtn.classList.contains('active')) {
+      shoppingTabBtn.classList.remove('active');
+      document.getElementById('shopping-panel').classList.add('hidden');
+      const firstVisible = document.querySelector('.cbar-tab-btn:not(.hidden)');
+      if (firstVisible) firstVisible.click();
+    }
+  }
+
   const securityNavBtn  = document.querySelector('.tool-btn[data-panel="security"]');
   if (securityNavBtn) securityNavBtn.classList.toggle('hidden', !Unlock.SECURITY);
   const securityModeBtn = document.querySelector('.view-mode-btn[data-view-mode="security"]');
