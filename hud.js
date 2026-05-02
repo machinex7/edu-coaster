@@ -243,6 +243,7 @@ function openPark() {
   gameStage = STAGE.PLAY;
   // Clear setup candidates — normal posting-based hiring takes over from here.
   Staff.candidates = Staff.candidates.filter(c => !c.isSetupCandidate);
+  Staff.purgeLockedRoles();
   Staff.buildCandidatesView();
   Population.populationEvents.push({ modifier: 50, comment: "Everyone is excited for the grand opening!" });
   document.getElementById('open-park-btn').classList.add('hidden');
