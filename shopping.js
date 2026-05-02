@@ -148,6 +148,7 @@ const Shopping = {
   // Called by Security.calcIncidents() to get the raw shoplifter count.
   // Capped at total stock — can't steal what isn't there.
   calcTheftIncidents(weeklyAttendance) {
+    if (!Unlock.MERCHANDISE) return 0;
     const tiles = this.calcMerchandiseTiles();
     if (tiles === 0) return 0;
     const { theftMultiplier } = this.calcStaffingState();
@@ -214,7 +215,7 @@ const Shopping = {
   buildCatalog() {
     const list = document.getElementById('shop-list');
     this.catalog
-      .filter(shop => Unlock.FOOD || shop.shopType !== 'food')
+      .filter(shop => (Unlock.FOOD || shop.shopType !== 'food') && (Unlock.MERCHANDISE || shop.shopType !== 'merchandise'))
       .forEach(shop => list.appendChild(createItemCard(shop, CATEGORY.SHOP)));
   },
 

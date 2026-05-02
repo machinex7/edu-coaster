@@ -38,10 +38,10 @@ const Survey = {
       rides:       Finance.rideOpinion * 100,
       security:    Math.max(0, 1 - Math.sqrt(Security.opinion) / 100) * 100,
       cleanliness: Math.max(0, (2 - Finance.calcMessFactor()) * 100),
-      // No stores means guests are dissatisfied; staffRatio alone returns 1 when needed=0.
-      shopping:    Shopping.calcWorkersNeeded() > 0 ? Shopping.calcStaffingState().staffRatio * 100 : 0,
     };
-    if (Unlock.FOOD) sat.food = (Finance.mealSatisfaction - 0.5) * 200;
+    if (Unlock.FOOD)        sat.food     = (Finance.mealSatisfaction - 0.5) * 200;
+    // No stores means guests are dissatisfied; staffRatio alone returns 1 when needed=0.
+    if (Unlock.MERCHANDISE) sat.shopping = Shopping.calcWorkersNeeded() > 0 ? Shopping.calcStaffingState().staffRatio * 100 : 0;
     return sat;
   },
 
@@ -250,7 +250,10 @@ const Survey = {
       const completedQ = Math.floor(History.rounds.length / 13);
       const qRounds    = History.rounds.slice((completedQ - 1) * 13, completedQ * 13);
       const allSurveys = qRounds.flatMap(r => r.surveys ?? []);
-      const categories = Object.keys(Survey.CATEGORY_LABELS).filter(cat => cat !== 'food' || Unlock.FOOD);
+      const categories = Object.keys(Survey.CATEGORY_LABELS).filter(cat =>
+        (cat !== 'food'     || Unlock.FOOD) &&
+        (cat !== 'shopping' || Unlock.MERCHANDISE)
+      );
       Charts.showModal({
         title:        `Quarterly Survey Results — ${Survey._quarterLabel(completedQ)}`,
         subtitle:     allSurveys.length > 0
