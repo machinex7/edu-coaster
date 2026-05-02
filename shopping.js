@@ -213,7 +213,9 @@ const Shopping = {
   // ── Construction panel ─────────────────────────────────────────────────────
   buildCatalog() {
     const list = document.getElementById('shop-list');
-    this.catalog.forEach(shop => list.appendChild(createItemCard(shop, CATEGORY.SHOP)));
+    this.catalog
+      .filter(shop => Unlock.FOOD || shop.shopType !== 'food')
+      .forEach(shop => list.appendChild(createItemCard(shop, CATEGORY.SHOP)));
   },
 
 };

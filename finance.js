@@ -978,7 +978,8 @@ const Finance = {
       shopItemsSold * Population.MESS_ITEM_RATE,
       food.mealsSold * Population.MESS_FOOD_RATE
     );
-    this.mealSatisfaction = food.mealsWanted > 0
+    this.mealSatisfaction = !Unlock.FOOD ? 1
+      : food.mealsWanted > 0
       ? Math.min(1, 0.5 + 0.5 * food.mealsServed / food.mealsWanted)
       : 0.5;
     this.calcExcitement(weeklyAttendance); // uses this round's mess, security, and meal satisfaction
