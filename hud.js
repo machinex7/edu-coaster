@@ -23,6 +23,7 @@ function initViewModeBar() {
     const btn = document.createElement('button');
     btn.className = 'view-mode-btn' + (mode.id === currentViewMode ? ' active' : '');
     if (mode.id === 'security' && !Unlock.SECURITY) btn.classList.add('hidden');
+    if (mode.id === 'dirt'     && !Unlock.MESSES)   btn.classList.add('hidden');
     btn.dataset.viewMode = mode.id;
     btn.innerHTML = `<span class="vm-icon">${mode.icon}</span><span>${mode.label}</span>`;
     btn.addEventListener('click', () => setViewMode(mode.id));
@@ -405,6 +406,9 @@ function updateLockedPanels() {
   if (securityNavBtn) securityNavBtn.classList.toggle('hidden', !Unlock.SECURITY);
   const securityModeBtn = document.querySelector('.view-mode-btn[data-view-mode="security"]');
   if (securityModeBtn) securityModeBtn.classList.toggle('hidden', !Unlock.SECURITY);
+
+  const messModeBtn = document.querySelector('.view-mode-btn[data-view-mode="dirt"]');
+  if (messModeBtn) messModeBtn.classList.toggle('hidden', !Unlock.MESSES);
 }
 
 function togglePanel(panelId) {
