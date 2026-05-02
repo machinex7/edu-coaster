@@ -269,6 +269,7 @@ const Staff = {
       ...(Unlock.MERCHANDISE ? [] : [JOB.MERCHANDISE_ATTENDANT]),
       ...(Unlock.FOOD        ? [] : [JOB.CONCESSIONS_WORKER]),
       ...(Unlock.SECURITY    ? [] : [JOB.SECURITY]),
+      ...(Unlock.MESSES      ? [] : [JOB.JANITOR]),
     ];
     if (lockedJobs.length === 0) return;
     this.roster = this.roster.filter(s => !lockedJobs.includes(s.jobId));
