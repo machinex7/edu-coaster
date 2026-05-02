@@ -1,5 +1,5 @@
 [
   { "id": "general_goods",  "name": "General Goods Co.",    "deliveryTime": 3, "surcharge": 0,   "unlockThreshold": null  },
-  { "id": "speedy_supply",  "name": "Speedy Supply Co.",    "deliveryTime": 1, "surcharge": 200, "unlockThreshold": 5000  },
-  { "id": "bulk_wholesale", "name": "Bulk Wholesale Ltd.",  "deliveryTime": 2, "surcharge": 75,  "unlockThreshold": 20000 }
+  { "id": "speedy_supply",  "name": "Speedy Supply Co.",    "deliveryTime": 1, "surcharge": 200, "unlockThreshold": 75000  },
+  { "id": "bulk_wholesale", "name": "Bulk Wholesale Ltd.",  "deliveryTime": 2, "surcharge": 75,  "unlockThreshold": 250000 }
 ]
