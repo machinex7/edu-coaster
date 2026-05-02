@@ -90,13 +90,23 @@ let currentPlacement = null;  // { startRow, startCol, valid }
 
 // ── Init ───────────────────────────────────────────────────────────────────
 async function init() {
-  [rides, facilities, Shopping.catalog, merchandise, suppliers] = await Promise.all([
+  let demographics;
+  [rides, facilities, Shopping.catalog, merchandise, suppliers, demographics] = await Promise.all([
     fetch('rides.json').then(r => r.json()),
     fetch('facilities.json').then(r => r.json()),
     fetch('shops.json').then(r => r.json()),
     fetch('merchandise.json').then(r => r.json()),
     fetch('suppliers.json').then(r => r.json()),
+    fetch('demographics.json').then(r => r.json()),
   ]);
+
+  Population.AGE_BRACKETS      = demographics.ageBrackets;
+  Population.INCOME_BRACKETS   = demographics.incomeBrackets;
+  Population.DISTANCE_BRACKETS = demographics.distanceBrackets;
+  Population.HOUSEHOLD_SIZES   = demographics.householdSizes;
+  Population.AREA_TYPES        = demographics.areaTypes;
+  Population.EMPLOYMENT_STATUS = demographics.employmentStatus;
+  Population.VISITOR_STATUS    = demographics.visitorStatus;
 
   rides.forEach((ride, i) => {
     ride._color = RIDE_COLORS[i % RIDE_COLORS.length];

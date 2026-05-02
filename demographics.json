@@ -1,0 +1,46 @@
+{
+  "ageBrackets": [
+    { "name": "Child (0–12)",        "chance": 1.6, "annualVisits": 4.0, "count":   750000, "intensityBias": 0.7, "preferredCategory": "toy" },
+    { "name": "Teen (13–17)",        "chance": 1.3, "annualVisits": 2.5, "count":   300000, "intensityBias": 1.8, "preferredCategory": "apparel" },
+    { "name": "Young Adult (18–34)", "chance": 1.2, "annualVisits": 2.0, "count":  1100000, "intensityBias": 1.5, "preferredCategory": "practical" },
+    { "name": "Adult (35–54)",       "chance": 1.1, "annualVisits": 1.5, "count":  1300000, "intensityBias": 1.0, "preferredCategory": "souvenir" },
+    { "name": "Senior (55+)",        "chance": 0.5, "annualVisits": 0.1, "count":  1500000, "intensityBias": 0.4, "preferredCategory": "souvenir" }
+  ],
+  "incomeBrackets": [
+    { "name": "Low Income",   "chance": 0.5, "annualVisits": 0.5, "count":  1400000, "preferredCategory": "practical" },
+    { "name": "Lower-Middle", "chance": 0.9, "annualVisits": 0.8, "count":  1250000, "preferredCategory": "toy" },
+    { "name": "Middle",       "chance": 1.2, "annualVisits": 1.5, "count":  1250000, "preferredCategory": "souvenir" },
+    { "name": "Upper-Middle", "chance": 1.5, "annualVisits": 2.5, "count":   800000, "preferredCategory": "apparel" },
+    { "name": "High Income",  "chance": 1.6, "annualVisits": 3.0, "count":   300000, "preferredCategory": "souvenir" }
+  ],
+  "distanceBrackets": [
+    { "name": "Local (< 10 mi)",       "chance": 1.8, "annualVisits": 6.0, "count":   750000, "preferredCategory": "practical" },
+    { "name": "Nearby (10–30 mi)",     "chance": 1.4, "annualVisits": 3.0, "count":  1500000, "preferredCategory": "toy" },
+    { "name": "Regional (30–100 mi)",  "chance": 0.9, "annualVisits": 1.0, "count":  1750000, "preferredCategory": "apparel" },
+    { "name": "Destination (100+ mi)", "chance": 0.5, "annualVisits": 0.2, "count":  1000000, "preferredCategory": "souvenir" }
+  ],
+  "householdSizes": [
+    { "name": "Solo (1)",           "chance": 0.7, "annualVisits": 1.0, "count":   750000, "intensityBias": 1.3, "preferredCategory": "practical" },
+    { "name": "Couple (2)",         "chance": 1.1, "annualVisits": 1.5, "count":  1500000, "intensityBias": 1.2, "preferredCategory": "souvenir" },
+    { "name": "Small Family (3–4)", "chance": 1.6, "annualVisits": 2.5, "count":  2000000, "intensityBias": 0.9, "preferredCategory": "toy" },
+    { "name": "Large Family (5+)",  "chance": 1.4, "annualVisits": 2.0, "count":   750000, "intensityBias": 0.7, "preferredCategory": "apparel" }
+  ],
+  "areaTypes": [
+    { "name": "Urban",    "chance": 0.8, "annualVisits": 1.2, "count":  1250000, "preferredCategory": "practical" },
+    { "name": "Suburban", "chance": 1.4, "annualVisits": 2.5, "count":  2750000, "preferredCategory": "toy" },
+    { "name": "Rural",    "chance": 0.9, "annualVisits": 1.0, "count":  1000000, "preferredCategory": "souvenir" }
+  ],
+  "employmentStatus": [
+    { "name": "Employed (Full-Time)", "chance": 1.1, "annualVisits": 1.5, "count":  2350000, "preferredCategory": "practical" },
+    { "name": "Employed (Part-Time)", "chance": 1.2, "annualVisits": 2.0, "count":   650000, "preferredCategory": "apparel" },
+    { "name": "Student",              "chance": 1.4, "annualVisits": 3.0, "count":   750000, "preferredCategory": "toy" },
+    { "name": "Retired",              "chance": 0.8, "annualVisits": 0.8, "count":   800000, "preferredCategory": "souvenir" },
+    { "name": "Unemployed",           "chance": 0.5, "annualVisits": 0.5, "count":   450000, "preferredCategory": "practical" }
+  ],
+  "visitorStatus": [
+    { "name": "None",             "chance": 1.0, "annualVisits": 1.5, "count":  3750000, "preferredCategory": "souvenir" },
+    { "name": "Disabled",         "chance": 0.6, "annualVisits": 0.7, "count":   800000, "preferredCategory": "practical" },
+    { "name": "Veteran",          "chance": 1.0, "annualVisits": 1.4, "count":   300000, "preferredCategory": "apparel" },
+    { "name": "Disabled Veteran", "chance": 0.5, "annualVisits": 0.6, "count":   150000, "preferredCategory": "practical" }
+  ]
+}
