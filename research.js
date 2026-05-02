@@ -14,6 +14,7 @@ const Research = {
   // Points contributed per week by all active Business Analysts.
   // Each BA contributes 1 + 0.2 × their tier (1–4).
   _researchRate() {
+    if (!Unlock.STAFFING) return 1; // assume 1 junior analyst
     return Staff.roster
       .filter(s => s.jobId === JOB.BUSINESS_ANALYST && s.weeksOut === 0)
       .reduce((sum, ba) => {

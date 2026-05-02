@@ -6,12 +6,12 @@
 
 // Private config: afterWeek (rounds of play until auto-unlock), name (for notifications).
 const _DEFS = {
-  STAFFING:    { afterWeek: 4,  name: 'Staffing' },
-  MESSES:      { afterWeek: 6,  name: 'Messes' },
-  MERCHANDISE: { afterWeek: 6,  name: 'Merchandise' },
-  SECURITY:    { afterWeek: 8,  name: 'Security' },
-  FOOD:        { afterWeek: 8,  name: 'Food & Dining' },
-  LOANS:       { afterWeek: 10, name: 'Business Loans' },
+  STAFFING:    { afterWeek: 0, name: 'Staffing' },
+  MESSES:      { afterWeek: 0, name: 'Messes' },
+  MERCHANDISE: { afterWeek: 0, name: 'Merchandise' },
+  SECURITY:    { afterWeek: 0, name: 'Security' },
+  FOOD:        { afterWeek: 0, name: 'Food & Dining' },
+  LOANS:       { afterWeek: 0, name: 'Business Loans' },
 };
 
 // Rounds remaining until each feature unlocks. null = permanently locked.

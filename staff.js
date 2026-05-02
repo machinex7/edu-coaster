@@ -290,6 +290,7 @@ const Staff = {
   // Total mess units janitors can clear per week.
   // Each janitor clears (40 + 5 × tier) messes/day × 7 days.
   calcJanitorCapacity() {
+    if (!Unlock.STAFFING) return Infinity;
     return this.roster
       .filter(s => s.jobId === JOB.JANITOR && s.weeksOut === 0)
       .reduce((sum, s) => {

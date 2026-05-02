@@ -136,7 +136,7 @@ const Finance = {
 
     const needed     = Staff.rideOperatorsNeeded();
     const actual     = Staff.roster.filter(s => s.jobId === JOB.RIDE_OPERATOR && s.weeksOut === 0).length;
-    const staffRatio = needed > 0 ? Math.min(1, actual / needed) : 1;
+    const staffRatio = !Unlock.STAFFING ? 1 : needed > 0 ? Math.min(1, actual / needed) : 1;
 
     let totalWeeklyRiders = 0;
     runningRides.forEach(record => {
@@ -195,6 +195,7 @@ const Finance = {
   // How many people can actually enter: booth attendants are the bottleneck.
   // Per attendant: base 500 × mood multiplier (0.8–1.2) × experience multiplier × skill modifier.
   calcGateThroughput() {
+    if (!Unlock.STAFFING) return Infinity;
     const attendants = Staff.roster.filter(s => s.jobId === JOB.BOOTH_ATTENDANT && s.weeksOut === 0);
     if (attendants.length === 0) return 0;
     return attendants.reduce((sum, s) => {
@@ -237,6 +238,15 @@ const Finance = {
   // none are broken, reduces wear on the 2 most-worn running rides by
   // 500 × tier per ride. Completing a repair cuts the ride's wear to 15%.
   processEngineers() {
+    if (!Unlock.STAFFING) {
+      [...installedRides, ...installedFacilities, ...Shopping.installed]
+        .filter(r => r.status === STATUS.UNDER_CONSTRUCTION)
+        .forEach(target => {
+          target.weeksCompleted++;
+          if (target.weeksCompleted >= target.weeksTotal) completeConstruction(target);
+        });
+      return;
+    }
     Staff.roster
       .filter(s => s.jobId === JOB.ENGINEER && s.weeksOut === 0)
       .forEach(eng => {
@@ -428,6 +438,7 @@ const Finance = {
   // to pay the medical premium — cancelling the policy immediately if funds are
   // insufficient. Returns the total amount actually deducted from money.
   calcStaffCosts() {
+    if (!Unlock.STAFFING) return 0;
     let paid = 0;
 
     const postingCosts = Staff.totalPostingCosts();
@@ -964,15 +975,17 @@ const Finance = {
     this.processCovenantBreaches();   // collect any pending breach fees and retire those covenants
     this.processActiveCovenants(weeklyAttendance);  // check all active covenant conditions
 
-    Staff.advanceMedicalInsurance();  // tick quote countdown; tick policy duration
-    Staff.processSickness();          // roll for new illness, decrement existing sick time
-    Staff.advanceExperience();        // increment weeksEmployed for all staff
-    Staff.applyInflation();           // grow each employee's costOfLiving by one week of annual inflation
-    Staff.updateMoods();              // recalculate mood from salary vs costOfLiving
-    Staff.processQuits();             // remove employees whose mood hit 0
-    Staff.advancePostings();          // increment weeksActive for all postings
-    Staff.generateCandidates();       // new applicants per round when postings exist
-    Staff.advanceCandidates();        // withdrawal check, then increment weeksAsCandidate
+    if (Unlock.STAFFING) {
+      Staff.advanceMedicalInsurance();  // tick quote countdown; tick policy duration
+      Staff.processSickness();          // roll for new illness, decrement existing sick time
+      Staff.advanceExperience();        // increment weeksEmployed for all staff
+      Staff.applyInflation();           // grow each employee's costOfLiving by one week of annual inflation
+      Staff.updateMoods();              // recalculate mood from salary vs costOfLiving
+      Staff.processQuits();             // remove employees whose mood hit 0
+      Staff.advancePostings();          // increment weeksActive for all postings
+      Staff.generateCandidates();       // new applicants per round when postings exist
+      Staff.advanceCandidates();        // withdrawal check, then increment weeksAsCandidate
+    }
     const merchItemsSold = Unlock.MERCHANDISE ? shopItemsSold : 0;
     this.weeklyNetMess = Math.max(0, this.calcMessGenerated(weeklyAttendance, food.mealsSold, merchItemsSold) - Staff.calcJanitorCapacity());
     this.distributeMessToTiles(

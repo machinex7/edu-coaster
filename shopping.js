@@ -48,6 +48,7 @@ const Shopping = {
   // staffRatio: 0–1, cuts revenue proportionally when understaffed.
   // theftMultiplier: ≥1, each missing worker adds 25% to the theft rate.
   calcStaffingState() {
+    if (!Unlock.STAFFING) return { staffRatio: 1, theftMultiplier: 1 };
     const needed  = this.calcWorkersNeeded();
     const actual  = Staff.roster.filter(s => s.jobId === JOB.MERCHANDISE_ATTENDANT && s.weeksOut === 0).length;
     const deficit = Math.max(0, needed - actual);
@@ -193,6 +194,7 @@ const Shopping = {
   // boosted by 20% per experience tier (tier 1–4 → 1.2×–1.8×).
   calcFood(weeklyAttendance) {
     const mealsWanted = weeklyAttendance * this.EXPECTED_MEALS_PER_DAY;
+    if (!Unlock.STAFFING) return { mealsWanted, mealsServed: mealsWanted, mealsSold: mealsWanted };
 
     const foodTiles = this.calcFoodTiles();
     const workers = Staff.roster
