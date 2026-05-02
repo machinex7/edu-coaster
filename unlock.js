@@ -28,12 +28,12 @@ const UNLOCK_DEFS = Object.freeze({
 
 // Unlock — query whether a feature is available.
 const Unlock = {
-  // Returns true if featureId is available at currentWeek, or if the player
+  // Returns true if featureId is available this round, or if the player
   // has completed the feature's associated research node.
-  isUnlocked(featureId, currentWeek, completedResearch = []) {
+  isUnlocked(featureId, completedResearch = []) {
     const def = UNLOCK_DEFS[featureId];
     if (!def) return true;
     if (def.researchId && completedResearch.includes(def.researchId)) return true;
-    return currentWeek >= def.afterWeek;
+    return round >= def.afterWeek;
   },
 };
