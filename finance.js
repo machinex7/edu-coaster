@@ -187,7 +187,7 @@ const Finance = {
   // Security opinion and mess density degrade the result.
   // Mess penalty: unhandled mess spread across path tiles; 1.25^(mess per path) as divisor.
   calcExcitement(weeklyAttendance) {
-    const securityFactor = Math.max(0, 1 - Math.sqrt(Security.opinion) / 100);
+    const securityFactor = Unlock.SECURITY ? Math.max(0, 1 - Math.sqrt(Security.opinion) / 100) : 1;
     this.parkExcitement  = Math.max(0, (weeklyAttendance * this.rideOpinion * securityFactor * this.mealSatisfaction) / this.calcMessFactor());
   },
 
@@ -984,7 +984,7 @@ const Finance = {
       : 0.5;
     this.calcExcitement(weeklyAttendance); // uses this round's mess, security, and meal satisfaction
     this.advancePriceExhaustion();    // decay price fatigue by 1
-    Security.advanceOpinion(security.unhandled); // decay then add unhandled incidents
+    if (Unlock.SECURITY) Security.advanceOpinion(security.unhandled); // decay then add unhandled incidents
     const populationEvents = Population.populationEvents.map(e => ({ ...e }));
     Population.tickEvents();          // tick population event modifiers toward 0
 

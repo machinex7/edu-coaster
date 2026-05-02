@@ -59,6 +59,13 @@ const Security = {
   // uncovered cost 2. Available capacity is distributed proportionally between
   // the two pools; whatever incidents cannot be handled become unhandled.
   calcIncidents(weeklyAttendance, dailyDemand, dailyThroughput) {
+    if (!Unlock.SECURITY) return {
+      fromOverflow: 0, fromUnridden: 0, fromRandom: 0, fromShop: 0, total: 0,
+      totalPath: 0, coveredPath: 0, uncoveredPath: 0, coveredFraction: 0,
+      coveredIncidents: 0, uncoveredIncidents: 0, staffedPosts: 0, totalPosts: 0,
+      capacity: 0, effectiveLoad: 0, handled: 0, unhandled: 0,
+      unhandledShop: 0, theftItemsStolen: 0,
+    };
     const weeklyOverflow = Math.max(0, (dailyDemand - dailyThroughput) * 7);
     const fromOverflow   = Math.floor(weeklyOverflow * Population.OVERFLOW_INCIDENT_RATE);
 

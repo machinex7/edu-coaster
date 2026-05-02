@@ -22,6 +22,7 @@ function initViewModeBar() {
   VIEW_MODES.forEach(mode => {
     const btn = document.createElement('button');
     btn.className = 'view-mode-btn' + (mode.id === currentViewMode ? ' active' : '');
+    if (mode.id === 'security' && !Unlock.SECURITY) btn.classList.add('hidden');
     btn.dataset.viewMode = mode.id;
     btn.innerHTML = `<span class="vm-icon">${mode.icon}</span><span>${mode.label}</span>`;
     btn.addEventListener('click', () => setViewMode(mode.id));
@@ -383,6 +384,11 @@ function updateLockedPanels() {
 
   document.getElementById('weather-panel').classList.toggle('hidden', !Research.completed.has(RESEARCH_ID.WEATHER_SENSOR));
   document.getElementById('forecast-future-count').classList.toggle('hidden', !Research.completed.has(RESEARCH_ID.WEATHER_STATION));
+
+  const securityNavBtn  = document.querySelector('.tool-btn[data-panel="security"]');
+  if (securityNavBtn) securityNavBtn.classList.toggle('hidden', !Unlock.SECURITY);
+  const securityModeBtn = document.querySelector('.view-mode-btn[data-view-mode="security"]');
+  if (securityModeBtn) securityModeBtn.classList.toggle('hidden', !Unlock.SECURITY);
 }
 
 function togglePanel(panelId) {
