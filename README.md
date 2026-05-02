@@ -24,6 +24,7 @@ python3 -m http.server
 | `index.html` | Shell — layout structure only, no logic |
 | `style.css` | All styles |
 | `constants.js` | Frozen enum objects shared across all scripts |
+| `unlock.js` | Progressive feature unlock system — `Unlock` flags and `UnlockWeeks` countdown table |
 | `population.js` | Visitor behavior rates and external economic conditions (`Population` object) |
 | `game.js` | Core state, grid constants, placement logic, construction queue, ride actions |
 | `grid.js` | Grid DOM, cell painting, mouse/touch event handlers |
@@ -43,7 +44,7 @@ python3 -m http.server
 
 **Script load order:**
 ```
-constants.js → population.js → game.js → grid.js → shopping.js → finance.js → staff.js → staff-panel.js → security.js → history.js → hud.js
+constants.js → unlock.js → population.js → game.js → grid.js → shopping.js → finance.js → staff.js → staff-panel.js → security.js → history.js → hud.js
 ```
 
 All cross-file calls happen at runtime (not parse time), so forward references inside method bodies are safe.
@@ -118,6 +119,56 @@ Centralises all tunable rates so game balance changes are made in one place.
 |---|---|
 | `STAGE.SETUP` | Items placed instantly at full cost. No income. Park opens once a Park Entrance and at least one connected ride exist. |
 | `STAGE.PLAY` | Items under construction pay `buildCost / buildWeeks` per round. All income and expenses process on each round advance. |
+
+---
+
+## Feature unlock system (`unlock.js`)
+
+Features are revealed progressively so new players learn one system at a time. Teachers can also permanently disable features to focus a lesson on a single concept.
+
+### Configuration
+
+Edit `_DEFS` in `unlock.js`:
+
+```js
+const _DEFS = {
+  STAFFING:    { afterWeek: 4,   name: 'Staffing' },
+  MESSES:      { afterWeek: 6,   name: 'Messes' },
+  MERCHANDISE: { afterWeek: 6,   name: 'Merchandise' },
+  SECURITY:    { afterWeek: 8,   name: 'Security' },
+  FOOD:        { afterWeek: 8,   name: 'Food & Dining' },
+  LOANS:       { afterWeek: 10,  name: 'Business Loans' },
+};
+```
+
+| `afterWeek` value | Behaviour |
+|---|---|
+| `0` | Unlocked immediately at game start |
+| `n > 0` | Unlocks after n rounds of play; notification fires on unlock |
+| `null` | Permanently disabled for the entire session |
+
+### Runtime API
+
+```js
+Unlock.SECURITY       // boolean — read directly in any conditional
+UnlockWeeks.SECURITY  // rounds remaining (0 if unlocked, null if permanent)
+Unlock.tick()         // called once per round from advanceRound()
+```
+
+`Unlock.tick()` is called in `advanceRound()` after `round++` and before `updateLockedPanels()`, so UI hides/shows take effect in the same frame the feature unlocks.
+
+### What each feature gates
+
+| Feature | UI hidden | Calculations bypassed |
+|---|---|---|
+| `STAFFING` | Staffing nav button; Staff Lounge in construction | All staff event processing; wages/postings/insurance costs set to 0; gate throughput → ∞; ride staffRatio → 1; merchandise staffRatio → 1; food capacity → unlimited; janitor capacity → ∞; research assumes 1 junior analyst |
+| `MESSES` | Mess map mode | `messFactor` fixed at 1 in `calcExcitement`; cleanliness excluded from survey |
+| `MERCHANDISE` | Inventory nav button; merchandise shops in construction; Merchandise Attendant job type | Shopper mess contribution zeroed; theft incidents → 0; shopping excluded from survey |
+| `FOOD` | Food shops in construction; Concessions Worker job type | `mealSatisfaction` fixed at 1; food excluded from survey |
+| `SECURITY` | Security nav button; Security map mode; Guard Post in construction; Security guard job type | `Security.calcIncidents()` returns zeros (no theft, no incidents); `advanceOpinion` skipped; `securityFactor` fixed at 1 in `calcExcitement` |
+| `LOANS` | Loan section in Financial panel | *(no calculation bypass — loan mechanics simply can't be initiated)* |
+
+On park open, any hired staff whose feature is locked are automatically removed from the roster (`Staff.purgeLockedRoles()`).
 
 ---
 
