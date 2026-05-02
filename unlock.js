@@ -37,6 +37,6 @@ const Unlock = {
 
 // Initialise boolean flags and week countdowns from _DEFS.
 for (const [key, def] of Object.entries(_DEFS)) {
-  Unlock[key]      = false;
-  UnlockWeeks[key] = def.afterWeek != null ? def.afterWeek - 1 : null;
+  Unlock[key]      = def.afterWeek === 0;
+  UnlockWeeks[key] = def.afterWeek != null ? Math.max(0, def.afterWeek - 1) : null;
 }
