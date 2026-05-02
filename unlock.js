@@ -9,13 +9,11 @@ const FEATURE_ID = Object.freeze({
   MESSES:      'messes',
   LOANS:       'loans',
   STAFFING:    'staffing',
-  WEATHER:     'weather',
   MERCHANDISE: 'merchandise',
   FOOD:        'food',
 });
 
-// Each entry: afterWeek (week number when the feature auto-unlocks) and an
-// optional researchId (completing that research node also unlocks it early).
+// Each entry: afterWeek (week number when the feature auto-unlocks).
 const UNLOCK_DEFS = Object.freeze({
   [FEATURE_ID.STAFFING]:    { afterWeek: 4 },
   [FEATURE_ID.MESSES]:      { afterWeek: 6 },
@@ -23,17 +21,14 @@ const UNLOCK_DEFS = Object.freeze({
   [FEATURE_ID.SECURITY]:    { afterWeek: 8 },
   [FEATURE_ID.FOOD]:        { afterWeek: 8 },
   [FEATURE_ID.LOANS]:       { afterWeek: 10 },
-  [FEATURE_ID.WEATHER]:     { afterWeek: 12, researchId: RESEARCH_ID.WEATHER_SENSOR },
 });
 
 // Unlock — query whether a feature is available.
 const Unlock = {
-  // Returns true if featureId is available this round, or if the player
-  // has completed the feature's associated research node.
-  isUnlocked(featureId, completedResearch = []) {
+  // Returns true if featureId is available this round.
+  isUnlocked(featureId) {
     const def = UNLOCK_DEFS[featureId];
     if (!def) return true;
-    if (def.researchId && completedResearch.includes(def.researchId)) return true;
     return round >= def.afterWeek;
   },
 };
