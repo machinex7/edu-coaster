@@ -387,6 +387,9 @@ function updateLockedPanels() {
   document.getElementById('weather-panel').classList.toggle('hidden', !Research.completed.has(RESEARCH_ID.WEATHER_SENSOR));
   document.getElementById('forecast-future-count').classList.toggle('hidden', !Research.completed.has(RESEARCH_ID.WEATHER_STATION));
 
+  const staffingNavBtn = document.querySelector('.tool-btn[data-panel="staffing"]');
+  if (staffingNavBtn) staffingNavBtn.classList.toggle('hidden', !Unlock.STAFFING);
+
   const inventoryNavBtn = document.querySelector('.tool-btn[data-panel="inventory"]');
   if (inventoryNavBtn) inventoryNavBtn.classList.toggle('hidden', !Unlock.MERCHANDISE);
 

@@ -149,7 +149,8 @@ function buildRideCatalog() {
 function buildFacilityList() {
   const list = document.getElementById('facility-list');
   facilities
-    .filter(f => Unlock.SECURITY || f.id !== FACILITY_ID.GUARD_STATION)
+    .filter(f => (Unlock.SECURITY || f.id !== FACILITY_ID.GUARD_STATION) &&
+                 (Unlock.STAFFING || f.id !== FACILITY_ID.STAFF_LOUNGE))
     .forEach(facility => list.appendChild(createItemCard(facility, 'facility')));
 }
 
