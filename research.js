@@ -37,7 +37,7 @@ const Research = {
   tickResearch() {
     if (!this.activeId) return;
     const item = this.items.find(i => i.id === this.activeId);
-    if (!item || this.completed.has(this.activeId)) {
+    if (!item || this.completed.has(this.activeId) || this._isFeatureLocked(item)) {
       this.activeId = null;
       return;
     }
@@ -65,6 +65,11 @@ const Research = {
     if (document.getElementById('research-cols')) this._updatePanel();
   },
 
+  // Returns true if the item belongs to a feature that isn't unlocked yet.
+  _isFeatureLocked(item) {
+    return item.feature && !Unlock[item.feature];
+  },
+
   _getDepth(id) {
     const item = this.items.find(i => i.id === id);
     if (!item || !item.requires.length) return 0;
@@ -73,7 +78,7 @@ const Research = {
 
   _buildColumns() {
     const columns = [];
-    this.items.forEach(item => {
+    this.items.filter(item => !this._isFeatureLocked(item)).forEach(item => {
       const depth = this._getDepth(item.id);
       if (!columns[depth]) columns[depth] = [];
       columns[depth].push(item);

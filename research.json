@@ -11,6 +11,7 @@
     "name": "License Plate Monitoring",
     "description": "Cross-reference parking data with regional records to estimate visitor origin and repeat visit rates.",
     "cost": 4,
+    "feature": "SECURITY",
     "requires": ["surveys"]
   },
   {
@@ -53,6 +54,7 @@
     "name": "Employee Benefits",
     "description": "Establish a formal benefits program. Prerequisite for all staff benefit research.",
     "cost": 3,
+    "feature": "STAFFING",
     "requires": []
   },
   {
@@ -60,6 +62,7 @@
     "name": "Parental Leave",
     "description": "Offer paid parental leave to staff. Improves employee retention and morale.",
     "cost": 4,
+    "feature": "STAFFING",
     "requires": ["employee_benefits"]
   },
   {
@@ -67,6 +70,7 @@
     "name": "401k",
     "description": "Provide a 401k retirement plan. Improves long-term staff retention.",
     "cost": 4,
+    "feature": "STAFFING",
     "requires": ["employee_benefits"]
   },
   {
@@ -74,6 +78,7 @@
     "name": "Medical Coverage",
     "description": "Offer employer-sponsored health insurance. Significantly boosts staff morale and reduces turnover.",
     "cost": 6,
+    "feature": "STAFFING",
     "requires": ["401k"]
   },
 
@@ -131,6 +136,7 @@
     "name": "Bulk Ordering",
     "description": "Negotiate volume purchasing agreements with suppliers. Unlocks the +100 unit order size for merchandise restocking.",
     "cost": 3,
+    "feature": "MERCHANDISE",
     "requires": []
   }
 ]
