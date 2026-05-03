@@ -12,8 +12,6 @@ const Marketing = {
   draftXRange: { min: 0, max: 4 },
   draftYRange: { min: 0, max: 4 },
 
-  // Flat weekly cost before medium and inflation adjustments.
-  BASE_MARKETING_COST: 100,
   // One-time fee added when the hook is a celebrity cameo.
   CELEBRITY_COST: 10_000,
 
@@ -131,13 +129,17 @@ const Marketing = {
     return Math.round((mediaCost + celebrityCost) * Population.cumulativeInflation);
   },
 
-  // Updates the estimated-duration and cost displays without rebuilding the panel.
+  // Updates the estimated-duration, cost displays, and launch button state without rebuilding the panel.
   _refreshEstimate() {
     const weeks = this.estimatedWeeks();
-    const weeksEl = document.getElementById('mkt-est-weeks');
-    const costEl  = document.getElementById('mkt-est-cost');
-    if (weeksEl) weeksEl.textContent = `~${weeks} week${weeks !== 1 ? 's' : ''}`;
-    if (costEl)  costEl.textContent  = `$${this.calcCost().toLocaleString()}`;
+    const cost  = this.calcCost();
+    const weeksEl  = document.getElementById('mkt-est-weeks');
+    const costEl   = document.getElementById('mkt-est-cost');
+    const launchEl = document.querySelector('.mkt-launch-btn');
+    if (weeksEl)  weeksEl.textContent     = `~${weeks} week${weeks !== 1 ? 's' : ''}`;
+    if (costEl)   costEl.textContent      = `$${cost.toLocaleString()}`;
+    if (launchEl) launchEl.disabled       = money < cost;
+    if (launchEl) launchEl.title          = money < cost ? 'Insufficient funds' : '';
   },
 
   // Returns true if the chart cell at (xi, yi) should be highlighted.
@@ -270,7 +272,7 @@ const Marketing = {
       // week's favor increase. Formula: parkExcitement × chance × favorDelta × count
       // divided by baselineFavorablePopulation (the /7 from calcFavorablePopulation cancels).
       c.weeklyDeltas.push(c.trackedBrackets.map(tb => {
-        const b = this.DEMO_CATS.find(d => d.catKey === tb.catKey).brackets[tb.idx];
+        const b = this.DEMO_CATS.find(d => d.key === tb.key).brackets[tb.idx];
         return Math.round(Finance.parkExcitement * b.chance * delta * b.count
                         / Population.baselineFavorablePopulation);
       }));
@@ -289,7 +291,7 @@ const Marketing = {
           for (let yi = c.yRange.min; yi <= c.yRange.max; yi++)
             Population.confidence[yKey][yi] = Math.min(100, Population.confidence[yKey][yi] + gain);
         }
-        activeCampaigns.splice(i, 1);
+        completedCampaigns.push(activeCampaigns.splice(i, 1)[0]);
       }
     }
   },
@@ -303,10 +305,10 @@ const Marketing = {
     const result = [];
     if (xRange.min !== null)
       for (let xi = xRange.min; xi <= xRange.max; xi++)
-        result.push({ axis: xAxis.toUpperCase(), catKey: xAxis, idx: xi, name: xCat.brackets[xi].name });
+        result.push({ axis: xAxis.toUpperCase(), key: xAxis, idx: xi, name: xCat.brackets[xi].name });
     if (yRange.min !== null)
       for (let yi = yRange.min; yi <= yRange.max; yi++)
-        result.push({ axis: yAxis.toUpperCase(), catKey: yAxis, idx: yi, name: yCat.brackets[yi].name });
+        result.push({ axis: yAxis.toUpperCase(), key: yAxis, idx: yi, name: yCat.brackets[yi].name });
     return result;
   },
 

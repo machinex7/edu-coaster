@@ -77,7 +77,9 @@ let totalOrderSpend      = 0;  // cumulative dollars spent placing merchandise o
 // interest (calcInterest × calcHookMax) is recomputed each round by Marketing.tickCampaigns().
 // weeklyDeltas[week] is a parallel array to trackedBrackets: estimated additional
 // visitors per bracket from that week's favor increase.
-let activeCampaigns      = [];
+let activeCampaigns      = [];  // running campaigns — see comment block above
+// Campaigns moved here on completion so their weeklyDeltas survive for the summary screen.
+let completedCampaigns   = [];
 
 let gridCells = [];   // [row][col] → <div>
 let gridState = [];   // [row][col] → instanceId string, or null
