@@ -268,14 +268,15 @@ const Marketing = {
           yCat.brackets[yi].favor += delta;
       }
 
-      // Estimate the additional weekly visitors each tracked bracket gained from this
-      // week's favor increase. Formula: parkExcitement × chance × favorDelta × count
-      // divided by baselineFavorablePopulation (the /7 from calcFavorablePopulation cancels).
-      c.weeklyDeltas.push(c.trackedBrackets.map(tb => {
+      // Sum the estimated attendance delta across all targeted brackets for this week.
+      // Formula: parkExcitement × chance × favorDelta × count / baselineFavorablePopulation.
+      const weekDelta = c.trackedBrackets.reduce((sum, tb) => {
         const b = this.DEMO_CATS.find(d => d.key === tb.key).brackets[tb.idx];
-        return Math.round(Finance.parkExcitement * b.chance * delta * b.count
-                        / Population.baselineFavorablePopulation);
-      }));
+        return sum + b.chance * b.count;
+      }, 0);
+      c.weeklyDeltas.push(Math.round(
+        Finance.parkExcitement * weekDelta * delta / Population.baselineFavorablePopulation
+      ));
 
       if (c.weeksRemaining <= 0) {
         // Award a small confidence gain to each selected bracket on completion.
@@ -355,9 +356,8 @@ const Marketing = {
       const msgLabel  = this.MESSAGE_TYPES.find(m => m.value === c.messageType)?.label ?? c.messageType;
       const brackets  = c.trackedBrackets.map(b => b.name).join(' · ');
 
-      const weeklyTotals = c.weeklyDeltas.map(week => week.reduce((s, d) => s + d, 0));
-      const maxTotal     = Math.max(...weeklyTotals, 1);
-      const bars = weeklyTotals.map((total, wi) => {
+      const maxTotal = Math.max(...c.weeklyDeltas, 1);
+      const bars = c.weeklyDeltas.map((total, wi) => {
         const pct = Math.round(total / maxTotal * 100);
         return `<div class="mkt-chart-col">
           <div class="mkt-chart-bar" style="height:${pct}%"></div>
