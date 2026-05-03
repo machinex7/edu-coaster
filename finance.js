@@ -647,11 +647,6 @@ const Finance = {
             const activeNow = installedRides.filter(r => r.status === STATUS.ACTIVE).length;
             if (activeNow >= covenant.initialActiveRides + covenant.value) {
               covenant.satisfied = true;
-              Notifications.push({
-                label:   'Covenant',
-                message: `Covenant satisfied: "${covenant.description}".`,
-                action:  () => openPanel('financial'),
-              });
             } else {
               covenant.weeksRemaining--;
               if (covenant.weeksRemaining <= 0) this.breachCovenant(loan, covenant);
@@ -666,11 +661,6 @@ const Finance = {
             }
             if (Staff.roster.length >= covenant.initialRosterSize + covenant.value) {
               covenant.satisfied = true;
-              Notifications.push({
-                label:   'Covenant',
-                message: `Covenant satisfied: "${covenant.description}".`,
-                action:  () => openPanel('financial'),
-              });
             } else {
               covenant.weeksRemaining--;
               if (covenant.weeksRemaining <= 0) this.breachCovenant(loan, covenant);
@@ -767,11 +757,6 @@ const Finance = {
     if (this.loanApplication?.status !== LOAN_STATUS.OFFERED) return;
     this.loanApplication.status = LOAN_STATUS.REVIEW;
     this.loanApplication.reviewWeeksRemaining = 2;
-    Notifications.push({
-      label:   'Loan',
-      message: 'Loan accepted and under final review. Funds arrive in 2 weeks.',
-      action:  () => openPanel('financial'),
-    });
   },
 
   // Annual interest rate for the pending loan.

@@ -522,11 +522,6 @@ function startDemolition(row, col) {
     }
   }
 
-  Notifications.push({
-    label:   'Demolish',
-    message: `${record.name} demolition started — ${demolishWeeks} week${demolishWeeks !== 1 ? 's' : ''} to go.`,
-  });
-
   updateHUD();
   refreshRidesPanel();
 }
@@ -577,9 +572,6 @@ function completeDemolition(record) {
     }
   }
 
-  if (record.facilityId !== FACILITY_ID.PATH) {
-    Notifications.push({ label: 'Demolish', message: `${name} has been demolished.` });
-  }
   updateHUD();
   refreshRidesPanel();
 }
