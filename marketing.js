@@ -4,6 +4,8 @@ const Marketing = {
   draftMedium:      'tv',
   draftHook:        'jingle',
   draftMessageType: 'informational',
+  // ID of the award attached to this campaign draft, or null for none.
+  draftAward: null,
   // Keys of the Population bracket arrays mapped to each chart axis.
   draftXAxis:  'age',
   draftYAxis:  'income',
@@ -14,6 +16,14 @@ const Marketing = {
 
   // One-time fee added when the hook is a celebrity cameo.
   CELEBRITY_COST: 10_000,
+
+  // Additive interest bonus per marketing use of an award (0-indexed by prior use count).
+  // Each use is one tier less effective; clamps at the last entry.
+  AWARD_BOOST_TIERS: [0.20, 0.15, 0.10, 0.05, 0.01],
+
+  // Tracks how many campaigns each award has been used in (awardId → count).
+  // Persists for the full game session; incremented at campaign launch.
+  marketingUses: {},
 
   // Dollar cost per impression for each medium — TV is most expensive,
   // online cheapest, matching real-world CPM relative rates.
@@ -245,6 +255,14 @@ const Marketing = {
     }
   },
 
+  // Returns the additive interest bonus for the next use of the given award.
+  // Looks up the current use count in marketingUses, maps to AWARD_BOOST_TIERS.
+  calcAwardBoost(awardId) {
+    const uses = this.marketingUses[awardId] ?? 0;
+    const idx  = Math.min(uses, this.AWARD_BOOST_TIERS.length - 1);
+    return this.AWARD_BOOST_TIERS[idx];
+  },
+
   // Advances every active campaign by one round: decrements weeksRemaining,
   // recomputes interest (curve × hook ceiling), adds interest × focusMultiplier
   // to each selected bracket's favor, then removes finished campaigns.
@@ -254,7 +272,8 @@ const Marketing = {
       c.weeksRemaining--;
       const t = c.weeksTotal - c.weeksRemaining;
       c.interest = this.calcInterest(c.messageType, t, c.weeksTotal)
-                 * this.calcHookMax(c.hook, t, c.weeksTotal);
+                 * this.calcHookMax(c.hook, t, c.weeksTotal)
+                 + c.awardBoost;
 
       const delta = c.interest * c.focusMultiplier;
       const xCat  = this.DEMO_CATS.find(d => d.key === c.xAxis);
@@ -317,13 +336,16 @@ const Marketing = {
   launchCampaign() {
     const cost = this.calcCost();
     if (money < cost) return;
-    const weeks = this.estimatedWeeks();
+    const weeks      = this.estimatedWeeks();
+    const awardBoost = this.draftAward ? this.calcAwardBoost(this.draftAward) : 0;
     money -= cost;
     activeCampaigns.push({
       impressions:    this.draftImpressions,
       medium:         this.draftMedium,
       hook:           this.draftHook,
       messageType:    this.draftMessageType,
+      award:          this.draftAward,          // award id used, or null
+      awardBoost,                               // additive interest bonus, frozen at launch
       xAxis:          this.draftXAxis,
       yAxis:          this.draftYAxis,
       xRange:         { ...this.draftXRange },
@@ -341,6 +363,10 @@ const Marketing = {
       cost,
       roundLaunched:     round,
     });
+    // Increment use count after computing awardBoost so the snapshot reflects this tier.
+    if (this.draftAward) {
+      this.marketingUses[this.draftAward] = (this.marketingUses[this.draftAward] ?? 0) + 1;
+    }
     updateHUD();
     this.buildPanel();
   },
@@ -500,6 +526,22 @@ const Marketing = {
         </div>
 
       </div>
+
+      ${Awards.list.length > 0 ? `
+      <div class="form-field mkt-award-row">
+        <label>Feature an Award <span class="mkt-award-hint">(boosts campaign interest)</span></label>
+        <div class="mkt-option-group mkt-award-group">
+          <button class="mkt-option-btn${this.draftAward === null ? ' active' : ''}" data-mkt-award="">None</button>
+          ${Awards.list.map(a => {
+            const boost = this.calcAwardBoost(a.id);
+            const uses  = this.marketingUses[a.id] ?? 0;
+            const tip   = uses > 0 ? `Used ${uses}× — +${boost.toFixed(2)} interest/wk` : `+${boost.toFixed(2)} interest/wk`;
+            return `<button class="mkt-option-btn mkt-option-btn--award${this.draftAward === a.id ? ' active' : ''}"
+              data-mkt-award="${a.id}" title="${tip}">${a.name}</button>`;
+          }).join('')}
+        </div>
+      </div>` : ''}
+
       <div class="mkt-launch-row">
         <div class="mkt-cost-line">Cost: <span id="mkt-est-cost"></span></div>
         <button class="mkt-launch-btn"${money < this.calcCost() ? ' disabled title="Insufficient funds"' : ''}>Launch Campaign</button>
@@ -533,6 +575,13 @@ const Marketing = {
       btn.addEventListener('click', () => {
         this.draftMessageType = btn.dataset.mktMessage;
         document.querySelectorAll('[data-mkt-message]').forEach(b => b.classList.toggle('active', b === btn));
+      });
+    });
+
+    document.querySelectorAll('[data-mkt-award]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.draftAward = btn.dataset.mktAward || null;
+        document.querySelectorAll('[data-mkt-award]').forEach(b => b.classList.toggle('active', b === btn));
       });
     });
 
@@ -656,10 +705,15 @@ const Marketing = {
         <div class="mkt-chart-mode-bar">${modeBtns}</div>`;
     }
 
+    const awardLabel = c.award
+      ? `${Awards.list.find(a => a.id === c.award)?.name ?? c.award} (+${c.awardBoost.toFixed(2)})`
+      : 'None';
+
     return `
       ${field('Medium',     medLabel)}
       ${field('Hook',       hookLabel)}
       ${field('Message',    msgLabel)}
+      ${field('Award',      awardLabel)}
       ${field('Impressions', c.impressions.toLocaleString())}
       ${field('Cost',       '$' + c.cost.toLocaleString())}
       ${field('Targeting',  brackets)}

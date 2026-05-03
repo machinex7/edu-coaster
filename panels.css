@@ -1460,6 +1460,30 @@
   color: #ca8a04;
 }
 
+.mkt-award-row {
+  border-top: 1px solid #374151;
+  padding-top: 10px;
+  margin-top: 4px;
+}
+
+.mkt-award-hint {
+  font-size: 0.68rem;
+  color: #6b7280;
+  font-weight: 400;
+}
+
+.mkt-award-group {
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.mkt-option-btn--award {
+  font-size: 0.72rem;
+  white-space: normal;
+  text-align: left;
+  line-height: 1.3;
+}
+
 .mkt-launch-btn {
   flex: 1;
   padding: 8px;
