@@ -337,7 +337,7 @@ const Marketing = {
       trackedBrackets:   this._buildTrackedBrackets(
                            this.draftXAxis, this.draftYAxis,
                            this.draftXRange, this.draftYRange),
-      weeklyDeltas:      [],  // per-week estimated attendance delta per tracked bracket
+      weeklyDeltas:      [],  // per-week estimated attendance delta (integer visitors)
       cost,
       roundLaunched:     round,
     });
@@ -349,6 +349,8 @@ const Marketing = {
   _activeView: 'design',
   // Campaign object currently selected in the campaigns list, or null.
   _selectedCampaign: null,
+  // Which chart mode is shown in the campaign detail: 'absolute', 'relative', or 'cumulative'.
+  _chartMode: 'absolute',
 
   // Switches top-level view and rebuilds the panel.
   setView(v) {
@@ -361,6 +363,7 @@ const Marketing = {
   _selectCampaign(roundLaunched) {
     const all = [...activeCampaigns, ...completedCampaigns];
     this._selectedCampaign = all.find(c => c.roundLaunched === roundLaunched) ?? null;
+    this._chartMode = 'absolute';
     this._buildCampaignsView();
   },
 
@@ -587,12 +590,18 @@ const Marketing = {
     document.querySelectorAll('.mkt-clist-item[data-round]').forEach(item =>
       item.addEventListener('click', () => this._selectCampaign(parseInt(item.dataset.round)))
     );
+    document.querySelectorAll('.mkt-chart-mode-btn').forEach(btn =>
+      btn.addEventListener('click', () => {
+        this._chartMode = btn.dataset.chartMode;
+        this._buildCampaignsView();
+      })
+    );
   },
 
   // Returns the HTML for the detail pane of a single campaign.
   _buildCampaignSummary(c) {
-    const medLabel  = this.MEDIUMS.find(m => m.value === c.medium)?.label          ?? c.medium;
-    const hookLabel = this.HOOKS.find(h => h.value === c.hook)?.label              ?? c.hook;
+    const medLabel  = this.MEDIUMS.find(m => m.value === c.medium)?.label            ?? c.medium;
+    const hookLabel = this.HOOKS.find(h => h.value === c.hook)?.label                ?? c.hook;
     const msgLabel  = this.MESSAGE_TYPES.find(m => m.value === c.messageType)?.label ?? c.messageType;
     const brackets  = c.trackedBrackets.map(b => b.name).join(', ');
     const isActive  = activeCampaigns.includes(c);
@@ -602,16 +611,49 @@ const Marketing = {
 
     let chartSection = '<div class="mkt-cdetail-empty">No data yet.</div>';
     if (c.weeklyDeltas.length > 0) {
-      const maxTotal = Math.max(...c.weeklyDeltas, 1);
-      const bars = c.weeklyDeltas.map((total, wi) => {
-        const pct = Math.round(total / maxTotal * 100);
+      // Build the data series for the active chart mode.
+      let values, chartLabel;
+      if (this._chartMode === 'relative') {
+        // Delta as a percentage of that week's recorded attendance from history.
+        values = c.weeklyDeltas.map((d, i) => {
+          const rec = History.rounds.find(r => r.round === c.roundLaunched + i);
+          return (d / (rec?.attendance || 1)) * 100;
+        });
+        chartLabel = 'Est. attendance boost (% of weekly visitors)';
+      } else if (this._chartMode === 'cumulative') {
+        // Running sum of absolute deltas week over week.
+        values = c.weeklyDeltas.reduce((acc, d) => {
+          acc.push((acc[acc.length - 1] ?? 0) + d);
+          return acc;
+        }, []);
+        chartLabel = 'Est. cumulative attendance boost';
+      } else {
+        values = c.weeklyDeltas;
+        chartLabel = 'Est. weekly attendance boost';
+      }
+
+      const maxVal = Math.max(...values, 1);
+      const bars = values.map((v, wi) => {
+        const pct     = Math.round(v / maxVal * 100);
+        const tipVal  = this._chartMode === 'relative'
+          ? v.toFixed(2) + '%'
+          : Math.round(v).toLocaleString() + ' visitors';
         return `<div class="mkt-chart-col">
-          <div class="mkt-chart-bar" style="height:${pct}%"></div>
+          <div class="mkt-chart-bar" style="height:${pct}%" title="W${wi + 1}: ${tipVal}"></div>
           <div class="mkt-chart-wlabel">W${wi + 1}</div>
         </div>`;
       }).join('');
-      chartSection = `<div class="mkt-summary-chart-label">Est. weekly attendance boost</div>
-        <div class="mkt-chart">${bars}</div>`;
+
+      const modeBtns = ['absolute', 'relative', 'cumulative'].map(mode => {
+        const label = mode === 'absolute' ? 'Weekly' : mode === 'relative' ? '% Share' : 'Cumulative';
+        return `<button class="mkt-chart-mode-btn${this._chartMode === mode ? ' active' : ''}"
+          data-chart-mode="${mode}">${label}</button>`;
+      }).join('');
+
+      chartSection = `
+        <div class="mkt-summary-chart-label">${chartLabel}</div>
+        <div class="mkt-chart">${bars}</div>
+        <div class="mkt-chart-mode-bar">${modeBtns}</div>`;
     }
 
     return `

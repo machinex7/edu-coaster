@@ -1735,6 +1735,32 @@
   white-space: nowrap;
 }
 
+.mkt-chart-mode-bar {
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.mkt-chart-mode-btn {
+  flex: 1;
+  padding: 4px 0;
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 4px;
+  color: #6b7280;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.mkt-chart-mode-btn.active {
+  background: #1d4ed8;
+  border-color: #3b82f6;
+  color: #eff6ff;
+}
+
 /* ── Awards panel ── */
 .awards-panel-body {
   flex: 1;
