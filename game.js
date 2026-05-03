@@ -70,6 +70,10 @@ let selectedSupplierId   = null;
 let unlockedSupplierIds  = new Set();
 let orders               = [];  // { itemIndex, itemName, count, weeksRemaining }
 let totalOrderSpend      = 0;  // cumulative dollars spent placing merchandise orders
+// Active marketing campaigns; each entry is a snapshot of draft state at launch time.
+// { impressions, medium, hook, messageType, xAxis, yAxis, xRange, yRange,
+//   weeksTotal, weeksRemaining, cost, roundLaunched }
+let activeCampaigns      = [];
 
 let gridCells = [];   // [row][col] → <div>
 let gridState = [];   // [row][col] → instanceId string, or null

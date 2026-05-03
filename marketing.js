@@ -166,6 +166,36 @@ const Marketing = {
     });
   },
 
+  // Deducts the campaign cost, snapshots draft settings into activeCampaigns, and notifies the player.
+  launchCampaign() {
+    const cost = this.calcCost();
+    if (money < cost) return;
+    const weeks = this.estimatedWeeks();
+    money -= cost;
+    activeCampaigns.push({
+      impressions:    this.draftImpressions,
+      medium:         this.draftMedium,
+      hook:           this.draftHook,
+      messageType:    this.draftMessageType,
+      xAxis:          this.draftXAxis,
+      yAxis:          this.draftYAxis,
+      xRange:         { ...this.draftXRange },
+      yRange:         { ...this.draftYRange },
+      weeksTotal:     weeks,
+      weeksRemaining: weeks,
+      cost,
+      roundLaunched:  round,
+    });
+    const medLabel = this.MEDIUMS.find(m => m.value === this.draftMedium)?.label ?? this.draftMedium;
+    Notifications.push({
+      label:   'Marketing',
+      message: `Campaign launched: ${this.draftImpressions.toLocaleString()} impressions via ${medLabel} over ~${weeks} week${weeks !== 1 ? 's' : ''}. Cost: $${cost.toLocaleString()}.`,
+      action:  () => openPanel('marketing'),
+    });
+    updateHUD();
+    this.buildPanel();
+  },
+
   // Renders the full panel from current draft state and wires up all event listeners.
   buildPanel() {
     const xCat = this.DEMO_CATS.find(c => c.key === this.draftXAxis);
@@ -285,7 +315,7 @@ const Marketing = {
       </div>
       <div class="mkt-launch-row">
         <div class="mkt-cost-line">Cost: <span id="mkt-est-cost"></span></div>
-        <button class="mkt-launch-btn" disabled>Launch Campaign</button>
+        <button class="mkt-launch-btn"${money < this.calcCost() ? ' disabled title="Insufficient funds"' : ''}>Launch Campaign</button>
       </div>`;
 
     this._refreshEstimate();
@@ -335,6 +365,10 @@ const Marketing = {
       btn.addEventListener('click', () => {
         this._handleRangeClick(btn.dataset.rangeAxis, parseInt(btn.dataset.idx));
       });
+    });
+
+    document.querySelector('.mkt-launch-btn').addEventListener('click', () => {
+      this.launchCampaign();
     });
   },
 };
