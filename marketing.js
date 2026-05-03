@@ -344,6 +344,41 @@ const Marketing = {
     this.buildPanel();
   },
 
+  // Builds the Campaign History section from completedCampaigns (most recent first).
+  // Each card shows the campaign settings, targeted brackets, and a bar chart of
+  // weekly total estimated attendance deltas — raw data, no verdict.
+  _buildHistorySection() {
+    if (completedCampaigns.length === 0) return '';
+    const cards = [...completedCampaigns].reverse().map(c => {
+      const medLabel  = this.MEDIUMS.find(m => m.value === c.medium)?.label          ?? c.medium;
+      const hookLabel = this.HOOKS.find(h => h.value === c.hook)?.label              ?? c.hook;
+      const msgLabel  = this.MESSAGE_TYPES.find(m => m.value === c.messageType)?.label ?? c.messageType;
+      const brackets  = c.trackedBrackets.map(b => b.name).join(' · ');
+
+      const weeklyTotals = c.weeklyDeltas.map(week => week.reduce((s, d) => s + d, 0));
+      const maxTotal     = Math.max(...weeklyTotals, 1);
+      const bars = weeklyTotals.map((total, wi) => {
+        const pct = Math.round(total / maxTotal * 100);
+        return `<div class="mkt-chart-col">
+          <div class="mkt-chart-bar" style="height:${pct}%"></div>
+          <div class="mkt-chart-wlabel">W${wi + 1}</div>
+        </div>`;
+      }).join('');
+
+      return `<div class="mkt-history-card">
+        <div class="mkt-history-meta">
+          <span class="mkt-history-tags">${medLabel} · ${hookLabel} · ${msgLabel}</span>
+          <span class="mkt-history-impr">${c.impressions.toLocaleString()} impr.</span>
+          <span class="mkt-history-cost">$${c.cost.toLocaleString()}</span>
+        </div>
+        <div class="mkt-history-brackets">Targeting: ${brackets}</div>
+        <div class="mkt-chart">${bars}</div>
+      </div>`;
+    }).join('');
+
+    return `<div class="panel-section-header">Campaign History</div>${cards}`;
+  },
+
   // Renders the full panel from current draft state and wires up all event listeners.
   buildPanel() {
     const xCat = this.DEMO_CATS.find(c => c.key === this.draftXAxis);
@@ -464,7 +499,8 @@ const Marketing = {
       <div class="mkt-launch-row">
         <div class="mkt-cost-line">Cost: <span id="mkt-est-cost"></span></div>
         <button class="mkt-launch-btn"${money < this.calcCost() ? ' disabled title="Insufficient funds"' : ''}>Launch Campaign</button>
-      </div>`;
+      </div>
+      ${this._buildHistorySection()}`;
 
     this._refreshEstimate();
 
