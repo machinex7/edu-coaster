@@ -1557,47 +1557,151 @@
   z-index: 1;
 }
 
-/* ── Marketing panel: history cards ── */
-#marketing-panel-body { overflow-y: auto; }
-
-.mkt-history-card {
-  margin: 0 16px 14px;
-  background: #1f2937;
-  border: 1px solid #374151;
-  border-radius: 6px;
-  padding: 12px 16px;
-}
-
-.mkt-history-meta {
+/* ── Marketing panel: tab bar + sub-views ── */
+#marketing-panel-body {
   display: flex;
-  align-items: baseline;
-  gap: 12px;
-  margin-bottom: 5px;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-.mkt-history-tags {
+.mkt-tab-bar {
+  display: flex;
+  border-bottom: 2px solid #374151;
+  flex-shrink: 0;
+}
+
+.mkt-tab-btn {
+  padding: 8px 18px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  color: #6b7280;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.mkt-tab-btn.active {
+  color: #f3f4f6;
+  border-bottom-color: #fbbf24;
+}
+
+#mkt-design-view {
+  display: flex;
+  flex-direction: column;
   flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+#mkt-design-view.hidden,
+#mkt-campaigns-view.hidden {
+  display: none;
+}
+
+#mkt-campaigns-view {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Campaign list sidebar */
+.mkt-clist {
+  width: 220px;
+  flex-shrink: 0;
+  border-right: 1px solid #374151;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.mkt-clist-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+}
+
+.mkt-clist-item:hover:not(.selected) {
+  background: #1f2937;
+}
+
+.mkt-clist-item.selected {
+  background: #1f2937;
+  border-left-color: #fbbf24;
+}
+
+.mkt-clist-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.mkt-clist-dot.active    { background: #3b82f6; }
+.mkt-clist-dot.completed { background: #4b5563; }
+
+.mkt-clist-label {
   font-size: 12px;
   font-weight: 600;
   color: #e5e7eb;
 }
 
-.mkt-history-impr {
+.mkt-clist-status {
   font-size: 11px;
   color: #9ca3af;
-  white-space: nowrap;
+  margin-top: 2px;
 }
 
-.mkt-history-cost {
-  font-size: 11px;
-  color: #fbbf24;
-  white-space: nowrap;
+.mkt-clist-empty {
+  padding: 16px 14px;
+  font-size: 12px;
+  color: #6b7280;
 }
 
-.mkt-history-brackets {
+/* Campaign detail pane */
+.mkt-cdetail {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 16px;
+}
+
+.mkt-cdetail-empty {
+  font-size: 12px;
+  color: #6b7280;
+  padding: 8px 0;
+}
+
+.mkt-summary-field {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 7px 0;
+  border-bottom: 1px solid #374151;
+  font-size: 12px;
+  gap: 12px;
+}
+
+.mkt-summary-field > span:first-child {
+  color: #9ca3af;
+  flex-shrink: 0;
+}
+
+.mkt-summary-field > span:last-child {
+  color: #e5e7eb;
+  text-align: right;
+}
+
+.mkt-summary-chart-label {
   font-size: 11px;
   color: #9ca3af;
-  margin-bottom: 10px;
+  margin: 14px 0 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 /* Bar chart */

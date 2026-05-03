@@ -345,42 +345,43 @@ const Marketing = {
     this.buildPanel();
   },
 
-  // Builds the Campaign History section from completedCampaigns (most recent first).
-  // Each card shows the campaign settings, targeted brackets, and a bar chart of
-  // weekly total estimated attendance deltas — raw data, no verdict.
-  _buildHistorySection() {
-    if (completedCampaigns.length === 0) return '';
-    const cards = [...completedCampaigns].reverse().map(c => {
-      const medLabel  = this.MEDIUMS.find(m => m.value === c.medium)?.label          ?? c.medium;
-      const hookLabel = this.HOOKS.find(h => h.value === c.hook)?.label              ?? c.hook;
-      const msgLabel  = this.MESSAGE_TYPES.find(m => m.value === c.messageType)?.label ?? c.messageType;
-      const brackets  = c.trackedBrackets.map(b => b.name).join(' · ');
+  // Tracks which top-level view is shown: 'design' or 'campaigns'.
+  _activeView: 'design',
+  // Campaign object currently selected in the campaigns list, or null.
+  _selectedCampaign: null,
 
-      const maxTotal = Math.max(...c.weeklyDeltas, 1);
-      const bars = c.weeklyDeltas.map((total, wi) => {
-        const pct = Math.round(total / maxTotal * 100);
-        return `<div class="mkt-chart-col">
-          <div class="mkt-chart-bar" style="height:${pct}%"></div>
-          <div class="mkt-chart-wlabel">W${wi + 1}</div>
-        </div>`;
-      }).join('');
-
-      return `<div class="mkt-history-card">
-        <div class="mkt-history-meta">
-          <span class="mkt-history-tags">${medLabel} · ${hookLabel} · ${msgLabel}</span>
-          <span class="mkt-history-impr">${c.impressions.toLocaleString()} impr.</span>
-          <span class="mkt-history-cost">$${c.cost.toLocaleString()}</span>
-        </div>
-        <div class="mkt-history-brackets">Targeting: ${brackets}</div>
-        <div class="mkt-chart">${bars}</div>
-      </div>`;
-    }).join('');
-
-    return `<div class="panel-section-header">Campaign History</div>${cards}`;
+  // Switches top-level view and rebuilds the panel.
+  setView(v) {
+    this._activeView = v;
+    if (v !== 'campaigns') this._selectedCampaign = null;
+    this.buildPanel();
   },
 
-  // Renders the full panel from current draft state and wires up all event listeners.
+  // Sets the selected campaign by roundLaunched key and rebuilds only the campaigns view.
+  _selectCampaign(roundLaunched) {
+    const all = [...activeCampaigns, ...completedCampaigns];
+    this._selectedCampaign = all.find(c => c.roundLaunched === roundLaunched) ?? null;
+    this._buildCampaignsView();
+  },
+
+  // Renders the tab bar + the active view into marketing-panel-body.
   buildPanel() {
+    document.getElementById('marketing-panel-body').innerHTML = `
+      <div class="mkt-tab-bar">
+        <button class="mkt-tab-btn${this._activeView === 'design'    ? ' active' : ''}" data-mkt-view="design">Design</button>
+        <button class="mkt-tab-btn${this._activeView === 'campaigns' ? ' active' : ''}" data-mkt-view="campaigns">Campaigns</button>
+      </div>
+      <div id="mkt-design-view"    class="${this._activeView === 'design'    ? '' : 'hidden'}"></div>
+      <div id="mkt-campaigns-view" class="${this._activeView === 'campaigns' ? '' : 'hidden'}"></div>`;
+    document.querySelectorAll('.mkt-tab-btn').forEach(btn =>
+      btn.addEventListener('click', () => this.setView(btn.dataset.mktView))
+    );
+    if (this._activeView === 'design')    this._buildDesignView();
+    if (this._activeView === 'campaigns') this._buildCampaignsView();
+  },
+
+  // Renders the campaign designer into #mkt-design-view and wires its event listeners.
+  _buildDesignView() {
     const xCat = this.DEMO_CATS.find(c => c.key === this.draftXAxis);
     const yCat = this.DEMO_CATS.find(c => c.key === this.draftYAxis);
 
@@ -447,7 +448,7 @@ const Marketing = {
       return `<button class="mkt-cell${sel ? ' selected' : ''}" data-range-axis="x" data-idx="${i}" title="${b.name}">${b.short}</button>`;
     }).join('');
 
-    document.getElementById('marketing-panel-body').innerHTML = `
+    document.getElementById('mkt-design-view').innerHTML = `
       <div class="panel-section-header">Campaign Designer</div>
       <div class="mkt-layout">
 
@@ -499,8 +500,7 @@ const Marketing = {
       <div class="mkt-launch-row">
         <div class="mkt-cost-line">Cost: <span id="mkt-est-cost"></span></div>
         <button class="mkt-launch-btn"${money < this.calcCost() ? ' disabled title="Insufficient funds"' : ''}>Launch Campaign</button>
-      </div>
-      ${this._buildHistorySection()}`;
+      </div>`;
 
     this._refreshEstimate();
 
@@ -536,13 +536,13 @@ const Marketing = {
     document.getElementById('mkt-x-axis').addEventListener('change', e => {
       this.draftXAxis  = e.target.value;
       this.draftXRange = this._fullRange(e.target.value);
-      this.buildPanel();
+      this._buildDesignView();
     });
 
     document.getElementById('mkt-y-axis').addEventListener('change', e => {
       this.draftYAxis  = e.target.value;
       this.draftYRange = this._fullRange(e.target.value);
-      this.buildPanel();
+      this._buildDesignView();
     });
 
     document.querySelectorAll('[data-range-axis]').forEach(btn => {
@@ -554,5 +554,74 @@ const Marketing = {
     document.querySelector('.mkt-launch-btn').addEventListener('click', () => {
       this.launchCampaign();
     });
+  },
+
+  // Renders the campaigns list + detail pane into #mkt-campaigns-view.
+  _buildCampaignsView() {
+    const active    = activeCampaigns.map(c    => ({ c, status: 'active'    }));
+    const completed = [...completedCampaigns].reverse().map(c => ({ c, status: 'completed' }));
+    const all = [...active, ...completed];
+
+    const listItems = all.map(({ c, status }) => {
+      const medLabel = this.MEDIUMS.find(m => m.value === c.medium)?.label ?? c.medium;
+      const msgLabel = this.MESSAGE_TYPES.find(m => m.value === c.messageType)?.label ?? c.messageType;
+      const statusStr = status === 'active' ? `${c.weeksRemaining} wk remaining` : 'Completed';
+      const sel = this._selectedCampaign?.roundLaunched === c.roundLaunched;
+      return `<div class="mkt-clist-item${sel ? ' selected' : ''}" data-round="${c.roundLaunched}">
+        <div class="mkt-clist-dot ${status}"></div>
+        <div>
+          <div class="mkt-clist-label">${medLabel} · ${msgLabel}</div>
+          <div class="mkt-clist-status">${statusStr}</div>
+        </div>
+      </div>`;
+    }).join('') || '<div class="mkt-clist-empty">No campaigns yet.</div>';
+
+    const detail = this._selectedCampaign
+      ? this._buildCampaignSummary(this._selectedCampaign)
+      : '<div class="mkt-cdetail-empty">Select a campaign to view its summary.</div>';
+
+    document.getElementById('mkt-campaigns-view').innerHTML = `
+      <div class="mkt-clist">${listItems}</div>
+      <div class="mkt-cdetail">${detail}</div>`;
+
+    document.querySelectorAll('.mkt-clist-item[data-round]').forEach(item =>
+      item.addEventListener('click', () => this._selectCampaign(parseInt(item.dataset.round)))
+    );
+  },
+
+  // Returns the HTML for the detail pane of a single campaign.
+  _buildCampaignSummary(c) {
+    const medLabel  = this.MEDIUMS.find(m => m.value === c.medium)?.label          ?? c.medium;
+    const hookLabel = this.HOOKS.find(h => h.value === c.hook)?.label              ?? c.hook;
+    const msgLabel  = this.MESSAGE_TYPES.find(m => m.value === c.messageType)?.label ?? c.messageType;
+    const brackets  = c.trackedBrackets.map(b => b.name).join(', ');
+    const isActive  = activeCampaigns.includes(c);
+
+    const field = (label, value) =>
+      `<div class="mkt-summary-field"><span>${label}</span><span>${value}</span></div>`;
+
+    let chartSection = '<div class="mkt-cdetail-empty">No data yet.</div>';
+    if (c.weeklyDeltas.length > 0) {
+      const maxTotal = Math.max(...c.weeklyDeltas, 1);
+      const bars = c.weeklyDeltas.map((total, wi) => {
+        const pct = Math.round(total / maxTotal * 100);
+        return `<div class="mkt-chart-col">
+          <div class="mkt-chart-bar" style="height:${pct}%"></div>
+          <div class="mkt-chart-wlabel">W${wi + 1}</div>
+        </div>`;
+      }).join('');
+      chartSection = `<div class="mkt-summary-chart-label">Est. weekly attendance boost</div>
+        <div class="mkt-chart">${bars}</div>`;
+    }
+
+    return `
+      ${field('Medium',     medLabel)}
+      ${field('Hook',       hookLabel)}
+      ${field('Message',    msgLabel)}
+      ${field('Impressions', c.impressions.toLocaleString())}
+      ${field('Cost',       '$' + c.cost.toLocaleString())}
+      ${field('Targeting',  brackets)}
+      ${isActive ? field('Weeks remaining', c.weeksRemaining) : ''}
+      ${chartSection}`;
   },
 };
