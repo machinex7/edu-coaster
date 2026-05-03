@@ -30,6 +30,14 @@ const Population = {
   // Scales naturally with attendance: more visitors per week → faster learning.
   CONFIDENCE_VISIT_CAPACITY: 5000,
 
+  // ── Favor decay ───────────────────────────────────────────────────────────
+  // When favor > 1: decay by max(FAVOR_DECAY_MIN, favor × FAVOR_DECAY_RATE), clamped to 1.
+  // When favor < 1: recover by max(FAVOR_RECOVERY_MIN, deficit × FAVOR_RECOVERY_RATE), clamped to 1.
+  FAVOR_DECAY_RATE:     0.10,  // fraction of current favor lost per round when above 1
+  FAVOR_DECAY_MIN:      0.10,  // minimum absolute decay per round when above 1
+  FAVOR_RECOVERY_RATE:  0.10,  // fraction of deficit recovered per round when below 1
+  FAVOR_RECOVERY_MIN:   0.01,  // minimum absolute recovery per round when below 1
+
   // ── External economic conditions ───────────────────────────────────────────
   utilityMultiplier:    1,     // applied to all ride utility costs each round
   inflationRate:        0.02,  // annual rate; applied weekly to staff cost-of-living
@@ -64,6 +72,22 @@ const Population = {
       .map(e => ({ ...e, modifier: e.modifier > 0 ? e.modifier - 4 : e.modifier + 4 }))
       .filter(e => Math.abs(e.modifier) >= 4);
     this.cumulativeInflation *= (1 + this.inflationRate / 52);
+  },
+
+  // Nudges every bracket's favor back toward 1.0 each round.
+  decayFavor() {
+    const all = [
+      ...this.AGE_BRACKETS, ...this.INCOME_BRACKETS, ...this.DISTANCE_BRACKETS,
+      ...this.HOUSEHOLD_SIZES, ...this.AREA_TYPES, ...this.EMPLOYMENT_STATUS,
+      ...this.VISITOR_STATUS,
+    ];
+    for (const b of all) {
+      if (b.favor > 1) {
+        b.favor = Math.max(1, b.favor - Math.max(this.FAVOR_DECAY_MIN, b.favor * this.FAVOR_DECAY_RATE));
+      } else if (b.favor < 1) {
+        b.favor = Math.min(1, b.favor + Math.max(this.FAVOR_RECOVERY_MIN, (1 - b.favor) * this.FAVOR_RECOVERY_RATE));
+      }
+    }
   },
 
   // Call once at game start (and again on reset) to initialize mutable demographic state.

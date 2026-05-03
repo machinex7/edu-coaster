@@ -1002,6 +1002,7 @@ const Finance = {
     if (Unlock.SECURITY) Security.advanceOpinion(security.unhandled); // decay then add unhandled incidents
     const populationEvents = Population.populationEvents.map(e => ({ ...e }));
     Population.tickEvents();          // tick population event modifiers toward 0
+    Population.decayFavor();          // nudge all bracket favors back toward 1.0
 
     Marketing.tickCampaigns();
     const arrivedOrders = Shopping.tickOrders();
