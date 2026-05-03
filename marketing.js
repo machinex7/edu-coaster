@@ -71,6 +71,25 @@ const Marketing = {
     { key: 'area',      label: 'Area',      brackets: Population.AREA_TYPES,        unlock: 'mkt_area_targeting'      },
   ],
 
+  // Reach multipliers per medium for age and distance brackets.
+  // Values > 1 mean the medium over-indexes on that bracket; < 1 means under-indexes.
+  // Indices parallel AGE_BRACKETS [Child, Teen, Young Adult, Adult, Senior]
+  // and DISTANCE_BRACKETS [Local, Nearby, Regional, Destination].
+  MEDIUM_AFFINITY: {
+    age: {
+      tv:     [1.0, 0.7, 0.8, 1.2, 1.5],
+      radio:  [0.5, 0.7, 1.1, 1.3, 1.0],
+      online: [0.9, 1.6, 1.5, 1.0, 0.4],
+      print:  [0.5, 0.5, 0.7, 1.2, 1.6],
+    },
+    distance: {
+      tv:     [0.8, 1.0, 1.4, 1.0],
+      radio:  [1.5, 1.3, 0.8, 0.4],
+      online: [0.8, 1.0, 1.2, 1.5],
+      print:  [1.6, 1.3, 0.7, 0.3],
+    },
+  },
+
   // Returns true if the entry's research unlock has been completed (or has none).
   _isUnlocked(entry) {
     return !entry.unlock || Research.completed.has(entry.unlock);
