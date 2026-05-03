@@ -37,6 +37,10 @@ const Marketing = {
   // Step size for the impressions input.
   IMPRESSIONS_STEP: 10_000,
 
+  // Base confidence points added to each targeted bracket when a campaign completes.
+  // Multiplied by focusMultiplier so tighter targeting yields more demographic insight.
+  CAMPAIGN_CONFIDENCE_BASE: 2,
+
   // Maximum number of crowd dots in the most-populated cloud cell.
   MAX_CROWD_DOTS: 40,
 
@@ -262,7 +266,22 @@ const Marketing = {
           yCat.brackets[yi].favor += delta;
       }
 
-      if (c.weeksRemaining <= 0) activeCampaigns.splice(i, 1);
+      if (c.weeksRemaining <= 0) {
+        // Award a small confidence gain to each selected bracket on completion.
+        // Narrower targeting (higher focusMultiplier) earns more insight.
+        const gain = this.CAMPAIGN_CONFIDENCE_BASE * c.focusMultiplier;
+        const xKey = c.xAxis.toUpperCase();
+        const yKey = c.yAxis.toUpperCase();
+        if (c.xRange.min !== null && Population.confidence[xKey]) {
+          for (let xi = c.xRange.min; xi <= c.xRange.max; xi++)
+            Population.confidence[xKey][xi] = Math.min(100, Population.confidence[xKey][xi] + gain);
+        }
+        if (c.yRange.min !== null && Population.confidence[yKey]) {
+          for (let yi = c.yRange.min; yi <= c.yRange.max; yi++)
+            Population.confidence[yKey][yi] = Math.min(100, Population.confidence[yKey][yi] + gain);
+        }
+        activeCampaigns.splice(i, 1);
+      }
     }
   },
 
