@@ -186,12 +186,6 @@ const Marketing = {
       cost,
       roundLaunched:  round,
     });
-    const medLabel = this.MEDIUMS.find(m => m.value === this.draftMedium)?.label ?? this.draftMedium;
-    Notifications.push({
-      label:   'Marketing',
-      message: `Campaign launched: ${this.draftImpressions.toLocaleString()} impressions via ${medLabel} over ~${weeks} week${weeks !== 1 ? 's' : ''}. Cost: $${cost.toLocaleString()}.`,
-      action:  () => openPanel('marketing'),
-    });
     updateHUD();
     this.buildPanel();
   },
