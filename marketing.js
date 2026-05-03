@@ -185,6 +185,35 @@ const Marketing = {
     });
   },
 
+  // Returns the 0–1 interest value for a given message type at week t (1-indexed) of weeksTotal.
+  // Urgency: ramps to 1.0 at week 2 then decays as 1/(t−1).
+  // Informational: holds a mid-level (0.4) and rises slowly toward 0.7 by campaign end.
+  // Emotional: grows linearly from near-zero to 1.0 over the full campaign duration.
+  calcInterest(messageType, t, weeksTotal) {
+    switch (messageType) {
+      case 'urgency':
+        return t <= 2 ? t / 2 : 1 / (t - 1);
+      case 'informational':
+        return 0.4 + 0.3 * (t - 1) / Math.max(1, weeksTotal - 1);
+      case 'emotional':
+        return t / weeksTotal;
+      default:
+        return 0;
+    }
+  },
+
+  // Advances every active campaign by one round: decrements weeksRemaining,
+  // recomputes interest, then removes campaigns that have run their full duration.
+  tickCampaigns() {
+    for (let i = activeCampaigns.length - 1; i >= 0; i--) {
+      const c = activeCampaigns[i];
+      c.weeksRemaining--;
+      const t = c.weeksTotal - c.weeksRemaining;
+      c.interest = this.calcInterest(c.messageType, t, c.weeksTotal);
+      if (c.weeksRemaining <= 0) activeCampaigns.splice(i, 1);
+    }
+  },
+
   // Deducts the campaign cost, snapshots draft settings into activeCampaigns, and notifies the player.
   launchCampaign() {
     const cost = this.calcCost();
@@ -202,6 +231,7 @@ const Marketing = {
       yRange:         { ...this.draftYRange },
       weeksTotal:     weeks,
       weeksRemaining: weeks,
+      interest:       0,
       cost,
       roundLaunched:  round,
     });

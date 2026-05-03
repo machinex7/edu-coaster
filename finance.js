@@ -1003,6 +1003,7 @@ const Finance = {
     const populationEvents = Population.populationEvents.map(e => ({ ...e }));
     Population.tickEvents();          // tick population event modifiers toward 0
 
+    Marketing.tickCampaigns();
     const arrivedOrders = Shopping.tickOrders();
     if (arrivedOrders.length > 0) {
       const detail = arrivedOrders.map(o => `${o.count}× ${o.itemName}`).join(', ');
