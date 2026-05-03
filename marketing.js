@@ -13,6 +13,8 @@ const Marketing = {
   // Age and Income each have 5 brackets → indices 0–4.
   draftXRange: { min: 0, max: 4 },
   draftYRange: { min: 0, max: 4 },
+  // Whether the current draft is a trial run (no favor changes, fixed 3-week duration).
+  draftTrialMode: false,
 
   // One-time fee added when the hook is a celebrity cameo.
   CELEBRITY_COST: 10_000,
@@ -48,6 +50,12 @@ const Marketing = {
   // Base confidence points added to each targeted bracket when a campaign completes.
   // Multiplied by focusMultiplier so tighter targeting yields more demographic insight.
   CAMPAIGN_CONFIDENCE_BASE: 2,
+
+  // Fixed run time (weeks) for a trial campaign — shorter than any full campaign.
+  TRIAL_WEEKS: 3,
+
+  // How many weeks to project when showing the full interest curve after a trial.
+  TRIAL_PROJECTION_WEEKS: 10,
 
   // Maximum number of crowd dots in the most-populated cloud cell.
   MAX_CROWD_DOTS: 40,
@@ -139,17 +147,27 @@ const Marketing = {
     return Math.round((mediaCost + celebrityCost) * Population.cumulativeInflation);
   },
 
+  // Returns the upfront cost for a trial run: TRIAL_WEEKS × one-step impressions × medium rate.
+  // Celebrity surcharge still applies since the hook choice affects curve shape.
+  calcTrialCost() {
+    const mediaCost     = this.TRIAL_WEEKS * this.IMPRESSIONS_STEP * this.COST_PER_IMPRESSION[this.draftMedium];
+    const celebrityCost = this.draftHook === 'celebrity' ? this.CELEBRITY_COST : 0;
+    return Math.round((mediaCost + celebrityCost) * Population.cumulativeInflation);
+  },
+
   // Updates the estimated-duration, cost displays, and launch button state without rebuilding the panel.
   _refreshEstimate() {
-    const weeks = this.estimatedWeeks();
-    const cost  = this.calcCost();
-    const weeksEl  = document.getElementById('mkt-est-weeks');
+    const cost    = this.draftTrialMode ? this.calcTrialCost() : this.calcCost();
     const costEl   = document.getElementById('mkt-est-cost');
     const launchEl = document.querySelector('.mkt-launch-btn');
-    if (weeksEl)  weeksEl.textContent     = `~${weeks} week${weeks !== 1 ? 's' : ''}`;
-    if (costEl)   costEl.textContent      = `$${cost.toLocaleString()}`;
-    if (launchEl) launchEl.disabled       = money < cost;
-    if (launchEl) launchEl.title          = money < cost ? 'Insufficient funds' : '';
+    if (costEl)   costEl.textContent = `$${cost.toLocaleString()}`;
+    if (launchEl) launchEl.disabled  = money < cost;
+    if (launchEl) launchEl.title     = money < cost ? 'Insufficient funds' : '';
+    if (!this.draftTrialMode) {
+      const weeks   = this.estimatedWeeks();
+      const weeksEl = document.getElementById('mkt-est-weeks');
+      if (weeksEl) weeksEl.textContent = `~${weeks} week${weeks !== 1 ? 's' : ''}`;
+    }
   },
 
   // Returns true if the chart cell at (xi, yi) should be highlighted.
@@ -265,7 +283,8 @@ const Marketing = {
 
   // Advances every active campaign by one round: decrements weeksRemaining,
   // recomputes interest (curve × hook ceiling), adds interest × focusMultiplier
-  // to each selected bracket's favor, then removes finished campaigns.
+  // to each selected bracket's favor (skipped for trial runs), then removes
+  // finished campaigns. Trial runs compute a projected full curve on completion.
   tickCampaigns() {
     for (let i = activeCampaigns.length - 1; i >= 0; i--) {
       const c = activeCampaigns[i];
@@ -278,13 +297,17 @@ const Marketing = {
       const delta = c.interest * c.focusMultiplier;
       const xCat  = this.DEMO_CATS.find(d => d.key === c.xAxis);
       const yCat  = this.DEMO_CATS.find(d => d.key === c.yAxis);
-      if (c.xRange.min !== null) {
-        for (let xi = c.xRange.min; xi <= c.xRange.max; xi++)
-          xCat.brackets[xi].favor += delta;
-      }
-      if (c.yRange.min !== null) {
-        for (let yi = c.yRange.min; yi <= c.yRange.max; yi++)
-          yCat.brackets[yi].favor += delta;
+
+      // Trial runs observe without influencing — no favor changes.
+      if (!c.trialMode) {
+        if (c.xRange.min !== null) {
+          for (let xi = c.xRange.min; xi <= c.xRange.max; xi++)
+            xCat.brackets[xi].favor += delta;
+        }
+        if (c.yRange.min !== null) {
+          for (let yi = c.yRange.min; yi <= c.yRange.max; yi++)
+            yCat.brackets[yi].favor += delta;
+        }
       }
 
       // Sum the estimated attendance delta across all targeted brackets for this week.
@@ -311,6 +334,27 @@ const Marketing = {
           for (let yi = c.yRange.min; yi <= c.yRange.max; yi++)
             Population.confidence[yKey][yi] = Math.min(100, Population.confidence[yKey][yi] + gain);
         }
+
+        if (c.trialMode) {
+          // Simulate what a full-length campaign would have looked like — same settings,
+          // same bracket state (untouched by the trial), over TRIAL_PROJECTION_WEEKS.
+          const projWeeks = this.TRIAL_PROJECTION_WEEKS;
+          const projPop   = c.trackedBrackets.reduce((sum, tb) => {
+            const b = this.DEMO_CATS.find(d => d.key === tb.key).brackets[tb.idx];
+            return sum + b.chance * b.count;
+          }, 0);
+          c.projectedDeltas = [];
+          for (let pt = 1; pt <= projWeeks; pt++) {
+            const projInt   = this.calcInterest(c.messageType, pt, projWeeks)
+                            * this.calcHookMax(c.hook, pt, projWeeks)
+                            + c.awardBoost;
+            const projDelta = projInt * c.focusMultiplier;
+            c.projectedDeltas.push(Math.round(
+              Finance.parkExcitement * projPop * projDelta / Population.baselineFavorablePopulation
+            ));
+          }
+        }
+
         completedCampaigns.push(activeCampaigns.splice(i, 1)[0]);
       }
     }
@@ -333,35 +377,40 @@ const Marketing = {
   },
 
   // Deducts the campaign cost, snapshots draft settings into activeCampaigns, and notifies the player.
+  // In trial mode, uses TRIAL_WEEKS for duration and calcTrialCost() for the fee.
   launchCampaign() {
-    const cost = this.calcCost();
+    const cost = this.draftTrialMode ? this.calcTrialCost() : this.calcCost();
     if (money < cost) return;
-    const weeks      = this.estimatedWeeks();
+    const weeks      = this.draftTrialMode ? this.TRIAL_WEEKS : this.estimatedWeeks();
     const awardBoost = this.draftAward ? this.calcAwardBoost(this.draftAward) : 0;
     money -= cost;
     activeCampaigns.push({
-      impressions:    this.draftImpressions,
-      medium:         this.draftMedium,
-      hook:           this.draftHook,
-      messageType:    this.draftMessageType,
-      award:          this.draftAward,          // award id used, or null
+      impressions:      this.draftTrialMode
+                          ? this.IMPRESSIONS_STEP * this.TRIAL_WEEKS
+                          : this.draftImpressions,
+      medium:           this.draftMedium,
+      hook:             this.draftHook,
+      messageType:      this.draftMessageType,
+      award:            this.draftAward,        // award id used, or null
       awardBoost,                               // additive interest bonus, frozen at launch
-      xAxis:          this.draftXAxis,
-      yAxis:          this.draftYAxis,
-      xRange:         { ...this.draftXRange },
-      yRange:         { ...this.draftYRange },
+      xAxis:            this.draftXAxis,
+      yAxis:            this.draftYAxis,
+      xRange:           { ...this.draftXRange },
+      yRange:           { ...this.draftYRange },
       weeksTotal:       weeks,
       weeksRemaining:   weeks,
       interest:         0,
-      focusMultiplier:   this.calcFocusMultiplier(
-                           this.draftXAxis, this.draftYAxis,
-                           this.draftXRange, this.draftYRange),
-      trackedBrackets:   this._buildTrackedBrackets(
-                           this.draftXAxis, this.draftYAxis,
-                           this.draftXRange, this.draftYRange),
-      weeklyDeltas:      [],  // per-week estimated attendance delta (integer visitors)
+      focusMultiplier:  this.calcFocusMultiplier(
+                          this.draftXAxis, this.draftYAxis,
+                          this.draftXRange, this.draftYRange),
+      trackedBrackets:  this._buildTrackedBrackets(
+                          this.draftXAxis, this.draftYAxis,
+                          this.draftXRange, this.draftYRange),
+      weeklyDeltas:     [],  // per-week estimated attendance delta (integer visitors)
       cost,
-      roundLaunched:     round,
+      roundLaunched:    round,
+      trialMode:        this.draftTrialMode,
+      projectedDeltas:  null,  // set by tickCampaigns on trial completion
     });
     // Increment use count after computing awardBoost so the snapshot reflects this tier.
     if (this.draftAward) {
@@ -480,14 +529,20 @@ const Marketing = {
 
     document.getElementById('mkt-design-view').innerHTML = `
       <div class="panel-section-header">Campaign Designer</div>
+      <div class="mkt-mode-toggle">
+        <button class="mkt-mode-btn${!this.draftTrialMode ? ' active' : ''}" data-mkt-trial="false">Full Campaign</button>
+        <button class="mkt-mode-btn${this.draftTrialMode ? ' active' : ''}" data-mkt-trial="true">Trial Run</button>
+      </div>
+      ${this.draftTrialMode ? `<p class="mkt-trial-desc">${this.TRIAL_WEEKS} weeks · no favor changes · reveals projected interest curve</p>` : ''}
       <div class="mkt-layout">
 
         <div class="mkt-settings-col">
+          ${!this.draftTrialMode ? `
           <div class="form-field">
             <label for="mkt-impressions">Target Impressions</label>
             <input id="mkt-impressions" type="number" min="${this.IMPRESSIONS_STEP}" step="${this.IMPRESSIONS_STEP}" value="${this.draftImpressions}">
             <div class="mkt-estimate">Est. <span id="mkt-est-weeks"></span></div>
-          </div>
+          </div>` : ''}
           <div class="form-field">
             <label>Medium</label>
             <div class="mkt-option-group">${mediumBtns}</div>
@@ -545,12 +600,19 @@ const Marketing = {
 
       <div class="mkt-launch-row">
         <div class="mkt-cost-line">Cost: <span id="mkt-est-cost"></span></div>
-        <button class="mkt-launch-btn"${money < this.calcCost() ? ' disabled title="Insufficient funds"' : ''}>Launch Campaign</button>
+        <button class="mkt-launch-btn"${money < (this.draftTrialMode ? this.calcTrialCost() : this.calcCost()) ? ' disabled title="Insufficient funds"' : ''}>${this.draftTrialMode ? 'Launch Trial Run' : 'Launch Campaign'}</button>
       </div>`;
 
     this._refreshEstimate();
 
-    document.getElementById('mkt-impressions').addEventListener('change', e => {
+    document.querySelectorAll('[data-mkt-trial]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.draftTrialMode = btn.dataset.mktTrial === 'true';
+        this._buildDesignView();
+      });
+    });
+
+    if (!this.draftTrialMode) document.getElementById('mkt-impressions').addEventListener('change', e => {
       this.draftImpressions = Math.max(this.IMPRESSIONS_STEP, Math.round((parseInt(e.target.value) || this.IMPRESSIONS_STEP) / this.IMPRESSIONS_STEP) * this.IMPRESSIONS_STEP);
       e.target.value = this.draftImpressions;
       this._refreshEstimate();
@@ -616,14 +678,15 @@ const Marketing = {
     const all = [...active, ...completed];
 
     const listItems = all.map(({ c, status }) => {
-      const medLabel = this.MEDIUMS.find(m => m.value === c.medium)?.label ?? c.medium;
-      const msgLabel = this.MESSAGE_TYPES.find(m => m.value === c.messageType)?.label ?? c.messageType;
+      const medLabel  = this.MEDIUMS.find(m => m.value === c.medium)?.label ?? c.medium;
+      const msgLabel  = this.MESSAGE_TYPES.find(m => m.value === c.messageType)?.label ?? c.messageType;
       const statusStr = status === 'active' ? `${c.weeksRemaining} wk remaining` : 'Completed';
+      const trialBadge = c.trialMode ? '<span class="mkt-trial-badge">Trial</span>' : '';
       const sel = this._selectedCampaign?.roundLaunched === c.roundLaunched;
       return `<div class="mkt-clist-item${sel ? ' selected' : ''}" data-round="${c.roundLaunched}">
         <div class="mkt-clist-dot ${status}"></div>
         <div>
-          <div class="mkt-clist-label">${medLabel} · ${msgLabel}</div>
+          <div class="mkt-clist-label">${medLabel} · ${msgLabel}${trialBadge}</div>
           <div class="mkt-clist-status">${statusStr}</div>
         </div>
       </div>`;
@@ -659,11 +722,16 @@ const Marketing = {
     const field = (label, value) =>
       `<div class="mkt-summary-field"><span>${label}</span><span>${value}</span></div>`;
 
+    // For a completed trial, show the projected full curve; otherwise show actual weeklyDeltas.
+    const useProjected = c.trialMode && c.projectedDeltas && c.projectedDeltas.length > 0;
+    const chartSource  = useProjected ? c.projectedDeltas : c.weeklyDeltas;
+
     let chartSection = '<div class="mkt-cdetail-empty">No data yet.</div>';
-    if (c.weeklyDeltas.length > 0) {
+    if (chartSource.length > 0) {
       // Build the data series for the active chart mode.
+      // Relative mode is disabled for projected data since history won't match trial weeks.
       let values, chartLabel;
-      if (this._chartMode === 'relative') {
+      if (!useProjected && this._chartMode === 'relative') {
         // Delta as a percentage of that week's recorded attendance from history.
         const attByRound = new Map(History.rounds.map(r => [r.round, r.attendance]));
         values = c.weeklyDeltas.map((d, i) =>
@@ -672,33 +740,41 @@ const Marketing = {
         chartLabel = 'Est. attendance boost (% of weekly visitors)';
       } else if (this._chartMode === 'cumulative') {
         // Running sum of absolute deltas week over week.
-        values = c.weeklyDeltas.reduce((acc, d) => {
+        values = chartSource.reduce((acc, d) => {
           acc.push((acc[acc.length - 1] ?? 0) + d);
           return acc;
         }, []);
-        chartLabel = 'Est. cumulative attendance boost';
+        chartLabel = useProjected
+          ? 'Projected cumulative attendance boost (full campaign)'
+          : 'Est. cumulative attendance boost';
       } else {
-        values = c.weeklyDeltas;
-        chartLabel = 'Est. weekly attendance boost';
+        values = chartSource;
+        chartLabel = useProjected
+          ? 'Projected weekly attendance boost (full campaign)'
+          : 'Est. weekly attendance boost';
       }
 
       const maxVal = Math.max(...values, 1);
       const bars = values.map((v, wi) => {
         const pct     = Math.round(v / maxVal * 100);
-        const tipVal  = this._chartMode === 'relative'
+        const tipVal  = (!useProjected && this._chartMode === 'relative')
           ? v.toFixed(2) + '%'
           : Math.round(v).toLocaleString() + ' visitors';
         return `<div class="mkt-chart-col">
-          <div class="mkt-chart-bar" style="height:${pct}%" title="W${wi + 1}: ${tipVal}"></div>
+          <div class="mkt-chart-bar${useProjected ? ' mkt-chart-bar--projected' : ''}" style="height:${pct}%" title="W${wi + 1}: ${tipVal}"></div>
           <div class="mkt-chart-wlabel">W${wi + 1}</div>
         </div>`;
       }).join('');
 
-      const modeBtns = ['absolute', 'relative', 'cumulative'].map(mode => {
-        const label = mode === 'absolute' ? 'Weekly' : mode === 'relative' ? '% Share' : 'Cumulative';
-        return `<button class="mkt-chart-mode-btn${this._chartMode === mode ? ' active' : ''}"
-          data-chart-mode="${mode}">${label}</button>`;
-      }).join('');
+      // Suppress the relative mode button for projected data (no matching history).
+      const modeBtns = ['absolute', 'relative', 'cumulative']
+        .filter(mode => !(useProjected && mode === 'relative'))
+        .map(mode => {
+          const label = mode === 'absolute' ? 'Weekly' : mode === 'relative' ? '% Share' : 'Cumulative';
+          const activeMode = (useProjected && this._chartMode === 'relative') ? 'absolute' : this._chartMode;
+          return `<button class="mkt-chart-mode-btn${activeMode === mode ? ' active' : ''}"
+            data-chart-mode="${mode}">${label}</button>`;
+        }).join('');
 
       chartSection = `
         <div class="mkt-summary-chart-label">${chartLabel}</div>
@@ -711,11 +787,12 @@ const Marketing = {
       : 'None';
 
     return `
+      ${c.trialMode ? field('Type', '<span class="mkt-trial-badge">Trial Run</span>') : ''}
       ${field('Medium',     medLabel)}
       ${field('Hook',       hookLabel)}
       ${field('Message',    msgLabel)}
       ${field('Award',      awardLabel)}
-      ${field('Impressions', c.impressions.toLocaleString())}
+      ${!c.trialMode ? field('Impressions', c.impressions.toLocaleString()) : ''}
       ${field('Cost',       '$' + c.cost.toLocaleString())}
       ${field('Targeting',  brackets)}
       ${isActive ? field('Weeks remaining', c.weeksRemaining) : ''}
