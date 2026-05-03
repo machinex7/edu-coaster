@@ -72,8 +72,9 @@ let orders               = [];  // { itemIndex, itemName, count, weeksRemaining 
 let totalOrderSpend      = 0;  // cumulative dollars spent placing merchandise orders
 // Active marketing campaigns; each entry is a snapshot of draft state at launch time.
 // { impressions, medium, hook, messageType, xAxis, yAxis, xRange, yRange,
-//   weeksTotal, weeksRemaining, interest, cost, roundLaunched }
-// interest (0–1) is recomputed each round by Marketing.tickCampaigns().
+//   weeksTotal, weeksRemaining, interest, focusMultiplier, cost, roundLaunched }
+// interest is recomputed each round by Marketing.tickCampaigns() as
+// calcInterest × calcHookMax × focusMultiplier (frozen at launch from population weights).
 let activeCampaigns      = [];
 
 let gridCells = [];   // [row][col] → <div>

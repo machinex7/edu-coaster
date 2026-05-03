@@ -202,6 +202,31 @@ const Marketing = {
     }
   },
 
+  // Returns a focus multiplier (≥ 1) based on what fraction of the total joint population
+  // falls within the selected demographic ranges. Computed from bracket.count products so
+  // a bracket covering 80% of the population still reads as "broad" even if it's one index.
+  // Uses 1/sqrt(fraction) so halving the selected population gives a 1.41× boost, not 2×.
+  calcFocusMultiplier(xAxis, yAxis, xRange, yRange) {
+    const xCat = this.DEMO_CATS.find(c => c.key === xAxis);
+    const yCat = this.DEMO_CATS.find(c => c.key === yAxis);
+    const xSet = xRange.min !== null, ySet = yRange.min !== null;
+    let totalPop = 0, selectedPop = 0;
+    for (let yi = 0; yi < yCat.brackets.length; yi++) {
+      for (let xi = 0; xi < xCat.brackets.length; xi++) {
+        const pop = xCat.brackets[xi].count * yCat.brackets[yi].count;
+        totalPop += pop;
+        const inX = xSet && xi >= xRange.min && xi <= xRange.max;
+        const inY = ySet && yi >= yRange.min && yi <= yRange.max;
+        const sel = (!xSet && !ySet) ? false
+                  : (xSet && ySet)   ? (inX && inY)
+                  : xSet ? inX : inY;
+        if (sel) selectedPop += pop;
+      }
+    }
+    if (selectedPop === 0 || totalPop === 0) return 1;
+    return 1 / Math.sqrt(selectedPop / totalPop);
+  },
+
   // Returns the maximum interest ceiling for the given hook at week t of weeksTotal.
   // Celebrity: flat 1.5 — high-impact from day one.
   // Jingle: scales from 0.5 to 1.5 as the tune lodges in people's heads.
@@ -222,7 +247,8 @@ const Marketing = {
       c.weeksRemaining--;
       const t = c.weeksTotal - c.weeksRemaining;
       c.interest = this.calcInterest(c.messageType, t, c.weeksTotal)
-                 * this.calcHookMax(c.hook, t, c.weeksTotal);
+                 * this.calcHookMax(c.hook, t, c.weeksTotal)
+                 * c.focusMultiplier;
       if (c.weeksRemaining <= 0) activeCampaigns.splice(i, 1);
     }
   },
@@ -242,11 +268,14 @@ const Marketing = {
       yAxis:          this.draftYAxis,
       xRange:         { ...this.draftXRange },
       yRange:         { ...this.draftYRange },
-      weeksTotal:     weeks,
-      weeksRemaining: weeks,
-      interest:       0,
+      weeksTotal:       weeks,
+      weeksRemaining:   weeks,
+      interest:         0,
+      focusMultiplier:  this.calcFocusMultiplier(
+                          this.draftXAxis, this.draftYAxis,
+                          this.draftXRange, this.draftYRange),
       cost,
-      roundLaunched:  round,
+      roundLaunched:    round,
     });
     updateHUD();
     this.buildPanel();
