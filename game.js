@@ -70,6 +70,16 @@ let selectedSupplierId   = null;
 let unlockedSupplierIds  = new Set();
 let orders               = [];  // { itemIndex, itemName, count, weeksRemaining }
 let totalOrderSpend      = 0;  // cumulative dollars spent placing merchandise orders
+// Active marketing campaigns; each entry is a snapshot of draft state at launch time.
+// { impressions, medium, hook, messageType, xAxis, yAxis, xRange, yRange,
+//   weeksTotal, weeksRemaining, interest, focusMultiplier,
+//   trackedBrackets, weeklyDeltas, cost, roundLaunched }
+// interest (calcInterest × calcHookMax) is recomputed each round by Marketing.tickCampaigns().
+// weeklyDeltas[week] is a parallel array to trackedBrackets: estimated additional
+// visitors per bracket from that week's favor increase.
+let activeCampaigns      = [];  // running campaigns — see comment block above
+// Campaigns moved here on completion so their weeklyDeltas survive for the summary screen.
+let completedCampaigns   = [];
 
 let gridCells = [];   // [row][col] → <div>
 let gridState = [];   // [row][col] → instanceId string, or null
