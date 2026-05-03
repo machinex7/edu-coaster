@@ -240,15 +240,28 @@ const Marketing = {
   },
 
   // Advances every active campaign by one round: decrements weeksRemaining,
-  // recomputes interest, then removes campaigns that have run their full duration.
+  // recomputes interest (curve × hook ceiling), adds interest × focusMultiplier
+  // to each selected bracket's favor, then removes finished campaigns.
   tickCampaigns() {
     for (let i = activeCampaigns.length - 1; i >= 0; i--) {
       const c = activeCampaigns[i];
       c.weeksRemaining--;
       const t = c.weeksTotal - c.weeksRemaining;
       c.interest = this.calcInterest(c.messageType, t, c.weeksTotal)
-                 * this.calcHookMax(c.hook, t, c.weeksTotal)
-                 * c.focusMultiplier;
+                 * this.calcHookMax(c.hook, t, c.weeksTotal);
+
+      const delta = c.interest * c.focusMultiplier;
+      const xCat  = this.DEMO_CATS.find(d => d.key === c.xAxis);
+      const yCat  = this.DEMO_CATS.find(d => d.key === c.yAxis);
+      if (c.xRange.min !== null) {
+        for (let xi = c.xRange.min; xi <= c.xRange.max; xi++)
+          xCat.brackets[xi].favor += delta;
+      }
+      if (c.yRange.min !== null) {
+        for (let yi = c.yRange.min; yi <= c.yRange.max; yi++)
+          yCat.brackets[yi].favor += delta;
+      }
+
       if (c.weeksRemaining <= 0) activeCampaigns.splice(i, 1);
     }
   },

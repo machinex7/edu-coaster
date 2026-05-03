@@ -73,8 +73,8 @@ let totalOrderSpend      = 0;  // cumulative dollars spent placing merchandise o
 // Active marketing campaigns; each entry is a snapshot of draft state at launch time.
 // { impressions, medium, hook, messageType, xAxis, yAxis, xRange, yRange,
 //   weeksTotal, weeksRemaining, interest, focusMultiplier, cost, roundLaunched }
-// interest is recomputed each round by Marketing.tickCampaigns() as
-// calcInterest × calcHookMax × focusMultiplier (frozen at launch from population weights).
+// interest (calcInterest × calcHookMax) is recomputed each round by Marketing.tickCampaigns();
+// favor delta applied to selected brackets = interest × focusMultiplier each round.
 let activeCampaigns      = [];
 
 let gridCells = [];   // [row][col] → <div>
