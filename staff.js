@@ -253,11 +253,6 @@ const Staff = {
     if (quitting.length === 0) return;
     this.roster = this.roster.filter(s => s.mood !== 0);
     for (const s of quitting) {
-      Notifications.push({
-        label:   'Staff',
-        message: `${s.name} quit — their mood reached 0.`,
-        action:  () => openPanel('staffing'),
-      });
       this._notifyIfLastWorker(s);
     }
   },
