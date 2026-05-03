@@ -325,10 +325,10 @@ const Marketing = {
     const result = [];
     if (xRange.min !== null)
       for (let xi = xRange.min; xi <= xRange.max; xi++)
-        result.push({ axis: xAxis.toUpperCase(), key: xAxis, idx: xi, name: xCat.brackets[xi].name });
+        result.push({ key: xAxis, idx: xi, name: xCat.brackets[xi].name });
     if (yRange.min !== null)
       for (let yi = yRange.min; yi <= yRange.max; yi++)
-        result.push({ axis: yAxis.toUpperCase(), key: yAxis, idx: yi, name: yCat.brackets[yi].name });
+        result.push({ key: yAxis, idx: yi, name: yCat.brackets[yi].name });
     return result;
   },
 
@@ -367,6 +367,7 @@ const Marketing = {
     if (this.draftAward) {
       this.marketingUses[this.draftAward] = (this.marketingUses[this.draftAward] ?? 0) + 1;
     }
+    this.draftAward = null;
     updateHUD();
     this.buildPanel();
   },
@@ -664,10 +665,10 @@ const Marketing = {
       let values, chartLabel;
       if (this._chartMode === 'relative') {
         // Delta as a percentage of that week's recorded attendance from history.
-        values = c.weeklyDeltas.map((d, i) => {
-          const rec = History.rounds.find(r => r.round === c.roundLaunched + i);
-          return (d / (rec?.attendance || 1)) * 100;
-        });
+        const attByRound = new Map(History.rounds.map(r => [r.round, r.attendance]));
+        values = c.weeklyDeltas.map((d, i) =>
+          (d / (attByRound.get(c.roundLaunched + i) || 1)) * 100
+        );
         chartLabel = 'Est. attendance boost (% of weekly visitors)';
       } else if (this._chartMode === 'cumulative') {
         // Running sum of absolute deltas week over week.
