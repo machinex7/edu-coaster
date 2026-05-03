@@ -202,6 +202,18 @@ const Marketing = {
     }
   },
 
+  // Returns the maximum interest ceiling for the given hook at week t of weeksTotal.
+  // Celebrity: flat 1.5 — high-impact from day one.
+  // Jingle: scales from 0.5 to 1.5 as the tune lodges in people's heads.
+  // Tagline: neutral 1.0.
+  calcHookMax(hook, t, weeksTotal) {
+    switch (hook) {
+      case 'celebrity': return 1.5;
+      case 'jingle':    return 0.5 + t / weeksTotal;
+      default:          return 1.0;
+    }
+  },
+
   // Advances every active campaign by one round: decrements weeksRemaining,
   // recomputes interest, then removes campaigns that have run their full duration.
   tickCampaigns() {
@@ -209,7 +221,8 @@ const Marketing = {
       const c = activeCampaigns[i];
       c.weeksRemaining--;
       const t = c.weeksTotal - c.weeksRemaining;
-      c.interest = this.calcInterest(c.messageType, t, c.weeksTotal);
+      c.interest = this.calcInterest(c.messageType, t, c.weeksTotal)
+                 * this.calcHookMax(c.hook, t, c.weeksTotal);
       if (c.weeksRemaining <= 0) activeCampaigns.splice(i, 1);
     }
   },
