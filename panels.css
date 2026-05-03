@@ -1460,6 +1460,30 @@
   color: #ca8a04;
 }
 
+.mkt-award-row {
+  border-top: 1px solid #374151;
+  padding-top: 10px;
+  margin-top: 4px;
+}
+
+.mkt-award-hint {
+  font-size: 0.68rem;
+  color: #6b7280;
+  font-weight: 400;
+}
+
+.mkt-award-group {
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.mkt-option-btn--award {
+  font-size: 0.72rem;
+  white-space: normal;
+  text-align: left;
+  line-height: 1.3;
+}
+
 .mkt-launch-btn {
   flex: 1;
   padding: 8px;
@@ -1555,6 +1579,210 @@
   color: #fde68a;
   position: relative;
   z-index: 1;
+}
+
+/* ── Marketing panel: tab bar + sub-views ── */
+#marketing-panel-body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.mkt-tab-bar {
+  display: flex;
+  border-bottom: 2px solid #374151;
+  flex-shrink: 0;
+}
+
+.mkt-tab-btn {
+  padding: 8px 18px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  color: #6b7280;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.mkt-tab-btn.active {
+  color: #f3f4f6;
+  border-bottom-color: #fbbf24;
+}
+
+#mkt-design-view {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+#mkt-design-view.hidden,
+#mkt-campaigns-view.hidden {
+  display: none;
+}
+
+#mkt-campaigns-view {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Campaign list sidebar */
+.mkt-clist {
+  width: 220px;
+  flex-shrink: 0;
+  border-right: 1px solid #374151;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.mkt-clist-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+}
+
+.mkt-clist-item:hover:not(.selected) {
+  background: #1f2937;
+}
+
+.mkt-clist-item.selected {
+  background: #1f2937;
+  border-left-color: #fbbf24;
+}
+
+.mkt-clist-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.mkt-clist-dot.active    { background: #3b82f6; }
+.mkt-clist-dot.completed { background: #4b5563; }
+
+.mkt-clist-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #e5e7eb;
+}
+
+.mkt-clist-status {
+  font-size: 11px;
+  color: #9ca3af;
+  margin-top: 2px;
+}
+
+.mkt-clist-empty {
+  padding: 16px 14px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* Campaign detail pane */
+.mkt-cdetail {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 16px;
+}
+
+.mkt-cdetail-empty {
+  font-size: 12px;
+  color: #6b7280;
+  padding: 8px 0;
+}
+
+.mkt-summary-field {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 7px 0;
+  border-bottom: 1px solid #374151;
+  font-size: 12px;
+  gap: 12px;
+}
+
+.mkt-summary-field > span:first-child {
+  color: #9ca3af;
+  flex-shrink: 0;
+}
+
+.mkt-summary-field > span:last-child {
+  color: #e5e7eb;
+  text-align: right;
+}
+
+.mkt-summary-chart-label {
+  font-size: 11px;
+  color: #9ca3af;
+  margin: 14px 0 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Bar chart */
+.mkt-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 72px;
+}
+
+.mkt-chart-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 1;
+  height: 100%;
+}
+
+.mkt-chart-bar {
+  width: 100%;
+  background: #3b82f6;
+  border-radius: 2px 2px 0 0;
+  min-height: 2px;
+}
+
+.mkt-chart-wlabel {
+  margin-top: 3px;
+  font-size: 9px;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.mkt-chart-mode-bar {
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.mkt-chart-mode-btn {
+  flex: 1;
+  padding: 4px 0;
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 4px;
+  color: #6b7280;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.mkt-chart-mode-btn.active {
+  background: #1d4ed8;
+  border-color: #3b82f6;
+  color: #eff6ff;
 }
 
 /* ── Awards panel ── */

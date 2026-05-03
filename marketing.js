@@ -4,6 +4,8 @@ const Marketing = {
   draftMedium:      'tv',
   draftHook:        'jingle',
   draftMessageType: 'informational',
+  // ID of the award attached to this campaign draft, or null for none.
+  draftAward: null,
   // Keys of the Population bracket arrays mapped to each chart axis.
   draftXAxis:  'age',
   draftYAxis:  'income',
@@ -14,6 +16,14 @@ const Marketing = {
 
   // One-time fee added when the hook is a celebrity cameo.
   CELEBRITY_COST: 10_000,
+
+  // Additive interest bonus per marketing use of an award (0-indexed by prior use count).
+  // Each use is one tier less effective; clamps at the last entry.
+  AWARD_BOOST_TIERS: [0.20, 0.15, 0.10, 0.05, 0.01],
+
+  // Tracks how many campaigns each award has been used in (awardId → count).
+  // Persists for the full game session; incremented at campaign launch.
+  marketingUses: {},
 
   // Dollar cost per impression for each medium — TV is most expensive,
   // online cheapest, matching real-world CPM relative rates.
@@ -245,6 +255,14 @@ const Marketing = {
     }
   },
 
+  // Returns the additive interest bonus for the next use of the given award.
+  // Looks up the current use count in marketingUses, maps to AWARD_BOOST_TIERS.
+  calcAwardBoost(awardId) {
+    const uses = this.marketingUses[awardId] ?? 0;
+    const idx  = Math.min(uses, this.AWARD_BOOST_TIERS.length - 1);
+    return this.AWARD_BOOST_TIERS[idx];
+  },
+
   // Advances every active campaign by one round: decrements weeksRemaining,
   // recomputes interest (curve × hook ceiling), adds interest × focusMultiplier
   // to each selected bracket's favor, then removes finished campaigns.
@@ -254,7 +272,8 @@ const Marketing = {
       c.weeksRemaining--;
       const t = c.weeksTotal - c.weeksRemaining;
       c.interest = this.calcInterest(c.messageType, t, c.weeksTotal)
-                 * this.calcHookMax(c.hook, t, c.weeksTotal);
+                 * this.calcHookMax(c.hook, t, c.weeksTotal)
+                 + c.awardBoost;
 
       const delta = c.interest * c.focusMultiplier;
       const xCat  = this.DEMO_CATS.find(d => d.key === c.xAxis);
@@ -268,14 +287,15 @@ const Marketing = {
           yCat.brackets[yi].favor += delta;
       }
 
-      // Estimate the additional weekly visitors each tracked bracket gained from this
-      // week's favor increase. Formula: parkExcitement × chance × favorDelta × count
-      // divided by baselineFavorablePopulation (the /7 from calcFavorablePopulation cancels).
-      c.weeklyDeltas.push(c.trackedBrackets.map(tb => {
+      // Sum the estimated attendance delta across all targeted brackets for this week.
+      // Formula: parkExcitement × chance × favorDelta × count / baselineFavorablePopulation.
+      const weekDelta = c.trackedBrackets.reduce((sum, tb) => {
         const b = this.DEMO_CATS.find(d => d.key === tb.key).brackets[tb.idx];
-        return Math.round(Finance.parkExcitement * b.chance * delta * b.count
-                        / Population.baselineFavorablePopulation);
-      }));
+        return sum + b.chance * b.count;
+      }, 0);
+      c.weeklyDeltas.push(Math.round(
+        Finance.parkExcitement * weekDelta * delta / Population.baselineFavorablePopulation
+      ));
 
       if (c.weeksRemaining <= 0) {
         // Award a small confidence gain to each selected bracket on completion.
@@ -305,10 +325,10 @@ const Marketing = {
     const result = [];
     if (xRange.min !== null)
       for (let xi = xRange.min; xi <= xRange.max; xi++)
-        result.push({ axis: xAxis.toUpperCase(), key: xAxis, idx: xi, name: xCat.brackets[xi].name });
+        result.push({ key: xAxis, idx: xi, name: xCat.brackets[xi].name });
     if (yRange.min !== null)
       for (let yi = yRange.min; yi <= yRange.max; yi++)
-        result.push({ axis: yAxis.toUpperCase(), key: yAxis, idx: yi, name: yCat.brackets[yi].name });
+        result.push({ key: yAxis, idx: yi, name: yCat.brackets[yi].name });
     return result;
   },
 
@@ -316,13 +336,16 @@ const Marketing = {
   launchCampaign() {
     const cost = this.calcCost();
     if (money < cost) return;
-    const weeks = this.estimatedWeeks();
+    const weeks      = this.estimatedWeeks();
+    const awardBoost = this.draftAward ? this.calcAwardBoost(this.draftAward) : 0;
     money -= cost;
     activeCampaigns.push({
       impressions:    this.draftImpressions,
       medium:         this.draftMedium,
       hook:           this.draftHook,
       messageType:    this.draftMessageType,
+      award:          this.draftAward,          // award id used, or null
+      awardBoost,                               // additive interest bonus, frozen at launch
       xAxis:          this.draftXAxis,
       yAxis:          this.draftYAxis,
       xRange:         { ...this.draftXRange },
@@ -336,16 +359,59 @@ const Marketing = {
       trackedBrackets:   this._buildTrackedBrackets(
                            this.draftXAxis, this.draftYAxis,
                            this.draftXRange, this.draftYRange),
-      weeklyDeltas:      [],  // per-week estimated attendance delta per tracked bracket
+      weeklyDeltas:      [],  // per-week estimated attendance delta (integer visitors)
       cost,
       roundLaunched:     round,
     });
+    // Increment use count after computing awardBoost so the snapshot reflects this tier.
+    if (this.draftAward) {
+      this.marketingUses[this.draftAward] = (this.marketingUses[this.draftAward] ?? 0) + 1;
+    }
+    this.draftAward = null;
     updateHUD();
     this.buildPanel();
   },
 
-  // Renders the full panel from current draft state and wires up all event listeners.
+  // Tracks which top-level view is shown: 'design' or 'campaigns'.
+  _activeView: 'design',
+  // Campaign object currently selected in the campaigns list, or null.
+  _selectedCampaign: null,
+  // Which chart mode is shown in the campaign detail: 'absolute', 'relative', or 'cumulative'.
+  _chartMode: 'absolute',
+
+  // Switches top-level view and rebuilds the panel.
+  setView(v) {
+    this._activeView = v;
+    if (v !== 'campaigns') this._selectedCampaign = null;
+    this.buildPanel();
+  },
+
+  // Sets the selected campaign by roundLaunched key and rebuilds only the campaigns view.
+  _selectCampaign(roundLaunched) {
+    const all = [...activeCampaigns, ...completedCampaigns];
+    this._selectedCampaign = all.find(c => c.roundLaunched === roundLaunched) ?? null;
+    this._chartMode = 'absolute';
+    this._buildCampaignsView();
+  },
+
+  // Renders the tab bar + the active view into marketing-panel-body.
   buildPanel() {
+    document.getElementById('marketing-panel-body').innerHTML = `
+      <div class="mkt-tab-bar">
+        <button class="mkt-tab-btn${this._activeView === 'design'    ? ' active' : ''}" data-mkt-view="design">Design</button>
+        <button class="mkt-tab-btn${this._activeView === 'campaigns' ? ' active' : ''}" data-mkt-view="campaigns">Campaigns</button>
+      </div>
+      <div id="mkt-design-view"    class="${this._activeView === 'design'    ? '' : 'hidden'}"></div>
+      <div id="mkt-campaigns-view" class="${this._activeView === 'campaigns' ? '' : 'hidden'}"></div>`;
+    document.querySelectorAll('.mkt-tab-btn').forEach(btn =>
+      btn.addEventListener('click', () => this.setView(btn.dataset.mktView))
+    );
+    if (this._activeView === 'design')    this._buildDesignView();
+    if (this._activeView === 'campaigns') this._buildCampaignsView();
+  },
+
+  // Renders the campaign designer into #mkt-design-view and wires its event listeners.
+  _buildDesignView() {
     const xCat = this.DEMO_CATS.find(c => c.key === this.draftXAxis);
     const yCat = this.DEMO_CATS.find(c => c.key === this.draftYAxis);
 
@@ -412,7 +478,7 @@ const Marketing = {
       return `<button class="mkt-cell${sel ? ' selected' : ''}" data-range-axis="x" data-idx="${i}" title="${b.name}">${b.short}</button>`;
     }).join('');
 
-    document.getElementById('marketing-panel-body').innerHTML = `
+    document.getElementById('mkt-design-view').innerHTML = `
       <div class="panel-section-header">Campaign Designer</div>
       <div class="mkt-layout">
 
@@ -461,6 +527,22 @@ const Marketing = {
         </div>
 
       </div>
+
+      ${Awards.list.length > 0 ? `
+      <div class="form-field mkt-award-row">
+        <label>Feature an Award <span class="mkt-award-hint">(boosts campaign interest)</span></label>
+        <div class="mkt-option-group mkt-award-group">
+          <button class="mkt-option-btn${this.draftAward === null ? ' active' : ''}" data-mkt-award="">None</button>
+          ${Awards.list.map(a => {
+            const boost = this.calcAwardBoost(a.id);
+            const uses  = this.marketingUses[a.id] ?? 0;
+            const tip   = uses > 0 ? `Used ${uses}× — +${boost.toFixed(2)} interest/wk` : `+${boost.toFixed(2)} interest/wk`;
+            return `<button class="mkt-option-btn mkt-option-btn--award${this.draftAward === a.id ? ' active' : ''}"
+              data-mkt-award="${a.id}" title="${tip}">${a.name}</button>`;
+          }).join('')}
+        </div>
+      </div>` : ''}
+
       <div class="mkt-launch-row">
         <div class="mkt-cost-line">Cost: <span id="mkt-est-cost"></span></div>
         <button class="mkt-launch-btn"${money < this.calcCost() ? ' disabled title="Insufficient funds"' : ''}>Launch Campaign</button>
@@ -497,16 +579,23 @@ const Marketing = {
       });
     });
 
+    document.querySelectorAll('[data-mkt-award]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.draftAward = btn.dataset.mktAward || null;
+        document.querySelectorAll('[data-mkt-award]').forEach(b => b.classList.toggle('active', b === btn));
+      });
+    });
+
     document.getElementById('mkt-x-axis').addEventListener('change', e => {
       this.draftXAxis  = e.target.value;
       this.draftXRange = this._fullRange(e.target.value);
-      this.buildPanel();
+      this._buildDesignView();
     });
 
     document.getElementById('mkt-y-axis').addEventListener('change', e => {
       this.draftYAxis  = e.target.value;
       this.draftYRange = this._fullRange(e.target.value);
-      this.buildPanel();
+      this._buildDesignView();
     });
 
     document.querySelectorAll('[data-range-axis]').forEach(btn => {
@@ -518,5 +607,118 @@ const Marketing = {
     document.querySelector('.mkt-launch-btn').addEventListener('click', () => {
       this.launchCampaign();
     });
+  },
+
+  // Renders the campaigns list + detail pane into #mkt-campaigns-view.
+  _buildCampaignsView() {
+    const active    = activeCampaigns.map(c    => ({ c, status: 'active'    }));
+    const completed = [...completedCampaigns].reverse().map(c => ({ c, status: 'completed' }));
+    const all = [...active, ...completed];
+
+    const listItems = all.map(({ c, status }) => {
+      const medLabel = this.MEDIUMS.find(m => m.value === c.medium)?.label ?? c.medium;
+      const msgLabel = this.MESSAGE_TYPES.find(m => m.value === c.messageType)?.label ?? c.messageType;
+      const statusStr = status === 'active' ? `${c.weeksRemaining} wk remaining` : 'Completed';
+      const sel = this._selectedCampaign?.roundLaunched === c.roundLaunched;
+      return `<div class="mkt-clist-item${sel ? ' selected' : ''}" data-round="${c.roundLaunched}">
+        <div class="mkt-clist-dot ${status}"></div>
+        <div>
+          <div class="mkt-clist-label">${medLabel} · ${msgLabel}</div>
+          <div class="mkt-clist-status">${statusStr}</div>
+        </div>
+      </div>`;
+    }).join('') || '<div class="mkt-clist-empty">No campaigns yet.</div>';
+
+    const detail = this._selectedCampaign
+      ? this._buildCampaignSummary(this._selectedCampaign)
+      : '<div class="mkt-cdetail-empty">Select a campaign to view its summary.</div>';
+
+    document.getElementById('mkt-campaigns-view').innerHTML = `
+      <div class="mkt-clist">${listItems}</div>
+      <div class="mkt-cdetail">${detail}</div>`;
+
+    document.querySelectorAll('.mkt-clist-item[data-round]').forEach(item =>
+      item.addEventListener('click', () => this._selectCampaign(parseInt(item.dataset.round)))
+    );
+    document.querySelectorAll('.mkt-chart-mode-btn').forEach(btn =>
+      btn.addEventListener('click', () => {
+        this._chartMode = btn.dataset.chartMode;
+        this._buildCampaignsView();
+      })
+    );
+  },
+
+  // Returns the HTML for the detail pane of a single campaign.
+  _buildCampaignSummary(c) {
+    const medLabel  = this.MEDIUMS.find(m => m.value === c.medium)?.label            ?? c.medium;
+    const hookLabel = this.HOOKS.find(h => h.value === c.hook)?.label                ?? c.hook;
+    const msgLabel  = this.MESSAGE_TYPES.find(m => m.value === c.messageType)?.label ?? c.messageType;
+    const brackets  = c.trackedBrackets.map(b => b.name).join(', ');
+    const isActive  = activeCampaigns.includes(c);
+
+    const field = (label, value) =>
+      `<div class="mkt-summary-field"><span>${label}</span><span>${value}</span></div>`;
+
+    let chartSection = '<div class="mkt-cdetail-empty">No data yet.</div>';
+    if (c.weeklyDeltas.length > 0) {
+      // Build the data series for the active chart mode.
+      let values, chartLabel;
+      if (this._chartMode === 'relative') {
+        // Delta as a percentage of that week's recorded attendance from history.
+        const attByRound = new Map(History.rounds.map(r => [r.round, r.attendance]));
+        values = c.weeklyDeltas.map((d, i) =>
+          (d / (attByRound.get(c.roundLaunched + i) || 1)) * 100
+        );
+        chartLabel = 'Est. attendance boost (% of weekly visitors)';
+      } else if (this._chartMode === 'cumulative') {
+        // Running sum of absolute deltas week over week.
+        values = c.weeklyDeltas.reduce((acc, d) => {
+          acc.push((acc[acc.length - 1] ?? 0) + d);
+          return acc;
+        }, []);
+        chartLabel = 'Est. cumulative attendance boost';
+      } else {
+        values = c.weeklyDeltas;
+        chartLabel = 'Est. weekly attendance boost';
+      }
+
+      const maxVal = Math.max(...values, 1);
+      const bars = values.map((v, wi) => {
+        const pct     = Math.round(v / maxVal * 100);
+        const tipVal  = this._chartMode === 'relative'
+          ? v.toFixed(2) + '%'
+          : Math.round(v).toLocaleString() + ' visitors';
+        return `<div class="mkt-chart-col">
+          <div class="mkt-chart-bar" style="height:${pct}%" title="W${wi + 1}: ${tipVal}"></div>
+          <div class="mkt-chart-wlabel">W${wi + 1}</div>
+        </div>`;
+      }).join('');
+
+      const modeBtns = ['absolute', 'relative', 'cumulative'].map(mode => {
+        const label = mode === 'absolute' ? 'Weekly' : mode === 'relative' ? '% Share' : 'Cumulative';
+        return `<button class="mkt-chart-mode-btn${this._chartMode === mode ? ' active' : ''}"
+          data-chart-mode="${mode}">${label}</button>`;
+      }).join('');
+
+      chartSection = `
+        <div class="mkt-summary-chart-label">${chartLabel}</div>
+        <div class="mkt-chart">${bars}</div>
+        <div class="mkt-chart-mode-bar">${modeBtns}</div>`;
+    }
+
+    const awardLabel = c.award
+      ? `${Awards.list.find(a => a.id === c.award)?.name ?? c.award} (+${c.awardBoost.toFixed(2)})`
+      : 'None';
+
+    return `
+      ${field('Medium',     medLabel)}
+      ${field('Hook',       hookLabel)}
+      ${field('Message',    msgLabel)}
+      ${field('Award',      awardLabel)}
+      ${field('Impressions', c.impressions.toLocaleString())}
+      ${field('Cost',       '$' + c.cost.toLocaleString())}
+      ${field('Targeting',  brackets)}
+      ${isActive ? field('Weeks remaining', c.weeksRemaining) : ''}
+      ${chartSection}`;
   },
 };
