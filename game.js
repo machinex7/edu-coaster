@@ -72,9 +72,11 @@ let orders               = [];  // { itemIndex, itemName, count, weeksRemaining 
 let totalOrderSpend      = 0;  // cumulative dollars spent placing merchandise orders
 // Active marketing campaigns; each entry is a snapshot of draft state at launch time.
 // { impressions, medium, hook, messageType, xAxis, yAxis, xRange, yRange,
-//   weeksTotal, weeksRemaining, interest, focusMultiplier, cost, roundLaunched }
-// interest (calcInterest × calcHookMax) is recomputed each round by Marketing.tickCampaigns();
-// favor delta applied to selected brackets = interest × focusMultiplier each round.
+//   weeksTotal, weeksRemaining, interest, focusMultiplier,
+//   trackedBrackets, weeklyDeltas, cost, roundLaunched }
+// interest (calcInterest × calcHookMax) is recomputed each round by Marketing.tickCampaigns().
+// weeklyDeltas[week] is a parallel array to trackedBrackets: estimated additional
+// visitors per bracket from that week's favor increase.
 let activeCampaigns      = [];
 
 let gridCells = [];   // [row][col] → <div>

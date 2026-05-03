@@ -266,6 +266,15 @@ const Marketing = {
           yCat.brackets[yi].favor += delta;
       }
 
+      // Estimate the additional weekly visitors each tracked bracket gained from this
+      // week's favor increase. Formula: parkExcitement × chance × favorDelta × count
+      // divided by baselineFavorablePopulation (the /7 from calcFavorablePopulation cancels).
+      c.weeklyDeltas.push(c.trackedBrackets.map(tb => {
+        const b = this.DEMO_CATS.find(d => d.catKey === tb.catKey).brackets[tb.idx];
+        return Math.round(Finance.parkExcitement * b.chance * delta * b.count
+                        / Population.baselineFavorablePopulation);
+      }));
+
       if (c.weeksRemaining <= 0) {
         // Award a small confidence gain to each selected bracket on completion.
         // Narrower targeting (higher focusMultiplier) earns more insight.
@@ -283,6 +292,22 @@ const Marketing = {
         activeCampaigns.splice(i, 1);
       }
     }
+  },
+
+  // Builds the list of bracket descriptors for all selected brackets in both axes.
+  // Stored on the campaign at launch so tickCampaigns can record deltas without
+  // re-deriving the selection each round.
+  _buildTrackedBrackets(xAxis, yAxis, xRange, yRange) {
+    const xCat = this.DEMO_CATS.find(c => c.key === xAxis);
+    const yCat = this.DEMO_CATS.find(c => c.key === yAxis);
+    const result = [];
+    if (xRange.min !== null)
+      for (let xi = xRange.min; xi <= xRange.max; xi++)
+        result.push({ axis: xAxis.toUpperCase(), catKey: xAxis, idx: xi, name: xCat.brackets[xi].name });
+    if (yRange.min !== null)
+      for (let yi = yRange.min; yi <= yRange.max; yi++)
+        result.push({ axis: yAxis.toUpperCase(), catKey: yAxis, idx: yi, name: yCat.brackets[yi].name });
+    return result;
   },
 
   // Deducts the campaign cost, snapshots draft settings into activeCampaigns, and notifies the player.
@@ -303,11 +328,15 @@ const Marketing = {
       weeksTotal:       weeks,
       weeksRemaining:   weeks,
       interest:         0,
-      focusMultiplier:  this.calcFocusMultiplier(
-                          this.draftXAxis, this.draftYAxis,
-                          this.draftXRange, this.draftYRange),
+      focusMultiplier:   this.calcFocusMultiplier(
+                           this.draftXAxis, this.draftYAxis,
+                           this.draftXRange, this.draftYRange),
+      trackedBrackets:   this._buildTrackedBrackets(
+                           this.draftXAxis, this.draftYAxis,
+                           this.draftXRange, this.draftYRange),
+      weeklyDeltas:      [],  // per-week estimated attendance delta per tracked bracket
       cost,
-      roundLaunched:    round,
+      roundLaunched:     round,
     });
     updateHUD();
     this.buildPanel();
