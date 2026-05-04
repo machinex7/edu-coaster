@@ -329,7 +329,7 @@ function getDateLabel() {
   return `Week ${weekInQuarter}, Q${quarter}, ${STARTING_YEAR + yearsElapsed}`;
 }
 
-// Renders floating countdown pills for in-progress items (research, etc.).
+// Renders floating countdown pills for in-progress items (research, construction).
 // Shows one pill per active countdown; no pill when nothing is in progress.
 function updateAchievementIndicators() {
   const container = document.getElementById('achievement-indicators');
@@ -344,6 +344,19 @@ function updateAchievementIndicators() {
         : `${wks} wk${wks !== 1 ? 's' : ''}`;
       pills.push({ icon: '🔬', text: `${item.name}: ${wksLabel}`, panel: 'research' });
     }
+  }
+
+  // Find the actively-building item (not paused) closest to completion.
+  const allInstalled = [...installedRides, ...installedFacilities, ...Shopping.installed];
+  const building = allInstalled
+    .filter(r => r.status === STATUS.UNDER_CONSTRUCTION)
+    .map(r => ({ record: r, weeksLeft: r.weeksTotal - r.weeksCompleted }))
+    .sort((a, b) => a.weeksLeft - b.weeksLeft)[0];
+
+  if (building) {
+    const wks = building.weeksLeft;
+    const wksLabel = `${wks} wk${wks !== 1 ? 's' : ''}`;
+    pills.push({ icon: '🏗️', text: `${building.record.name}: ${wksLabel}`, panel: 'rides' });
   }
 
   container.innerHTML = pills
