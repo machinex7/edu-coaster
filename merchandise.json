@@ -1,17 +1,17 @@
 [
   { "id": "bouncy_ball",    "name": "Bouncy Ball",      "basePrice":  3, "category": "toy",       "startsUnlocked": true },
-  { "id": "plush_bunny",    "name": "Stuffed Bunny",    "basePrice":  9, "category": "toy" },
-  { "id": "glow_sword",     "name": "Glow Sword",       "basePrice": 22, "category": "toy" },
+  { "id": "plush_bunny",    "name": "Stuffed Bunny",    "basePrice":  9, "category": "toy",       "spendThreshold": 2000 },
+  { "id": "glow_sword",     "name": "Glow Sword",       "basePrice": 22, "category": "toy",       "spendThreshold": 6000 },
 
   { "id": "hand_sanitizer", "name": "Hand Sanitizer",   "basePrice":  5, "category": "practical", "startsUnlocked": true },
-  { "id": "sunscreen",      "name": "Sunscreen SPF 50", "basePrice": 12, "category": "practical" },
-  { "id": "umbrella",       "name": "Umbrella",         "basePrice": 24, "category": "practical" },
+  { "id": "sunscreen",      "name": "Sunscreen SPF 50", "basePrice": 12, "category": "practical", "spendThreshold": 2000 },
+  { "id": "umbrella",       "name": "Umbrella",         "basePrice": 24, "category": "practical", "spendThreshold": 6000 },
 
   { "id": "socks",          "name": "Novelty Socks",    "basePrice":  9, "category": "apparel",   "startsUnlocked": true },
-  { "id": "baseball_cap",   "name": "Baseball Cap",     "basePrice": 20, "category": "apparel" },
-  { "id": "hoodie",         "name": "Park Hoodie",      "basePrice": 42, "category": "apparel" },
+  { "id": "baseball_cap",   "name": "Baseball Cap",     "basePrice": 20, "category": "apparel",   "spendThreshold": 2000 },
+  { "id": "hoodie",         "name": "Park Hoodie",      "basePrice": 42, "category": "apparel",   "spendThreshold": 6000 },
 
   { "id": "magnet",         "name": "Fridge Magnet",    "basePrice":  5, "category": "souvenir",  "startsUnlocked": true },
-  { "id": "mug",            "name": "Ceramic Mug",      "basePrice": 14, "category": "souvenir" },
-  { "id": "snow_globe",     "name": "Snow Globe",       "basePrice": 22, "category": "souvenir" }
+  { "id": "mug",            "name": "Ceramic Mug",      "basePrice": 14, "category": "souvenir",  "spendThreshold": 2000 },
+  { "id": "snow_globe",     "name": "Snow Globe",       "basePrice": 22, "category": "souvenir",  "spendThreshold": 6000 }
 ]

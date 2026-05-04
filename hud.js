@@ -762,33 +762,16 @@ function _buildInvPurchasingView() {
       >${unlocked ? s.name : '???'}</button>`;
     }).join('');
 
-    // Progress bar toward unlocking this supplier's premium item.
-    let supplierProgressHtml = '';
-    if (supplier?.premiumSpendThreshold) {
-      const premiumItem = Shopping.merchandise.find(m => m.id === supplier.premiumItemId);
-      if (!Shopping.unlockedMerchandiseIds.has(supplier.premiumItemId)) {
-        const spent     = Shopping.supplierOrderSpend[selectedId] ?? 0;
-        const remaining = Math.max(0, supplier.premiumSpendThreshold - spent);
-        const pct       = Math.min(100, Math.round(spent / supplier.premiumSpendThreshold * 100));
-        supplierProgressHtml = `<div class="inv-supplier-progress">
-          <div class="inv-progress-label">Spend $${remaining.toLocaleString()} more to unlock ${premiumItem?.name ?? supplier.premiumItemId}</div>
-          <div class="inv-unlock-bar-wrap"><div class="inv-unlock-bar" style="width:${pct}%"></div></div>
-        </div>`;
-      } else {
-        supplierProgressHtml = `<div class="inv-progress-done">✓ ${premiumItem?.name ?? supplier.premiumItemId} unlocked</div>`;
-      }
-    }
-
-    // Progress bar toward unlocking the next supplier in this category.
+    // Progress bar toward unlocking the next supplier in this category (order-count gated).
     let nextSupplierHtml = '';
     const nextSupplier = catSuppliers.find(s => !Shopping.unlockedSupplierIds.has(s.id));
     if (nextSupplier) {
-      const catSpent  = Shopping.categoryOrderSpend[cat] ?? 0;
-      const threshold = nextSupplier.categoryUnlockThreshold;
-      const remaining = Math.max(0, threshold - catSpent);
-      const pct       = Math.min(100, Math.round(catSpent / threshold * 100));
+      const catOrders = Shopping.categoryOrderCount[cat] ?? 0;
+      const threshold = nextSupplier.categoryOrderThreshold;
+      const remaining = Math.max(0, threshold - catOrders);
+      const pct       = Math.min(100, Math.round(catOrders / threshold * 100));
       nextSupplierHtml = `<div class="inv-next-supplier">
-        <div class="inv-progress-label">Spend $${remaining.toLocaleString()} more in this category to unlock a new supplier</div>
+        <div class="inv-progress-label">Place ${remaining} more order${remaining !== 1 ? 's' : ''} in this category to unlock a new supplier</div>
         <div class="inv-unlock-bar-wrap"><div class="inv-unlock-bar" style="width:${pct}%"></div></div>
       </div>`;
     }
@@ -800,19 +783,14 @@ function _buildInvPurchasingView() {
 
     const itemsHtml = catItems.map(({ item, inv, idx }) => {
       if (!Shopping.unlockedMerchandiseIds.has(item.id)) {
-        // Find which supplier unlocks this item.
-        const unlocker = catSuppliers.find(s => s.premiumItemId === item.id);
-        const unlockerUnlocked = unlocker ? Shopping.unlockedSupplierIds.has(unlocker.id) : false;
+        // Show spend progress toward unlocking this item from the currently selected supplier.
         let unlockHint = '';
-        if (unlocker && unlockerUnlocked) {
-          const spent     = Shopping.supplierOrderSpend[unlocker.id] ?? 0;
-          const threshold = unlocker.premiumSpendThreshold;
-          const remaining = Math.max(0, threshold - spent);
-          const pct       = Math.min(100, Math.round(spent / threshold * 100));
-          unlockHint = `<div class="inv-unlock-hint">Spend $${remaining.toLocaleString()} more with ${unlocker.name}</div>
+        if (item.spendThreshold) {
+          const spent     = Shopping.supplierOrderSpend[selectedId] ?? 0;
+          const remaining = Math.max(0, item.spendThreshold - spent);
+          const pct       = Math.min(100, Math.round(spent / item.spendThreshold * 100));
+          unlockHint = `<div class="inv-unlock-hint">Spend $${remaining.toLocaleString()} more with ${supplier?.name ?? 'this supplier'} to unlock</div>
             <div class="inv-unlock-bar-wrap"><div class="inv-unlock-bar" style="width:${pct}%"></div></div>`;
-        } else if (unlocker) {
-          unlockHint = `<div class="inv-unlock-hint">Unlock ${unlocker.name} first</div>`;
         }
         return `<div class="inv-purchase-item inv-purchase-locked">
           <div class="inv-purchase-item-name">${item.name} <span class="inv-locked-tag">Locked</span></div>
@@ -853,7 +831,6 @@ function _buildInvPurchasingView() {
       <div class="panel-section-header">${MERCH_CATEGORY_LABELS[cat]}</div>
       <div class="inv-supplier-selector">${selectorBtns}</div>
       ${supplierInfo}
-      ${supplierProgressHtml}
       ${nextSupplierHtml}
       <div class="inv-purchase-items">${itemsHtml}</div>
     </div>`;
@@ -883,26 +860,26 @@ function _buildInvPurchasingView() {
 
       money -= cost;
       Shopping.supplierOrderSpend[supplierId] = (Shopping.supplierOrderSpend[supplierId] ?? 0) + cost;
-      Shopping.categoryOrderSpend[cat]        = (Shopping.categoryOrderSpend[cat]        ?? 0) + cost;
+      Shopping.categoryOrderCount[cat]        = (Shopping.categoryOrderCount[cat]        ?? 0) + 1;
       Shopping.orders.push({ itemIndex: idx, itemName: Shopping.merchandise[idx].name, count: qty, weeksRemaining: sup?.deliveryTime ?? 1 });
 
-      // Check if this supplier's premium item is now unlocked.
-      if (sup?.premiumSpendThreshold && sup.premiumItemId
-          && !Shopping.unlockedMerchandiseIds.has(sup.premiumItemId)
-          && Shopping.supplierOrderSpend[supplierId] >= sup.premiumSpendThreshold) {
-        Shopping.unlockedMerchandiseIds.add(sup.premiumItemId);
-        const premiumItem = Shopping.merchandise.find(m => m.id === sup.premiumItemId);
-        Notifications.push({
-          label:   'New Item Unlocked',
-          message: `${premiumItem?.name ?? sup.premiumItemId} is now available to order.`,
-          action:  () => { _activeInvTab = 'purchasing'; openPanel('inventory'); },
-        });
+      // Check all locked items in this category — unlock any whose spend threshold is now met.
+      for (const m of Shopping.merchandise.filter(m => m.category === cat && m.spendThreshold)) {
+        if (!Shopping.unlockedMerchandiseIds.has(m.id)
+            && Shopping.supplierOrderSpend[supplierId] >= m.spendThreshold) {
+          Shopping.unlockedMerchandiseIds.add(m.id);
+          Notifications.push({
+            label:   'New Item Unlocked',
+            message: `${m.name} is now available to order.`,
+            action:  () => { _activeInvTab = 'purchasing'; openPanel('inventory'); },
+          });
+        }
       }
 
-      // Check if any next-tier supplier in this category is now unlocked.
+      // Check if any next-tier supplier in this category is now unlocked (order-count gated).
       for (const s of Shopping.suppliers.filter(s => s.category === cat)) {
-        if (s.categoryUnlockThreshold != null && !Shopping.unlockedSupplierIds.has(s.id)
-            && Shopping.categoryOrderSpend[cat] >= s.categoryUnlockThreshold) {
+        if (s.categoryOrderThreshold != null && !Shopping.unlockedSupplierIds.has(s.id)
+            && Shopping.categoryOrderCount[cat] >= s.categoryOrderThreshold) {
           Shopping.unlockedSupplierIds.add(s.id);
           Notifications.push({
             label:   'New Supplier',

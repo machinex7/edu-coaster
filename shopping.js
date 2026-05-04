@@ -18,7 +18,7 @@ const Shopping = {
   unlockedSupplierIds:      new Set(), // supplier IDs the player can currently use
   selectedSupplierByCategory: {},      // category → currently selected supplierId
   unlockedMerchandiseIds:   new Set(), // item IDs the player can stock and sell
-  categoryOrderSpend:       {},        // category → total $ spent on orders in that category
+  categoryOrderCount:       {},        // category → number of orders placed in that category
   supplierOrderSpend:       {},        // supplierId → total $ spent via that supplier
   orders:                   [],        // { itemIndex, itemName, count, weeksRemaining }
 
@@ -90,10 +90,10 @@ const Shopping = {
       count: this.unlockedMerchandiseIds.has(item.id) ? 500 : 0,
       price: item.basePrice,
     }));
-    const starterSuppliers = this.suppliers.filter(s => s.categoryUnlockThreshold === null);
+    const starterSuppliers = this.suppliers.filter(s => s.categoryOrderThreshold === null);
     this.unlockedSupplierIds = new Set(starterSuppliers.map(s => s.id));
     this.selectedSupplierByCategory = Object.fromEntries(starterSuppliers.map(s => [s.category, s.id]));
-    this.categoryOrderSpend = { toy: 0, practical: 0, apparel: 0, souvenir: 0 };
+    this.categoryOrderCount = { toy: 0, practical: 0, apparel: 0, souvenir: 0 };
     this.supplierOrderSpend = Object.fromEntries(this.suppliers.map(s => [s.id, 0]));
     this.orders = [];
   },
