@@ -783,13 +783,13 @@ function _buildInvPurchasingView() {
 
     const itemsHtml = catItems.map(({ item, inv, idx }) => {
       if (!Shopping.unlockedMerchandiseIds.has(item.id)) {
-        // Show spend progress toward unlocking this item from the currently selected supplier.
+        // Show spend progress toward unlocking this item based on total category spend.
         let unlockHint = '';
         if (item.spendThreshold) {
-          const spent     = Shopping.supplierOrderSpend[selectedId] ?? 0;
+          const spent     = Shopping.categoryOrderSpend[cat] ?? 0;
           const remaining = Math.max(0, item.spendThreshold - spent);
           const pct       = Math.min(100, Math.round(spent / item.spendThreshold * 100));
-          unlockHint = `<div class="inv-unlock-hint">Spend $${remaining.toLocaleString()} more with ${supplier?.name ?? 'this supplier'} to unlock</div>
+          unlockHint = `<div class="inv-unlock-hint">Spend $${remaining.toLocaleString()} more on ${MERCH_CATEGORY_LABELS[cat].toLowerCase()} items to unlock</div>
             <div class="inv-unlock-bar-wrap"><div class="inv-unlock-bar" style="width:${pct}%"></div></div>`;
         }
         return `<div class="inv-purchase-item inv-purchase-locked">
@@ -859,14 +859,14 @@ function _buildInvPurchasingView() {
       if (money < cost) return;
 
       money -= cost;
-      Shopping.supplierOrderSpend[supplierId] = (Shopping.supplierOrderSpend[supplierId] ?? 0) + cost;
-      Shopping.categoryOrderCount[cat]        = (Shopping.categoryOrderCount[cat]        ?? 0) + 1;
+      Shopping.categoryOrderSpend[cat] = (Shopping.categoryOrderSpend[cat] ?? 0) + cost;
+      Shopping.categoryOrderCount[cat] = (Shopping.categoryOrderCount[cat] ?? 0) + 1;
       Shopping.orders.push({ itemIndex: idx, itemName: Shopping.merchandise[idx].name, count: qty, weeksRemaining: sup?.deliveryTime ?? 1 });
 
       // Check all locked items in this category — unlock any whose spend threshold is now met.
       for (const m of Shopping.merchandise.filter(m => m.category === cat && m.spendThreshold)) {
         if (!Shopping.unlockedMerchandiseIds.has(m.id)
-            && Shopping.supplierOrderSpend[supplierId] >= m.spendThreshold) {
+            && Shopping.categoryOrderSpend[cat] >= m.spendThreshold) {
           Shopping.unlockedMerchandiseIds.add(m.id);
           Notifications.push({
             label:   'New Item Unlocked',

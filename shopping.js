@@ -19,7 +19,7 @@ const Shopping = {
   selectedSupplierByCategory: {},      // category → currently selected supplierId
   unlockedMerchandiseIds:   new Set(), // item IDs the player can stock and sell
   categoryOrderCount:       {},        // category → number of orders placed in that category
-  supplierOrderSpend:       {},        // supplierId → total $ spent via that supplier
+  categoryOrderSpend:       {},        // category → total $ spent on orders in that category
   orders:                   [],        // { itemIndex, itemName, count, weeksRemaining }
 
   // ── Pricing ────────────────────────────────────────────────────────────────
@@ -94,7 +94,7 @@ const Shopping = {
     this.unlockedSupplierIds = new Set(starterSuppliers.map(s => s.id));
     this.selectedSupplierByCategory = Object.fromEntries(starterSuppliers.map(s => [s.category, s.id]));
     this.categoryOrderCount = { toy: 0, practical: 0, apparel: 0, souvenir: 0 };
-    this.supplierOrderSpend = Object.fromEntries(this.suppliers.map(s => [s.id, 0]));
+    this.categoryOrderSpend = { toy: 0, practical: 0, apparel: 0, souvenir: 0 };
     this.orders = [];
   },
 
