@@ -359,6 +359,14 @@ function updateAchievementIndicators() {
     pills.push({ icon: '🏗️', text: `${building.record.name}: ${wksLabel}`, panel: 'rides' });
   }
 
+  // Show a pill when a loan is in the final review stage (cash incoming).
+  const loan = Finance.loanApplication;
+  if (loan?.status === LOAN_STATUS.REVIEW) {
+    const wks = loan.reviewWeeksRemaining;
+    const wksLabel = `${wks} wk${wks !== 1 ? 's' : ''}`;
+    pills.push({ icon: '💰', text: `Loan ($${loan.amount.toLocaleString()}): ${wksLabel}`, panel: 'financial' });
+  }
+
   container.innerHTML = pills
     .map(p => `<button class="achievement-pill" data-panel="${p.panel}">${p.icon} ${p.text}</button>`)
     .join('');
