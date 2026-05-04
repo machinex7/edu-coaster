@@ -25,9 +25,11 @@ const Marketing = {
   INTENSITY_NUMERIC: { low: 0.5, medium: 1.0, high: 1.5, extreme: 2.0 },
 
   // Weekly favor bonus applied to each targeted bracket when a ride is featured.
-  // Brackets with intensityBias get scaled favor (0–0.5) based on how closely
-  // the ride's intensity matches their preference; others receive the flat baseline.
+  // Brackets without intensityBias receive this flat amount each round.
   RIDE_FAVOR_BASE: 0.5,
+  // Maximum weekly bonus for a bracket whose intensityBias perfectly matches the ride.
+  // Scales down to 0 at maximum mismatch; always exceeds RIDE_FAVOR_BASE on a good match.
+  RIDE_FAVOR_MATCH_PEAK: 1.0,
 
   // Additive interest bonus per marketing use of an award (0-indexed by prior use count).
   // Each use is one tier less effective; clamps at the last entry.
@@ -136,13 +138,14 @@ const Marketing = {
   },
 
   // Returns the weekly favor bonus for one bracket from a featured ride.
-  // Uses RIDE_FAVOR_BASE (0.5) scaled by intensity match when intensityBias is present,
-  // or the flat base when the bracket type has no intensity preference.
-  // Distance formula: bonus = base × (1 – |rideNumeric – bias| / 2), clamped ≥ 0.
+  // Returns the weekly favor bonus for one bracket from a featured ride.
+  // Brackets without intensityBias get the flat RIDE_FAVOR_BASE each round.
+  // Brackets with intensityBias peak at RIDE_FAVOR_MATCH_PEAK on a perfect match
+  // and scale linearly down to 0 at maximum mismatch (distance = 2 on the 0–2 scale).
   _rideBonus(bracket, rideIntensityNumeric) {
     if (bracket.intensityBias == null) return this.RIDE_FAVOR_BASE;
     const dist = Math.abs(rideIntensityNumeric - bracket.intensityBias);
-    return this.RIDE_FAVOR_BASE * Math.max(0, 1 - dist / 2);
+    return this.RIDE_FAVOR_MATCH_PEAK * Math.max(0, 1 - dist / 2);
   },
 
   // Returns a range covering all brackets for the given category key.
