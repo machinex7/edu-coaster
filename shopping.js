@@ -6,8 +6,21 @@
 const Shopping = {
 
   // ── Catalog & placed shops ─────────────────────────────────────────────────
-  catalog:   [],  // loaded from shops.json in init()
+  catalog:   [],  // loaded from shops.json in game.js init()
   installed: [],  // placed shop records (same shape as installedRides)
+
+  // ── Merchandise catalog & inventory ────────────────────────────────────────
+  merchandise:          [],  // loaded from merchandise.json in game.js init()
+  merchandiseInventory: [],  // parallel to merchandise: { count, price }
+
+  // ── Suppliers ──────────────────────────────────────────────────────────────
+  suppliers:                [],       // loaded from suppliers.json in game.js init()
+  unlockedSupplierIds:      new Set(), // supplier IDs the player can currently use
+  selectedSupplierByCategory: {},      // category → currently selected supplierId
+  unlockedMerchandiseIds:   new Set(), // item IDs the player can stock and sell
+  categoryOrderCount:       {},        // category → number of orders placed in that category
+  categoryOrderSpend:       {},        // category → total $ spent on orders in that category
+  orders:                   [],        // { itemIndex, itemName, count, weeksRemaining }
 
   // ── Pricing ────────────────────────────────────────────────────────────────
   merchandiseUpcharge: 0,  // $ added on top of BASE_SPEND per buyer
@@ -68,11 +81,28 @@ const Shopping = {
     };
   },
 
+  // ── Init ───────────────────────────────────────────────────────────────────
+  // Derives inventory and supplier state from the loaded JSON data.
+  // Called from game.js init() after merchandise and suppliers are fetched.
+  init() {
+    this.unlockedMerchandiseIds = new Set(this.merchandise.filter(m => m.startsUnlocked).map(m => m.id));
+    this.merchandiseInventory = this.merchandise.map(item => ({
+      count: this.unlockedMerchandiseIds.has(item.id) ? 500 : 0,
+      price: item.basePrice,
+    }));
+    const starterSuppliers = this.suppliers.filter(s => s.categoryOrderThreshold === null);
+    this.unlockedSupplierIds = new Set(starterSuppliers.map(s => s.id));
+    this.selectedSupplierByCategory = Object.fromEntries(starterSuppliers.map(s => [s.category, s.id]));
+    this.categoryOrderCount = { toy: 0, practical: 0, apparel: 0, souvenir: 0 };
+    this.categoryOrderSpend = { toy: 0, practical: 0, apparel: 0, souvenir: 0 };
+    this.orders = [];
+  },
+
   // ── Per-round item stats (reset by calcRevenue at the start of each round) ──
   _roundItemStats: [],
 
   _resetRoundItemStats() {
-    this._roundItemStats = merchandise.map(() => ({
+    this._roundItemStats = this.merchandise.map(() => ({
       salesRevenue: 0, salesCount: 0, theftValue: 0, theftCount: 0,
     }));
   },
@@ -107,10 +137,10 @@ const Shopping = {
     const weatherItemMults = WEATHER_MERCHANDISE_MULTIPLIERS[nextWeekForecast] ?? {};
     let totalRevenue = 0;
     let totalSold    = 0;
-    for (let i = 0; i < merchandise.length; i++) {
-      const item = merchandise[i];
-      const inv  = merchandiseInventory[i];
-      if (inv.count <= 0) continue;
+    for (let i = 0; i < this.merchandise.length; i++) {
+      const item = this.merchandise[i];
+      const inv  = this.merchandiseInventory[i];
+      if (!this.unlockedMerchandiseIds.has(item.id) || inv.count <= 0) continue;
 
       const shelfPrice = inv.price + this.merchandiseUpcharge;
 
@@ -143,10 +173,10 @@ const Shopping = {
   // every order that arrived so the caller can notify the player.
   tickOrders() {
     const arrived = [];
-    orders = orders.filter(order => {
+    this.orders = this.orders.filter(order => {
       order.weeksRemaining--;
       if (order.weeksRemaining <= 0) {
-        merchandiseInventory[order.itemIndex].count += order.count;
+        this.merchandiseInventory[order.itemIndex].count += order.count;
         arrived.push({ itemName: order.itemName, count: order.count });
         return false;
       }
@@ -164,7 +194,8 @@ const Shopping = {
     if (tiles === 0) return 0;
     const { theftMultiplier } = this.calcStaffingState();
     const raw   = Math.floor(weeklyAttendance * (1 - Population.BUYER_RATE) * Population.THEFT_RATE * Math.sqrt(tiles) * theftMultiplier);
-    const stock = merchandiseInventory.reduce((s, inv) => s + inv.count, 0);
+    const stock = this.merchandiseInventory.reduce((s, inv, i) =>
+      this.unlockedMerchandiseIds.has(this.merchandise[i].id) ? s + inv.count : s, 0);
     return Math.min(raw, stock);
   },
 
@@ -175,9 +206,9 @@ const Shopping = {
     let totalValue   = 0;
     let itemsStolen  = 0;
     for (let i = 0; i < count; i++) {
-      const eligible = merchandiseInventory
+      const eligible = this.merchandiseInventory
         .map((inv, idx) => ({ inv, idx }))
-        .filter(({ inv }) => inv.count > 0);
+        .filter(({ inv, idx }) => this.unlockedMerchandiseIds.has(this.merchandise[idx].id) && inv.count > 0);
       if (eligible.length === 0) break;
       const { inv, idx } = eligible[Math.floor(Math.random() * eligible.length)];
       const stolenPrice   = inv.price + this.merchandiseUpcharge;

@@ -680,73 +680,59 @@ const PRICE_ITEMS = [
 
 let _activeInvTab = 'stock';
 
+// Human-readable labels for each merchandise category, used across inventory panel functions.
+const MERCH_CATEGORY_LABELS = { toy: 'Toys', practical: 'Practical', apparel: 'Apparel', souvenir: 'Souvenirs' };
+
+/* initInventoryPanel - wire up Stock / Purchasing tab switching */
 function initInventoryPanel() {
   document.querySelectorAll('.inv-tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       _activeInvTab = btn.dataset.invTab;
       document.querySelectorAll('.inv-tab-btn').forEach(b => b.classList.toggle('active', b === btn));
-      document.getElementById('inv-stock-view').classList.toggle('hidden',     _activeInvTab !== 'stock');
-      document.getElementById('inv-suppliers-view').classList.toggle('hidden', _activeInvTab !== 'suppliers');
+      document.getElementById('inv-stock-view').classList.toggle('hidden',      _activeInvTab !== 'stock');
+      document.getElementById('inv-purchasing-view').classList.toggle('hidden', _activeInvTab !== 'purchasing');
       buildInventoryPanel();
     });
   });
 }
 
+/* buildInventoryPanel - dispatch to the active tab renderer */
 function buildInventoryPanel() {
-  if (_activeInvTab === 'stock')     _buildInvStockView();
-  if (_activeInvTab === 'suppliers') _buildInvSuppliersView();
+  if (_activeInvTab === 'stock')      _buildInvStockView();
+  if (_activeInvTab === 'purchasing') _buildInvPurchasingView();
 }
 
+/* _buildInvStockView - read-only display of unlocked items: stock, sell price, last-week sales */
 function _buildInvStockView() {
-  const totalStock    = merchandiseInventory.reduce((s, inv) => s + inv.count, 0);
+  const totalStock    = Shopping.merchandiseInventory.reduce((s, inv) => s + inv.count, 0);
   const capacity      = Shopping.calcInventoryCapacity();
   const pct           = capacity > 0 ? Math.min(100, Math.round(totalStock / capacity * 100)) : 0;
-  const capacityLabel = capacity > 0 ? `${totalStock} / ${capacity}` : 'No shops open';
+  const capacityLabel = capacity > 0 ? `${totalStock.toLocaleString()} / ${capacity.toLocaleString()}` : 'No shops open';
 
-  const supplier     = suppliers.find(s => s.id === selectedSupplierId);
-  const supplierCard = supplier ? `
-    <div class="inv-supplier-card">
-      <span class="inv-supplier-name">${supplier.name}</span>
-      <span class="inv-supplier-meta">${supplier.deliveryTime}w delivery · +$${supplier.surcharge} surcharge</span>
-    </div>` : '';
-
-  const CATEGORY_LABELS = { toy: 'Toys', practical: 'Practical', apparel: 'Apparel', souvenir: 'Souvenirs' };
   const itemRows = ['toy', 'practical', 'apparel', 'souvenir'].map(cat => {
-    const items = merchandise
-      .map((item, i) => ({ item, inv: merchandiseInventory[i], idx: i }))
-      .filter(({ item }) => item.category === cat);
-    const rows = items.map(({ item, inv, idx }) => {
-      const pendingOrder = orders.find(o => o.itemIndex === idx);
-      let orderBtnsHtml;
-      if (pendingOrder) {
-        orderBtnsHtml = `<span class="inv-order-pending">Order pending: ${pendingOrder.count} units (${pendingOrder.weeksRemaining}w)</span>`;
-      } else {
-        const hasBulk = Research.completed.has(RESEARCH_ID.BULK_ORDERING);
-        orderBtnsHtml = [100, 500, 1000].map(qty => {
-          if (qty === 1000 && !hasBulk) {
-            return `<button class="inv-order-btn inv-order-locked" disabled title="Requires Bulk Ordering research">+1000 🔒</button>`;
-          }
-          const cost = Math.round(qty * inv.price * Population.cumulativeInflation + (supplier?.surcharge ?? 0));
-          const canAfford = money >= cost;
-          return `<button class="inv-order-btn${canAfford ? '' : ' cant-afford'}"
-            data-idx="${idx}" data-qty="${qty}">+${qty} $${cost.toLocaleString()}</button>`;
-        }).join('');
-      }
-      return `
-        <div class="inv-item-row">
-          <div class="inv-item-header">
-            <span class="price-label">${item.name}</span>
-            <span class="price-value">${inv.count}</span>
-          </div>
-          <div class="inv-order-btns">${orderBtnsHtml}</div>
-        </div>`;
+    const items = Shopping.merchandise
+      .map((item, i) => ({ item, inv: Shopping.merchandiseInventory[i], stats: Shopping._roundItemStats[i] ?? { salesCount: 0, salesRevenue: 0 }, idx: i }))
+      .filter(({ item }) => item.category === cat && Shopping.unlockedMerchandiseIds.has(item.id));
+    const rows = items.map(({ item, inv, stats }) => {
+      const shelfPrice = inv.price + Shopping.merchandiseUpcharge;
+      const sold    = stats.salesCount;
+      const revenue = stats.salesRevenue;
+      return `<div class="inv-stock-row">
+        <div class="inv-stock-main">
+          <span class="inv-stock-name">${item.name}</span>
+          <span class="inv-stock-count">${inv.count.toLocaleString()} in stock</span>
+        </div>
+        <div class="inv-stock-meta">
+          <span class="inv-stock-price">$${shelfPrice} sell</span>
+          <span class="inv-stock-sales">${sold > 0 ? `${sold} sold last week ($${revenue.toLocaleString()})` : 'No sales last week'}</span>
+        </div>
+      </div>`;
     }).join('');
-    return `<div class="panel-section-header">${CATEGORY_LABELS[cat]}</div>${rows}`;
+    return `<div class="panel-section-header">${MERCH_CATEGORY_LABELS[cat]}</div>${rows}`;
   }).join('');
 
   const el = document.getElementById('inv-stock-view');
   el.innerHTML = `
-    ${supplierCard}
     <div class="inv-capacity-wrap">
       <div class="inv-capacity-label">Storage: ${capacityLabel}</div>
       <div class="ride-ridership-bar-wrap">
@@ -755,57 +741,156 @@ function _buildInvStockView() {
       <div class="inv-capacity-pct">${pct}%</div>
     </div>
     ${itemRows}`;
+}
 
-  el.querySelectorAll('.inv-order-btn').forEach(btn => {
+/* _buildInvPurchasingView - per-category supplier selector and order interface */
+function _buildInvPurchasingView() {
+  const hasBulk = Research.completed.has(RESEARCH_ID.BULK_ORDERING);
+
+  const catSections = ['toy', 'practical', 'apparel', 'souvenir'].map(cat => {
+    const catSuppliers = Shopping.suppliers.filter(s => s.category === cat);
+    const selectedId   = Shopping.selectedSupplierByCategory[cat];
+    const supplier     = Shopping.suppliers.find(s => s.id === selectedId);
+
+    // Supplier selector — three pill buttons per category.
+    const selectorBtns = catSuppliers.map(s => {
+      const unlocked    = Shopping.unlockedSupplierIds.has(s.id);
+      const isSelected  = s.id === selectedId;
+      return `<button class="inv-supplier-btn${isSelected ? ' active' : ''}${!unlocked ? ' locked' : ''}"
+        ${unlocked && !isSelected ? `data-select-supplier="${s.id}" data-category="${cat}"` : ''}
+        ${!unlocked ? 'disabled' : ''}
+      >${unlocked ? s.name : '???'}</button>`;
+    }).join('');
+
+    // Progress bar toward unlocking the next supplier in this category (order-count gated).
+    let nextSupplierHtml = '';
+    const nextSupplier = catSuppliers.find(s => !Shopping.unlockedSupplierIds.has(s.id));
+    if (nextSupplier) {
+      const catOrders = Shopping.categoryOrderCount[cat] ?? 0;
+      const threshold = nextSupplier.categoryOrderThreshold;
+      const remaining = Math.max(0, threshold - catOrders);
+      const pct       = Math.min(100, Math.round(catOrders / threshold * 100));
+      nextSupplierHtml = `<div class="inv-next-supplier">
+        <div class="inv-progress-label">Place ${remaining} more order${remaining !== 1 ? 's' : ''} in this category to unlock a new supplier</div>
+        <div class="inv-unlock-bar-wrap"><div class="inv-unlock-bar" style="width:${pct}%"></div></div>
+      </div>`;
+    }
+
+    // Item rows — unlocked items get buy buttons; locked items show unlock progress.
+    const catItems = Shopping.merchandise
+      .map((item, i) => ({ item, inv: Shopping.merchandiseInventory[i], idx: i }))
+      .filter(({ item }) => item.category === cat);
+
+    const itemsHtml = catItems.map(({ item, inv, idx }) => {
+      if (!Shopping.unlockedMerchandiseIds.has(item.id)) {
+        // Show spend progress toward unlocking this item based on total category spend.
+        let unlockHint = '';
+        if (item.spendThreshold) {
+          const spent     = Shopping.categoryOrderSpend[cat] ?? 0;
+          const remaining = Math.max(0, item.spendThreshold - spent);
+          const pct       = Math.min(100, Math.round(spent / item.spendThreshold * 100));
+          unlockHint = `<div class="inv-unlock-hint">Spend $${remaining.toLocaleString()} more on ${MERCH_CATEGORY_LABELS[cat].toLowerCase()} items to unlock</div>
+            <div class="inv-unlock-bar-wrap"><div class="inv-unlock-bar" style="width:${pct}%"></div></div>`;
+        }
+        return `<div class="inv-purchase-item inv-purchase-locked">
+          <div class="inv-purchase-item-name">${item.name} <span class="inv-locked-tag">Locked</span></div>
+          ${unlockHint}
+        </div>`;
+      }
+
+      // Unlocked — show buy buttons or pending order status.
+      const pendingOrder = Shopping.orders.find(o => o.itemIndex === idx);
+      let buyHtml;
+      if (pendingOrder) {
+        buyHtml = `<span class="inv-order-pending">Order pending: ${pendingOrder.count} units (${pendingOrder.weeksRemaining}w)</span>`;
+      } else {
+        buyHtml = [100, 500, 1000].map(qty => {
+          if (qty === 1000 && !hasBulk) {
+            return `<button class="inv-order-btn inv-order-locked" disabled title="Requires Bulk Ordering research">+1000 🔒</button>`;
+          }
+          const cost      = Math.round(qty * inv.price * Population.cumulativeInflation + (supplier?.surcharge ?? 0));
+          const canAfford = money >= cost;
+          return `<button class="inv-order-btn${canAfford ? '' : ' cant-afford'}"
+            data-idx="${idx}" data-qty="${qty}" data-supplier="${selectedId}" data-category="${cat}"
+          >+${qty} $${cost.toLocaleString()}</button>`;
+        }).join('');
+      }
+      return `<div class="inv-purchase-item">
+        <div class="inv-purchase-item-name">${item.name}</div>
+        <div class="inv-purchase-item-stock">In stock: ${inv.count.toLocaleString()}</div>
+        <div class="inv-order-btns">${buyHtml}</div>
+      </div>`;
+    }).join('');
+
+    const surchargeStr = supplier?.surcharge > 0 ? ` · +$${supplier.surcharge} surcharge` : '';
+    const supplierInfo = supplier
+      ? `<div class="inv-supplier-info">${supplier.name} · ${supplier.deliveryTime}w delivery${surchargeStr}</div>`
+      : '';
+
+    return `<div class="inv-cat-section">
+      <div class="panel-section-header">${MERCH_CATEGORY_LABELS[cat]}</div>
+      <div class="inv-supplier-selector">${selectorBtns}</div>
+      ${supplierInfo}
+      ${nextSupplierHtml}
+      <div class="inv-purchase-items">${itemsHtml}</div>
+    </div>`;
+  }).join('');
+
+  const el = document.getElementById('inv-purchasing-view');
+  el.innerHTML = catSections;
+
+  // Supplier selector clicks — switch active supplier for that category.
+  el.querySelectorAll('.inv-supplier-btn[data-select-supplier]').forEach(btn => {
     btn.addEventListener('click', () => {
-      const idx  = Number(btn.dataset.idx);
-      const qty  = Number(btn.dataset.qty);
-      const sup  = suppliers.find(s => s.id === selectedSupplierId);
-      const cost = Math.round(qty * merchandiseInventory[idx].price * Population.cumulativeInflation + (sup?.surcharge ?? 0));
+      Shopping.selectedSupplierByCategory[btn.dataset.category] = btn.dataset.selectSupplier;
+      _buildInvPurchasingView();
+    });
+  });
+
+  // Order button clicks — place order, track spend, check unlocks.
+  el.querySelectorAll('.inv-order-btn:not(.inv-order-locked):not(.cant-afford)').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const idx        = Number(btn.dataset.idx);
+      const qty        = Number(btn.dataset.qty);
+      const supplierId = btn.dataset.supplier;
+      const cat        = btn.dataset.category;
+      const sup        = Shopping.suppliers.find(s => s.id === supplierId);
+      const cost       = Math.round(qty * Shopping.merchandiseInventory[idx].price * Population.cumulativeInflation + (sup?.surcharge ?? 0));
       if (money < cost) return;
+
       money -= cost;
-      totalOrderSpend += cost;
-      orders.push({ itemIndex: idx, itemName: merchandise[idx].name, count: qty, weeksRemaining: sup?.deliveryTime ?? 1 });
-      // Unlock suppliers whose spend threshold is now met.
-      for (const s of suppliers) {
-        if (s.unlockThreshold != null && !unlockedSupplierIds.has(s.id) && totalOrderSpend >= s.unlockThreshold) {
-          unlockedSupplierIds.add(s.id);
+      Shopping.categoryOrderSpend[cat] = (Shopping.categoryOrderSpend[cat] ?? 0) + cost;
+      Shopping.categoryOrderCount[cat] = (Shopping.categoryOrderCount[cat] ?? 0) + 1;
+      Shopping.orders.push({ itemIndex: idx, itemName: Shopping.merchandise[idx].name, count: qty, weeksRemaining: sup?.deliveryTime ?? 1 });
+
+      // Check all locked items in this category — unlock any whose spend threshold is now met.
+      for (const m of Shopping.merchandise.filter(m => m.category === cat && m.spendThreshold)) {
+        if (!Shopping.unlockedMerchandiseIds.has(m.id)
+            && Shopping.categoryOrderSpend[cat] >= m.spendThreshold) {
+          Shopping.unlockedMerchandiseIds.add(m.id);
           Notifications.push({
-            label:   'New Supplier',
-            message: `${s.name} is now available. Check the Suppliers tab.`,
-            action:  () => { _activeInvTab = 'suppliers'; openPanel('inventory'); },
+            label:   'New Item Unlocked',
+            message: `${m.name} is now available to order.`,
+            action:  () => { _activeInvTab = 'purchasing'; openPanel('inventory'); },
           });
         }
       }
-      updateHUD();
-      _buildInvStockView();
-    });
-  });
-}
 
-function _buildInvSuppliersView() {
-  const rows = suppliers.map(s => {
-    const unlocked = unlockedSupplierIds.has(s.id);
-    const selected = s.id === selectedSupplierId;
-    return `
-      <div class="inv-supplier-row${selected ? ' selected' : ''}${!unlocked ? ' locked' : ''}"
-           ${unlocked && !selected ? `data-supplier-id="${s.id}"` : ''}>
-        <div class="inv-supplier-row-name">${unlocked ? s.name : '???'}</div>
-        <div class="inv-supplier-row-meta">
-          ${unlocked
-            ? `${s.deliveryTime}w delivery · +$${s.surcharge} surcharge`
-            : 'Locked'}
-        </div>
-        ${selected  ? '<div class="inv-supplier-badge">In use</div>'    : ''}
-        ${!unlocked ? '<div class="inv-supplier-badge locked">Locked</div>' : ''}
-      </div>`;
-  }).join('');
-  const el = document.getElementById('inv-suppliers-view');
-  el.innerHTML = `<div class="inv-supplier-list">${rows}</div>`;
-  el.querySelectorAll('.inv-supplier-row[data-supplier-id]').forEach(row => {
-    row.addEventListener('click', () => {
-      selectedSupplierId = row.dataset.supplierId;
-      _buildInvSuppliersView();
+      // Check if any next-tier supplier in this category is now unlocked (order-count gated).
+      for (const s of Shopping.suppliers.filter(s => s.category === cat)) {
+        if (s.categoryOrderThreshold != null && !Shopping.unlockedSupplierIds.has(s.id)
+            && Shopping.categoryOrderCount[cat] >= s.categoryOrderThreshold) {
+          Shopping.unlockedSupplierIds.add(s.id);
+          Notifications.push({
+            label:   'New Supplier',
+            message: `${s.name} is now available for ${MERCH_CATEGORY_LABELS[cat]} orders.`,
+            action:  () => { _activeInvTab = 'purchasing'; openPanel('inventory'); },
+          });
+        }
+      }
+
+      updateHUD();
+      _buildInvPurchasingView();
     });
   });
 }

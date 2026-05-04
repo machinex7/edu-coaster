@@ -1,5 +1,101 @@
 [
-  { "id": "general_goods",  "name": "General Goods Co.",    "deliveryTime": 3, "surcharge": 0,   "unlockThreshold": null  },
-  { "id": "speedy_supply",  "name": "Speedy Supply Co.",    "deliveryTime": 1, "surcharge": 200, "unlockThreshold": 75000  },
-  { "id": "bulk_wholesale", "name": "Bulk Wholesale Ltd.",  "deliveryTime": 2, "surcharge": 75,  "unlockThreshold": 250000 }
+  {
+    "id": "fun_factory",
+    "name": "Fun Factory Distributors",
+    "category": "toy",
+    "deliveryTime": 3,
+    "surcharge": 75,
+    "categoryOrderThreshold": null
+  },
+  {
+    "id": "playpals",
+    "name": "PlayPals Wholesale",
+    "category": "toy",
+    "deliveryTime": 2,
+    "surcharge": 25,
+    "categoryOrderThreshold": 15
+  },
+  {
+    "id": "premium_play",
+    "name": "Premium Play Co.",
+    "category": "toy",
+    "deliveryTime": 1,
+    "surcharge": 0,
+    "categoryOrderThreshold": 40
+  },
+
+  {
+    "id": "park_essentials",
+    "name": "Park Essentials Supply",
+    "category": "practical",
+    "deliveryTime": 3,
+    "surcharge": 50,
+    "categoryOrderThreshold": null
+  },
+  {
+    "id": "comfort_goods",
+    "name": "Comfort Goods Inc.",
+    "category": "practical",
+    "deliveryTime": 2,
+    "surcharge": 25,
+    "categoryOrderThreshold": 15
+  },
+  {
+    "id": "progear",
+    "name": "ProGear Direct",
+    "category": "practical",
+    "deliveryTime": 1,
+    "surcharge": 0,
+    "categoryOrderThreshold": 40
+  },
+
+  {
+    "id": "basic_threads",
+    "name": "Basic Threads Ltd.",
+    "category": "apparel",
+    "deliveryTime": 3,
+    "surcharge": 100,
+    "categoryOrderThreshold": null
+  },
+  {
+    "id": "style_source",
+    "name": "Style Source Co.",
+    "category": "apparel",
+    "deliveryTime": 2,
+    "surcharge": 50,
+    "categoryOrderThreshold": 15
+  },
+  {
+    "id": "fashion_forward",
+    "name": "Fashion Forward Supply",
+    "category": "apparel",
+    "deliveryTime": 1,
+    "surcharge": 0,
+    "categoryOrderThreshold": 40
+  },
+
+  {
+    "id": "memory_lane",
+    "name": "Memory Lane Goods",
+    "category": "souvenir",
+    "deliveryTime": 3,
+    "surcharge": 50,
+    "categoryOrderThreshold": null
+  },
+  {
+    "id": "keepsake",
+    "name": "Keepsake Wholesale",
+    "category": "souvenir",
+    "deliveryTime": 2,
+    "surcharge": 25,
+    "categoryOrderThreshold": 15
+  },
+  {
+    "id": "prestige",
+    "name": "Prestige Collectibles",
+    "category": "souvenir",
+    "deliveryTime": 1,
+    "surcharge": 0,
+    "categoryOrderThreshold": 40
+  }
 ]
