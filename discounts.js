@@ -1,17 +1,14 @@
-// discounts.js — Discount Days panel: configure per-demographic day/frequency discounts.
+// discounts.js — Discount Days panel: configure per-demographic gate discounts.
 
-// Options for the day-of-week selector in the discount form.
-const DISCOUNT_DAY_OPTIONS = [
-  { value: 'all',      label: 'Every Day'  },
-  { value: 'weekdays', label: 'Weekdays (Mon–Fri)' },
-  { value: 'weekends', label: 'Weekends (Sat–Sun)' },
-  { value: 'mon',      label: 'Monday'     },
-  { value: 'tue',      label: 'Tuesday'    },
-  { value: 'wed',      label: 'Wednesday'  },
-  { value: 'thu',      label: 'Thursday'   },
-  { value: 'fri',      label: 'Friday'     },
-  { value: 'sat',      label: 'Saturday'   },
-  { value: 'sun',      label: 'Sunday'     },
+// Ordered Sun–Sat entries for the day-of-week checkbox row.
+const DISCOUNT_DAYS = [
+  { value: 'sun', short: 'Sun' },
+  { value: 'mon', short: 'Mon' },
+  { value: 'tue', short: 'Tue' },
+  { value: 'wed', short: 'Wed' },
+  { value: 'thu', short: 'Thu' },
+  { value: 'fri', short: 'Fri' },
+  { value: 'sat', short: 'Sat' },
 ];
 
 // Options for how often a discount repeats.
@@ -20,14 +17,6 @@ const DISCOUNT_FREQ_OPTIONS = [
   { value: 'biweekly', label: 'Every 2 weeks'   },
   { value: 'monthly',  label: 'Once a month'    },
   { value: 'seasonal', label: 'Once per season' },
-];
-
-// Display labels for each DISCOUNT_APPLIES_TO value.
-const DISCOUNT_APPLIES_TO_OPTIONS = [
-  { value: DISCOUNT_APPLIES_TO.GATE,        label: 'Gate Admission' },
-  { value: DISCOUNT_APPLIES_TO.PARKING,     label: 'Parking'        },
-  { value: DISCOUNT_APPLIES_TO.MERCHANDISE, label: 'Merchandise'    },
-  { value: DISCOUNT_APPLIES_TO.ALL,         label: 'All Prices'     },
 ];
 
 const Discounts = {
@@ -81,7 +70,7 @@ const Discounts = {
 
     if (this._formOpen) {
       this._wireCategoryChange();
-      this._wireFormActions(body);
+      this._wireFormActions();
     }
 
     body.querySelectorAll('.discount-delete-btn').forEach(btn => {
@@ -95,11 +84,14 @@ const Discounts = {
 
   // Returns the HTML string for the new-discount form.
   _formHtml() {
-    const firstCat   = this.DEMO_CATEGORIES[0];
-    const brackets   = Population[firstCat.arrayKey] || [];
+    const firstCat = this.DEMO_CATEGORIES[0];
+    const brackets = Population[firstCat.arrayKey] || [];
 
-    const dayOpts = DISCOUNT_DAY_OPTIONS.map(d =>
-      `<option value="${d.value}">${d.label}</option>`
+    const dayChips = DISCOUNT_DAYS.map(d =>
+      `<label class="day-chip">
+        <input type="checkbox" name="df-day" value="${d.value}">
+        <span>${d.short}</span>
+      </label>`
     ).join('');
 
     const freqOpts = DISCOUNT_FREQ_OPTIONS.map(f =>
@@ -114,20 +106,20 @@ const Discounts = {
       `<option value="${i}">${b.name}</option>`
     ).join('');
 
-    const appliesToOpts = DISCOUNT_APPLIES_TO_OPTIONS.map(a =>
-      `<option value="${a.value}">${a.label}</option>`
-    ).join('');
-
     return `
       <div class="posting-form discount-form" id="discount-form">
+        <div class="form-field">
+          <label>Days</label>
+          <div class="discount-day-picker">${dayChips}</div>
+        </div>
         <div class="discount-form-row">
-          <div class="form-field">
-            <label>Day of Week</label>
-            <select id="df-day">${dayOpts}</select>
-          </div>
           <div class="form-field">
             <label>Frequency</label>
             <select id="df-freq">${freqOpts}</select>
+          </div>
+          <div class="form-field">
+            <label>Discount (%)</label>
+            <input type="number" id="df-percent" min="1" max="100" value="10" />
           </div>
         </div>
         <div class="discount-form-row">
@@ -138,16 +130,6 @@ const Discounts = {
           <div class="form-field">
             <label>Bracket</label>
             <select id="df-bracket">${bracketOpts}</select>
-          </div>
-        </div>
-        <div class="discount-form-row">
-          <div class="form-field">
-            <label>Applies To</label>
-            <select id="df-applies-to">${appliesToOpts}</select>
-          </div>
-          <div class="form-field">
-            <label>Discount (%)</label>
-            <input type="number" id="df-percent" min="1" max="100" value="10" />
           </div>
         </div>
         <div class="form-error hidden" id="df-error"></div>
@@ -175,7 +157,7 @@ const Discounts = {
   },
 
   // Wires the Save and Cancel buttons on the form.
-  _wireFormActions(body) {
+  _wireFormActions() {
     const errorEl = document.getElementById('df-error');
 
     document.getElementById('df-cancel-btn').addEventListener('click', () => {
@@ -184,12 +166,20 @@ const Discounts = {
     });
 
     document.getElementById('df-save-btn').addEventListener('click', () => {
-      const day        = document.getElementById('df-day').value;
+      const days = Array.from(
+        document.querySelectorAll('input[name="df-day"]:checked')
+      ).map(cb => cb.value);
+
       const freq       = document.getElementById('df-freq').value;
       const catKey     = document.getElementById('df-category').value;
       const bracketIdx = parseInt(document.getElementById('df-bracket').value, 10);
-      const appliesTo  = document.getElementById('df-applies-to').value;
       const percent    = parseInt(document.getElementById('df-percent').value, 10);
+
+      if (days.length === 0) {
+        errorEl.textContent = 'Select at least one day.';
+        errorEl.classList.remove('hidden');
+        return;
+      }
 
       if (isNaN(percent) || percent < 1 || percent > 100) {
         errorEl.textContent = 'Discount must be between 1% and 100%.';
@@ -203,13 +193,12 @@ const Discounts = {
 
       this.rules.push({
         id:          this._nextId++,
-        day,
+        days,
         freq,
         demoKey:     catKey,
         demoLabel:   cat.label,
         bracketIdx,
         bracketName: bracket.name,
-        appliesTo,
         percent,
       });
 
@@ -218,17 +207,20 @@ const Discounts = {
     });
   },
 
+  // Returns a short human-readable summary of which days are active.
+  _daysLabel(days) {
+    if (days.length === 7) return 'Every day';
+    return days.map(v => DISCOUNT_DAYS.find(d => d.value === v)?.short || v).join(', ');
+  },
+
   // Returns the HTML string for a single discount rule card.
   _ruleCardHtml(rule) {
-    const dayLabel  = (DISCOUNT_DAY_OPTIONS.find(d => d.value === rule.day)          || {}).label || rule.day;
-    const freqLabel = (DISCOUNT_FREQ_OPTIONS.find(f => f.value === rule.freq)         || {}).label || rule.freq;
-    const appLabel  = (DISCOUNT_APPLIES_TO_OPTIONS.find(a => a.value === rule.appliesTo) || {}).label || rule.appliesTo;
+    const freqLabel = (DISCOUNT_FREQ_OPTIONS.find(f => f.value === rule.freq) || {}).label || rule.freq;
 
     return `
       <div class="discount-card">
         <div class="discount-card-header">
           <span class="discount-percent-badge">${rule.percent}% off</span>
-          <span class="discount-applies-label">${appLabel}</span>
         </div>
         <div class="discount-card-details">
           <div class="discount-detail-row">
@@ -236,8 +228,12 @@ const Discounts = {
             <span class="discount-detail-val">${rule.demoLabel}: ${rule.bracketName}</span>
           </div>
           <div class="discount-detail-row">
-            <span class="discount-detail-key">When</span>
-            <span class="discount-detail-val">${dayLabel} &middot; ${freqLabel}</span>
+            <span class="discount-detail-key">Days</span>
+            <span class="discount-detail-val">${this._daysLabel(rule.days)}</span>
+          </div>
+          <div class="discount-detail-row">
+            <span class="discount-detail-key">Freq</span>
+            <span class="discount-detail-val">${freqLabel}</span>
           </div>
         </div>
         <button class="discount-delete-btn cancel-posting-btn" data-id="${rule.id}">Remove</button>

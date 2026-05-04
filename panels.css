@@ -2084,6 +2084,46 @@
   margin: 0 10px 10px;
 }
 
+/* Row of day-of-week chip checkboxes */
+.discount-day-picker {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+/* Individual day chip — wraps a hidden checkbox + visible label */
+.day-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 0;
+  width: 36px;
+  border: 1px solid #374151;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #6b7280;
+  background: #1f2937;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+  user-select: none;
+}
+
+/* Hide the native checkbox — the chip label is the visual control */
+.day-chip input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* Checked state: amber highlight matching the game's active-button colour */
+.day-chip:has(input:checked) {
+  background: #92400e;
+  border-color: #d97706;
+  color: #fde68a;
+}
+
 /* Two-column row layout inside the form */
 .discount-form-row {
   display: grid;
@@ -2140,13 +2180,6 @@
   border-radius: 4px;
   font-size: 0.75rem;
   font-weight: 700;
-}
-
-/* Secondary label showing what the discount applies to */
-.discount-applies-label {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: #e5e7eb;
 }
 
 /* Key–value detail rows below the header */
