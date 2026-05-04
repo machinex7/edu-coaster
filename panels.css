@@ -304,18 +304,13 @@
 .inv-capacity-label { font-size: 0.75rem; color: #9ca3af; margin-bottom: 5px; }
 .inv-capacity-pct { font-size: 0.75rem; color: #9ca3af; margin-top: 4px; text-align: right; }
 
-.inv-stock-row { padding: 7px 12px; border-bottom: 1px solid #1f2937; }
-.inv-stock-row.inv-stock-locked { display: flex; align-items: center; gap: 8px;
-  opacity: 0.45; }
-.inv-stock-main { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3px; }
+.inv-stock-row   { padding: 7px 12px; border-bottom: 1px solid #1f2937; }
+.inv-stock-main  { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 3px; }
 .inv-stock-name  { font-size: 0.8rem; font-weight: 600; color: #f3f4f6; }
 .inv-stock-count { font-size: 0.75rem; color: #9ca3af; }
 .inv-stock-meta  { display: flex; gap: 14px; font-size: 0.72rem; color: #6b7280; }
 .inv-stock-price { color: #fbbf24; }
 .inv-stock-sales { color: #6b7280; }
-.inv-stock-locked-badge { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.04em;
-  text-transform: uppercase; padding: 2px 6px; border-radius: 4px;
-  background: #374151; color: #6b7280; }
 
 /* ── Purchasing tab ── */
 .inv-cat-section { border-bottom: 2px solid #374151; padding-bottom: 4px; }

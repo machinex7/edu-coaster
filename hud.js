@@ -712,14 +712,8 @@ function _buildInvStockView() {
   const itemRows = ['toy', 'practical', 'apparel', 'souvenir'].map(cat => {
     const items = merchandise
       .map((item, i) => ({ item, inv: merchandiseInventory[i], stats: Shopping._roundItemStats[i] ?? { salesCount: 0, salesRevenue: 0 }, idx: i }))
-      .filter(({ item }) => item.category === cat);
+      .filter(({ item }) => item.category === cat && unlockedMerchandiseIds.has(item.id));
     const rows = items.map(({ item, inv, stats }) => {
-      if (!unlockedMerchandiseIds.has(item.id)) {
-        return `<div class="inv-stock-row inv-stock-locked">
-          <span class="inv-stock-name">${item.name}</span>
-          <span class="inv-stock-locked-badge">Locked</span>
-        </div>`;
-      }
       const shelfPrice = inv.price + Shopping.merchandiseUpcharge;
       const sold    = stats.salesCount;
       const revenue = stats.salesRevenue;
