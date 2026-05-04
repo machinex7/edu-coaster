@@ -111,3 +111,6 @@ Also be cool to jave some map overlays, maybe a quick way to view tide status, r
 What about other park installations? Security cameras. Water fountains. Vending machines. Photo booth or ride photos. Things that overlay on top of existing construction.
 
 Robotic security to replace people. AI cameras to count age metrics of riders vs staff.
+
+
+Add planned carnivals/festivals. Complex things that are meant to take coordination and a months to plan and prepare for. Discounts, decorations, extra food and merch, maybe build a stage, hire entertainers, market it, hire staff, etc.
