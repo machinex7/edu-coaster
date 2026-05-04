@@ -484,6 +484,7 @@ function openPanel(panelId) {
   if (panelId === 'survey')     Survey.buildPanel();
   if (panelId === 'research')        Research.buildPanel();
   if (panelId === 'awards')          Awards.buildPanel();
+  if (panelId === 'discounts')        Discounts.buildPanel();
   if (panelId === 'marketing')       Marketing.buildPanel();
   if (panelId === 'visitor-profile') VisitorProfile.buildPanel();
 }

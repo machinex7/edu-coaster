@@ -107,6 +107,14 @@ const AWARD_ID = Object.freeze({
   MOST_BATHROOMS: 'most_bathrooms',
 });
 
+// What a discount rule reduces the price of.
+const DISCOUNT_APPLIES_TO = Object.freeze({
+  GATE:        'gate',
+  PARKING:     'parking',
+  MERCHANDISE: 'merchandise',
+  ALL:         'all',
+});
+
 // Interest rate reduction per covenant on the loan agreement.
 const COVENANT_RATE_DISCOUNT = 0.4;
 // Per missed payment: interest rate premium added to future proposals.
