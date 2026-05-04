@@ -329,6 +329,32 @@ function getDateLabel() {
   return `Week ${weekInQuarter}, Q${quarter}, ${STARTING_YEAR + yearsElapsed}`;
 }
 
+// Renders floating countdown pills for in-progress items (research, etc.).
+// Shows one pill per active countdown; no pill when nothing is in progress.
+function updateAchievementIndicators() {
+  const container = document.getElementById('achievement-indicators');
+  const pills = [];
+
+  if (Research.activeId) {
+    const item = Research.items.find(i => i.id === Research.activeId);
+    if (item) {
+      const wks = Research._weeksRemaining(item);
+      const wksLabel = wks === Infinity
+        ? 'No researchers'
+        : `${wks} wk${wks !== 1 ? 's' : ''}`;
+      pills.push({ icon: '🔬', text: `${item.name}: ${wksLabel}`, panel: 'research' });
+    }
+  }
+
+  container.innerHTML = pills
+    .map(p => `<button class="achievement-pill" data-panel="${p.panel}">${p.icon} ${p.text}</button>`)
+    .join('');
+
+  container.querySelectorAll('.achievement-pill').forEach(btn => {
+    btn.addEventListener('click', () => openPanel(btn.dataset.panel));
+  });
+}
+
 function updateHUD() {
   document.getElementById('money-display').textContent = `$${money.toLocaleString()}`;
   document.getElementById('date-display').textContent  = getDateLabel();
@@ -357,6 +383,7 @@ function updateHUD() {
       : !hasEntrance                 ? 'Place a Park Entrance first'
       : 'Connect at least one ride to a path';
   }
+  updateAchievementIndicators();
 }
 
 // ── Panel management ───────────────────────────────────────────────────────
