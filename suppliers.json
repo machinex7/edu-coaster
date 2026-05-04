@@ -1,5 +1,125 @@
 [
-  { "id": "general_goods",  "name": "General Goods Co.",    "deliveryTime": 3, "surcharge": 0,   "unlockThreshold": null  },
-  { "id": "speedy_supply",  "name": "Speedy Supply Co.",    "deliveryTime": 1, "surcharge": 200, "unlockThreshold": 75000  },
-  { "id": "bulk_wholesale", "name": "Bulk Wholesale Ltd.",  "deliveryTime": 2, "surcharge": 75,  "unlockThreshold": 250000 }
+  {
+    "id": "fun_factory",
+    "name": "Fun Factory Distributors",
+    "category": "toy",
+    "deliveryTime": 3,
+    "surcharge": 75,
+    "categoryUnlockThreshold": null,
+    "premiumSpendThreshold": 2000,
+    "premiumItemId": "plush_bunny"
+  },
+  {
+    "id": "playpals",
+    "name": "PlayPals Wholesale",
+    "category": "toy",
+    "deliveryTime": 2,
+    "surcharge": 25,
+    "categoryUnlockThreshold": 4000,
+    "premiumSpendThreshold": 6000,
+    "premiumItemId": "glow_sword"
+  },
+  {
+    "id": "premium_play",
+    "name": "Premium Play Co.",
+    "category": "toy",
+    "deliveryTime": 1,
+    "surcharge": 0,
+    "categoryUnlockThreshold": 15000,
+    "premiumSpendThreshold": null,
+    "premiumItemId": null
+  },
+
+  {
+    "id": "park_essentials",
+    "name": "Park Essentials Supply",
+    "category": "practical",
+    "deliveryTime": 3,
+    "surcharge": 50,
+    "categoryUnlockThreshold": null,
+    "premiumSpendThreshold": 2000,
+    "premiumItemId": "sunscreen"
+  },
+  {
+    "id": "comfort_goods",
+    "name": "Comfort Goods Inc.",
+    "category": "practical",
+    "deliveryTime": 2,
+    "surcharge": 25,
+    "categoryUnlockThreshold": 4000,
+    "premiumSpendThreshold": 6000,
+    "premiumItemId": "umbrella"
+  },
+  {
+    "id": "progear",
+    "name": "ProGear Direct",
+    "category": "practical",
+    "deliveryTime": 1,
+    "surcharge": 0,
+    "categoryUnlockThreshold": 15000,
+    "premiumSpendThreshold": null,
+    "premiumItemId": null
+  },
+
+  {
+    "id": "basic_threads",
+    "name": "Basic Threads Ltd.",
+    "category": "apparel",
+    "deliveryTime": 3,
+    "surcharge": 100,
+    "categoryUnlockThreshold": null,
+    "premiumSpendThreshold": 2000,
+    "premiumItemId": "baseball_cap"
+  },
+  {
+    "id": "style_source",
+    "name": "Style Source Co.",
+    "category": "apparel",
+    "deliveryTime": 2,
+    "surcharge": 50,
+    "categoryUnlockThreshold": 4000,
+    "premiumSpendThreshold": 6000,
+    "premiumItemId": "hoodie"
+  },
+  {
+    "id": "fashion_forward",
+    "name": "Fashion Forward Supply",
+    "category": "apparel",
+    "deliveryTime": 1,
+    "surcharge": 0,
+    "categoryUnlockThreshold": 15000,
+    "premiumSpendThreshold": null,
+    "premiumItemId": null
+  },
+
+  {
+    "id": "memory_lane",
+    "name": "Memory Lane Goods",
+    "category": "souvenir",
+    "deliveryTime": 3,
+    "surcharge": 50,
+    "categoryUnlockThreshold": null,
+    "premiumSpendThreshold": 2000,
+    "premiumItemId": "mug"
+  },
+  {
+    "id": "keepsake",
+    "name": "Keepsake Wholesale",
+    "category": "souvenir",
+    "deliveryTime": 2,
+    "surcharge": 25,
+    "categoryUnlockThreshold": 4000,
+    "premiumSpendThreshold": 6000,
+    "premiumItemId": "snow_globe"
+  },
+  {
+    "id": "prestige",
+    "name": "Prestige Collectibles",
+    "category": "souvenir",
+    "deliveryTime": 1,
+    "surcharge": 0,
+    "categoryUnlockThreshold": 15000,
+    "premiumSpendThreshold": null,
+    "premiumItemId": null
+  }
 ]

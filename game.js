@@ -66,10 +66,12 @@ let facilities = [];  // from facilities.json
 let merchandise          = [];  // from merchandise.json
 let merchandiseInventory = [];  // parallel to merchandise: { count, price }
 let suppliers            = [];  // from suppliers.json
-let selectedSupplierId   = null;
-let unlockedSupplierIds  = new Set();
+let unlockedSupplierIds  = new Set();             // supplier IDs the player can currently use
+let selectedSupplierByCategory = {};              // category → currently selected supplierId
+let unlockedMerchandiseIds = new Set();           // item IDs the player can stock and sell
+let categoryOrderSpend   = {};                    // category → total $ spent on orders in that category
+let supplierOrderSpend   = {};                    // supplierId → total $ spent via that supplier
 let orders               = [];  // { itemIndex, itemName, count, weeksRemaining }
-let totalOrderSpend      = 0;  // cumulative dollars spent placing merchandise orders
 // Active marketing campaigns; each entry is a snapshot of draft state at launch time.
 // { impressions, medium, hook, messageType, xAxis, yAxis, xRange, yRange,
 //   weeksTotal, weeksRemaining, interest, focusMultiplier,
@@ -132,11 +134,18 @@ async function init() {
     ride._color = RIDE_COLORS[i % RIDE_COLORS.length];
   });
 
-  merchandiseInventory = merchandise.map(item => ({ count: 500, price: item.basePrice }));
+  // Unlock tier-1 items (startsUnlocked: true) and one starter supplier per category.
+  unlockedMerchandiseIds = new Set(merchandise.filter(m => m.startsUnlocked).map(m => m.id));
+  merchandiseInventory = merchandise.map(item => ({
+    count: unlockedMerchandiseIds.has(item.id) ? 500 : 0,
+    price: item.basePrice,
+  }));
 
-  unlockedSupplierIds = new Set([suppliers[0].id]);
-  selectedSupplierId  = suppliers[0].id;
-  totalOrderSpend     = 0;
+  const starterSuppliers = suppliers.filter(s => s.categoryUnlockThreshold === null);
+  unlockedSupplierIds = new Set(starterSuppliers.map(s => s.id));
+  selectedSupplierByCategory = Object.fromEntries(starterSuppliers.map(s => [s.category, s.id]));
+  categoryOrderSpend = { toy: 0, practical: 0, apparel: 0, souvenir: 0 };
+  supplierOrderSpend = Object.fromEntries(suppliers.map(s => [s.id, 0]));
 
   gridState = Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS).fill(null));
 

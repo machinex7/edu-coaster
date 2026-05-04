@@ -110,7 +110,7 @@ const Shopping = {
     for (let i = 0; i < merchandise.length; i++) {
       const item = merchandise[i];
       const inv  = merchandiseInventory[i];
-      if (inv.count <= 0) continue;
+      if (!unlockedMerchandiseIds.has(item.id) || inv.count <= 0) continue;
 
       const shelfPrice = inv.price + this.merchandiseUpcharge;
 
@@ -164,7 +164,8 @@ const Shopping = {
     if (tiles === 0) return 0;
     const { theftMultiplier } = this.calcStaffingState();
     const raw   = Math.floor(weeklyAttendance * (1 - Population.BUYER_RATE) * Population.THEFT_RATE * Math.sqrt(tiles) * theftMultiplier);
-    const stock = merchandiseInventory.reduce((s, inv) => s + inv.count, 0);
+    const stock = merchandiseInventory.reduce((s, inv, i) =>
+      unlockedMerchandiseIds.has(merchandise[i].id) ? s + inv.count : s, 0);
     return Math.min(raw, stock);
   },
 
@@ -177,7 +178,7 @@ const Shopping = {
     for (let i = 0; i < count; i++) {
       const eligible = merchandiseInventory
         .map((inv, idx) => ({ inv, idx }))
-        .filter(({ inv }) => inv.count > 0);
+        .filter(({ inv, idx }) => unlockedMerchandiseIds.has(merchandise[idx].id) && inv.count > 0);
       if (eligible.length === 0) break;
       const { inv, idx } = eligible[Math.floor(Math.random() * eligible.length)];
       const stolenPrice   = inv.price + this.merchandiseUpcharge;
