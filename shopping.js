@@ -38,7 +38,7 @@ const Shopping = {
   // Warehouses add storage only — no theft risk, no staff requirement.
   calcWarehouseCapacity() {
     return installedFacilities
-      .filter(f => f.facilityId === FACILITY_ID.STORAGE_WAREHOUSE)
+      .filter(f => f.facilityId === FACILITY_ID.STORAGE_WAREHOUSE && f.status === STATUS.ACTIVE)
       .length * this.WAREHOUSE_CAPACITY;
   },
 
