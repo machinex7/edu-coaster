@@ -133,7 +133,7 @@ const Marketing = {
   _getEligibleRides() {
     return installedRides.filter(r => {
       if (r.status === STATUS.UNDER_CONSTRUCTION || r.status === STATUS.PAUSED_CONSTRUCTION) return true;
-      return r.status === STATUS.ACTIVE && round - r.installedRound <= 4;
+      return r.status === STATUS.ACTIVE && r.installedRound > 1 && round - r.installedRound <= 4;
     });
   },
 
