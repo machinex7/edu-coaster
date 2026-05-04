@@ -16,6 +16,7 @@ const Shopping = {
   BASE_SPEND:              30,   // $ base spend per buyer (food/misc; not used in merch calcRevenue)
   WORKERS_PER_STORE:        2,   // merchandise attendants required per active store
   STORAGE_PER_SHOP:       6000,  // inventory slots provided per active merchandise tile
+  WAREHOUSE_CAPACITY:    50000,  // inventory slots added per placed Storage Warehouse
   EXPECTED_MEALS_PER_DAY:   2,   // meals a visitor wants to eat per day
   MEALS_PER_WORKER_PER_DAY: 250, // meals a concessions worker can serve per day (base)
   MEAL_BASE_PRICE:          10,  // $ base price per meal sold
@@ -33,9 +34,18 @@ const Shopping = {
       .reduce((sum, s) => sum + s.footprint.flat().filter(v => v === 1).length, 0);
   },
 
-  // Maximum total inventory items the park can hold across all merchandise tiles.
+  // Bonus inventory slots from all placed Storage Warehouse facilities.
+  // Warehouses add storage only — no theft risk, no staff requirement.
+  calcWarehouseCapacity() {
+    return installedFacilities
+      .filter(f => f.facilityId === FACILITY_ID.STORAGE_WAREHOUSE)
+      .length * this.WAREHOUSE_CAPACITY;
+  },
+
+  // Maximum total inventory items the park can hold: merchandise shop tiles
+  // plus any Storage Warehouse bonuses.
   calcInventoryCapacity() {
-    return this.calcMerchandiseTiles() * this.STORAGE_PER_SHOP;
+    return this.calcMerchandiseTiles() * this.STORAGE_PER_SHOP + this.calcWarehouseCapacity();
   },
 
   // Workers needed to fully staff all active merchandise shops.
