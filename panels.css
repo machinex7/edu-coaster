@@ -1466,6 +1466,12 @@
   margin-top: 4px;
 }
 
+.mkt-ride-row {
+  border-top: 1px solid #374151;
+  padding-top: 10px;
+  margin-top: 4px;
+}
+
 .mkt-award-hint {
   font-size: 0.68rem;
   color: #6b7280;

@@ -6,6 +6,8 @@ const Marketing = {
   draftMessageType: 'informational',
   // ID of the award attached to this campaign draft, or null for none.
   draftAward: null,
+  // instanceId of the ride featured in the current draft campaign, or null for none.
+  draftRide: null,
   // Keys of the Population bracket arrays mapped to each chart axis.
   draftXAxis:  'age',
   draftYAxis:  'income',
@@ -18,6 +20,16 @@ const Marketing = {
 
   // One-time fee added when the hook is a celebrity cameo.
   CELEBRITY_COST: 10_000,
+
+  // Maps ride intensity strings to numeric values on the 0–2 intensityBias scale.
+  INTENSITY_NUMERIC: { low: 0.5, medium: 1.0, high: 1.5, extreme: 2.0 },
+
+  // Weekly favor bonus applied to each targeted bracket when a ride is featured.
+  // Brackets without intensityBias receive this flat amount each round.
+  RIDE_FAVOR_BASE: 0.5,
+  // Maximum weekly bonus for a bracket whose intensityBias perfectly matches the ride.
+  // Scales down to 0 at maximum mismatch; always exceeds RIDE_FAVOR_BASE on a good match.
+  RIDE_FAVOR_MATCH_PEAK: 1.0,
 
   // Additive interest bonus per marketing use of an award (0-indexed by prior use count).
   // Each use is one tier less effective; clamps at the last entry.
@@ -113,6 +125,27 @@ const Marketing = {
   // Returns true if the entry's research unlock has been completed (or has none).
   _isUnlocked(entry) {
     return !entry.unlock || Research.completed.has(entry.unlock);
+  },
+
+  // Returns installed rides eligible to be featured in a marketing campaign:
+  // rides currently under construction (any construction status) or rides that
+  // became active within the last 4 rounds.
+  _getEligibleRides() {
+    return installedRides.filter(r => {
+      if (r.status === STATUS.UNDER_CONSTRUCTION || r.status === STATUS.PAUSED_CONSTRUCTION) return true;
+      return r.status === STATUS.ACTIVE && r.installedRound > 1 && round - r.installedRound <= 4;
+    });
+  },
+
+  // Returns the weekly favor bonus for one bracket from a featured ride.
+  // Returns the weekly favor bonus for one bracket from a featured ride.
+  // Brackets without intensityBias get the flat RIDE_FAVOR_BASE each round.
+  // Brackets with intensityBias peak at RIDE_FAVOR_MATCH_PEAK on a perfect match
+  // and scale linearly down to 0 at maximum mismatch (distance = 2 on the 0–2 scale).
+  _rideBonus(bracket, rideIntensityNumeric) {
+    if (bracket.intensityBias == null) return this.RIDE_FAVOR_BASE;
+    const dist = Math.abs(rideIntensityNumeric - bracket.intensityBias);
+    return this.RIDE_FAVOR_MATCH_PEAK * Math.max(0, 1 - dist / 2);
   },
 
   // Returns a range covering all brackets for the given category key.
@@ -308,6 +341,19 @@ const Marketing = {
           for (let yi = c.yRange.min; yi <= c.yRange.max; yi++)
             yCat.brackets[yi].favor += delta;
         }
+
+        // Apply ride feature bonus — flat 0.5 for demographics without intensity bias,
+        // or scaled 0–0.5 based on how well the ride's intensity matches the bracket's preference.
+        if (c.featuredRideIntensity != null) {
+          if (c.xRange.min !== null) {
+            for (let xi = c.xRange.min; xi <= c.xRange.max; xi++)
+              xCat.brackets[xi].favor += this._rideBonus(xCat.brackets[xi], c.featuredRideIntensity);
+          }
+          if (c.yRange.min !== null) {
+            for (let yi = c.yRange.min; yi <= c.yRange.max; yi++)
+              yCat.brackets[yi].favor += this._rideBonus(yCat.brackets[yi], c.featuredRideIntensity);
+          }
+        }
       }
 
       // Sum the estimated attendance delta across all targeted brackets for this week.
@@ -343,6 +389,14 @@ const Marketing = {
             const b = this.DEMO_CATS.find(d => d.key === tb.key).brackets[tb.idx];
             return sum + b.chance * b.count;
           }, 0);
+          // Ride bonus is a constant per-week attendance contribution independent of
+          // the interest curve — sum chance×count weighted by each bracket's bonus.
+          const rideBonusPop = c.featuredRideIntensity != null
+            ? c.trackedBrackets.reduce((sum, tb) => {
+                const b = this.DEMO_CATS.find(d => d.key === tb.key).brackets[tb.idx];
+                return sum + b.chance * b.count * this._rideBonus(b, c.featuredRideIntensity);
+              }, 0)
+            : 0;
           c.projectedDeltas = [];
           for (let pt = 1; pt <= projWeeks; pt++) {
             const projInt   = this.calcInterest(c.messageType, pt, projWeeks)
@@ -350,7 +404,7 @@ const Marketing = {
                             + c.awardBoost;
             const projDelta = projInt * c.focusMultiplier;
             c.projectedDeltas.push(Math.round(
-              Finance.parkExcitement * projPop * projDelta / Population.baselineFavorablePopulation
+              Finance.parkExcitement * (projPop * projDelta + rideBonusPop) / Population.baselineFavorablePopulation
             ));
           }
         }
@@ -384,6 +438,14 @@ const Marketing = {
     const weeks      = this.draftTrialMode ? this.TRIAL_WEEKS : this.estimatedWeeks();
     const awardBoost = this.draftAward ? this.calcAwardBoost(this.draftAward) : 0;
     money -= cost;
+    const featuredRideId       = this.draftRide;
+    const featuredRideRecord   = featuredRideId ? installedRides.find(r => r.instanceId === featuredRideId) : null;
+    const featuredRideTemplate = featuredRideRecord ? rides.find(r => r.id === featuredRideRecord.rideId) : null;
+    const featuredRideName     = featuredRideTemplate?.name ?? null;
+    // Freeze intensity at launch so the bonus still applies even after construction ends.
+    const featuredRideIntensity = featuredRideTemplate
+      ? (this.INTENSITY_NUMERIC[featuredRideTemplate.intensity] ?? null)
+      : null;
     activeCampaigns.push({
       impressions:      this.draftTrialMode
                           ? this.IMPRESSIONS_STEP * this.TRIAL_WEEKS
@@ -393,6 +455,9 @@ const Marketing = {
       messageType:      this.draftMessageType,
       award:            this.draftAward,        // award id used, or null
       awardBoost,                               // additive interest bonus, frozen at launch
+      featuredRide:     featuredRideId,         // instanceId of featured ride, or null
+      featuredRideName,                         // display name frozen at launch, or null
+      featuredRideIntensity,                    // numeric 0–2 intensity frozen at launch, or null
       xAxis:            this.draftXAxis,
       yAxis:            this.draftYAxis,
       xRange:           { ...this.draftXRange },
@@ -417,6 +482,7 @@ const Marketing = {
       this.marketingUses[this.draftAward] = (this.marketingUses[this.draftAward] ?? 0) + 1;
     }
     this.draftAward = null;
+    this.draftRide  = null;
     updateHUD();
     this.buildPanel();
   },
@@ -461,6 +527,12 @@ const Marketing = {
 
   // Renders the campaign designer into #mkt-design-view and wires its event listeners.
   _buildDesignView() {
+    const eligibleRides = this._getEligibleRides();
+    // Clear selected ride if it is no longer eligible (e.g. construction finished long ago).
+    if (this.draftRide && !eligibleRides.some(r => r.instanceId === this.draftRide)) {
+      this.draftRide = null;
+    }
+
     const xCat = this.DEMO_CATS.find(c => c.key === this.draftXAxis);
     const yCat = this.DEMO_CATS.find(c => c.key === this.draftYAxis);
 
@@ -598,6 +670,20 @@ const Marketing = {
         </div>
       </div>` : ''}
 
+      ${eligibleRides.length > 0 ? `
+      <div class="form-field mkt-ride-row">
+        <label>Feature a Ride <span class="mkt-award-hint">(highlight a new or upcoming attraction)</span></label>
+        <div class="mkt-option-group mkt-award-group">
+          <button class="mkt-option-btn${this.draftRide === null ? ' active' : ''}" data-mkt-ride="">None</button>
+          ${eligibleRides.map(r => {
+            const underConstruction = r.status === STATUS.UNDER_CONSTRUCTION || r.status === STATUS.PAUSED_CONSTRUCTION;
+            const tip = underConstruction ? 'Under construction' : `Opened ${round - r.installedRound} week(s) ago`;
+            return `<button class="mkt-option-btn mkt-option-btn--award${this.draftRide === r.instanceId ? ' active' : ''}"
+              data-mkt-ride="${r.instanceId}" title="${tip}">${r.name}${underConstruction ? ' <em>(coming soon)</em>' : ''}</button>`;
+          }).join('')}
+        </div>
+      </div>` : ''}
+
       <div class="mkt-launch-row">
         <div class="mkt-cost-line">Cost: <span id="mkt-est-cost"></span></div>
         <button class="mkt-launch-btn"${money < (this.draftTrialMode ? this.calcTrialCost() : this.calcCost()) ? ' disabled title="Insufficient funds"' : ''}>${this.draftTrialMode ? 'Launch Trial Run' : 'Launch Campaign'}</button>
@@ -645,6 +731,13 @@ const Marketing = {
       btn.addEventListener('click', () => {
         this.draftAward = btn.dataset.mktAward || null;
         document.querySelectorAll('[data-mkt-award]').forEach(b => b.classList.toggle('active', b === btn));
+      });
+    });
+
+    document.querySelectorAll('[data-mkt-ride]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.draftRide = btn.dataset.mktRide || null;
+        document.querySelectorAll('[data-mkt-ride]').forEach(b => b.classList.toggle('active', b === btn));
       });
     });
 
@@ -792,6 +885,7 @@ const Marketing = {
       ${field('Hook',       hookLabel)}
       ${field('Message',    msgLabel)}
       ${field('Award',      awardLabel)}
+      ${c.featuredRide ? field('Featured Ride', c.featuredRideName) : ''}
       ${!c.trialMode ? field('Impressions', c.impressions.toLocaleString()) : ''}
       ${field('Cost',       '$' + c.cost.toLocaleString())}
       ${field('Targeting',  brackets)}
