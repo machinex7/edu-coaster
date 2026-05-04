@@ -77,5 +77,14 @@
     "buildWeeks": 3,
     "utilityCost": 50,
     "limit": null
+  },
+  {
+    "id": "storage_warehouse",
+    "name": "Storage Warehouse",
+    "color": "#a8a29e",
+    "footprint": [[1, 1], [1, 1]],
+    "buildCost": 15000,
+    "buildWeeks": 3,
+    "limit": null
   }
 ]
