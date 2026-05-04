@@ -389,6 +389,14 @@ const Marketing = {
             const b = this.DEMO_CATS.find(d => d.key === tb.key).brackets[tb.idx];
             return sum + b.chance * b.count;
           }, 0);
+          // Ride bonus is a constant per-week attendance contribution independent of
+          // the interest curve — sum chance×count weighted by each bracket's bonus.
+          const rideBonusPop = c.featuredRideIntensity != null
+            ? c.trackedBrackets.reduce((sum, tb) => {
+                const b = this.DEMO_CATS.find(d => d.key === tb.key).brackets[tb.idx];
+                return sum + b.chance * b.count * this._rideBonus(b, c.featuredRideIntensity);
+              }, 0)
+            : 0;
           c.projectedDeltas = [];
           for (let pt = 1; pt <= projWeeks; pt++) {
             const projInt   = this.calcInterest(c.messageType, pt, projWeeks)
@@ -396,7 +404,7 @@ const Marketing = {
                             + c.awardBoost;
             const projDelta = projInt * c.focusMultiplier;
             c.projectedDeltas.push(Math.round(
-              Finance.parkExcitement * projPop * projDelta / Population.baselineFavorablePopulation
+              Finance.parkExcitement * (projPop * projDelta + rideBonusPop) / Population.baselineFavorablePopulation
             ));
           }
         }
