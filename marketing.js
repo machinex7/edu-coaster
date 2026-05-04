@@ -21,6 +21,14 @@ const Marketing = {
   // One-time fee added when the hook is a celebrity cameo.
   CELEBRITY_COST: 10_000,
 
+  // Maps ride intensity strings to numeric values on the 0–2 intensityBias scale.
+  INTENSITY_NUMERIC: { low: 0.5, medium: 1.0, high: 1.5, extreme: 2.0 },
+
+  // Weekly favor bonus applied to each targeted bracket when a ride is featured.
+  // Brackets with intensityBias get scaled favor (0–0.5) based on how closely
+  // the ride's intensity matches their preference; others receive the flat baseline.
+  RIDE_FAVOR_BASE: 0.5,
+
   // Additive interest bonus per marketing use of an award (0-indexed by prior use count).
   // Each use is one tier less effective; clamps at the last entry.
   AWARD_BOOST_TIERS: [0.20, 0.15, 0.10, 0.05, 0.01],
@@ -125,6 +133,16 @@ const Marketing = {
       if (r.status === STATUS.UNDER_CONSTRUCTION || r.status === STATUS.PAUSED_CONSTRUCTION) return true;
       return r.status === STATUS.ACTIVE && round - r.installedRound <= 4;
     });
+  },
+
+  // Returns the weekly favor bonus for one bracket from a featured ride.
+  // Uses RIDE_FAVOR_BASE (0.5) scaled by intensity match when intensityBias is present,
+  // or the flat base when the bracket type has no intensity preference.
+  // Distance formula: bonus = base × (1 – |rideNumeric – bias| / 2), clamped ≥ 0.
+  _rideBonus(bracket, rideIntensityNumeric) {
+    if (bracket.intensityBias == null) return this.RIDE_FAVOR_BASE;
+    const dist = Math.abs(rideIntensityNumeric - bracket.intensityBias);
+    return this.RIDE_FAVOR_BASE * Math.max(0, 1 - dist / 2);
   },
 
   // Returns a range covering all brackets for the given category key.
@@ -320,6 +338,19 @@ const Marketing = {
           for (let yi = c.yRange.min; yi <= c.yRange.max; yi++)
             yCat.brackets[yi].favor += delta;
         }
+
+        // Apply ride feature bonus — flat 0.5 for demographics without intensity bias,
+        // or scaled 0–0.5 based on how well the ride's intensity matches the bracket's preference.
+        if (c.featuredRideIntensity != null) {
+          if (c.xRange.min !== null) {
+            for (let xi = c.xRange.min; xi <= c.xRange.max; xi++)
+              xCat.brackets[xi].favor += this._rideBonus(xCat.brackets[xi], c.featuredRideIntensity);
+          }
+          if (c.yRange.min !== null) {
+            for (let yi = c.yRange.min; yi <= c.yRange.max; yi++)
+              yCat.brackets[yi].favor += this._rideBonus(yCat.brackets[yi], c.featuredRideIntensity);
+          }
+        }
       }
 
       // Sum the estimated attendance delta across all targeted brackets for this week.
@@ -396,9 +427,13 @@ const Marketing = {
     const weeks      = this.draftTrialMode ? this.TRIAL_WEEKS : this.estimatedWeeks();
     const awardBoost = this.draftAward ? this.calcAwardBoost(this.draftAward) : 0;
     money -= cost;
-    const featuredRideId   = this.draftRide;
-    const featuredRideName = featuredRideId
-      ? (installedRides.find(r => r.instanceId === featuredRideId)?.name ?? null)
+    const featuredRideId       = this.draftRide;
+    const featuredRideRecord   = featuredRideId ? installedRides.find(r => r.instanceId === featuredRideId) : null;
+    const featuredRideTemplate = featuredRideRecord ? rides.find(r => r.id === featuredRideRecord.rideId) : null;
+    const featuredRideName     = featuredRideTemplate?.name ?? null;
+    // Freeze intensity at launch so the bonus still applies even after construction ends.
+    const featuredRideIntensity = featuredRideTemplate
+      ? (this.INTENSITY_NUMERIC[featuredRideTemplate.intensity] ?? null)
       : null;
     activeCampaigns.push({
       impressions:      this.draftTrialMode
@@ -411,6 +446,7 @@ const Marketing = {
       awardBoost,                               // additive interest bonus, frozen at launch
       featuredRide:     featuredRideId,         // instanceId of featured ride, or null
       featuredRideName,                         // display name frozen at launch, or null
+      featuredRideIntensity,                    // numeric 0–2 intensity frozen at launch, or null
       xAxis:            this.draftXAxis,
       yAxis:            this.draftYAxis,
       xRange:           { ...this.draftXRange },
