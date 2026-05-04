@@ -6,6 +6,8 @@ const Marketing = {
   draftMessageType: 'informational',
   // ID of the award attached to this campaign draft, or null for none.
   draftAward: null,
+  // instanceId of the ride featured in the current draft campaign, or null for none.
+  draftRide: null,
   // Keys of the Population bracket arrays mapped to each chart axis.
   draftXAxis:  'age',
   draftYAxis:  'income',
@@ -113,6 +115,16 @@ const Marketing = {
   // Returns true if the entry's research unlock has been completed (or has none).
   _isUnlocked(entry) {
     return !entry.unlock || Research.completed.has(entry.unlock);
+  },
+
+  // Returns installed rides eligible to be featured in a marketing campaign:
+  // rides currently under construction (any construction status) or rides that
+  // became active within the last 4 rounds.
+  _getEligibleRides() {
+    return installedRides.filter(r => {
+      if (r.status === STATUS.UNDER_CONSTRUCTION || r.status === STATUS.PAUSED_CONSTRUCTION) return true;
+      return r.status === STATUS.ACTIVE && round - r.installedRound <= 4;
+    });
   },
 
   // Returns a range covering all brackets for the given category key.
@@ -384,6 +396,10 @@ const Marketing = {
     const weeks      = this.draftTrialMode ? this.TRIAL_WEEKS : this.estimatedWeeks();
     const awardBoost = this.draftAward ? this.calcAwardBoost(this.draftAward) : 0;
     money -= cost;
+    const featuredRideId   = this.draftRide;
+    const featuredRideName = featuredRideId
+      ? (installedRides.find(r => r.instanceId === featuredRideId)?.name ?? null)
+      : null;
     activeCampaigns.push({
       impressions:      this.draftTrialMode
                           ? this.IMPRESSIONS_STEP * this.TRIAL_WEEKS
@@ -393,6 +409,8 @@ const Marketing = {
       messageType:      this.draftMessageType,
       award:            this.draftAward,        // award id used, or null
       awardBoost,                               // additive interest bonus, frozen at launch
+      featuredRide:     featuredRideId,         // instanceId of featured ride, or null
+      featuredRideName,                         // display name frozen at launch, or null
       xAxis:            this.draftXAxis,
       yAxis:            this.draftYAxis,
       xRange:           { ...this.draftXRange },
@@ -417,6 +435,7 @@ const Marketing = {
       this.marketingUses[this.draftAward] = (this.marketingUses[this.draftAward] ?? 0) + 1;
     }
     this.draftAward = null;
+    this.draftRide  = null;
     updateHUD();
     this.buildPanel();
   },
@@ -461,6 +480,12 @@ const Marketing = {
 
   // Renders the campaign designer into #mkt-design-view and wires its event listeners.
   _buildDesignView() {
+    const eligibleRides = this._getEligibleRides();
+    // Clear selected ride if it is no longer eligible (e.g. construction finished long ago).
+    if (this.draftRide && !eligibleRides.some(r => r.instanceId === this.draftRide)) {
+      this.draftRide = null;
+    }
+
     const xCat = this.DEMO_CATS.find(c => c.key === this.draftXAxis);
     const yCat = this.DEMO_CATS.find(c => c.key === this.draftYAxis);
 
@@ -598,6 +623,20 @@ const Marketing = {
         </div>
       </div>` : ''}
 
+      ${eligibleRides.length > 0 ? `
+      <div class="form-field mkt-ride-row">
+        <label>Feature a Ride <span class="mkt-award-hint">(highlight a new or upcoming attraction)</span></label>
+        <div class="mkt-option-group mkt-award-group">
+          <button class="mkt-option-btn${this.draftRide === null ? ' active' : ''}" data-mkt-ride="">None</button>
+          ${eligibleRides.map(r => {
+            const underConstruction = r.status === STATUS.UNDER_CONSTRUCTION || r.status === STATUS.PAUSED_CONSTRUCTION;
+            const tip = underConstruction ? 'Under construction' : `Opened ${round - r.installedRound} week(s) ago`;
+            return `<button class="mkt-option-btn mkt-option-btn--award${this.draftRide === r.instanceId ? ' active' : ''}"
+              data-mkt-ride="${r.instanceId}" title="${tip}">${r.name}${underConstruction ? ' <em>(coming soon)</em>' : ''}</button>`;
+          }).join('')}
+        </div>
+      </div>` : ''}
+
       <div class="mkt-launch-row">
         <div class="mkt-cost-line">Cost: <span id="mkt-est-cost"></span></div>
         <button class="mkt-launch-btn"${money < (this.draftTrialMode ? this.calcTrialCost() : this.calcCost()) ? ' disabled title="Insufficient funds"' : ''}>${this.draftTrialMode ? 'Launch Trial Run' : 'Launch Campaign'}</button>
@@ -645,6 +684,13 @@ const Marketing = {
       btn.addEventListener('click', () => {
         this.draftAward = btn.dataset.mktAward || null;
         document.querySelectorAll('[data-mkt-award]').forEach(b => b.classList.toggle('active', b === btn));
+      });
+    });
+
+    document.querySelectorAll('[data-mkt-ride]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.draftRide = btn.dataset.mktRide || null;
+        document.querySelectorAll('[data-mkt-ride]').forEach(b => b.classList.toggle('active', b === btn));
       });
     });
 
@@ -792,6 +838,7 @@ const Marketing = {
       ${field('Hook',       hookLabel)}
       ${field('Message',    msgLabel)}
       ${field('Award',      awardLabel)}
+      ${c.featuredRide ? field('Featured Ride', c.featuredRideName) : ''}
       ${!c.trialMode ? field('Impressions', c.impressions.toLocaleString()) : ''}
       ${field('Cost',       '$' + c.cost.toLocaleString())}
       ${field('Targeting',  brackets)}
