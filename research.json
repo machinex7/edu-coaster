@@ -3,14 +3,14 @@
     "id": "surveys",
     "name": "Surveys",
     "description": "Run structured visitor surveys to gather satisfaction data and identify pain points.",
-    "cost": 2,
+    "cost": 4,
     "requires": []
   },
   {
     "id": "license_plate_monitoring",
     "name": "License Plate Monitoring",
     "description": "Cross-reference parking data with regional records to estimate visitor origin and repeat visit rates.",
-    "cost": 4,
+    "cost": 8,
     "feature": "SECURITY",
     "requires": ["surveys"]
   },
@@ -18,42 +18,42 @@
     "id": "quarterly_survey_results",
     "name": "Quarterly Survey Results",
     "description": "Compile survey responses into trend-focused quarterly reports with demographic breakdowns.",
-    "cost": 3,
+    "cost": 6,
     "requires": ["surveys"]
   },
   {
     "id": "survey_coupon_incentive",
     "name": "Coupon Surveys",
     "description": "Offer a discount coupon as a survey incentive. Raises response rates to 25% at $2/survey.",
-    "cost": 3,
+    "cost": 6,
     "requires": ["quarterly_survey_results"]
   },
   {
     "id": "survey_prize_incentive",
     "name": "Prize Entry Surveys",
     "description": "Offer a prize entry as a survey incentive. Raises response rates to 35% at $3/survey.",
-    "cost": 4,
+    "cost": 8,
     "requires": ["survey_coupon_incentive"]
   },
   {
     "id": "weather_sensor",
     "name": "Weather Sensor",
     "description": "Install an on-site weather sensor to generate short-range forecasts. Provides a 1-week attendance outlook.",
-    "cost": 3,
+    "cost": 6,
     "requires": []
   },
   {
     "id": "weather_station",
     "name": "Weather Station",
     "description": "Upgrade to a full weather station with extended modelling. Extends the forecast window to 2 weeks.",
-    "cost": 5,
+    "cost": 10,
     "requires": ["weather_sensor"]
   },
   {
     "id": "employee_benefits",
     "name": "Employee Benefits",
     "description": "Establish a formal benefits program. Prerequisite for all staff benefit research.",
-    "cost": 3,
+    "cost": 6,
     "feature": "STAFFING",
     "requires": []
   },
@@ -61,7 +61,7 @@
     "id": "parental_leave",
     "name": "Parental Leave",
     "description": "Offer paid parental leave to staff. Improves employee retention and morale.",
-    "cost": 4,
+    "cost": 8,
     "feature": "STAFFING",
     "requires": ["employee_benefits"]
   },
@@ -69,7 +69,7 @@
     "id": "401k",
     "name": "401k",
     "description": "Provide a 401k retirement plan. Improves long-term staff retention.",
-    "cost": 4,
+    "cost": 8,
     "feature": "STAFFING",
     "requires": ["employee_benefits"]
   },
@@ -77,7 +77,7 @@
     "id": "medical_coverage",
     "name": "Medical Coverage",
     "description": "Offer employer-sponsored health insurance. Significantly boosts staff morale and reduces turnover.",
-    "cost": 6,
+    "cost": 12,
     "feature": "STAFFING",
     "requires": ["401k"]
   },
@@ -86,63 +86,63 @@
     "id": "mkt_emotional_messaging",
     "name": "Emotional Messaging",
     "description": "Train your team to craft emotionally resonant campaigns. Unlocks the Emotional message type.",
-    "cost": 2,
+    "cost": 4,
     "requires": []
   },
   {
     "id": "mkt_household_targeting",
     "name": "Household Segmentation",
     "description": "Analyze campaigns by household size to reach families and couples more effectively. Unlocks Household as a demographic axis.",
-    "cost": 2,
+    "cost": 4,
     "requires": ["mkt_emotional_messaging"]
   },
   {
     "id": "mkt_urgency_messaging",
     "name": "Urgency Marketing",
     "description": "Design time-limited campaigns that drive immediate action. Unlocks the Urgency-Driven message type.",
-    "cost": 3,
+    "cost": 6,
     "requires": ["mkt_household_targeting"]
   },
   {
     "id": "mkt_distance_targeting",
     "name": "Geographic Reach Analysis",
     "description": "Segment your market by travel distance to calibrate regional advertising spend. Unlocks Distance as a demographic axis.",
-    "cost": 3,
+    "cost": 6,
     "requires": ["mkt_urgency_messaging"]
   },
   {
     "id": "mkt_celebrity_hook",
     "name": "Celebrity Partnerships",
     "description": "Build industry relationships needed to negotiate celebrity endorsements. Unlocks Celebrity Cameo as a campaign hook.",
-    "cost": 4,
+    "cost": 8,
     "requires": ["mkt_distance_targeting"]
   },
   {
     "id": "mkt_area_targeting",
     "name": "Urban/Rural Segmentation",
     "description": "Tailor campaigns to urban and rural audiences with different travel and leisure habits. Unlocks Area as a demographic axis.",
-    "cost": 4,
+    "cost": 8,
     "requires": ["mkt_celebrity_hook"]
   },
   {
     "id": "demographic_population",
     "name": "Population Census Data",
     "description": "Commission a regional demographic study to reveal the true population size of each visitor segment. Unlocks population counts in the Visitor Profile.",
-    "cost": 3,
+    "cost": 6,
     "requires": ["surveys"]
   },
   {
     "id": "demographic_segmentation_display",
     "name": "Demographic Segmentation Display",
     "description": "Restructure visitor profile charts so icons are grouped by sentiment: unfavorable (red) first, unknown (grey) in the middle, and favorable (green) last. Makes the health of each segment instantly scannable.",
-    "cost": 2,
+    "cost": 4,
     "requires": ["demographic_population"]
   },
   {
     "id": "bulk_ordering",
     "name": "Bulk Ordering",
     "description": "Negotiate volume purchasing agreements with suppliers. Unlocks the +100 unit order size for merchandise restocking.",
-    "cost": 3,
+    "cost": 6,
     "feature": "MERCHANDISE",
     "requires": []
   }

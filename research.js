@@ -11,16 +11,17 @@ const Research = {
       .then(data => { this.items = data; });
   },
 
-  // Points contributed per week by all active Business Analysts.
-  // Each BA contributes 1 + 0.2 × their tier (1–4).
+  // Points contributed per week. Passive base is 0.5 pts/wk regardless of BA count.
+  // Each active BA contributes an additional 2 + 0.4 × their tier (1–4).
   _researchRate() {
-    if (!Unlock.STAFFING) return 1; // assume 1 junior analyst
+    const PASSIVE = 0.5;
+    if (!Unlock.STAFFING) return PASSIVE;
     return Staff.roster
       .filter(s => s.jobId === JOB.BUSINESS_ANALYST && s.weeksOut === 0)
       .reduce((sum, ba) => {
         const { tier } = Staff.getExperienceTier(ba.weeksEmployed);
-        return sum + 1 + 0.2 * tier;
-      }, 0);
+        return sum + 2 + 0.4 * tier;
+      }, PASSIVE);
   },
 
   // Weeks to finish item from its current progress state, minimum 1.
@@ -153,7 +154,7 @@ const Research = {
     const body    = document.getElementById('research-panel-body');
     const columns = this._buildColumns();
     const rate    = this._researchRate();
-    const rateLabel = rate === 0 ? 'No BAs hired' : `${rate % 1 === 0 ? rate : rate.toFixed(1)} pts/wk`;
+    const rateLabel = `${rate % 1 === 0 ? rate : rate.toFixed(1)} pts/wk`;
     const activeLabel = this.activeId
       ? `Researching: ${this.items.find(i => i.id === this.activeId)?.name ?? ''}`
       : 'No active research';
@@ -184,7 +185,7 @@ const Research = {
 
     // Update info bar
     const rate = this._researchRate();
-    const rateLabel = rate === 0 ? 'No BAs hired' : `${rate % 1 === 0 ? rate : rate.toFixed(1)} pts/wk`;
+    const rateLabel = `${rate % 1 === 0 ? rate : rate.toFixed(1)} pts/wk`;
     const rateEl = document.getElementById('research-rate-val');
     if (rateEl) rateEl.textContent = rateLabel;
     const activeEl = document.getElementById('research-active-label');
