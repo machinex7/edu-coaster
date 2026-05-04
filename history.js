@@ -30,10 +30,10 @@ const History = {
       jobPostings:         Staff.postings.length,
       matchingCandidates:  Staff.candidates.filter(c => Staff.findMatchingPosting(c) !== null).length,
       shopItemsSold:       report.shopItemsSold,
-      totalInventory:      merchandiseInventory.reduce((s, inv) => s + inv.count, 0),
+      totalInventory:      Shopping.merchandiseInventory.reduce((s, inv) => s + inv.count, 0),
       itemStats:           Shopping._roundItemStats.map((stats, i) => ({
-        itemName:     merchandise[i].name,
-        count:        merchandiseInventory[i].count,
+        itemName:     Shopping.merchandise[i].name,
+        count:        Shopping.merchandiseInventory[i].count,
         salesRevenue: Math.round(stats.salesRevenue),
         salesCount:   stats.salesCount,
         theftValue:   Math.round(stats.theftValue),

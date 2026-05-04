@@ -704,15 +704,15 @@ function buildInventoryPanel() {
 
 /* _buildInvStockView - read-only display of unlocked items: stock, sell price, last-week sales */
 function _buildInvStockView() {
-  const totalStock    = merchandiseInventory.reduce((s, inv) => s + inv.count, 0);
+  const totalStock    = Shopping.merchandiseInventory.reduce((s, inv) => s + inv.count, 0);
   const capacity      = Shopping.calcInventoryCapacity();
   const pct           = capacity > 0 ? Math.min(100, Math.round(totalStock / capacity * 100)) : 0;
   const capacityLabel = capacity > 0 ? `${totalStock.toLocaleString()} / ${capacity.toLocaleString()}` : 'No shops open';
 
   const itemRows = ['toy', 'practical', 'apparel', 'souvenir'].map(cat => {
-    const items = merchandise
-      .map((item, i) => ({ item, inv: merchandiseInventory[i], stats: Shopping._roundItemStats[i] ?? { salesCount: 0, salesRevenue: 0 }, idx: i }))
-      .filter(({ item }) => item.category === cat && unlockedMerchandiseIds.has(item.id));
+    const items = Shopping.merchandise
+      .map((item, i) => ({ item, inv: Shopping.merchandiseInventory[i], stats: Shopping._roundItemStats[i] ?? { salesCount: 0, salesRevenue: 0 }, idx: i }))
+      .filter(({ item }) => item.category === cat && Shopping.unlockedMerchandiseIds.has(item.id));
     const rows = items.map(({ item, inv, stats }) => {
       const shelfPrice = inv.price + Shopping.merchandiseUpcharge;
       const sold    = stats.salesCount;
@@ -748,13 +748,13 @@ function _buildInvPurchasingView() {
   const hasBulk = Research.completed.has(RESEARCH_ID.BULK_ORDERING);
 
   const catSections = ['toy', 'practical', 'apparel', 'souvenir'].map(cat => {
-    const catSuppliers = suppliers.filter(s => s.category === cat);
-    const selectedId   = selectedSupplierByCategory[cat];
-    const supplier     = suppliers.find(s => s.id === selectedId);
+    const catSuppliers = Shopping.suppliers.filter(s => s.category === cat);
+    const selectedId   = Shopping.selectedSupplierByCategory[cat];
+    const supplier     = Shopping.suppliers.find(s => s.id === selectedId);
 
     // Supplier selector — three pill buttons per category.
     const selectorBtns = catSuppliers.map(s => {
-      const unlocked    = unlockedSupplierIds.has(s.id);
+      const unlocked    = Shopping.unlockedSupplierIds.has(s.id);
       const isSelected  = s.id === selectedId;
       return `<button class="inv-supplier-btn${isSelected ? ' active' : ''}${!unlocked ? ' locked' : ''}"
         ${unlocked && !isSelected ? `data-select-supplier="${s.id}" data-category="${cat}"` : ''}
@@ -765,9 +765,9 @@ function _buildInvPurchasingView() {
     // Progress bar toward unlocking this supplier's premium item.
     let supplierProgressHtml = '';
     if (supplier?.premiumSpendThreshold) {
-      const premiumItem = merchandise.find(m => m.id === supplier.premiumItemId);
-      if (!unlockedMerchandiseIds.has(supplier.premiumItemId)) {
-        const spent     = supplierOrderSpend[selectedId] ?? 0;
+      const premiumItem = Shopping.merchandise.find(m => m.id === supplier.premiumItemId);
+      if (!Shopping.unlockedMerchandiseIds.has(supplier.premiumItemId)) {
+        const spent     = Shopping.supplierOrderSpend[selectedId] ?? 0;
         const remaining = Math.max(0, supplier.premiumSpendThreshold - spent);
         const pct       = Math.min(100, Math.round(spent / supplier.premiumSpendThreshold * 100));
         supplierProgressHtml = `<div class="inv-supplier-progress">
@@ -781,9 +781,9 @@ function _buildInvPurchasingView() {
 
     // Progress bar toward unlocking the next supplier in this category.
     let nextSupplierHtml = '';
-    const nextSupplier = catSuppliers.find(s => !unlockedSupplierIds.has(s.id));
+    const nextSupplier = catSuppliers.find(s => !Shopping.unlockedSupplierIds.has(s.id));
     if (nextSupplier) {
-      const catSpent  = categoryOrderSpend[cat] ?? 0;
+      const catSpent  = Shopping.categoryOrderSpend[cat] ?? 0;
       const threshold = nextSupplier.categoryUnlockThreshold;
       const remaining = Math.max(0, threshold - catSpent);
       const pct       = Math.min(100, Math.round(catSpent / threshold * 100));
@@ -794,18 +794,18 @@ function _buildInvPurchasingView() {
     }
 
     // Item rows — unlocked items get buy buttons; locked items show unlock progress.
-    const catItems = merchandise
-      .map((item, i) => ({ item, inv: merchandiseInventory[i], idx: i }))
+    const catItems = Shopping.merchandise
+      .map((item, i) => ({ item, inv: Shopping.merchandiseInventory[i], idx: i }))
       .filter(({ item }) => item.category === cat);
 
     const itemsHtml = catItems.map(({ item, inv, idx }) => {
-      if (!unlockedMerchandiseIds.has(item.id)) {
+      if (!Shopping.unlockedMerchandiseIds.has(item.id)) {
         // Find which supplier unlocks this item.
         const unlocker = catSuppliers.find(s => s.premiumItemId === item.id);
-        const unlockerUnlocked = unlocker ? unlockedSupplierIds.has(unlocker.id) : false;
+        const unlockerUnlocked = unlocker ? Shopping.unlockedSupplierIds.has(unlocker.id) : false;
         let unlockHint = '';
         if (unlocker && unlockerUnlocked) {
-          const spent     = supplierOrderSpend[unlocker.id] ?? 0;
+          const spent     = Shopping.supplierOrderSpend[unlocker.id] ?? 0;
           const threshold = unlocker.premiumSpendThreshold;
           const remaining = Math.max(0, threshold - spent);
           const pct       = Math.min(100, Math.round(spent / threshold * 100));
@@ -821,7 +821,7 @@ function _buildInvPurchasingView() {
       }
 
       // Unlocked — show buy buttons or pending order status.
-      const pendingOrder = orders.find(o => o.itemIndex === idx);
+      const pendingOrder = Shopping.orders.find(o => o.itemIndex === idx);
       let buyHtml;
       if (pendingOrder) {
         buyHtml = `<span class="inv-order-pending">Order pending: ${pendingOrder.count} units (${pendingOrder.weeksRemaining}w)</span>`;
@@ -865,7 +865,7 @@ function _buildInvPurchasingView() {
   // Supplier selector clicks — switch active supplier for that category.
   el.querySelectorAll('.inv-supplier-btn[data-select-supplier]').forEach(btn => {
     btn.addEventListener('click', () => {
-      selectedSupplierByCategory[btn.dataset.category] = btn.dataset.selectSupplier;
+      Shopping.selectedSupplierByCategory[btn.dataset.category] = btn.dataset.selectSupplier;
       _buildInvPurchasingView();
     });
   });
@@ -877,21 +877,21 @@ function _buildInvPurchasingView() {
       const qty        = Number(btn.dataset.qty);
       const supplierId = btn.dataset.supplier;
       const cat        = btn.dataset.category;
-      const sup        = suppliers.find(s => s.id === supplierId);
-      const cost       = Math.round(qty * merchandiseInventory[idx].price * Population.cumulativeInflation + (sup?.surcharge ?? 0));
+      const sup        = Shopping.suppliers.find(s => s.id === supplierId);
+      const cost       = Math.round(qty * Shopping.merchandiseInventory[idx].price * Population.cumulativeInflation + (sup?.surcharge ?? 0));
       if (money < cost) return;
 
       money -= cost;
-      supplierOrderSpend[supplierId] = (supplierOrderSpend[supplierId] ?? 0) + cost;
-      categoryOrderSpend[cat]        = (categoryOrderSpend[cat]        ?? 0) + cost;
-      orders.push({ itemIndex: idx, itemName: merchandise[idx].name, count: qty, weeksRemaining: sup?.deliveryTime ?? 1 });
+      Shopping.supplierOrderSpend[supplierId] = (Shopping.supplierOrderSpend[supplierId] ?? 0) + cost;
+      Shopping.categoryOrderSpend[cat]        = (Shopping.categoryOrderSpend[cat]        ?? 0) + cost;
+      Shopping.orders.push({ itemIndex: idx, itemName: Shopping.merchandise[idx].name, count: qty, weeksRemaining: sup?.deliveryTime ?? 1 });
 
       // Check if this supplier's premium item is now unlocked.
       if (sup?.premiumSpendThreshold && sup.premiumItemId
-          && !unlockedMerchandiseIds.has(sup.premiumItemId)
-          && supplierOrderSpend[supplierId] >= sup.premiumSpendThreshold) {
-        unlockedMerchandiseIds.add(sup.premiumItemId);
-        const premiumItem = merchandise.find(m => m.id === sup.premiumItemId);
+          && !Shopping.unlockedMerchandiseIds.has(sup.premiumItemId)
+          && Shopping.supplierOrderSpend[supplierId] >= sup.premiumSpendThreshold) {
+        Shopping.unlockedMerchandiseIds.add(sup.premiumItemId);
+        const premiumItem = Shopping.merchandise.find(m => m.id === sup.premiumItemId);
         Notifications.push({
           label:   'New Item Unlocked',
           message: `${premiumItem?.name ?? sup.premiumItemId} is now available to order.`,
@@ -900,10 +900,10 @@ function _buildInvPurchasingView() {
       }
 
       // Check if any next-tier supplier in this category is now unlocked.
-      for (const s of suppliers.filter(s => s.category === cat)) {
-        if (s.categoryUnlockThreshold != null && !unlockedSupplierIds.has(s.id)
-            && categoryOrderSpend[cat] >= s.categoryUnlockThreshold) {
-          unlockedSupplierIds.add(s.id);
+      for (const s of Shopping.suppliers.filter(s => s.category === cat)) {
+        if (s.categoryUnlockThreshold != null && !Shopping.unlockedSupplierIds.has(s.id)
+            && Shopping.categoryOrderSpend[cat] >= s.categoryUnlockThreshold) {
+          Shopping.unlockedSupplierIds.add(s.id);
           Notifications.push({
             label:   'New Supplier',
             message: `${s.name} is now available for ${MERCH_CATEGORY_LABELS[cat]} orders.`,

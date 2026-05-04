@@ -550,7 +550,7 @@ const Finance = {
       }
     }
 
-    const inventoryValue = merchandiseInventory.reduce(
+    const inventoryValue = Shopping.merchandiseInventory.reduce(
       (sum, inv) => sum + inv.count * inv.price, 0
     );
 

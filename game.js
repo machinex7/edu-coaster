@@ -63,15 +63,6 @@ function forecastForRound(r) {
 // ── Game State ─────────────────────────────────────────────────────────────
 let rides      = [];  // from rides.json (with _color added)
 let facilities = [];  // from facilities.json
-let merchandise          = [];  // from merchandise.json
-let merchandiseInventory = [];  // parallel to merchandise: { count, price }
-let suppliers            = [];  // from suppliers.json
-let unlockedSupplierIds  = new Set();             // supplier IDs the player can currently use
-let selectedSupplierByCategory = {};              // category → currently selected supplierId
-let unlockedMerchandiseIds = new Set();           // item IDs the player can stock and sell
-let categoryOrderSpend   = {};                    // category → total $ spent on orders in that category
-let supplierOrderSpend   = {};                    // supplierId → total $ spent via that supplier
-let orders               = [];  // { itemIndex, itemName, count, weeksRemaining }
 // Active marketing campaigns; each entry is a snapshot of draft state at launch time.
 // { impressions, medium, hook, messageType, xAxis, yAxis, xRange, yRange,
 //   weeksTotal, weeksRemaining, interest, focusMultiplier,
@@ -120,7 +111,7 @@ function setDemolishMode(active) {
 // ── Init ───────────────────────────────────────────────────────────────────
 async function init() {
   let demographics;
-  [rides, facilities, Shopping.catalog, merchandise, suppliers, demographics] = await Promise.all([
+  [rides, facilities, Shopping.catalog, Shopping.merchandise, Shopping.suppliers, demographics] = await Promise.all([
     fetch('rides.json').then(r => r.json()),
     fetch('facilities.json').then(r => r.json()),
     fetch('shops.json').then(r => r.json()),
@@ -134,18 +125,7 @@ async function init() {
     ride._color = RIDE_COLORS[i % RIDE_COLORS.length];
   });
 
-  // Unlock tier-1 items (startsUnlocked: true) and one starter supplier per category.
-  unlockedMerchandiseIds = new Set(merchandise.filter(m => m.startsUnlocked).map(m => m.id));
-  merchandiseInventory = merchandise.map(item => ({
-    count: unlockedMerchandiseIds.has(item.id) ? 500 : 0,
-    price: item.basePrice,
-  }));
-
-  const starterSuppliers = suppliers.filter(s => s.categoryUnlockThreshold === null);
-  unlockedSupplierIds = new Set(starterSuppliers.map(s => s.id));
-  selectedSupplierByCategory = Object.fromEntries(starterSuppliers.map(s => [s.category, s.id]));
-  categoryOrderSpend = { toy: 0, practical: 0, apparel: 0, souvenir: 0 };
-  supplierOrderSpend = Object.fromEntries(suppliers.map(s => [s.id, 0]));
+  Shopping.init();
 
   gridState = Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS).fill(null));
 
