@@ -606,3 +606,41 @@ header h1 {
   opacity: 1;
   visibility: visible;
 }
+
+/* ── Achievement indicators ── */
+/* Floating pills in the top-right, below the header, showing countdowns. */
+#achievement-indicators {
+  position: fixed;
+  top: calc(var(--header-h) + 8px);
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  z-index: 55;
+  pointer-events: none;
+}
+
+/* Individual countdown pill — clickable shortcut to the relevant panel. */
+.achievement-pill {
+  background: #1e3a5f;
+  border: 1px solid #3b82f6;
+  border-radius: 20px;
+  padding: 5px 13px;
+  font-size: 0.78rem;
+  color: #93c5fd;
+  cursor: pointer;
+  pointer-events: all;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+  transition: background 0.15s, color 0.15s;
+  font-family: inherit;
+}
+
+.achievement-pill:hover {
+  background: #2563eb;
+  color: #fff;
+}

@@ -329,6 +329,53 @@ function getDateLabel() {
   return `Week ${weekInQuarter}, Q${quarter}, ${STARTING_YEAR + yearsElapsed}`;
 }
 
+// Renders floating countdown pills for in-progress items (research, construction).
+// Shows one pill per active countdown; no pill when nothing is in progress.
+function updateAchievementIndicators() {
+  const container = document.getElementById('achievement-indicators');
+  const pills = [];
+
+  if (Research.activeId) {
+    const item = Research.items.find(i => i.id === Research.activeId);
+    if (item) {
+      const wks = Research._weeksRemaining(item);
+      const wksLabel = wks === Infinity
+        ? 'No researchers'
+        : `${wks} wk${wks !== 1 ? 's' : ''}`;
+      pills.push({ icon: '🔬', text: `${item.name}: ${wksLabel}`, panel: 'research' });
+    }
+  }
+
+  // Find the actively-building item (not paused) closest to completion.
+  const allInstalled = [...installedRides, ...installedFacilities, ...Shopping.installed];
+  const building = allInstalled
+    .filter(r => r.status === STATUS.UNDER_CONSTRUCTION)
+    .map(r => ({ record: r, weeksLeft: r.weeksTotal - r.weeksCompleted }))
+    .sort((a, b) => a.weeksLeft - b.weeksLeft)[0];
+
+  if (building) {
+    const wks = building.weeksLeft;
+    const wksLabel = `${wks} wk${wks !== 1 ? 's' : ''}`;
+    pills.push({ icon: '🏗️', text: `${building.record.name}: ${wksLabel}`, panel: 'rides' });
+  }
+
+  // Show a pill when a loan is in the final review stage (cash incoming).
+  const loan = Finance.loanApplication;
+  if (loan?.status === LOAN_STATUS.REVIEW) {
+    const wks = loan.reviewWeeksRemaining;
+    const wksLabel = `${wks} wk${wks !== 1 ? 's' : ''}`;
+    pills.push({ icon: '💰', text: `Loan ($${loan.amount.toLocaleString()}): ${wksLabel}`, panel: 'financial' });
+  }
+
+  container.innerHTML = pills
+    .map(p => `<button class="achievement-pill" data-panel="${p.panel}">${p.icon} ${p.text}</button>`)
+    .join('');
+
+  container.querySelectorAll('.achievement-pill').forEach(btn => {
+    btn.addEventListener('click', () => openPanel(btn.dataset.panel));
+  });
+}
+
 function updateHUD() {
   document.getElementById('money-display').textContent = `$${money.toLocaleString()}`;
   document.getElementById('date-display').textContent  = getDateLabel();
@@ -357,6 +404,7 @@ function updateHUD() {
       : !hasEntrance                 ? 'Place a Park Entrance first'
       : 'Connect at least one ride to a path';
   }
+  updateAchievementIndicators();
 }
 
 // ── Panel management ───────────────────────────────────────────────────────

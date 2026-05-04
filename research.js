@@ -215,6 +215,7 @@ const Research = {
         const id = el.dataset.id;
         this.activeId = this.activeId === id ? null : id;
         this._updatePanel();
+        updateAchievementIndicators();
       });
     });
   },
