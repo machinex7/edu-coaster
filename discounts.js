@@ -1,29 +1,22 @@
 // discounts.js — Discount Days panel: configure per-demographic gate discounts.
 
-// Fraction of the gate price forfeited per affected visitor for each discount type.
-// BOGO effectively gives one free ticket per pair, so the average loss is half price.
-const DISCOUNT_COST_FRACTION = {
-  '20pct': 0.20,
-  'half':  0.50,
-  'bogo':  0.50,
-  'free':  1.00,
-};
-
-// Additive favor boost applied to the target bracket on rounds when the discount fires.
-// Larger discounts draw more of that demographic out on the day.
-const DISCOUNT_FAVOR_BOOST = {
-  '20pct': 0.10,
-  'half':  0.20,
-  'bogo':  0.25,
-  'free':  0.50,
-};
-
-// The fixed set of discount amounts a player can offer.
+// Each discount type carries its display label, the fraction of gate price lost per
+// affected visitor (BOGO = half because one ticket is free per pair on average),
+// and the additive favor boost applied to the target bracket on active rounds.
 const DISCOUNT_TYPES = [
-  { value: '20pct', label: '20% off'        },
-  { value: 'half',  label: 'Half off'       },
-  { value: 'bogo',  label: 'BOGO'           },
-  { value: 'free',  label: 'Free Admission' },
+  { value: '20pct', label: '20% off',        costFraction: 0.20, favorBoost: 0.10 },
+  { value: 'half',  label: 'Half off',       costFraction: 0.50, favorBoost: 0.20 },
+  { value: 'bogo',  label: 'BOGO',           costFraction: 0.50, favorBoost: 0.25 },
+  { value: 'free',  label: 'Free Admission', costFraction: 1.00, favorBoost: 0.50 },
+];
+
+// Each frequency entry carries its display label and how many rounds elapse between
+// applications (period: 1 = every round, 4 = roughly once a month, etc.).
+const DISCOUNT_FREQS = [
+  { value: 'weekly',   label: 'Every week',      period: 1  },
+  { value: 'biweekly', label: 'Every 2 weeks',   period: 2  },
+  { value: 'monthly',  label: 'Once a month',    period: 4  },
+  { value: 'seasonal', label: 'Once per season', period: 13 },
 ];
 
 // Ordered Sun–Sat entries for the day-of-week checkbox row.
@@ -36,22 +29,6 @@ const DISCOUNT_DAYS = [
   { value: 'fri', short: 'Fri' },
   { value: 'sat', short: 'Sat' },
 ];
-
-// Options for how often a discount repeats.
-const DISCOUNT_FREQ_OPTIONS = [
-  { value: 'weekly',   label: 'Every week'      },
-  { value: 'biweekly', label: 'Every 2 weeks'   },
-  { value: 'monthly',  label: 'Once a month'    },
-  { value: 'seasonal', label: 'Once per season' },
-];
-
-// How many rounds between applications for each frequency value.
-const DISCOUNT_FREQ_PERIOD = {
-  weekly:   1,
-  biweekly: 2,
-  monthly:  4,
-  seasonal: 13,
-};
 
 const Discounts = {
 
@@ -85,7 +62,7 @@ const Discounts = {
     for (const rule of this.rules) {
       if (rule.demoKey !== catKey || rule.bracketName !== bracketName) continue;
       if (!this.isActiveThisRound(rule)) continue;
-      boost += DISCOUNT_FAVOR_BOOST[rule.discountType] ?? 0;
+      boost += DISCOUNT_TYPES.find(t => t.value === rule.discountType)?.favorBoost ?? 0;
     }
     return boost;
   },
@@ -94,7 +71,7 @@ const Discounts = {
   // Uses (round - roundCreated) % period so the rule fires on the round it was
   // created and then repeats at the correct cadence from that anchor point.
   isActiveThisRound(rule) {
-    const period = DISCOUNT_FREQ_PERIOD[rule.freq] ?? 1;
+    const period = DISCOUNT_FREQS.find(f => f.value === rule.freq)?.period ?? 1;
     return (round - rule.roundCreated) % period === 0;
   },
 
@@ -121,7 +98,7 @@ const Discounts = {
       const dayMultiplier = rule.days.length / 7;
       const fraction      = (bracket.chance * bracket.favor) / totalWeight;
       const affected      = weeklyAttendance * fraction;
-      const costFraction  = DISCOUNT_COST_FRACTION[rule.discountType] ?? 0;
+      const costFraction  = DISCOUNT_TYPES.find(t => t.value === rule.discountType)?.costFraction ?? 0;
       const cost          = Math.round(affected * gatePrice * costFraction * dayMultiplier);
 
       rule.moneyLost += cost;
@@ -192,7 +169,7 @@ const Discounts = {
       </label>`
     ).join('');
 
-    const freqOpts = DISCOUNT_FREQ_OPTIONS.map(f =>
+    const freqOpts = DISCOUNT_FREQS.map(f =>
       `<option value="${f.value}">${f.label}</option>`
     ).join('');
 
@@ -283,8 +260,8 @@ const Discounts = {
         return;
       }
 
-      const cat     = this.DEMO_CATEGORIES.find(c => c.key === catKey);
-      const bracket = cat ? (Population[cat.arrayKey] || []).find(b => b.name === bracketName) : null;
+      const cat          = this.DEMO_CATEGORIES.find(c => c.key === catKey);
+      const bracket      = cat ? (Population[cat.arrayKey] || []).find(b => b.name === bracketName) : null;
       if (!bracket) return;
 
       const discountType = DISCOUNT_TYPES.find(t => t.value === typeVal);
@@ -315,7 +292,7 @@ const Discounts = {
 
   // Returns the HTML string for a single discount rule card.
   _ruleCardHtml(rule) {
-    const freqLabel = (DISCOUNT_FREQ_OPTIONS.find(f => f.value === rule.freq) || {}).label || rule.freq;
+    const freqLabel = DISCOUNT_FREQS.find(f => f.value === rule.freq)?.label || rule.freq;
 
     return `
       <div class="discount-card">
