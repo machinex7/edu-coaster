@@ -1495,6 +1495,19 @@
   margin-top: 4px;
 }
 
+/* Discount day link row — same visual treatment as award/ride rows. */
+.mkt-discount-row {
+  border-top: 1px solid #374151;
+  padding-top: 10px;
+  margin-top: 4px;
+}
+
+/* Highlights a discount button when its demographic overlaps with the campaign selection. */
+.mkt-option-btn--award.mkt-discount-match {
+  border-color: #16a34a;
+  color: #bbf7d0;
+}
+
 .mkt-award-hint {
   font-size: 0.68rem;
   color: #6b7280;

@@ -8,6 +8,8 @@ const Marketing = {
   draftAward: null,
   // instanceId of the ride featured in the current draft campaign, or null for none.
   draftRide: null,
+  // ID of the Discounts rule linked to this campaign draft, or null for none.
+  draftLinkedDiscountId: null,
   // Keys of the Population bracket arrays mapped to each chart axis.
   draftXAxis:  'age',
   draftYAxis:  'income',
@@ -30,6 +32,17 @@ const Marketing = {
   // Maximum weekly bonus for a bracket whose intensityBias perfectly matches the ride.
   // Scales down to 0 at maximum mismatch; always exceeds RIDE_FAVOR_BASE on a good match.
   RIDE_FAVOR_MATCH_PEAK: 1.0,
+
+  // Additive per-round favor bonus applied to targeted brackets when the linked discount is active.
+  DISCOUNT_SYNERGY_BASE: 0.05,
+  // Larger bonus applied when the discount's demographic bracket falls within the campaign's selection.
+  DISCOUNT_SYNERGY_MATCH: 0.15,
+
+  // Maps Discounts.DEMO_CATEGORIES keys (uppercase) to Marketing.DEMO_CATS keys (lowercase).
+  // Used to test if a discount's targeted bracket is covered by the campaign's axis selection.
+  DISCOUNT_KEY_TO_MARKETING: {
+    AGE: 'age', INCOME: 'income', DISTANCE: 'distance', HOUSEHOLD: 'household', AREA: 'area',
+  },
 
   // Additive interest bonus per marketing use of an award (0-indexed by prior use count).
   // Each use is one tier less effective; clamps at the last entry.
@@ -135,6 +148,24 @@ const Marketing = {
       if (r.status === STATUS.UNDER_CONSTRUCTION || r.status === STATUS.PAUSED_CONSTRUCTION) return true;
       return r.status === STATUS.ACTIVE && r.installedRound > 1 && round - r.installedRound <= 4;
     });
+  },
+
+  // Returns true if the discount rule's targeted demographic bracket falls within the
+  // campaign's x- or y-axis selection. Used to decide whether to award the larger
+  // DISCOUNT_SYNERGY_MATCH bonus instead of DISCOUNT_SYNERGY_BASE.
+  _campaignCoversDiscount(campaign, discountRule) {
+    const mktKey = this.DISCOUNT_KEY_TO_MARKETING[discountRule.demoKey];
+    if (!mktKey) return false;
+    const cat = Discounts.DEMO_CATEGORIES.find(c => c.key === discountRule.demoKey);
+    if (!cat) return false;
+    const brackets   = Population[cat.arrayKey] || [];
+    const bracketIdx = brackets.findIndex(b => b.name === discountRule.bracketName);
+    if (bracketIdx < 0) return false;
+    if (campaign.xAxis === mktKey && campaign.xRange.min !== null &&
+        bracketIdx >= campaign.xRange.min && bracketIdx <= campaign.xRange.max) return true;
+    if (campaign.yAxis === mktKey && campaign.yRange.min !== null &&
+        bracketIdx >= campaign.yRange.min && bracketIdx <= campaign.yRange.max) return true;
+    return false;
   },
 
   // Returns the weekly favor bonus for one bracket from a featured ride.
@@ -354,6 +385,25 @@ const Marketing = {
               yCat.brackets[yi].favor += this._rideBonus(yCat.brackets[yi], c.featuredRideIntensity);
           }
         }
+
+        // Apply discount synergy bonus when the linked discount fires this round.
+        // Larger bonus if the discount's targeted demographic bracket is covered by the campaign.
+        if (c.linkedDiscountId != null) {
+          const linkedRule = Discounts.rules.find(r => r.id === c.linkedDiscountId);
+          if (linkedRule && Discounts.isActiveThisRound(linkedRule)) {
+            const synergyDelta = this._campaignCoversDiscount(c, linkedRule)
+              ? this.DISCOUNT_SYNERGY_MATCH
+              : this.DISCOUNT_SYNERGY_BASE;
+            if (c.xRange.min !== null) {
+              for (let xi = c.xRange.min; xi <= c.xRange.max; xi++)
+                xCat.brackets[xi].favor += synergyDelta;
+            }
+            if (c.yRange.min !== null) {
+              for (let yi = c.yRange.min; yi <= c.yRange.max; yi++)
+                yCat.brackets[yi].favor += synergyDelta;
+            }
+          }
+        }
       }
 
       // Sum the estimated attendance delta across all targeted brackets for this week.
@@ -474,15 +524,17 @@ const Marketing = {
       weeklyDeltas:     [],  // per-week estimated attendance delta (integer visitors)
       cost,
       roundLaunched:    round,
-      trialMode:        this.draftTrialMode,
-      projectedDeltas:  null,  // set by tickCampaigns on trial completion
+      trialMode:          this.draftTrialMode,
+      projectedDeltas:    null,  // set by tickCampaigns on trial completion
+      linkedDiscountId:   this.draftLinkedDiscountId,
     });
     // Increment use count after computing awardBoost so the snapshot reflects this tier.
     if (this.draftAward) {
       this.marketingUses[this.draftAward] = (this.marketingUses[this.draftAward] ?? 0) + 1;
     }
-    this.draftAward = null;
-    this.draftRide  = null;
+    this.draftAward            = null;
+    this.draftRide             = null;
+    this.draftLinkedDiscountId = null;
     updateHUD();
     this.buildPanel();
   },
@@ -684,6 +736,23 @@ const Marketing = {
         </div>
       </div>` : ''}
 
+      ${Discounts.rules.length > 0 ? `
+      <div class="form-field mkt-discount-row">
+        <label>Link a Discount Day <span class="mkt-award-hint">(boosts favor while discount is active; larger if demographics overlap)</span></label>
+        <div class="mkt-option-group mkt-award-group">
+          <button class="mkt-option-btn${this.draftLinkedDiscountId === null ? ' active' : ''}" data-mkt-discount="">None</button>
+          ${Discounts.rules.map(r => {
+            const isMatch = this._campaignCoversDiscount(
+              { xAxis: this.draftXAxis, yAxis: this.draftYAxis, xRange: this.draftXRange, yRange: this.draftYRange },
+              r
+            );
+            const tip = `${r.demoLabel}: ${r.bracketName}${isMatch ? ' — demographics overlap (larger boost)' : ''}`;
+            return `<button class="mkt-option-btn mkt-option-btn--award${this.draftLinkedDiscountId === r.id ? ' active' : ''}${isMatch ? ' mkt-discount-match' : ''}"
+              data-mkt-discount="${r.id}" title="${tip}">${r.discountLabel} · ${r.bracketName}</button>`;
+          }).join('')}
+        </div>
+      </div>` : ''}
+
       <div class="mkt-launch-row">
         <div class="mkt-cost-line">Cost: <span id="mkt-est-cost"></span></div>
         <button class="mkt-launch-btn"${money < (this.draftTrialMode ? this.calcTrialCost() : this.calcCost()) ? ' disabled title="Insufficient funds"' : ''}>${this.draftTrialMode ? 'Launch Trial Run' : 'Launch Campaign'}</button>
@@ -738,6 +807,14 @@ const Marketing = {
       btn.addEventListener('click', () => {
         this.draftRide = btn.dataset.mktRide || null;
         document.querySelectorAll('[data-mkt-ride]').forEach(b => b.classList.toggle('active', b === btn));
+      });
+    });
+
+    document.querySelectorAll('[data-mkt-discount]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const val = btn.dataset.mktDiscount;
+        this.draftLinkedDiscountId = val ? parseInt(val, 10) : null;
+        document.querySelectorAll('[data-mkt-discount]').forEach(b => b.classList.toggle('active', b === btn));
       });
     });
 
@@ -886,6 +963,15 @@ const Marketing = {
       ${field('Message',    msgLabel)}
       ${field('Award',      awardLabel)}
       ${c.featuredRide ? field('Featured Ride', c.featuredRideName) : ''}
+      ${c.linkedDiscountId != null ? (() => {
+        const rule      = Discounts.rules.find(r => r.id === c.linkedDiscountId);
+        const name      = rule
+          ? `${rule.discountLabel} · ${rule.demoLabel}: ${rule.bracketName}`
+          : `Discount #${c.linkedDiscountId} (removed)`;
+        const isMatch   = rule ? this._campaignCoversDiscount(c, rule) : false;
+        const matchNote = isMatch ? ' <span class="mkt-award-hint">(demographics overlap)</span>' : '';
+        return field('Linked Discount', name + matchNote);
+      })() : ''}
       ${!c.trialMode ? field('Impressions', c.impressions.toLocaleString()) : ''}
       ${field('Cost',       '$' + c.cost.toLocaleString())}
       ${field('Targeting',  brackets)}
