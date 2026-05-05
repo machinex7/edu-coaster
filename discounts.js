@@ -9,6 +9,15 @@ const DISCOUNT_COST_FRACTION = {
   'free':  1.00,
 };
 
+// Additive favor boost applied to the target bracket on rounds when the discount fires.
+// Larger discounts draw more of that demographic out on the day.
+const DISCOUNT_FAVOR_BOOST = {
+  '20pct': 0.10,
+  'half':  0.20,
+  'bogo':  0.25,
+  'free':  0.50,
+};
+
 // The fixed set of discount amounts a player can offer.
 const DISCOUNT_TYPES = [
   { value: '20pct', label: '20% off'        },
@@ -68,6 +77,18 @@ const Discounts = {
     { key: 'EMPLOYMENT', label: 'Employment Status', arrayKey: 'EMPLOYMENT_STATUS' },
     { key: 'STATUS',     label: 'Visitor Status',    arrayKey: 'VISITOR_STATUS'    },
   ],
+
+  // Returns the additive favor boost for a bracket this round, summed across all
+  // active discount rules that target it. Returns 0 if none apply.
+  getFavorBoost(catKey, bracketName) {
+    let boost = 0;
+    for (const rule of this.rules) {
+      if (rule.demoKey !== catKey || rule.bracketName !== bracketName) continue;
+      if (!this.isActiveThisRound(rule)) continue;
+      boost += DISCOUNT_FAVOR_BOOST[rule.discountType] ?? 0;
+    }
+    return boost;
+  },
 
   // Returns true if rule should apply this round based on its frequency.
   // Uses (round - roundCreated) % period so the rule fires on the round it was

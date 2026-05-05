@@ -148,8 +148,18 @@ const Population = {
 
   // Demand multiplier: ratio of current favorable population to the neutral baseline.
   // 1.0 at a neutral park; rises when high-chance, high-count brackets gain favor.
+  // Active discounts inject a temporary per-bracket favor boost via Discounts.getFavorBoost,
+  // which increases that bracket's contribution to attendance without mutating stored favor.
   calcDemandMultiplier() {
-    return this.calcFavorablePopulation() / this.baselineFavorablePopulation;
+    const KEYS = ['AGE', 'INCOME', 'DISTANCE', 'HOUSEHOLD', 'AREA', 'EMPLOYMENT', 'STATUS'];
+    const cats  = [
+      this.AGE_BRACKETS, this.INCOME_BRACKETS, this.DISTANCE_BRACKETS,
+      this.HOUSEHOLD_SIZES, this.AREA_TYPES, this.EMPLOYMENT_STATUS, this.VISITOR_STATUS,
+    ];
+    const total = cats.reduce((s, cat, i) =>
+      s + cat.reduce((cs, b) =>
+        cs + b.chance * (b.favor + Discounts.getFavorBoost(KEYS[i], b.name)) * b.count, 0), 0);
+    return (total / cats.length) / this.baselineFavorablePopulation;
   },
 
   // Tick all brackets in one category toward 100% confidence.
