@@ -215,6 +215,8 @@ const Discounts = {
         demoKey:       catKey,
         demoLabel:     cat.label,
         bracketName:   bracket.name,
+        roundCreated:  round,
+        moneyLost:     0,
       });
 
       this._formOpen = false;
@@ -249,6 +251,14 @@ const Discounts = {
           <div class="discount-detail-row">
             <span class="discount-detail-key">Freq</span>
             <span class="discount-detail-val">${freqLabel}</span>
+          </div>
+          <div class="discount-detail-row">
+            <span class="discount-detail-key">Since</span>
+            <span class="discount-detail-val">Round ${rule.roundCreated}</span>
+          </div>
+          <div class="discount-detail-row">
+            <span class="discount-detail-key">Cost</span>
+            <span class="discount-detail-val">$${rule.moneyLost.toLocaleString()}</span>
           </div>
         </div>
         <button class="discount-delete-btn cancel-posting-btn" data-id="${rule.id}">Remove</button>
