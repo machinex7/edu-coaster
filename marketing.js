@@ -384,7 +384,7 @@ const Marketing = {
         // Larger bonus if the discount's targeted demographic bracket is covered by the campaign.
         if (c.linkedDiscountId != null) {
           const linkedRule = Discounts.rules.find(r => r.id === c.linkedDiscountId);
-          if (linkedRule && Discounts.isActiveThisRound(linkedRule)) {
+          if (linkedRule) {
             const synergyDelta = this._campaignCoversDiscount(c, linkedRule)
               ? this.DISCOUNT_SYNERGY_MATCH
               : this.DISCOUNT_SYNERGY_BASE;
@@ -457,14 +457,8 @@ const Marketing = {
                             * this.calcHookMax(c.hook, pt, projWeeks)
                             + c.awardBoost;
             const projDelta = projInt * c.focusMultiplier;
-            // Add discount synergy for projected weeks when the discount would fire.
-            const discountPeriod = projLinkedRule
-              ? (DISCOUNT_FREQS.find(f => f.value === projLinkedRule.freq)?.period ?? 1)
-              : 0;
-            const discountFires = projLinkedRule &&
-              (round + pt - projLinkedRule.roundCreated) % discountPeriod === 0;
             c.projectedDeltas.push(Math.round(
-              Finance.parkExcitement * (projPop * projDelta + rideBonusPop + (discountFires ? projPop * projSynergyDelta : 0)) / Population.baselineFavorablePopulation
+              Finance.parkExcitement * (projPop * (projDelta + projSynergyDelta) + rideBonusPop) / Population.baselineFavorablePopulation
             ));
           }
         }
