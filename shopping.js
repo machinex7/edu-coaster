@@ -36,7 +36,9 @@ const Shopping = {
 
   // Maximum price each income bracket will pay, positionally aligned to
   // Population.INCOME_BRACKETS (Low Income → High Income).
-  INCOME_LIMITS: [6, 10, 20, 40, Infinity],
+  // Raised by ~$10 to keep behaviour neutral at the default $20 gate price;
+  // at runtime half the gate charge is subtracted (gate exhaustion effect).
+  INCOME_LIMITS: [16, 20, 30, 50, Infinity],
 
   // Total active tiles across all placed merchandise shops.
   // Used to scale revenue and theft: more floor space = more shoppers and more risk.
@@ -145,9 +147,13 @@ const Shopping = {
       const shelfPrice = inv.price + this.merchandiseUpcharge;
 
       // Sum chance of income brackets whose limit covers the shelf price.
+      // Limits scale with cumulative inflation (visitors' incomes rise with costs),
+      // then half the gate charge is subtracted — visitors who already paid a
+      // high entry fee have less disposable income for merch.
+      const gateExhaustion = Finance.gatePrice / 2;
       let afford = 0;
       for (let j = 0; j < Population.INCOME_BRACKETS.length; j++) {
-        if (shelfPrice <= this.INCOME_LIMITS[j]) {
+        if (shelfPrice <= this.INCOME_LIMITS[j] * Population.cumulativeInflation - gateExhaustion) {
           afford += Population.INCOME_BRACKETS[j].chance;
         }
       }
