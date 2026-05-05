@@ -71,7 +71,7 @@ const Marketing = {
   CAMPAIGN_CONFIDENCE_BASE: 2,
 
   // Fixed run time (weeks) for a trial campaign — shorter than any full campaign.
-  TRIAL_WEEKS: 3,
+  TRIAL_WEEKS: 2,
 
   // How many weeks to project when showing the full interest curve after a trial.
   TRIAL_PROJECTION_WEEKS: 10,
