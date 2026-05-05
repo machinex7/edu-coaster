@@ -39,6 +39,7 @@ const History = {
         theftValue:   Math.round(stats.theftValue),
         theftCount:   stats.theftCount,
       })),
+      discountLoss:        report.discountLoss,
       loanBalance:         Finance.activeLoans.reduce((s, l) => s + l.balance, 0),
       loanInterestPaid:    Finance.activeLoans.reduce((s, l) => s + l.totalInterestPaid, 0),
       loanPrincipalPaid:   Finance.activeLoans.reduce((s, l) => s + l.totalPrincipalPaid, 0),

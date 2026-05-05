@@ -1010,6 +1010,7 @@ const Finance = {
       parkingRevenue,
       shopRevenue,
       foodRevenue,
+      discountLoss: Discounts.lastRoundCost,
       totalIncome: gateRevenue + parkingRevenue + shopRevenue + foodRevenue,
       staffCosts,
       utilityCosts,

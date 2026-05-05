@@ -49,6 +49,9 @@ const Discounts = {
   // All active discount rules defined by the player.
   rules: [],
 
+  // Total gate revenue lost in the most recent round. Set by calcGateCost().
+  lastRoundCost: 0,
+
   // Monotonically increasing counter for assigning rule IDs.
   _nextId: 1,
 
@@ -104,6 +107,7 @@ const Discounts = {
       totalCost      += cost;
     }
 
+    this.lastRoundCost = totalCost;
     return totalCost;
   },
 
