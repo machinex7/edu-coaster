@@ -441,14 +441,30 @@ const Marketing = {
                 return sum + b.chance * b.count * this._rideBonus(b, c.featuredRideIntensity);
               }, 0)
             : 0;
+          // Discount synergy: look up the linked rule and the per-match delta once,
+          // then check per projected week whether the discount would fire.
+          const projLinkedRule = c.linkedDiscountId != null
+            ? Discounts.rules.find(r => r.id === c.linkedDiscountId)
+            : null;
+          const projSynergyDelta = projLinkedRule
+            ? (this._campaignCoversDiscount(c, projLinkedRule)
+                ? this.DISCOUNT_SYNERGY_MATCH
+                : this.DISCOUNT_SYNERGY_BASE)
+            : 0;
           c.projectedDeltas = [];
           for (let pt = 1; pt <= projWeeks; pt++) {
             const projInt   = this.calcInterest(c.messageType, pt, projWeeks)
                             * this.calcHookMax(c.hook, pt, projWeeks)
                             + c.awardBoost;
             const projDelta = projInt * c.focusMultiplier;
+            // Add discount synergy for projected weeks when the discount would fire.
+            const discountPeriod = projLinkedRule
+              ? (DISCOUNT_FREQS.find(f => f.value === projLinkedRule.freq)?.period ?? 1)
+              : 0;
+            const discountFires = projLinkedRule &&
+              (round + pt - projLinkedRule.roundCreated) % discountPeriod === 0;
             c.projectedDeltas.push(Math.round(
-              Finance.parkExcitement * (projPop * projDelta + rideBonusPop) / Population.baselineFavorablePopulation
+              Finance.parkExcitement * (projPop * projDelta + rideBonusPop + (discountFires ? projPop * projSynergyDelta : 0)) / Population.baselineFavorablePopulation
             ));
           }
         }
