@@ -1,5 +1,14 @@
 // discounts.js — Discount Days panel: configure per-demographic gate discounts.
 
+// Fraction of the gate price forfeited per affected visitor for each discount type.
+// BOGO effectively gives one free ticket per pair, so the average loss is half price.
+const DISCOUNT_COST_FRACTION = {
+  '20pct': 0.20,
+  'half':  0.50,
+  'bogo':  0.50,
+  'free':  1.00,
+};
+
 // The fixed set of discount amounts a player can offer.
 const DISCOUNT_TYPES = [
   { value: '20pct', label: '20% off'        },
@@ -48,6 +57,36 @@ const Discounts = {
     { key: 'EMPLOYMENT', label: 'Employment Status', arrayKey: 'EMPLOYMENT_STATUS' },
     { key: 'STATUS',     label: 'Visitor Status',    arrayKey: 'VISITOR_STATUS'    },
   ],
+
+  // Calculates the total gate revenue lost this round across all discount rules.
+  // For each rule: estimates the fraction of weeklyAttendance in that bracket using
+  // chance × favor weights, then applies the discount's cost fraction to that slice.
+  // Increments rule.moneyLost and returns the total deduction.
+  calcGateCost(weeklyAttendance, gatePrice) {
+    let totalCost = 0;
+
+    for (const rule of this.rules) {
+      const cat = this.DEMO_CATEGORIES.find(c => c.key === rule.demoKey);
+      if (!cat) continue;
+
+      const brackets    = Population[cat.arrayKey] || [];
+      const totalWeight = brackets.reduce((s, b) => s + b.chance * b.favor, 0);
+      if (totalWeight === 0) continue;
+
+      const bracket = brackets.find(b => b.name === rule.bracketName);
+      if (!bracket) continue;
+
+      const fraction     = (bracket.chance * bracket.favor) / totalWeight;
+      const affected     = weeklyAttendance * fraction;
+      const costFraction = DISCOUNT_COST_FRACTION[rule.discountType] ?? 0;
+      const cost         = Math.round(affected * gatePrice * costFraction);
+
+      rule.moneyLost += cost;
+      totalCost      += cost;
+    }
+
+    return totalCost;
+  },
 
   // Entry point called by openPanel() in hud.js.
   buildPanel() {

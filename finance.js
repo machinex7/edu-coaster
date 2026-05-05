@@ -223,8 +223,12 @@ const Finance = {
   },
 
   // ── Income sources ───────────────────────────────────────────────────────────
+  // Returns weekly gate revenue after applying any active discount rules.
   calcGateRevenue(dailyAttendance) {
-    return Math.round(this.gatePrice * dailyAttendance * 7);
+    const weekly   = dailyAttendance * 7;
+    const base     = Math.round(this.gatePrice * weekly);
+    const discount = Discounts.calcGateCost(weekly, this.gatePrice);
+    return base - discount;
   },
 
   // 1 vehicle per 3 visitors who want to come (based on demand, not throughput).
