@@ -38,12 +38,6 @@ const Marketing = {
   // Larger bonus applied when the discount's demographic bracket falls within the campaign's selection.
   DISCOUNT_SYNERGY_MATCH: 0.15,
 
-  // Maps Discounts.DEMO_CATEGORIES keys (uppercase) to Marketing.DEMO_CATS keys (lowercase).
-  // Used to test if a discount's targeted bracket is covered by the campaign's axis selection.
-  DISCOUNT_KEY_TO_MARKETING: {
-    AGE: 'age', INCOME: 'income', DISTANCE: 'distance', HOUSEHOLD: 'household', AREA: 'area',
-  },
-
   // Additive interest bonus per marketing use of an award (0-indexed by prior use count).
   // Each use is one tier less effective; clamps at the last entry.
   AWARD_BOOST_TIERS: [0.20, 0.15, 0.10, 0.05, 0.01],
@@ -154,8 +148,8 @@ const Marketing = {
   // campaign's x- or y-axis selection. Used to decide whether to award the larger
   // DISCOUNT_SYNERGY_MATCH bonus instead of DISCOUNT_SYNERGY_BASE.
   _campaignCoversDiscount(campaign, discountRule) {
-    const mktKey = this.DISCOUNT_KEY_TO_MARKETING[discountRule.demoKey];
-    if (!mktKey) return false;
+    const mktKey = discountRule.demoKey.toLowerCase();
+    if (!this.DEMO_CATS.some(c => c.key === mktKey)) return false;
     const cat = Discounts.DEMO_CATEGORIES.find(c => c.key === discountRule.demoKey);
     if (!cat) return false;
     const brackets   = Population[cat.arrayKey] || [];
