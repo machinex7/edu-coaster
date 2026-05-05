@@ -36,6 +36,14 @@ const DISCOUNT_FREQ_OPTIONS = [
   { value: 'seasonal', label: 'Once per season' },
 ];
 
+// How many rounds between applications for each frequency value.
+const DISCOUNT_FREQ_PERIOD = {
+  weekly:   1,
+  biweekly: 2,
+  monthly:  4,
+  seasonal: 13,
+};
+
 const Discounts = {
 
   // All active discount rules defined by the player.
@@ -58,6 +66,14 @@ const Discounts = {
     { key: 'STATUS',     label: 'Visitor Status',    arrayKey: 'VISITOR_STATUS'    },
   ],
 
+  // Returns true if rule should apply this round based on its frequency.
+  // Uses (round - roundCreated) % period so the rule fires on the round it was
+  // created and then repeats at the correct cadence from that anchor point.
+  isActiveThisRound(rule) {
+    const period = DISCOUNT_FREQ_PERIOD[rule.freq] ?? 1;
+    return (round - rule.roundCreated) % period === 0;
+  },
+
   // Calculates the total gate revenue lost this round across all discount rules.
   // For each rule: estimates the fraction of weeklyAttendance in that bracket using
   // chance × favor weights, then applies the discount's cost fraction to that slice.
@@ -66,6 +82,8 @@ const Discounts = {
     let totalCost = 0;
 
     for (const rule of this.rules) {
+      if (!this.isActiveThisRound(rule)) continue;
+
       const cat = this.DEMO_CATEGORIES.find(c => c.key === rule.demoKey);
       if (!cat) continue;
 
@@ -76,10 +94,11 @@ const Discounts = {
       const bracket = brackets.find(b => b.name === rule.bracketName);
       if (!bracket) continue;
 
-      const fraction     = (bracket.chance * bracket.favor) / totalWeight;
-      const affected     = weeklyAttendance * fraction;
-      const costFraction = DISCOUNT_COST_FRACTION[rule.discountType] ?? 0;
-      const cost         = Math.round(affected * gatePrice * costFraction);
+      const dayMultiplier = rule.days.length / 7;
+      const fraction      = (bracket.chance * bracket.favor) / totalWeight;
+      const affected      = weeklyAttendance * fraction;
+      const costFraction  = DISCOUNT_COST_FRACTION[rule.discountType] ?? 0;
+      const cost          = Math.round(affected * gatePrice * costFraction * dayMultiplier);
 
       rule.moneyLost += cost;
       totalCost      += cost;
