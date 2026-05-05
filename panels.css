@@ -2038,4 +2038,177 @@
 .vp-person--green     { color: #22c55e; }
 .vp-person--amber     { color: #f59e0b; }
 .vp-person--red       { color: #ef4444; }
+
+/* ── Discount Days panel ── */
+
+/* Scrollable body container */
+#discounts-panel-body {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Full-width toolbar holding the "+ New Discount" button */
+.discounts-toolbar {
+  padding: 10px 10px 6px;
+  flex-shrink: 0;
+}
+
+/* Primary add button — matches the postings panel "new posting" style */
+.new-discount-btn {
+  width: 100%;
+  padding: 7px;
+  background: #1d4ed8;
+  border: none;
+  border-radius: 5px;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.new-discount-btn:hover { background: #2563eb; }
+
+/* When cancel state, dim slightly */
+.new-discount-btn.open {
+  background: #374151;
+  color: #9ca3af;
+}
+
+.new-discount-btn.open:hover { background: #4b5563; color: #e5e7eb; }
+
+/* The create-discount form (extends existing .posting-form) */
+.discount-form {
+  margin: 0 10px 10px;
+}
+
+/* Row of day-of-week chip checkboxes */
+.discount-day-picker {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+/* Individual day chip — wraps a hidden checkbox + visible label */
+.day-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 0;
+  width: 36px;
+  border: 1px solid #374151;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #6b7280;
+  background: #1f2937;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+  user-select: none;
+}
+
+/* Hide the native checkbox — the chip label is the visual control */
+.day-chip input[type="checkbox"] {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/* Checked state: amber highlight matching the game's active-button colour */
+.day-chip:has(input:checked) {
+  background: #92400e;
+  border-color: #d97706;
+  color: #fde68a;
+}
+
+/* Two-column row layout inside the form */
+.discount-form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+/* Save button */
+.df-save-btn {
+  background: #059669;
+  color: #fff;
+}
+
+.df-save-btn:hover { background: #10b981; }
+
+/* Cancel button */
+.df-cancel-btn {
+  background: #374151;
+  color: #9ca3af;
+}
+
+.df-cancel-btn:hover { background: #4b5563; color: #e5e7eb; }
+
+/* Scrollable list of existing discount rule cards */
+.discounts-list {
+  padding: 0 10px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Individual rule card */
+.discount-card {
+  background: #111827;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  padding: 10px;
+}
+
+/* Top row: percent badge + applies-to label */
+.discount-card-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+/* Bold coloured badge showing the discount type */
+.discount-badge {
+  display: inline-block;
+  padding: 2px 7px;
+  background: #14532d;
+  color: #86efac;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+/* Key–value detail rows below the header */
+.discount-card-details {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 10px;
+}
+
+.discount-detail-row {
+  display: flex;
+  gap: 6px;
+  font-size: 0.73rem;
+}
+
+/* Small dim label (Who / When) */
+.discount-detail-key {
+  color: #6b7280;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+  min-width: 32px;
+  padding-top: 1px;
+}
+
+/* Value text */
+.discount-detail-val {
+  color: #d1d5db;
+}
 .vp-person--gray      { color: #4b5563; }
