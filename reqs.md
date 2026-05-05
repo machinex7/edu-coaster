@@ -118,3 +118,5 @@ Add planned carnivals/festivals. Complex things that are meant to take coordinat
 The Bathroom expansion. prices, more mess from rides, mess from too many people in geneal and not enough bathrooms. Maybe color code the mess on the ui view. Bathroom breakdowns?
 
 Edu modes. Let teachers pick a focus and only enable features that help educate on that focus. Marketing. Inventory Management. Budgeting. Park Management. People Management.
+
+Taxes! Make people fill out a tax form for their business and then they have to have the cash on hand to pay taxes when they come due.
