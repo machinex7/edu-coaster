@@ -1,5 +1,13 @@
 // discounts.js — Discount Days panel: configure per-demographic gate discounts.
 
+// The fixed set of discount amounts a player can offer.
+const DISCOUNT_TYPES = [
+  { value: '20pct', label: '20% off'        },
+  { value: 'half',  label: 'Half off'       },
+  { value: 'bogo',  label: 'BOGO'           },
+  { value: 'free',  label: 'Free Admission' },
+];
+
 // Ordered Sun–Sat entries for the day-of-week checkbox row.
 const DISCOUNT_DAYS = [
   { value: 'sun', short: 'Sun' },
@@ -98,6 +106,10 @@ const Discounts = {
       `<option value="${f.value}">${f.label}</option>`
     ).join('');
 
+    const typeOpts = DISCOUNT_TYPES.map(t =>
+      `<option value="${t.value}">${t.label}</option>`
+    ).join('');
+
     const catOpts = this.DEMO_CATEGORIES.map(c =>
       `<option value="${c.key}">${c.label}</option>`
     ).join('');
@@ -118,8 +130,8 @@ const Discounts = {
             <select id="df-freq">${freqOpts}</select>
           </div>
           <div class="form-field">
-            <label>Discount (%)</label>
-            <input type="number" id="df-percent" min="1" max="100" value="10" />
+            <label>Discount Type</label>
+            <select id="df-type">${typeOpts}</select>
           </div>
         </div>
         <div class="discount-form-row">
@@ -171,18 +183,12 @@ const Discounts = {
       ).map(cb => cb.value);
 
       const freq       = document.getElementById('df-freq').value;
+      const typeVal    = document.getElementById('df-type').value;
       const catKey     = document.getElementById('df-category').value;
       const bracketIdx = parseInt(document.getElementById('df-bracket').value, 10);
-      const percent    = parseInt(document.getElementById('df-percent').value, 10);
 
       if (days.length === 0) {
         errorEl.textContent = 'Select at least one day.';
-        errorEl.classList.remove('hidden');
-        return;
-      }
-
-      if (isNaN(percent) || percent < 1 || percent > 100) {
-        errorEl.textContent = 'Discount must be between 1% and 100%.';
         errorEl.classList.remove('hidden');
         return;
       }
@@ -191,15 +197,18 @@ const Discounts = {
       const bracket = cat ? (Population[cat.arrayKey] || [])[bracketIdx] : null;
       if (!bracket) return;
 
+      const discountType = DISCOUNT_TYPES.find(t => t.value === typeVal);
+
       this.rules.push({
-        id:          this._nextId++,
+        id:            this._nextId++,
         days,
         freq,
-        demoKey:     catKey,
-        demoLabel:   cat.label,
+        discountType:  discountType.value,
+        discountLabel: discountType.label,
+        demoKey:       catKey,
+        demoLabel:     cat.label,
         bracketIdx,
-        bracketName: bracket.name,
-        percent,
+        bracketName:   bracket.name,
       });
 
       this._formOpen = false;
@@ -220,7 +229,7 @@ const Discounts = {
     return `
       <div class="discount-card">
         <div class="discount-card-header">
-          <span class="discount-percent-badge">${rule.percent}% off</span>
+          <span class="discount-badge">${rule.discountLabel}</span>
         </div>
         <div class="discount-card-details">
           <div class="discount-detail-row">
