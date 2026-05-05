@@ -90,10 +90,17 @@ const Discounts = {
     });
   },
 
+  // Returns the brackets for a category, excluding any that make no sense as discount targets.
+  _bracketsFor(cat) {
+    const brackets = Population[cat.arrayKey] || [];
+    if (cat.key === 'STATUS') return brackets.filter(b => b.name !== 'None');
+    return brackets;
+  },
+
   // Returns the HTML string for the new-discount form.
   _formHtml() {
     const firstCat = this.DEMO_CATEGORIES[0];
-    const brackets = Population[firstCat.arrayKey] || [];
+    const brackets = this._bracketsFor(firstCat);
 
     const dayChips = DISCOUNT_DAYS.map(d =>
       `<label class="day-chip">
@@ -114,8 +121,8 @@ const Discounts = {
       `<option value="${c.key}">${c.label}</option>`
     ).join('');
 
-    const bracketOpts = brackets.map((b, i) =>
-      `<option value="${i}">${b.name}</option>`
+    const bracketOpts = brackets.map(b =>
+      `<option value="${b.name}">${b.name}</option>`
     ).join('');
 
     return `
@@ -161,9 +168,9 @@ const Discounts = {
 
     catSelect.addEventListener('change', () => {
       const cat      = this.DEMO_CATEGORIES.find(c => c.key === catSelect.value);
-      const brackets = cat ? (Population[cat.arrayKey] || []) : [];
-      bracketSelect.innerHTML = brackets.map((b, i) =>
-        `<option value="${i}">${b.name}</option>`
+      const brackets = cat ? this._bracketsFor(cat) : [];
+      bracketSelect.innerHTML = brackets.map(b =>
+        `<option value="${b.name}">${b.name}</option>`
       ).join('');
     });
   },
@@ -182,10 +189,10 @@ const Discounts = {
         document.querySelectorAll('input[name="df-day"]:checked')
       ).map(cb => cb.value);
 
-      const freq       = document.getElementById('df-freq').value;
-      const typeVal    = document.getElementById('df-type').value;
-      const catKey     = document.getElementById('df-category').value;
-      const bracketIdx = parseInt(document.getElementById('df-bracket').value, 10);
+      const freq        = document.getElementById('df-freq').value;
+      const typeVal     = document.getElementById('df-type').value;
+      const catKey      = document.getElementById('df-category').value;
+      const bracketName = document.getElementById('df-bracket').value;
 
       if (days.length === 0) {
         errorEl.textContent = 'Select at least one day.';
@@ -194,7 +201,7 @@ const Discounts = {
       }
 
       const cat     = this.DEMO_CATEGORIES.find(c => c.key === catKey);
-      const bracket = cat ? (Population[cat.arrayKey] || [])[bracketIdx] : null;
+      const bracket = cat ? (Population[cat.arrayKey] || []).find(b => b.name === bracketName) : null;
       if (!bracket) return;
 
       const discountType = DISCOUNT_TYPES.find(t => t.value === typeVal);
@@ -207,7 +214,6 @@ const Discounts = {
         discountLabel: discountType.label,
         demoKey:       catKey,
         demoLabel:     cat.label,
-        bracketIdx,
         bracketName:   bracket.name,
       });
 
