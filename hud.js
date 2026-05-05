@@ -1,6 +1,9 @@
 // ── HUD & stage management ─────────────────────────────────────────────────
 let activePanel = null;
 
+// True when the most recent quarter-end has not yet been reviewed by the student.
+let _plPending = false;
+
 // ── View mode bar ──────────────────────────────────────────────────────────
 
 // The currently active grid view mode. 'play' is the default.
@@ -224,6 +227,7 @@ function initHUD() {
   document.getElementById('open-park-btn').addEventListener('click', openPark);
   document.getElementById('next-round-btn').addEventListener('click', advanceRound);
   document.getElementById('modal-close-btn').addEventListener('click', hideRoundSummary);
+  _initPLZones();
   Staff.initPanel();
   initInventoryPanel();
   Charts.initModal();
@@ -264,6 +268,8 @@ function advanceRound() {
   Unlock.tick();
   _tickDemographicConfidence(report.weeklyAttendance);
   if (round % 13 === 1 && round > 1) Awards.checkQuarterly();
+  // Schedule the P&L exercise to appear after this round's summary closes.
+  if (round % 13 === 0) _plPending = true;
   updateLockedPanels();
   updateHUD();
   refreshRidesPanel();
@@ -316,6 +322,8 @@ function showRoundSummary(report) {
 
 function hideRoundSummary() {
   document.getElementById('round-modal').classList.add('hidden');
+  // Chain into the P&L exercise at the end of each quarter.
+  if (_plPending) showPLModal();
 }
 
 // Converts the current round into "Week W, QN, YYYY".
@@ -1088,4 +1096,149 @@ function buildFinancialPanel() {
       });
     });
   }
+}
+
+// ── Quarterly P&L statement exercise ─────────────────────────────────────────
+
+// All P&L line items: display label, correct category, and the History field
+// used to sum up the quarterly total.
+const PL_ITEMS = [
+  { key: 'gate',         label: 'Gate Admissions',  correct: 'revenue', histKey: 'gateIncome' },
+  { key: 'parking',      label: 'Parking',           correct: 'revenue', histKey: 'parkingIncome' },
+  { key: 'shop',         label: 'Merchandise Sales', correct: 'revenue', histKey: 'shopIncome' },
+  { key: 'staff',        label: 'Staff Wages',       correct: 'expense', histKey: 'staffExpense' },
+  { key: 'utilities',    label: 'Ride Utilities',    correct: 'expense', histKey: 'utilityExpense' },
+  { key: 'construction', label: 'Construction',      correct: 'expense', histKey: 'constructionExpense' },
+];
+
+// Wire up drag-and-drop listeners on both drop zones and the bank.
+// Called once from initHUD after the DOM is ready.
+function _initPLZones() {
+  _setupDropZone('pl-bank',              'pl-bank');
+  _setupDropZone('pl-zone-revenue',      'pl-zone-revenue-items');
+  _setupDropZone('pl-zone-expense',      'pl-zone-expense-items');
+  document.getElementById('pl-submit-btn').addEventListener('click', _submitPL);
+  document.getElementById('pl-close-btn').addEventListener('click', hidePLModal);
+}
+
+// Attach dragover/dragleave/drop handlers so droppedItems move into targetId.
+function _setupDropZone(zoneId, targetId) {
+  const zone   = document.getElementById(zoneId);
+  const target = document.getElementById(targetId);
+  zone.addEventListener('dragover', e => {
+    e.preventDefault();
+    zone.classList.add('pl-zone-over');
+  });
+  zone.addEventListener('dragleave', () => zone.classList.remove('pl-zone-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('pl-zone-over');
+    const key  = e.dataTransfer.getData('text/plain');
+    const card = document.querySelector(`.pl-card-item[data-key="${key}"]`);
+    if (card) target.appendChild(card);
+  });
+}
+
+// Build and display the P&L exercise for the quarter that just ended.
+function showPLModal() {
+  _plPending = false;
+  const quarterNum = round / 13;
+  const last13     = History.rounds.slice(-13);
+
+  // Sum each line item over the last 13 rounds.
+  const totals = {};
+  for (const item of PL_ITEMS) {
+    totals[item.key] = last13.reduce((s, r) => s + (r[item.histKey] || 0), 0);
+  }
+
+  document.getElementById('pl-quarter-label').textContent = `Quarter ${quarterNum}`;
+
+  // Populate the bank with shuffled item cards.
+  const bank = document.getElementById('pl-bank');
+  bank.innerHTML = '';
+  const shuffled = [...PL_ITEMS].sort(() => Math.random() - 0.5);
+  for (const item of shuffled) {
+    bank.appendChild(_makePLCard(item.key, item.label, totals[item.key]));
+  }
+
+  // Clear drop zones and reset UI state.
+  document.getElementById('pl-zone-revenue-items').innerHTML = '';
+  document.getElementById('pl-zone-expense-items').innerHTML = '';
+  document.getElementById('pl-result').classList.add('hidden');
+  document.getElementById('pl-submit-btn').classList.remove('hidden');
+  document.getElementById('pl-close-btn').classList.add('hidden');
+
+  document.getElementById('pl-modal').classList.remove('hidden');
+}
+
+// Create a single draggable item card for the bank or a drop zone.
+function _makePLCard(key, label, amount) {
+  const card      = document.createElement('div');
+  card.className  = 'pl-card-item';
+  card.draggable  = true;
+  card.dataset.key    = key;
+  card.dataset.amount = amount;
+  card.innerHTML = `
+    <span class="pl-card-label">${label}</span>
+    <span class="pl-card-amount">$${amount.toLocaleString()}</span>
+    <span class="pl-card-status"></span>
+  `;
+  card.addEventListener('dragstart', e => {
+    e.dataTransfer.setData('text/plain', key);
+    card.classList.add('pl-dragging');
+  });
+  card.addEventListener('dragend', () => card.classList.remove('pl-dragging'));
+  return card;
+}
+
+// Validate placements and show per-item feedback plus a score and net total.
+function _submitPL() {
+  const revenueKeys = new Set(
+    [...document.querySelectorAll('#pl-zone-revenue-items .pl-card-item')].map(c => c.dataset.key)
+  );
+  const expenseKeys = new Set(
+    [...document.querySelectorAll('#pl-zone-expense-items .pl-card-item')].map(c => c.dataset.key)
+  );
+
+  let correct = 0;
+  let totalRevenue = 0;
+  let totalExpense = 0;
+
+  for (const item of PL_ITEMS) {
+    const card   = document.querySelector(`.pl-card-item[data-key="${item.key}"]`);
+    const placed = revenueKeys.has(item.key) ? 'revenue'
+                 : expenseKeys.has(item.key) ? 'expense'
+                 : null;
+    const isRight = placed === item.correct;
+    if (isRight) correct++;
+
+    // Accumulate true totals for the net line (ignoring where the student placed them).
+    const amt = parseInt(card.dataset.amount, 10);
+    if (item.correct === 'revenue') totalRevenue += amt;
+    else                            totalExpense  += amt;
+
+    const statusEl = card.querySelector('.pl-card-status');
+    statusEl.textContent = isRight ? '✓' : placed ? '✗' : '—';
+    card.classList.toggle('pl-correct',   isRight);
+    card.classList.toggle('pl-incorrect', !isRight);
+  }
+
+  const net      = totalRevenue - totalExpense;
+  const netSign  = net >= 0 ? '+' : '−';
+  const netClass = net >= 0 ? 'pl-net-pos' : 'pl-net-neg';
+  const netLabel = net >= 0 ? 'Net Profit' : 'Net Loss';
+
+  const resultEl = document.getElementById('pl-result');
+  resultEl.innerHTML = `
+    <div class="pl-score">${correct} / ${PL_ITEMS.length} correct</div>
+    <div class="pl-net ${netClass}">${netLabel}: ${netSign}$${Math.abs(net).toLocaleString()}</div>
+  `;
+  resultEl.classList.remove('hidden');
+  document.getElementById('pl-submit-btn').classList.add('hidden');
+  document.getElementById('pl-close-btn').classList.remove('hidden');
+}
+
+// Close the P&L modal.
+function hidePLModal() {
+  document.getElementById('pl-modal').classList.add('hidden');
 }

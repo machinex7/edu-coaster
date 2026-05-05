@@ -260,6 +260,29 @@
     </div>
   </div>
 
+  <!-- Quarterly P&L statement exercise modal -->
+  <div id="pl-modal" class="modal-overlay hidden">
+    <div class="modal-card pl-modal-card">
+      <div class="modal-title">Quarterly P&amp;L Statement</div>
+      <div class="modal-date" id="pl-quarter-label"></div>
+      <p class="pl-instructions">Drag each item into the correct column — Revenue or Expenses.</p>
+      <div id="pl-bank" class="pl-bank"></div>
+      <div class="pl-zones">
+        <div class="pl-zone" id="pl-zone-revenue">
+          <div class="pl-zone-header pl-revenue-header">Revenue</div>
+          <div class="pl-zone-items" id="pl-zone-revenue-items"></div>
+        </div>
+        <div class="pl-zone" id="pl-zone-expense">
+          <div class="pl-zone-header pl-expense-header">Expenses</div>
+          <div class="pl-zone-items" id="pl-zone-expense-items"></div>
+        </div>
+      </div>
+      <div id="pl-result" class="pl-result hidden"></div>
+      <button id="pl-submit-btn" class="modal-close-btn">Check My Answer</button>
+      <button id="pl-close-btn" class="modal-close-btn hidden">Continue &rsaquo;</button>
+    </div>
+  </div>
+
   <div id="notification-stack"></div>
 
   <script src="constants.js"></script>
