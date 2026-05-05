@@ -147,12 +147,13 @@ const Shopping = {
       const shelfPrice = inv.price + this.merchandiseUpcharge;
 
       // Sum chance of income brackets whose limit covers the shelf price.
-      // Half the gate charge is subtracted from each limit — visitors who
-      // already paid a high entry fee have less disposable income for merch.
+      // Limits scale with cumulative inflation (visitors' incomes rise with costs),
+      // then half the gate charge is subtracted — visitors who already paid a
+      // high entry fee have less disposable income for merch.
       const gateExhaustion = Finance.gatePrice / 2;
       let afford = 0;
       for (let j = 0; j < Population.INCOME_BRACKETS.length; j++) {
-        if (shelfPrice <= this.INCOME_LIMITS[j] - gateExhaustion) {
+        if (shelfPrice <= this.INCOME_LIMITS[j] * Population.cumulativeInflation - gateExhaustion) {
           afford += Population.INCOME_BRACKETS[j].chance;
         }
       }
