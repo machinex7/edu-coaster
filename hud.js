@@ -4,6 +4,9 @@ let activePanel = null;
 // True when the most recent quarter-end has not yet been reviewed by the student.
 let _plPending = false;
 
+// Keys of items the student has already placed correctly (locked between attempts).
+let _plCorrectKeys = new Set();
+
 // ── View mode bar ──────────────────────────────────────────────────────────
 
 // The currently active grid view mode. 'play' is the default.
@@ -1121,7 +1124,8 @@ function _initPLZones() {
   document.getElementById('pl-close-btn').addEventListener('click', hidePLModal);
 }
 
-// Attach dragover/dragleave/drop handlers so droppedItems move into targetId.
+// Attach dragover/dragleave/drop handlers so dropped items move into targetId.
+// Re-evaluates the submit button state after every drop.
 function _setupDropZone(zoneId, targetId) {
   const zone   = document.getElementById(zoneId);
   const target = document.getElementById(targetId);
@@ -1135,8 +1139,17 @@ function _setupDropZone(zoneId, targetId) {
     zone.classList.remove('pl-zone-over');
     const key  = e.dataTransfer.getData('text/plain');
     const card = document.querySelector(`.pl-card-item[data-key="${key}"]`);
-    if (card) target.appendChild(card);
+    if (card) {
+      target.appendChild(card);
+      _updatePLSubmitState();
+    }
   });
+}
+
+// Enable the submit button only when every item has been dragged out of the bank.
+function _updatePLSubmitState() {
+  const bankEmpty = document.getElementById('pl-bank').children.length === 0;
+  document.getElementById('pl-submit-btn').disabled = !bankEmpty;
 }
 
 // Build and display the P&L exercise for the quarter that just ended.
@@ -1165,11 +1178,13 @@ function showPLModal() {
     bank.appendChild(_makePLCard(item.key, item.label, totals[item.key]));
   }
 
-  // Clear drop zones and reset UI state.
+  // Clear drop zones, correct-key tracking, and UI state for a fresh attempt.
+  _plCorrectKeys = new Set();
   document.getElementById('pl-zone-revenue-items').innerHTML = '';
   document.getElementById('pl-zone-expense-items').innerHTML = '';
   document.getElementById('pl-result').classList.add('hidden');
   document.getElementById('pl-submit-btn').classList.remove('hidden');
+  document.getElementById('pl-submit-btn').disabled = true; // bank is full at start
   document.getElementById('pl-close-btn').classList.add('hidden');
 
   document.getElementById('pl-modal').classList.remove('hidden');
@@ -1195,7 +1210,9 @@ function _makePLCard(key, label, amount) {
   return card;
 }
 
-// Validate placements and show per-item feedback plus a score and net total.
+// Check placements for any unlocked item. Correct ones are locked in place with
+// a checkmark; incorrect ones are returned to the bank to be tried again.
+// Repeats until all items are correct, then reveals the net income and Continue.
 function _submitPL() {
   const revenueKeys = new Set(
     [...document.querySelectorAll('#pl-zone-revenue-items .pl-card-item')].map(c => c.dataset.key)
@@ -1203,43 +1220,61 @@ function _submitPL() {
   const expenseKeys = new Set(
     [...document.querySelectorAll('#pl-zone-expense-items .pl-card-item')].map(c => c.dataset.key)
   );
-
-  let correct = 0;
-  let totalRevenue = 0;
-  let totalExpense = 0;
+  const bank = document.getElementById('pl-bank');
 
   for (const item of PL_ITEMS) {
-    const card   = document.querySelector(`.pl-card-item[data-key="${item.key}"]`);
-    const placed = revenueKeys.has(item.key) ? 'revenue'
-                 : expenseKeys.has(item.key) ? 'expense'
-                 : null;
-    const isRight = placed === item.correct;
-    if (isRight) correct++;
-
-    // Accumulate true totals for the net line (ignoring where the student placed them).
-    const amt = parseInt(card.dataset.amount, 10);
-    if (item.correct === 'revenue') totalRevenue += amt;
-    else                            totalExpense  += amt;
-
-    const statusEl = card.querySelector('.pl-card-status');
-    statusEl.textContent = isRight ? '✓' : placed ? '✗' : '—';
-    card.classList.toggle('pl-correct',   isRight);
-    card.classList.toggle('pl-incorrect', !isRight);
+    if (_plCorrectKeys.has(item.key)) continue; // already locked from a prior attempt
+    const card    = document.querySelector(`.pl-card-item[data-key="${item.key}"]`);
+    const placed  = revenueKeys.has(item.key) ? 'revenue'
+                  : expenseKeys.has(item.key) ? 'expense'
+                  : null;
+    if (placed === item.correct) {
+      // Lock the card in place — can no longer be dragged.
+      _plCorrectKeys.add(item.key);
+      card.draggable = false;
+      card.classList.add('pl-correct', 'pl-locked');
+      card.querySelector('.pl-card-status').textContent = '✓';
+    } else {
+      // Return to bank for another attempt; strip any stale feedback classes.
+      card.classList.remove('pl-correct', 'pl-incorrect');
+      card.querySelector('.pl-card-status').textContent = '';
+      bank.appendChild(card);
+    }
   }
 
-  const net      = totalRevenue - totalExpense;
-  const netSign  = net >= 0 ? '+' : '−';
-  const netClass = net >= 0 ? 'pl-net-pos' : 'pl-net-neg';
-  const netLabel = net >= 0 ? 'Net Profit' : 'Net Loss';
+  const total     = PL_ITEMS.length;
+  const correct   = _plCorrectKeys.size;
+  const resultEl  = document.getElementById('pl-result');
 
-  const resultEl = document.getElementById('pl-result');
-  resultEl.innerHTML = `
-    <div class="pl-score">${correct} / ${PL_ITEMS.length} correct</div>
-    <div class="pl-net ${netClass}">${netLabel}: ${netSign}$${Math.abs(net).toLocaleString()}</div>
-  `;
+  if (correct === total) {
+    // All items are correct — compute the net and reveal Continue.
+    let totalRevenue = 0, totalExpense = 0;
+    for (const item of PL_ITEMS) {
+      const amt = parseInt(document.querySelector(`.pl-card-item[data-key="${item.key}"]`).dataset.amount, 10);
+      if (item.correct === 'revenue') totalRevenue += amt;
+      else                            totalExpense  += amt;
+    }
+    const net      = totalRevenue - totalExpense;
+    const netSign  = net >= 0 ? '+' : '−';
+    const netClass = net >= 0 ? 'pl-net-pos' : 'pl-net-neg';
+    const netLabel = net >= 0 ? 'Net Profit' : 'Net Loss';
+    resultEl.innerHTML = `
+      <div class="pl-score">All ${total} correct!</div>
+      <div class="pl-net ${netClass}">${netLabel}: ${netSign}$${Math.abs(net).toLocaleString()}</div>
+    `;
+    document.getElementById('pl-submit-btn').classList.add('hidden');
+    document.getElementById('pl-close-btn').classList.remove('hidden');
+  } else {
+    // Some items returned to bank — tell the student how many remain.
+    const remaining = total - correct;
+    resultEl.innerHTML = `
+      <div class="pl-score">${correct} / ${total} correct — fix the ${remaining} item${remaining !== 1 ? 's' : ''} in the bank and try again.</div>
+    `;
+    // Submit will re-disable itself via _updatePLSubmitState since bank has cards.
+    _updatePLSubmitState();
+  }
+
   resultEl.classList.remove('hidden');
-  document.getElementById('pl-submit-btn').classList.add('hidden');
-  document.getElementById('pl-close-btn').classList.remove('hidden');
 }
 
 // Close the P&L modal.
