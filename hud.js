@@ -1156,7 +1156,11 @@ function showPLModal() {
   // Populate the bank with shuffled item cards.
   const bank = document.getElementById('pl-bank');
   bank.innerHTML = '';
-  const shuffled = [...PL_ITEMS].sort(() => Math.random() - 0.5);
+  const shuffled = [...PL_ITEMS];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
   for (const item of shuffled) {
     bank.appendChild(_makePLCard(item.key, item.label, totals[item.key]));
   }
