@@ -297,7 +297,9 @@ const Finance = {
   // ── Wear & breakdown ─────────────────────────────────────────────────────────
   // Called each round after computeRideOpinion() so lastRoundRiders is current.
   // Accumulates rider wear then rolls for breakdown; probability = (wear/MAX_EFFECTIVE_WEAR)^2, reaching 100% at max.
+  // No-ops when Unlock.WEAR is false — rides stay at 0 wear and never break down.
   processWear() {
+    if (!Unlock.WEAR) return;
     const wearMult = WEATHER_WET_EMOJIS.includes(nextWeekForecast) ? WEATHER_WEAR_MULTIPLIER : 1;
     installedRides
       .filter(r => r.status === STATUS.CLOSED && isRideConnected(r))

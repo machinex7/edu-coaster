@@ -12,6 +12,7 @@ const _DEFS = {
   SECURITY:    { afterWeek: 0, name: 'Security' },
   FOOD:        { afterWeek: 0, name: 'Food & Dining' },
   LOANS:       { afterWeek: 0, name: 'Business Loans' },
+  WEAR:        { afterWeek: 0, name: 'Wear & Maintenance' },
 };
 
 // Rounds remaining until each feature unlocks. null = permanently locked.
