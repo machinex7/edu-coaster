@@ -13,7 +13,7 @@ const Concessions = {
 
   // Set up initial state; called once from initHUD().
   init() {
-    this.prices = this.menuItems.map(item => item.basePrice);
+    this.prices = this.menuItems.map(item => Math.max(item.cost * 2, item.cost + 2));
     this.stock  = this.menuItems.map(() => 0);
   },
 
