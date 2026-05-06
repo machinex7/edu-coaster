@@ -464,7 +464,6 @@ const Concessions = {
     header.innerHTML = `
       <span>Item</span>
       <span>Price</span>
-      <span>Prep</span>
     `;
     container.appendChild(header);
 
@@ -497,19 +496,8 @@ const Concessions = {
       });
       priceWrap.appendChild(priceInput);
 
-      // Prep time (read-only)
-      const prepEl = document.createElement('span');
-      prepEl.className = 'con-item-prep';
-      prepEl.textContent = `${item.prepTime} min`;
-
-      // Freezer stock count (read-only)
-      const stockEl = document.createElement('span');
-      stockEl.className = 'con-item-stock';
-      stockEl.textContent = this.stock[i].toLocaleString();
-
       row.appendChild(nameEl);
       row.appendChild(priceWrap);
-      row.appendChild(prepEl);
       container.appendChild(row);
     });
 

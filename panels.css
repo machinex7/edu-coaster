@@ -2241,17 +2241,16 @@
 .con-view { display: flex; flex-direction: column; flex: 1; overflow-y: auto; min-height: 0; }
 .con-view.hidden { display: none; }
 
-.con-menu-header { display: grid; grid-template-columns: 1fr 100px 64px;
+.con-menu-header { display: grid; grid-template-columns: 1fr 100px;
   padding: 6px 12px; border-bottom: 1px solid #374151; }
 .con-menu-header span { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.05em;
   text-transform: uppercase; color: #6b7280; }
 .con-col-right { text-align: right; }
 
-.con-menu-row { display: grid; grid-template-columns: 1fr 100px 64px;
+.con-menu-row { display: grid; grid-template-columns: 1fr 100px;
   align-items: center; padding: 8px 12px; border-bottom: 1px solid #1f2937; }
 
 .con-item-name  { font-size: 0.82rem; font-weight: 600; color: #f3f4f6; }
-.con-item-prep  { font-size: 0.75rem; color: #9ca3af; }
 .con-item-stock { font-size: 0.75rem; color: #9ca3af; text-align: right; }
 
 .con-price-wrap   { display: flex; align-items: center; gap: 2px; }
