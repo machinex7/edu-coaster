@@ -2,7 +2,7 @@
 
 const Concessions = {
 
-  // Flat fee charged on every standing delivery regardless of order size.
+  // Flat fee charged on every non-empty standing delivery.
   DELIVERY_FEE: 75,
 
   // Menu item definitions loaded from concessions.json at game start.
@@ -17,11 +17,48 @@ const Concessions = {
   // Quantities for the next standing delivery, one entry per menuItem (parallel array).
   standingOrder: [],
 
+  // Round on which the current order locks and the player is charged.
+  lockRound: 3,
+
+  // Round on which the ordered items arrive in the freezer.
+  nextDeliveryRound: 4,
+
+  // When true the standing order persists after each delivery; false clears it.
+  repeatOrder: true,
+
   // Set up initial state; called once from initHUD().
   init() {
-    this.prices       = this.menuItems.map(item => Math.max(item.cost * 2, item.cost + 2));
-    this.stock        = this.menuItems.map(() => 0);
+    this.prices        = this.menuItems.map(item => Math.max(item.cost * 2, item.cost + 2));
+    this.stock         = this.menuItems.map(() => 0);
     this.standingOrder = this.menuItems.map(() => 0);
+  },
+
+  // Returns true when the order inputs should be disabled (week 3 through delivery).
+  get isLocked() {
+    return stage === STAGE.PLAY && round >= this.lockRound;
+  },
+
+  // Called each round from advanceRound() in hud.js.
+  onRoundAdvance() {
+    if (round === this.lockRound) {
+      // Charge the player for the upcoming delivery, but only if something was ordered.
+      const subtotal = this.menuItems.reduce((sum, item, i) => sum + this.standingOrder[i] * item.cost, 0);
+      if (subtotal > 0) {
+        money -= subtotal + this.DELIVERY_FEE;
+      }
+    }
+
+    if (round === this.nextDeliveryRound) {
+      // Add ordered quantities to freezer stock.
+      this.menuItems.forEach((item, i) => { this.stock[i] += this.standingOrder[i]; });
+      // Advance cycle.
+      this.lockRound         += 4;
+      this.nextDeliveryRound += 4;
+      // Clear or repeat the standing order based on player preference.
+      if (!this.repeatOrder) {
+        this.standingOrder = this.menuItems.map(() => 0);
+      }
+    }
   },
 
   // Build or rebuild the concessions panel content.
@@ -64,9 +101,70 @@ const Concessions = {
     });
   },
 
-  // Render the orders tab: one row per orderable item plus a running subtotal/total.
+  // Render the delivery cycle tracker into the given container.
+  _buildDeliveryTracker(container) {
+    const weekInCycle   = 4 - (this.nextDeliveryRound - round);
+    const weeksToLock   = this.lockRound - round;
+    const weeksToDel    = this.nextDeliveryRound - round;
+
+    let statusText;
+    if (weekInCycle >= 4) {
+      statusText = 'Delivering this week';
+    } else if (weekInCycle >= 3) {
+      statusText = 'Order locked — delivery next week';
+    } else {
+      const n = weeksToLock;
+      statusText = `Order open — locks in ${n} week${n === 1 ? '' : 's'}`;
+    }
+
+    const tracker = document.createElement('div');
+    tracker.className = 'con-tracker';
+
+    const title = document.createElement('div');
+    title.className = 'con-tracker-title';
+    title.textContent = `Delivery Cycle — Week ${weekInCycle} of 4`;
+    tracker.appendChild(title);
+
+    // Four-step progress indicator.
+    const steps = document.createElement('div');
+    steps.className = 'con-tracker-steps';
+    for (let w = 1; w <= 4; w++) {
+      const step = document.createElement('div');
+      step.className = 'con-tracker-step';
+
+      const dot = document.createElement('div');
+      dot.className = 'con-tracker-dot' + (w <= weekInCycle ? ' con-tracker-dot--done' : '');
+      if (w === weekInCycle) dot.classList.add('con-tracker-dot--current');
+
+      const label = document.createElement('div');
+      label.className = 'con-tracker-label';
+      label.textContent = w === 3 ? 'Lock' : w === 4 ? 'Delivery' : `Wk ${w}`;
+
+      step.appendChild(dot);
+      step.appendChild(label);
+      steps.appendChild(step);
+
+      if (w < 4) {
+        const line = document.createElement('div');
+        line.className = 'con-tracker-line' + (w < weekInCycle ? ' con-tracker-line--done' : '');
+        steps.appendChild(line);
+      }
+    }
+    tracker.appendChild(steps);
+
+    const status = document.createElement('div');
+    status.className = 'con-tracker-status' + (this.isLocked ? ' con-tracker-status--locked' : '');
+    status.textContent = statusText;
+    tracker.appendChild(status);
+
+    container.appendChild(tracker);
+  },
+
+  // Render the orders tab: delivery tracker, item rows, summary, and order mode toggle.
   _buildOrdersView(container) {
-    // Scrollable list section
+    this._buildDeliveryTracker(container);
+
+    // Scrollable list section.
     const list = document.createElement('div');
     list.className = 'con-order-list';
 
@@ -81,10 +179,12 @@ const Concessions = {
     `;
     list.appendChild(header);
 
-    // Create summary elements up front so the refresh helper can close over them.
-    const subtotalEl = document.createElement('div');
+    // Summary elements defined up front so the refresh helper can close over them.
+    const subtotalEl  = document.createElement('div');
     subtotalEl.className = 'con-summary-row';
-    const totalEl = document.createElement('div');
+    const deliveryEl  = document.createElement('div');
+    deliveryEl.className = 'con-summary-row';
+    const totalEl     = document.createElement('div');
     totalEl.className = 'con-summary-row con-summary-total';
 
     // Track each item's line-cost display element for refresh.
@@ -114,6 +214,7 @@ const Concessions = {
       qtyInput.min       = '0';
       qtyInput.step      = '1';
       qtyInput.value     = this.standingOrder[i];
+      qtyInput.disabled  = this.isLocked;
 
       const lineEl = document.createElement('span');
       lineEl.className = 'con-order-line';
@@ -121,7 +222,7 @@ const Concessions = {
 
       qtyInput.addEventListener('input', () => {
         this.standingOrder[i] = Math.max(0, parseInt(qtyInput.value) || 0);
-        this._refreshOrderSummary(lineCostEls, subtotalEl, totalEl);
+        this._refreshOrderSummary(lineCostEls, subtotalEl, deliveryEl, totalEl);
       });
 
       row.appendChild(nameEl);
@@ -137,29 +238,58 @@ const Concessions = {
     // Summary section pinned below the scrollable list.
     const summary = document.createElement('div');
     summary.className = 'con-order-summary';
-
-    const deliveryRow = document.createElement('div');
-    deliveryRow.className = 'con-summary-row';
-    deliveryRow.innerHTML = `<span>Delivery Fee</span><span>$${this.DELIVERY_FEE.toFixed(2)}</span>`;
-
     summary.appendChild(subtotalEl);
-    summary.appendChild(deliveryRow);
+    summary.appendChild(deliveryEl);
     summary.appendChild(totalEl);
     container.appendChild(summary);
 
-    this._refreshOrderSummary(lineCostEls, subtotalEl, totalEl);
+    this._refreshOrderSummary(lineCostEls, subtotalEl, deliveryEl, totalEl);
+
+    // Order mode radio buttons.
+    const modeWrap = document.createElement('div');
+    modeWrap.className = 'con-order-mode';
+
+    const repeatLabel = document.createElement('label');
+    repeatLabel.className = 'con-mode-label';
+    const repeatRadio = document.createElement('input');
+    repeatRadio.type    = 'radio';
+    repeatRadio.name    = 'con-order-mode';
+    repeatRadio.value   = 'repeat';
+    repeatRadio.checked = this.repeatOrder;
+    repeatLabel.appendChild(repeatRadio);
+    repeatLabel.append(' Repeat Order');
+
+    const clearLabel = document.createElement('label');
+    clearLabel.className = 'con-mode-label';
+    const clearRadio = document.createElement('input');
+    clearRadio.type    = 'radio';
+    clearRadio.name    = 'con-order-mode';
+    clearRadio.value   = 'clear';
+    clearRadio.checked = !this.repeatOrder;
+    clearLabel.appendChild(clearRadio);
+    clearLabel.append(' Clear Order');
+
+    repeatRadio.addEventListener('change', () => { if (repeatRadio.checked) this.repeatOrder = true; });
+    clearRadio.addEventListener('change',  () => { if (clearRadio.checked)  this.repeatOrder = false; });
+
+    modeWrap.appendChild(repeatLabel);
+    modeWrap.appendChild(clearLabel);
+    container.appendChild(modeWrap);
   },
 
-  // Recompute every line cost and the subtotal/total display.
-  _refreshOrderSummary(lineCostEls, subtotalEl, totalEl) {
+  // Recompute every line cost and the subtotal / delivery fee / total display.
+  _refreshOrderSummary(lineCostEls, subtotalEl, deliveryEl, totalEl) {
     let subtotal = 0;
     lineCostEls.forEach(({ el, index }) => {
       const line = this.standingOrder[index] * this.menuItems[index].cost;
       subtotal += line;
       el.textContent = `$${line.toFixed(2)}`;
     });
-    const total = subtotal + this.DELIVERY_FEE;
+    // No delivery fee if the entire order is empty.
+    const deliveryFee = subtotal > 0 ? this.DELIVERY_FEE : 0;
+    const total       = subtotal + deliveryFee;
     subtotalEl.innerHTML = `<span>Subtotal</span><span>$${subtotal.toFixed(2)}</span>`;
+    deliveryEl.innerHTML = `<span>Delivery Fee</span><span>$${deliveryFee.toFixed(2)}</span>`;
     totalEl.innerHTML    = `<span>Total</span><span>$${total.toFixed(2)}</span>`;
   },
 
