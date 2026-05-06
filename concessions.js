@@ -469,15 +469,15 @@ const Concessions = {
     top.appendChild(deleteBtn);
     card.appendChild(top);
 
-    // Item chips below the top row.
+    // Item chips: show "Name ×N" when count > 1, just "Name" when count is 1.
     const chips = document.createElement('div');
     chips.className = 'con-meal-chips';
-    meal.itemIds.forEach(id => {
+    meal.items.forEach(({ id, count }) => {
       const item = this.menuItems.find(m => m.id === id);
       if (!item) return;
       const chip = document.createElement('span');
       chip.className   = 'con-meal-chip';
-      chip.textContent = item.name;
+      chip.textContent = count > 1 ? `${item.name} ×${count}` : item.name;
       chips.appendChild(chip);
     });
     card.appendChild(chips);
@@ -494,16 +494,15 @@ const Concessions = {
     const nameInput = document.createElement('input');
     nameInput.type        = 'text';
     nameInput.className   = 'con-builder-name';
-    nameInput.placeholder = 'Meal name (e.g. Value Combo)';
+    nameInput.placeholder = 'Meal name (e.g. Family Combo)';
     nameInput.maxLength   = 40;
     builder.appendChild(nameInput);
 
-    // Toggleable item pills. Selecting pills auto-suggests a price.
-    const pillsWrap  = document.createElement('div');
-    pillsWrap.className = 'con-builder-pills';
-    const selectedIds = new Set();
+    // Per-item count rows. counts maps item id → quantity (0 = not included).
+    const counts = {};
+    this.menuItems.forEach(item => { counts[item.id] = 0; });
 
-    // Price input defined here so the pill handler can reference it.
+    // Price input defined before the item rows so count handlers can reference it.
     const priceInput = document.createElement('input');
     priceInput.type      = 'number';
     priceInput.className = 'con-price-input';
@@ -512,32 +511,59 @@ const Concessions = {
     priceInput.value     = '0.00';
     priceInput.addEventListener('input', () => { priceInput.dataset.edited = '1'; });
 
-    this.menuItems.forEach((item, i) => {
-      const pill = document.createElement('button');
-      pill.type      = 'button';
-      pill.className = 'con-builder-pill';
-      pill.textContent = item.name;
-      pill.addEventListener('click', () => {
-        if (selectedIds.has(item.id)) {
-          selectedIds.delete(item.id);
-          pill.classList.remove('con-builder-pill--active');
-        } else {
-          selectedIds.add(item.id);
-          pill.classList.add('con-builder-pill--active');
-        }
-        // Suggest a price equal to the sum of selected items unless the player
-        // has already manually typed a value.
-        if (!priceInput.dataset.edited) {
-          const sum = [...selectedIds].reduce((s, id) => {
-            const idx = this.menuItems.findIndex(m => m.id === id);
-            return s + (idx >= 0 ? this.prices[idx] : 0);
-          }, 0);
-          priceInput.value = sum.toFixed(2);
-        }
+    // Recalculate the suggested price from current counts.
+    const updateSuggestedPrice = () => {
+      if (priceInput.dataset.edited) return;
+      const sum = this.menuItems.reduce((s, item, i) => s + counts[item.id] * this.prices[i], 0);
+      priceInput.value = sum.toFixed(2);
+    };
+
+    const countsGrid = document.createElement('div');
+    countsGrid.className = 'con-builder-counts';
+
+    this.menuItems.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'con-builder-count-row';
+
+      const label = document.createElement('span');
+      label.className   = 'con-builder-count-label';
+      label.textContent = item.name;
+
+      const decBtn = document.createElement('button');
+      decBtn.type      = 'button';
+      decBtn.className = 'con-builder-count-btn';
+      decBtn.textContent = '−';
+
+      const countEl = document.createElement('span');
+      countEl.className   = 'con-builder-count-val';
+      countEl.textContent = '0';
+
+      const incBtn = document.createElement('button');
+      incBtn.type      = 'button';
+      incBtn.className = 'con-builder-count-btn';
+      incBtn.textContent = '+';
+
+      const update = () => {
+        countEl.textContent = counts[item.id];
+        row.classList.toggle('con-builder-count-row--active', counts[item.id] > 0);
+        updateSuggestedPrice();
+      };
+
+      decBtn.addEventListener('click', () => {
+        if (counts[item.id] > 0) { counts[item.id]--; update(); }
       });
-      pillsWrap.appendChild(pill);
+      incBtn.addEventListener('click', () => {
+        counts[item.id]++;
+        update();
+      });
+
+      row.appendChild(label);
+      row.appendChild(decBtn);
+      row.appendChild(countEl);
+      row.appendChild(incBtn);
+      countsGrid.appendChild(row);
     });
-    builder.appendChild(pillsWrap);
+    builder.appendChild(countsGrid);
 
     // Footer: price, Save, Cancel.
     const footer = document.createElement('div');
@@ -549,20 +575,23 @@ const Concessions = {
     priceWrap.appendChild(priceInput);
 
     const saveBtn = document.createElement('button');
-    saveBtn.type      = 'button';
-    saveBtn.className = 'con-builder-save';
+    saveBtn.type        = 'button';
+    saveBtn.className   = 'con-builder-save';
     saveBtn.textContent = 'Save';
     saveBtn.addEventListener('click', () => {
       const name  = nameInput.value.trim();
       const price = parseFloat(priceInput.value);
-      if (!name || selectedIds.size === 0 || isNaN(price) || price < 0) return;
-      this.meals.push({ name, itemIds: [...selectedIds], price });
+      const items = this.menuItems
+        .filter(item => counts[item.id] > 0)
+        .map(item => ({ id: item.id, count: counts[item.id] }));
+      if (!name || items.length === 0 || isNaN(price) || price < 0) return;
+      this.meals.push({ name, items, price });
       this._buildMealsSection(section);
     });
 
     const cancelBtn = document.createElement('button');
-    cancelBtn.type      = 'button';
-    cancelBtn.className = 'con-builder-cancel';
+    cancelBtn.type        = 'button';
+    cancelBtn.className   = 'con-builder-cancel';
     cancelBtn.textContent = 'Cancel';
     cancelBtn.addEventListener('click', () => this._buildMealsSection(section));
 
