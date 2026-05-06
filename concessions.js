@@ -5,6 +5,15 @@ const Concessions = {
   // Flat fee charged on every non-empty standing delivery.
   DELIVERY_FEE: 75,
 
+  // Meals a visitor wants to eat per day (demand multiplier).
+  EXPECTED_MEALS_PER_DAY: 2,
+
+  // Base meals a concessions worker can serve per day (boosted by experience tier).
+  MEALS_PER_WORKER_PER_DAY: 250,
+
+  // Base sale price per meal in dollars.
+  MEAL_BASE_PRICE: 10,
+
   // Menu item definitions loaded from concessions.json at game start.
   menuItems: [],
 
@@ -31,6 +40,40 @@ const Concessions = {
     this.prices        = this.menuItems.map(item => Math.max(item.cost * 2, item.cost + 2));
     this.stock         = this.menuItems.map(() => 0);
     this.standingOrder = this.menuItems.map(() => 0);
+  },
+
+  // Total active tiles across all placed food shops.
+  // Used to cap worker throughput: workers beyond the tile count add no capacity.
+  calcFoodTiles() {
+    const foodIds = new Set(Shopping.catalog.filter(s => s.shopType === 'food').map(s => s.id));
+    return Shopping.installed
+      .filter(s => s.status === STATUS.ACTIVE && foodIds.has(s.shopId))
+      .reduce((sum, s) => sum + s.footprint.flat().filter(v => v === 1).length, 0);
+  },
+
+  // Returns mealsWanted (demand) and mealsServed (capacity).
+  // Effective workers = min(active concessions workers, food tiles), picking the
+  // most experienced workers first. Each worker contributes MEALS_PER_WORKER_PER_DAY
+  // boosted by 20% per experience tier (tier 1–4 → 1.2×–1.8×).
+  calcFood(weeklyAttendance) {
+    const mealsWanted = weeklyAttendance * this.EXPECTED_MEALS_PER_DAY;
+    if (!Unlock.STAFFING) return { mealsWanted, mealsServed: mealsWanted, mealsSold: mealsWanted };
+
+    const foodTiles = this.calcFoodTiles();
+    const workers = Staff.roster
+      .filter(s => s.jobId === JOB.CONCESSIONS_WORKER && s.weeksOut === 0)
+      .sort((a, b) => Staff.getExperienceTier(b.weeksEmployed).tier - Staff.getExperienceTier(a.weeksEmployed).tier);
+
+    const effectiveCount = Math.min(workers.length, foodTiles);
+    const mealsServed = Math.floor(
+      workers.slice(0, effectiveCount).reduce((sum, s) => {
+        const { tier } = Staff.getExperienceTier(s.weeksEmployed);
+        return sum + this.MEALS_PER_WORKER_PER_DAY * (1 + 0.2 * tier);
+      }, 0)
+    );
+
+    const mealsSold = Math.min(mealsWanted, mealsServed);
+    return { mealsWanted, mealsServed, mealsSold };
   },
 
   // Returns true when the order inputs should be disabled (week 3 through delivery).

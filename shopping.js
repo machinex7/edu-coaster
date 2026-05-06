@@ -30,9 +30,6 @@ const Shopping = {
   WORKERS_PER_STORE:        2,   // merchandise attendants required per active store
   STORAGE_PER_SHOP:       6000,  // inventory slots provided per active merchandise tile
   WAREHOUSE_CAPACITY:    50000,  // inventory slots added per placed Storage Warehouse
-  EXPECTED_MEALS_PER_DAY:   2,   // meals a visitor wants to eat per day
-  MEALS_PER_WORKER_PER_DAY: 250, // meals a concessions worker can serve per day (base)
-  MEAL_BASE_PRICE:          10,  // $ base price per meal sold
 
   // Maximum price each income bracket will pay, positionally aligned to
   // Population.INCOME_BRACKETS (Low Income → High Income).
@@ -225,39 +222,6 @@ const Shopping = {
       this._roundItemStats[idx].theftCount++;
     }
     return { value: totalValue, itemsStolen };
-  },
-
-  // ── Food ───────────────────────────────────────────────────────────────────
-  calcFoodTiles() {
-    const foodIds = new Set(this.catalog.filter(s => s.shopType === 'food').map(s => s.id));
-    return this.installed
-      .filter(s => s.status === STATUS.ACTIVE && foodIds.has(s.shopId))
-      .reduce((sum, s) => sum + s.footprint.flat().filter(v => v === 1).length, 0);
-  },
-
-  // Returns mealsWanted (demand) and mealsServed (capacity).
-  // Effective workers = min(active concessions workers, food tiles), picking the
-  // most experienced workers first. Each worker contributes MEALS_PER_WORKER_PER_DAY
-  // boosted by 20% per experience tier (tier 1–4 → 1.2×–1.8×).
-  calcFood(weeklyAttendance) {
-    const mealsWanted = weeklyAttendance * this.EXPECTED_MEALS_PER_DAY;
-    if (!Unlock.STAFFING) return { mealsWanted, mealsServed: mealsWanted, mealsSold: mealsWanted };
-
-    const foodTiles = this.calcFoodTiles();
-    const workers = Staff.roster
-      .filter(s => s.jobId === JOB.CONCESSIONS_WORKER && s.weeksOut === 0)
-      .sort((a, b) => Staff.getExperienceTier(b.weeksEmployed).tier - Staff.getExperienceTier(a.weeksEmployed).tier);
-
-    const effectiveCount = Math.min(workers.length, foodTiles);
-    const mealsServed = Math.floor(
-      workers.slice(0, effectiveCount).reduce((sum, s) => {
-        const { tier } = Staff.getExperienceTier(s.weeksEmployed);
-        return sum + this.MEALS_PER_WORKER_PER_DAY * (1 + 0.2 * tier);
-      }, 0)
-    );
-
-    const mealsSold = Math.min(mealsWanted, mealsServed);
-    return { mealsWanted, mealsServed, mealsSold };
   },
 
   // ── Construction panel ─────────────────────────────────────────────────────

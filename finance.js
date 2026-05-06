@@ -950,8 +950,8 @@ const Finance = {
     const gateRevenue       = this.calcGateRevenue(daily);
     const parkingRevenue    = this.calcParkingRevenue(dailyDemand);
     const { revenue: shopRevenue, itemsSold: shopItemsSold } = Shopping.calcRevenue(weeklyAttendance);
-    const food              = Shopping.calcFood(weeklyAttendance);
-    const foodRevenue       = Math.round(food.mealsSold * (Shopping.MEAL_BASE_PRICE + this.foodUpcharge));
+    const food              = Concessions.calcFood(weeklyAttendance);
+    const foodRevenue       = Math.round(food.mealsSold * (Concessions.MEAL_BASE_PRICE + this.foodUpcharge));
     const security = Security.calcIncidents(weeklyAttendance, dailyDemand, dailyThroughput);
 
     // Income
