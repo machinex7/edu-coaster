@@ -81,6 +81,17 @@ const RESEARCH_ID = Object.freeze({
   DEMOGRAPHIC_SEGMENTATION_DISPLAY:   'demographic_segmentation_display',
 });
 
+// IDs that match the concessions menu items in Concessions.menuItems.
+const MENU_ITEM = Object.freeze({
+  WATER_CUP:       'water_cup',
+  SODA:            'soda',
+  HOT_DOG:         'hot_dog',
+  FRIES:           'fries',
+  TATER_TOTS:      'tater_tots',
+  BURGER:          'burger',
+  CHICKEN_TENDERS: 'chicken_tenders',
+});
+
 // Breakdown probability reaches 100% at this cumulative wear value.
 const MAX_EFFECTIVE_WEAR = 10000;
 

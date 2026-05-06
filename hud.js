@@ -225,6 +225,7 @@ function initHUD() {
   document.getElementById('next-round-btn').addEventListener('click', advanceRound);
   document.getElementById('modal-close-btn').addEventListener('click', hideRoundSummary);
   PLStatement.init();
+  Concessions.init();
   Staff.initPanel();
   initInventoryPanel();
   Charts.initModal();
@@ -492,6 +493,7 @@ function openPanel(panelId) {
   if (panelId === 'discounts')        Discounts.buildPanel();
   if (panelId === 'marketing')       Marketing.buildPanel();
   if (panelId === 'visitor-profile') VisitorProfile.buildPanel();
+  if (panelId === 'concessions')     Concessions.buildPanel();
 }
 
 function closePanels() {

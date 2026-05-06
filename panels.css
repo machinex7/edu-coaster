@@ -2224,4 +2224,40 @@
 .discount-detail-val {
   color: #d1d5db;
 }
+
+/* ── Concessions panel ── */
+#panel-concessions,
+#panel-concessions .side-panel-inner { width: 480px; }
+
+.con-body { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+
+.con-sub-tabs { display: flex; border-bottom: 2px solid #374151; flex-shrink: 0; }
+.con-tab-btn  { flex: 1; padding: 9px 6px; background: none; border: none;
+  border-bottom: 2px solid transparent; margin-bottom: -2px; color: #6b7280;
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em;
+  text-transform: uppercase; cursor: pointer; }
+.con-tab-btn.active { color: #f3f4f6; border-bottom-color: #fbbf24; }
+
+.con-view { display: flex; flex-direction: column; flex: 1; overflow-y: auto; min-height: 0; }
+.con-view.hidden { display: none; }
+
+.con-menu-header { display: grid; grid-template-columns: 1fr 100px 64px 80px;
+  padding: 6px 12px; border-bottom: 1px solid #374151; }
+.con-menu-header span { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.05em;
+  text-transform: uppercase; color: #6b7280; }
+.con-col-right { text-align: right; }
+
+.con-menu-row { display: grid; grid-template-columns: 1fr 100px 64px 80px;
+  align-items: center; padding: 8px 12px; border-bottom: 1px solid #1f2937; }
+
+.con-item-name  { font-size: 0.82rem; font-weight: 600; color: #f3f4f6; }
+.con-item-prep  { font-size: 0.75rem; color: #9ca3af; }
+.con-item-stock { font-size: 0.75rem; color: #9ca3af; text-align: right; }
+
+.con-price-wrap   { display: flex; align-items: center; gap: 2px; }
+.con-price-dollar { font-size: 0.8rem; color: #9ca3af; }
+.con-price-input  { width: 62px; background: #1f2937; border: 1px solid #374151;
+  border-radius: 4px; color: #fbbf24; font-size: 0.8rem; padding: 3px 5px;
+  text-align: right; }
+.con-price-input:focus { outline: none; border-color: #6b7280; }
 .vp-person--gray      { color: #4b5563; }
