@@ -120,6 +120,8 @@ const Finance = {
 
   // Accumulates campaign launch costs paid between round advances; reset each round.
   roundMarketingCosts: 0,
+  // Accumulates merchandise order costs paid between round advances; reset each round.
+  roundMerchandiseCosts: 0,
 
   // Smoothed 0–1 score of how well rides are serving current crowds.
   // Starts at 1.0 (perfect); degrades when operators can't keep up with demand.
@@ -996,8 +998,10 @@ const Finance = {
     Population.tickEvents();          // tick population event modifiers toward 0
     Population.decayFavor();          // nudge all bracket favors back toward 1.0
 
-    const marketingCosts = this.roundMarketingCosts;
-    this.roundMarketingCosts = 0;
+    const marketingCosts     = this.roundMarketingCosts;
+    this.roundMarketingCosts  = 0;
+    const merchandiseCosts    = this.roundMerchandiseCosts;
+    this.roundMerchandiseCosts = 0;
     Marketing.tickCampaigns();
     const arrivedOrders = Shopping.tickOrders();
     if (arrivedOrders.length > 0) {
@@ -1021,9 +1025,10 @@ const Finance = {
       utilityCosts,
       constructionCosts,
       marketingCosts,
+      merchandiseCosts,
       shopItemsSold,
       loanRepayments,
-      totalExpenses: staffCosts + utilityCosts + constructionCosts + marketingCosts + loanRepayments,
+      totalExpenses: staffCosts + utilityCosts + constructionCosts + marketingCosts + merchandiseCosts + loanRepayments,
       rideEfficiency: this.rideOpinion,
       security: { ...security, opinionAfter: Security.opinion },
       food: { ...food, mealSatisfaction: this.mealSatisfaction },
