@@ -543,6 +543,150 @@ header h1 {
   text-align: center;
 }
 
+/* ── P&L statement exercise modal ── */
+.pl-modal-card {
+  min-width: 560px;
+  max-width: 640px;
+  gap: 12px;
+}
+
+.pl-instructions {
+  font-size: 0.82rem;
+  color: #9ca3af;
+  margin: 0;
+}
+
+/* Bank: unsorted items sit here before being dragged to a zone. */
+.pl-bank {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 52px;
+  padding: 10px;
+  background: #111827;
+  border: 2px dashed #374151;
+  border-radius: 8px;
+  transition: border-color 0.15s;
+}
+
+.pl-bank.pl-zone-over { border-color: #6b7280; }
+
+.pl-zones {
+  display: flex;
+  gap: 12px;
+}
+
+/* Each drop-target column. */
+.pl-zone {
+  flex: 1;
+  padding: 10px;
+  background: #111827;
+  border: 2px dashed #374151;
+  border-radius: 8px;
+  min-height: 120px;
+  transition: border-color 0.15s;
+}
+
+/* Colour-coded drag-over highlight per column. */
+#pl-zone-revenue.pl-zone-over { border-color: #4ade80; }
+#pl-zone-expense.pl-zone-over { border-color: #f87171; }
+
+.pl-zone-header {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+}
+
+.pl-revenue-header { color: #4ade80; }
+.pl-expense-header  { color: #f87171; }
+
+.pl-zone-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Individual draggable item card. */
+.pl-card-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  padding: 8px 10px;
+  cursor: grab;
+  user-select: none;
+  transition: border-color 0.15s, opacity 0.15s;
+}
+
+.pl-card-item:active { cursor: grabbing; }
+.pl-card-item.pl-dragging { opacity: 0.35; }
+
+/* Feedback states shown after submission. */
+.pl-card-item.pl-correct   { border-color: #4ade80; }
+.pl-card-item.pl-incorrect { border-color: #f87171; }
+
+/* Locked cards have been confirmed correct and can no longer be dragged. */
+.pl-card-item.pl-locked {
+  cursor: default;
+  opacity: 0.75;
+}
+
+/* Disabled state while items remain in the bank. */
+#pl-submit-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pl-card-label {
+  flex: 1;
+  font-size: 0.82rem;
+  color: #e5e7eb;
+}
+
+.pl-card-amount {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #9ca3af;
+}
+
+.pl-card-status {
+  width: 1rem;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.pl-card-item.pl-correct   .pl-card-status { color: #4ade80; }
+.pl-card-item.pl-incorrect .pl-card-status { color: #f87171; }
+
+/* Score + net income shown after submission. */
+.pl-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px;
+  background: #111827;
+  border-radius: 8px;
+}
+
+.pl-score {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #f3f4f6;
+}
+
+.pl-net {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.pl-net-pos { color: #4ade80; }
+.pl-net-neg { color: #f87171; }
+
 /* ── Notification stack ── */
 #notification-stack {
   position: fixed;

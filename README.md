@@ -34,6 +34,7 @@ python3 -m http.server
 | `staff-panel.js` | All staffing panel UI — roster, postings, candidates, benefits views (extends `Staff` via `Object.assign`) |
 | `security.js` | Security opinion state, incident calculation, panel UI (`Security` object) |
 | `history.js` | Append-only per-round data log for future reports/graphs (`History` object) |
+| `pl-statement.js` | Quarterly P&L statement exercise — drag-and-drop sorting modal (`PLStatement` object) |
 | `hud.js` | HUD display, stage transitions, panel management, view mode toolbar, construction bottom bar, security SVG overlay, round summary modal, pricing panel |
 | `rides.json` | Ride catalogue |
 | `facilities.json` | Facility catalogue |
@@ -44,7 +45,7 @@ python3 -m http.server
 
 **Script load order:**
 ```
-constants.js → unlock.js → population.js → game.js → grid.js → shopping.js → finance.js → staff.js → staff-panel.js → security.js → history.js → hud.js
+constants.js → unlock.js → population.js → game.js → grid.js → shopping.js → finance.js → staff.js → staff-panel.js → security.js → history.js → pl-statement.js → hud.js
 ```
 
 All cross-file calls happen at runtime (not parse time), so forward references inside method bodies are safe.
@@ -70,6 +71,7 @@ const Foo = {
 | `Staff` | `staff.js` + `staff-panel.js` | Roster, postings, candidates, benefits policy, experience, panel rendering |
 | `Security` | `security.js` | Opinion state, incident calculation, panel rendering |
 | `History` | `history.js` | Append-only per-round log |
+| `PLStatement` | `pl-statement.js` | Quarterly P&L drag-and-drop exercise |
 
 ---
 
@@ -597,6 +599,42 @@ Same shape as `facilities.json` plus:
 
 ---
 
+## Educational forms
+
+Periodic exercises that interrupt gameplay to test financial literacy. Each form is a self-contained object in its own file, following the global-object pattern.
+
+### Pattern
+
+Each form file exports a single object with three public entry points called from `hud.js`:
+
+| Entry point | Where called in `hud.js` | Purpose |
+|---|---|---|
+| `Form.init()` | `initHUD()` | Wire up DOM event listeners once at startup |
+| `Form.pending = true` | `advanceRound()` | Schedule the form to appear after the round summary |
+| `Form.show()` | `hideRoundSummary()` | Build and display the modal |
+
+The form's `.pending` flag is set by the trigger condition in `advanceRound()` and cleared inside `show()`. `hideRoundSummary()` checks it and chains `show()` so the round summary always appears first.
+
+### Adding a new form
+
+1. Create `my-form.js` with a `MyForm` object implementing `pending`, `init()`, and `show()`.
+2. Add `<script src="my-form.js"></script>` to `index.html` immediately before `hud.js`.
+3. Add the modal HTML to `index.html`.
+4. Add form-specific styles to `style.css` (modal styles) or `panels.css` (panel content).
+5. In `hud.js`: call `MyForm.init()` in `initHUD()`, set `MyForm.pending = true` on your trigger condition in `advanceRound()`, and add `if (MyForm.pending) MyForm.show();` in `hideRoundSummary()`.
+
+### P&L statement (`pl-statement.js` — `PLStatement`)
+
+Triggers every 13 rounds (end of each quarter). Aggregates the last 13 entries from `History.rounds` to produce real quarterly totals for six line items: Gate Admissions, Parking, Merchandise Sales, Staff Wages, Ride Utilities, and Construction.
+
+Students drag each item into a Revenue or Expenses column. The submit button is disabled until all items have been placed. On submit, correctly placed items lock in place with a checkmark; wrong items return to the bank to be re-sorted. This repeats until all items are correct, at which point the net profit/loss is revealed and Continue appears.
+
+**CSS classes:** `.pl-modal-card`, `.pl-bank`, `.pl-zone`, `.pl-card-item`, `.pl-locked`, `.pl-correct`, `.pl-result` — all in `style.css`.
+
+**`PLStatement.ITEMS`** — array of `{ key, label, correct, histKey }` defining the line items. Edit here to add, remove, or rename items. `histKey` must match a field in `History.rounds`.
+
+---
+
 ## What's implemented
 
 - 20×20 park grid with collision detection and irregular footprint support
@@ -635,6 +673,7 @@ Same shape as `facilities.json` plus:
 - `Population.cumulativeInflation`: weekly compound tracker, multiplies restock order costs
 - Demographic `preferredCategory` on every bracket drives per-category purchase desire
 - Loan system: multi-round application flow (approach → open → apply → offer → review → disbursed); amortized weekly repayments; 7 covenant types with enforcement and deferred breach fees; rate/covenant/fee negotiation; missed payment penalties on future rates and LTV caps
+- Quarterly P&L statement exercise: drag-and-drop modal every 13 rounds; real quarterly totals from `History`; items lock on correct placement; wrong items return to bank for retry; net income revealed on completion
 
 ## What's not yet implemented (see `reqs.md`)
 
