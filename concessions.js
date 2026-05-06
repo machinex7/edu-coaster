@@ -114,10 +114,11 @@ const Concessions = {
     options.sort((a, b) => b.mealValue - a.mealValue);
 
     // ── Income affordability per option ───────────────────────────────────────
-    const gateExhaustion = Finance.gatePrice / 2;
+    // No gate-exhaustion discount: people need to eat regardless of what they
+    // paid at the entrance.
     options.forEach(opt => {
       opt.affordability = Population.INCOME_BRACKETS.reduce((sum, bracket, j) => {
-        const limit = Shopping.INCOME_LIMITS[j] * Population.cumulativeInflation - gateExhaustion;
+        const limit = Shopping.INCOME_LIMITS[j] * Population.cumulativeInflation;
         return opt.price <= limit ? sum + bracket.chance : sum;
       }, 0);
     });
