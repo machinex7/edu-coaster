@@ -345,7 +345,6 @@ const Concessions = {
       <span>Item</span>
       <span>Price</span>
       <span>Prep</span>
-      <span class="con-col-right">In Freezer</span>
     `;
     container.appendChild(header);
 
@@ -391,7 +390,6 @@ const Concessions = {
       row.appendChild(nameEl);
       row.appendChild(priceWrap);
       row.appendChild(prepEl);
-      row.appendChild(stockEl);
       container.appendChild(row);
     });
   },
