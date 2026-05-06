@@ -553,8 +553,8 @@ function buildRideDetail(record) {
   const { label, cls } = getRideCondition(record);
   const def = rides.find(r => r.id === record.rideId);
 
-  // Wear as a percentage of MAX_EFFECTIVE_WEAR.
-  const wearPct = Math.min(100, Math.round((record.wear ?? 0) / MAX_EFFECTIVE_WEAR * 100));
+  // Wear as a percentage of MAX_EFFECTIVE_WEAR. Hidden when wear system is locked.
+  const wearPct = Unlock.WEAR ? Math.min(100, Math.round((record.wear ?? 0) / MAX_EFFECTIVE_WEAR * 100)) : null;
 
   // Per-ride operator requirement.
   const rideNeeds = Staff.operatorsNeededForRide(record);
@@ -609,7 +609,7 @@ function buildRideDetail(record) {
       <div class="ride-detail-name">${record.name}</div>
       <span class="cond-badge ${cls}">${label}</span>
       <div class="ride-utility-cost">Utility: $${(def?.utilityCost ?? 0).toLocaleString()}/wk</div>
-      <div class="ride-wear">Wear: ${wearPct}%</div>
+      ${wearPct !== null ? `<div class="ride-wear">Wear: ${wearPct}%</div>` : ''}
       ${staffHtml}
       ${ridership}
       <div class="ride-detail-actions">${actionsHtml}</div>
