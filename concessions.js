@@ -494,7 +494,7 @@ const Concessions = {
     const nameInput = document.createElement('input');
     nameInput.type        = 'text';
     nameInput.className   = 'con-builder-name';
-    nameInput.placeholder = 'Meal name (e.g. Family Combo)';
+    nameInput.placeholder = 'Meal name (optional)';
     nameInput.maxLength   = 40;
     builder.appendChild(nameInput);
 
@@ -579,12 +579,16 @@ const Concessions = {
     saveBtn.className   = 'con-builder-save';
     saveBtn.textContent = 'Save';
     saveBtn.addEventListener('click', () => {
-      const name  = nameInput.value.trim();
       const price = parseFloat(priceInput.value);
       const items = this.menuItems
         .filter(item => counts[item.id] > 0)
         .map(item => ({ id: item.id, count: counts[item.id] }));
-      if (!name || items.length === 0 || isNaN(price) || price < 0) return;
+      if (items.length === 0 || isNaN(price) || price < 0) return;
+      const name = nameInput.value.trim() ||
+        items.map(({ id, count }) => {
+          const item = this.menuItems.find(m => m.id === id);
+          return count > 1 ? `${count}× ${item.name}` : item.name;
+        }).join(' + ');
       this.meals.push({ name, items, price });
       this._buildMealsSection(section);
     });
