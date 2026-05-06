@@ -118,6 +118,9 @@ const Finance = {
   weeklyNetMess:    0,    // unhandled mess from last round; subtracted from excitement
   mealSatisfaction: 1,    // 0.5–1; penalises excitement when food supply < demand
 
+  // Accumulates campaign launch costs paid between round advances; reset each round.
+  roundMarketingCosts: 0,
+
   // Smoothed 0–1 score of how well rides are serving current crowds.
   // Starts at 1.0 (perfect); degrades when operators can't keep up with demand.
   rideOpinion: 1.0,
@@ -993,6 +996,8 @@ const Finance = {
     Population.tickEvents();          // tick population event modifiers toward 0
     Population.decayFavor();          // nudge all bracket favors back toward 1.0
 
+    const marketingCosts = this.roundMarketingCosts;
+    this.roundMarketingCosts = 0;
     Marketing.tickCampaigns();
     const arrivedOrders = Shopping.tickOrders();
     if (arrivedOrders.length > 0) {
@@ -1015,9 +1020,10 @@ const Finance = {
       staffCosts,
       utilityCosts,
       constructionCosts,
+      marketingCosts,
       shopItemsSold,
       loanRepayments,
-      totalExpenses: staffCosts + utilityCosts + constructionCosts + loanRepayments,
+      totalExpenses: staffCosts + utilityCosts + constructionCosts + marketingCosts + loanRepayments,
       rideEfficiency: this.rideOpinion,
       security: { ...security, opinionAfter: Security.opinion },
       food: { ...food, mealSatisfaction: this.mealSatisfaction },

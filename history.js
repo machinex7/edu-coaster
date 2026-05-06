@@ -22,6 +22,7 @@ const History = {
       staffExpense:        report.staffCosts,
       utilityExpense:      report.utilityCosts,
       constructionExpense: report.constructionCosts,
+      marketingExpense:    report.marketingCosts,
       rideEfficiency:      report.rideEfficiency,
       staffCount:          Staff.roster.length,
       staffMood:           Math.round(avgMood),
