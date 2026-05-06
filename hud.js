@@ -673,13 +673,6 @@ const PRICE_ITEMS = [
     },
   },
   {
-    key:       'food',
-    label:     'Food Upcharge',
-    unit:      '$/item',
-    getValue:  () => Finance.foodUpcharge,
-    setValue:  v => { Finance.foodUpcharge = v; },
-  },
-  {
     key:       'merchandise',
     label:     'Merchandise Upcharge',
     unit:      '$/buyer',

@@ -23,10 +23,10 @@
   ],
 
   "HOUSEHOLD_SIZES": [
-    { "name": "Solo (1)",           "short": "Solo",    "chance": 0.7, "annualVisits": 1.0, "count":  38000000, "intensityBias": 1.3, "preferredCategory": "practical" },
-    { "name": "Couple (2)",         "short": "Couple",  "chance": 1.1, "annualVisits": 1.5, "count":  92000000, "intensityBias": 1.2, "preferredCategory": "souvenir" },
-    { "name": "Small Family (3–4)", "short": "Sm. Fam", "chance": 1.6, "annualVisits": 2.5, "count": 123000000, "intensityBias": 0.9, "preferredCategory": "toy" },
-    { "name": "Large Family (5+)",  "short": "Lg. Fam", "chance": 1.4, "annualVisits": 2.0, "count":  77000000, "intensityBias": 0.7, "preferredCategory": "apparel" }
+    { "name": "Solo (1)",           "short": "Solo",    "chance": 0.7, "annualVisits": 1.0, "count":  38000000, "intensityBias": 1.3, "preferredCategory": "practical", "mealTarget": 0.6 },
+    { "name": "Couple (2)",         "short": "Couple",  "chance": 1.1, "annualVisits": 1.5, "count":  92000000, "intensityBias": 1.2, "preferredCategory": "souvenir",  "mealTarget": 1.2 },
+    { "name": "Small Family (3–4)", "short": "Sm. Fam", "chance": 1.6, "annualVisits": 2.5, "count": 123000000, "intensityBias": 0.9, "preferredCategory": "toy",       "mealTarget": 2.0 },
+    { "name": "Large Family (5+)",  "short": "Lg. Fam", "chance": 1.4, "annualVisits": 2.0, "count":  77000000, "intensityBias": 0.7, "preferredCategory": "apparel",   "mealTarget": 3.0 }
   ],
 
   "AREA_TYPES": [

@@ -1,9 +1,9 @@
 [
-  { "id": "water_cup",       "name": "Water Cup",       "cost": 0.00, "prepTime": 1 },
-  { "id": "soda",            "name": "Soda",            "cost": 0.25, "prepTime": 1 },
-  { "id": "hot_dog",         "name": "Hot Dog",         "cost": 1.00, "prepTime": 2 },
-  { "id": "fries",           "name": "Fries",           "cost": 0.75, "prepTime": 3 },
-  { "id": "tater_tots",      "name": "Tater Tots",      "cost": 0.75, "prepTime": 3 },
-  { "id": "burger",          "name": "Burger",          "cost": 2.00, "prepTime": 5 },
-  { "id": "chicken_tenders", "name": "Chicken Tenders", "cost": 1.50, "prepTime": 4 }
+  { "id": "water_cup",       "name": "Water Cup",       "cost": 0.00, "prepTime": 1, "mealValue": 0.1, "alwaysAvailable": true },
+  { "id": "soda",            "name": "Soda",            "cost": 0.25, "prepTime": 1, "mealValue": 0.1 },
+  { "id": "hot_dog",         "name": "Hot Dog",         "cost": 1.00, "prepTime": 2, "mealValue": 0.6 },
+  { "id": "fries",           "name": "Fries",           "cost": 0.75, "prepTime": 3, "mealValue": 0.3 },
+  { "id": "tater_tots",      "name": "Tater Tots",      "cost": 0.75, "prepTime": 3, "mealValue": 0.3 },
+  { "id": "burger",          "name": "Burger",          "cost": 2.00, "prepTime": 5, "mealValue": 0.6 },
+  { "id": "chicken_tenders", "name": "Chicken Tenders", "cost": 1.50, "prepTime": 4, "mealValue": 0.6 }
 ]

@@ -5,14 +5,15 @@ const Concessions = {
   // Flat fee charged on every non-empty standing delivery.
   DELIVERY_FEE: 75,
 
-  // Meals a visitor wants to eat per day (demand multiplier).
-  EXPECTED_MEALS_PER_DAY: 2,
-
-  // Base meals a concessions worker can serve per day (boosted by experience tier).
+  // Base purchase transactions a concessions worker can handle per day (boosted by experience).
   MEALS_PER_WORKER_PER_DAY: 250,
 
-  // Base sale price per meal in dollars.
-  MEAL_BASE_PRICE: 10,
+  // Purchase decisions per visitor per week; scales overall food demand.
+  FOOD_PURCHASE_RATE: 2,
+
+  // Gaussian sharpness: how tightly households prefer options near their mealTarget.
+  // Higher = stricter match required; lower = more variety across the pool.
+  PROXIMITY_K: 2,
 
   // Menu item definitions loaded from concessions.json at game start.
   menuItems: [],
@@ -55,29 +56,144 @@ const Concessions = {
       .reduce((sum, s) => sum + s.footprint.flat().filter(v => v === 1).length, 0);
   },
 
-  // Returns mealsWanted (demand) and mealsServed (capacity).
-  // Effective workers = min(active concessions workers, food tiles), picking the
-  // most experienced workers first. Each worker contributes MEALS_PER_WORKER_PER_DAY
-  // boosted by 20% per experience tier (tier 1–4 → 1.2×–1.8×).
+  // Demand-driven food revenue using household-size demographics.
+  //
+  // Each household bracket has a mealTarget (total meal value the group wants to buy).
+  // All available solo items and player-built combo meals are scored for each bracket
+  // using a Gaussian proximity to mealTarget multiplied by a value ratio and income
+  // affordability. Purchases are distributed proportionally across the weighted options,
+  // then capped by worker throughput and individual item stock.
+  //
+  // Returns { revenue, mealsSold, mealsWanted, mealsServed } where mealsWanted and
+  // mealsServed are used upstream for the meal-satisfaction excitement modifier.
   calcFood(weeklyAttendance) {
-    const mealsWanted = weeklyAttendance * this.EXPECTED_MEALS_PER_DAY;
-    if (!Unlock.STAFFING) return { mealsWanted, mealsServed: mealsWanted, mealsSold: mealsWanted };
+    if (this.calcFoodTiles() === 0) {
+      return { revenue: 0, mealsSold: 0, mealsWanted: 0, mealsServed: 0 };
+    }
 
-    const foodTiles = this.calcFoodTiles();
-    const workers = Staff.roster
-      .filter(s => s.jobId === JOB.CONCESSIONS_WORKER && s.weeksOut === 0)
-      .sort((a, b) => Staff.getExperienceTier(b.weeksEmployed).tier - Staff.getExperienceTier(a.weeksEmployed).tier);
+    // ── Worker throughput cap (same logic as before) ──────────────────────────
+    let workerCapacity = weeklyAttendance * this.FOOD_PURCHASE_RATE; // uncapped fallback
+    if (Unlock.STAFFING) {
+      const foodTiles = this.calcFoodTiles();
+      const workers = Staff.roster
+        .filter(s => s.jobId === JOB.CONCESSIONS_WORKER && s.weeksOut === 0)
+        .sort((a, b) => Staff.getExperienceTier(b.weeksEmployed).tier - Staff.getExperienceTier(a.weeksEmployed).tier);
+      const effectiveCount = Math.min(workers.length, foodTiles);
+      workerCapacity = Math.floor(
+        workers.slice(0, effectiveCount).reduce((sum, s) => {
+          const { tier } = Staff.getExperienceTier(s.weeksEmployed);
+          return sum + this.MEALS_PER_WORKER_PER_DAY * (1 + 0.2 * tier);
+        }, 0)
+      );
+    }
 
-    const effectiveCount = Math.min(workers.length, foodTiles);
-    const mealsServed = Math.floor(
-      workers.slice(0, effectiveCount).reduce((sum, s) => {
-        const { tier } = Staff.getExperienceTier(s.weeksEmployed);
-        return sum + this.MEALS_PER_WORKER_PER_DAY * (1 + 0.2 * tier);
-      }, 0)
-    );
+    // ── Build purchasable option pool ─────────────────────────────────────────
+    // Solo items: skip if out of stock (unless alwaysAvailable).
+    // Combo meals: skip if any required ingredient has insufficient stock.
+    const options = [];
 
-    const mealsSold = Math.min(mealsWanted, mealsServed);
-    return { mealsWanted, mealsServed, mealsSold };
+    this.menuItems.forEach((item, i) => {
+      if (!item.alwaysAvailable && this.stock[i] <= 0) return;
+      options.push({
+        type:           'item',
+        index:          i,
+        mealValue:      item.mealValue,
+        price:          this.prices[i],
+        ingredientCost: item.cost,
+        maxSell:        item.alwaysAvailable ? Infinity : this.stock[i],
+      });
+    });
+
+    this.meals.forEach(meal => {
+      const mealValue      = meal.items.reduce((s, { id, count }) => {
+        const item = this.menuItems.find(m => m.id === id);
+        return s + (item ? item.mealValue * count : 0);
+      }, 0);
+      const ingredientCost = meal.items.reduce((s, { id, count }) => {
+        const item = this.menuItems.find(m => m.id === id);
+        return s + (item ? item.cost * count : 0);
+      }, 0);
+      // How many full combos can be assembled from current stock?
+      const maxSell = Math.min(...meal.items.map(({ id, count }) => {
+        const idx = this.menuItems.findIndex(m => m.id === id);
+        if (idx < 0) return 0;
+        return this.menuItems[idx].alwaysAvailable ? Infinity : Math.floor(this.stock[idx] / count);
+      }));
+      if (maxSell <= 0) return;
+      options.push({ type: 'meal', meal, mealValue, price: meal.price, ingredientCost, maxSell });
+    });
+
+    if (options.length === 0) {
+      return { revenue: 0, mealsSold: 0, mealsWanted: 0, mealsServed: 0 };
+    }
+
+    // ── Income affordability per option ───────────────────────────────────────
+    // Mirrors the merchandise affordability check: sum income-bracket chances
+    // whose spending limit (inflation-adjusted, gate-exhaustion-discounted) covers
+    // the option's price.
+    const gateExhaustion = Finance.gatePrice / 2;
+    options.forEach(opt => {
+      opt.affordability = Population.INCOME_BRACKETS.reduce((sum, bracket, j) => {
+        const limit = Shopping.INCOME_LIMITS[j] * Population.cumulativeInflation - gateExhaustion;
+        return opt.price <= limit ? sum + bracket.chance : sum;
+      }, 0);
+    });
+
+    // ── Household-weighted demand ─────────────────────────────────────────────
+    const totalHouseholdChance = Population.HOUSEHOLD_SIZES.reduce((s, h) => s + h.chance, 0);
+    const demanded = options.map(() => 0);
+
+    Population.HOUSEHOLD_SIZES.forEach(bracket => {
+      // Number of purchase decisions originating from this household type.
+      const groupVisits = weeklyAttendance * (bracket.chance / totalHouseholdChance) * this.FOOD_PURCHASE_RATE;
+
+      // Score each option: Gaussian proximity to mealTarget × value factor × affordability.
+      const weights = options.map(opt => {
+        const proximity   = Math.exp(-this.PROXIMITY_K * Math.pow(opt.mealValue - bracket.mealTarget, 2));
+        const valueScore  = opt.price > 0 ? opt.ingredientCost / opt.price : 0;
+        return proximity * (0.5 + 0.5 * valueScore) * (opt.affordability || 0);
+      });
+
+      const totalWeight = weights.reduce((s, w) => s + w, 0);
+      if (totalWeight === 0) return;
+
+      weights.forEach((w, i) => { demanded[i] += groupVisits * (w / totalWeight); });
+    });
+
+    const mealsWanted = demanded.reduce((s, d) => s + d, 0);
+
+    // ── Apply worker-capacity cap then stock cap ───────────────────────────────
+    const capacityRatio = mealsWanted > 0 ? Math.min(1, workerCapacity / mealsWanted) : 1;
+
+    let totalRevenue = 0;
+    let totalSold    = 0;
+
+    options.forEach((opt, i) => {
+      const sold = Math.min(Math.floor(demanded[i] * capacityRatio), opt.maxSell);
+      totalRevenue += sold * opt.price;
+      totalSold    += sold;
+
+      // Deduct from freezer stock.
+      if (opt.type === 'item') {
+        if (!this.menuItems[opt.index].alwaysAvailable) {
+          this.stock[opt.index] = Math.max(0, this.stock[opt.index] - sold);
+        }
+      } else {
+        opt.meal.items.forEach(({ id, count }) => {
+          const idx = this.menuItems.findIndex(m => m.id === id);
+          if (idx >= 0 && !this.menuItems[idx].alwaysAvailable) {
+            this.stock[idx] = Math.max(0, this.stock[idx] - sold * count);
+          }
+        });
+      }
+    });
+
+    return {
+      revenue:      Math.round(totalRevenue),
+      mealsSold:    totalSold,
+      mealsWanted:  Math.round(mealsWanted),
+      mealsServed:  Math.round(Math.min(mealsWanted, workerCapacity)),
+    };
   },
 
   // Returns true when the order inputs should be disabled (week 3 through delivery).
