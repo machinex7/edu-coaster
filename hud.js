@@ -865,6 +865,7 @@ function _buildInvPurchasingView() {
       if (money < cost) return;
 
       money -= cost;
+      Finance.roundMerchandiseCosts += cost;
       Shopping.categoryOrderSpend[cat] = (Shopping.categoryOrderSpend[cat] ?? 0) + cost;
       Shopping.categoryOrderCount[cat] = (Shopping.categoryOrderCount[cat] ?? 0) + 1;
       Shopping.orders.push({ itemIndex: idx, itemName: Shopping.merchandise[idx].name, count: qty, weeksRemaining: sup?.deliveryTime ?? 1 });

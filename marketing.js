@@ -492,6 +492,7 @@ const Marketing = {
     const weeks      = this.draftTrialMode ? this.TRIAL_WEEKS : this.estimatedWeeks();
     const awardBoost = this.draftAward ? this.calcAwardBoost(this.draftAward) : 0;
     money -= cost;
+    Finance.roundMarketingCosts += cost;
     const featuredRideId       = this.draftRide;
     const featuredRideRecord   = featuredRideId ? installedRides.find(r => r.instanceId === featuredRideId) : null;
     const featuredRideTemplate = featuredRideRecord ? rides.find(r => r.id === featuredRideRecord.rideId) : null;
