@@ -2,16 +2,8 @@
 
 const Concessions = {
 
-  // Static definition of every menu item: id, display name, default price, and prep time.
-  menuItems: [
-    { id: MENU_ITEM.WATER_CUP,       name: 'Water Cup',       basePrice: 1.50, prepTime: 1 },
-    { id: MENU_ITEM.SODA,            name: 'Soda',            basePrice: 3.00, prepTime: 1 },
-    { id: MENU_ITEM.HOT_DOG,         name: 'Hot Dog',         basePrice: 4.50, prepTime: 2 },
-    { id: MENU_ITEM.FRIES,           name: 'Fries',           basePrice: 4.00, prepTime: 3 },
-    { id: MENU_ITEM.TATER_TOTS,      name: 'Tater Tots',      basePrice: 4.50, prepTime: 3 },
-    { id: MENU_ITEM.BURGER,          name: 'Burger',          basePrice: 7.00, prepTime: 5 },
-    { id: MENU_ITEM.CHICKEN_TENDERS, name: 'Chicken Tenders', basePrice: 6.50, prepTime: 4 },
-  ],
+  // Menu item definitions loaded from concessions.json at game start.
+  menuItems: [],
 
   // Player-set sale prices, one entry per menuItem (parallel array).
   prices: [],

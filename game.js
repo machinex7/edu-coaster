@@ -111,13 +111,14 @@ function setDemolishMode(active) {
 // ── Init ───────────────────────────────────────────────────────────────────
 async function init() {
   let demographics;
-  [rides, facilities, Shopping.catalog, Shopping.merchandise, Shopping.suppliers, demographics] = await Promise.all([
+  [rides, facilities, Shopping.catalog, Shopping.merchandise, Shopping.suppliers, demographics, Concessions.menuItems] = await Promise.all([
     fetch('rides.json').then(r => r.json()),
     fetch('facilities.json').then(r => r.json()),
     fetch('shops.json').then(r => r.json()),
     fetch('merchandise.json').then(r => r.json()),
     fetch('suppliers.json').then(r => r.json()),
     fetch('demographics.json').then(r => r.json()),
+    fetch('concessions.json').then(r => r.json()),
   ]);
   Object.assign(Population, demographics);
 

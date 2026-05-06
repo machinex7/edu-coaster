@@ -1,0 +1,9 @@
+[
+  { "id": "water_cup",       "name": "Water Cup",       "basePrice": 1.50, "prepTime": 1 },
+  { "id": "soda",            "name": "Soda",            "basePrice": 3.00, "prepTime": 1 },
+  { "id": "hot_dog",         "name": "Hot Dog",         "basePrice": 4.50, "prepTime": 2 },
+  { "id": "fries",           "name": "Fries",           "basePrice": 4.00, "prepTime": 3 },
+  { "id": "tater_tots",      "name": "Tater Tots",      "basePrice": 4.50, "prepTime": 3 },
+  { "id": "burger",          "name": "Burger",          "basePrice": 7.00, "prepTime": 5 },
+  { "id": "chicken_tenders", "name": "Chicken Tenders", "basePrice": 6.50, "prepTime": 4 }
+]
