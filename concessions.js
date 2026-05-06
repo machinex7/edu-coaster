@@ -56,23 +56,13 @@ const Concessions = {
       .reduce((sum, s) => sum + s.footprint.flat().filter(v => v === 1).length, 0);
   },
 
-  // Demand-driven food revenue using household-size demographics.
-  //
-  // Each household bracket has a mealTarget (total meal value the group wants to buy).
-  // All available solo items and player-built combo meals are scored for each bracket
-  // using a Gaussian proximity to mealTarget multiplied by a value ratio and income
-  // affordability. Purchases are distributed proportionally across the weighted options,
-  // then capped by worker throughput and individual item stock.
-  //
-  // Returns { revenue, mealsSold, mealsWanted, mealsServed } where mealsWanted and
-  // mealsServed are used upstream for the meal-satisfaction excitement modifier.
   calcFood(weeklyAttendance) {
     if (this.calcFoodTiles() === 0) {
       return { revenue: 0, mealsSold: 0, mealsWanted: 0, mealsServed: 0 };
     }
 
-    // ── Worker throughput cap (same logic as before) ──────────────────────────
-    let workerCapacity = weeklyAttendance * this.FOOD_PURCHASE_RATE; // uncapped fallback
+    // ── Worker throughput cap ─────────────────────────────────────────────────
+    let workerCapacity = weeklyAttendance * this.FOOD_PURCHASE_RATE;
     if (Unlock.STAFFING) {
       const foodTiles = this.calcFoodTiles();
       const workers = Staff.roster
@@ -88,8 +78,8 @@ const Concessions = {
     }
 
     // ── Build purchasable option pool ─────────────────────────────────────────
-    // Solo items: skip if out of stock (unless alwaysAvailable).
-    // Combo meals: skip if any required ingredient has insufficient stock.
+    // Solo items require stock (unless alwaysAvailable).
+    // Combo meals require every ingredient to have stock.
     const options = [];
 
     this.menuItems.forEach((item, i) => {
@@ -100,11 +90,11 @@ const Concessions = {
         mealValue:      item.mealValue,
         price:          this.prices[i],
         ingredientCost: item.cost,
-        maxSell:        item.alwaysAvailable ? Infinity : this.stock[i],
       });
     });
 
     this.meals.forEach(meal => {
+      if (this._comboMaxSell(meal) <= 0) return;
       const mealValue      = meal.items.reduce((s, { id, count }) => {
         const item = this.menuItems.find(m => m.id === id);
         return s + (item ? item.mealValue * count : 0);
@@ -113,24 +103,17 @@ const Concessions = {
         const item = this.menuItems.find(m => m.id === id);
         return s + (item ? item.cost * count : 0);
       }, 0);
-      // How many full combos can be assembled from current stock?
-      const maxSell = Math.min(...meal.items.map(({ id, count }) => {
-        const idx = this.menuItems.findIndex(m => m.id === id);
-        if (idx < 0) return 0;
-        return this.menuItems[idx].alwaysAvailable ? Infinity : Math.floor(this.stock[idx] / count);
-      }));
-      if (maxSell <= 0) return;
-      options.push({ type: 'meal', meal, mealValue, price: meal.price, ingredientCost, maxSell });
+      options.push({ type: 'meal', meal, mealValue, price: meal.price, ingredientCost });
     });
 
     if (options.length === 0) {
       return { revenue: 0, mealsSold: 0, mealsWanted: 0, mealsServed: 0 };
     }
 
+    // Largest meals are served first so that stock shortage cascades downward.
+    options.sort((a, b) => b.mealValue - a.mealValue);
+
     // ── Income affordability per option ───────────────────────────────────────
-    // Mirrors the merchandise affordability check: sum income-bracket chances
-    // whose spending limit (inflation-adjusted, gate-exhaustion-discounted) covers
-    // the option's price.
     const gateExhaustion = Finance.gatePrice / 2;
     options.forEach(opt => {
       opt.affordability = Population.INCOME_BRACKETS.reduce((sum, bracket, j) => {
@@ -139,61 +122,85 @@ const Concessions = {
       }, 0);
     });
 
-    // ── Household-weighted demand ─────────────────────────────────────────────
+    // ── Household-weighted demand map ─────────────────────────────────────────
     const totalHouseholdChance = Population.HOUSEHOLD_SIZES.reduce((s, h) => s + h.chance, 0);
     const demanded = options.map(() => 0);
 
     Population.HOUSEHOLD_SIZES.forEach(bracket => {
-      // Number of purchase decisions originating from this household type.
       const groupVisits = weeklyAttendance * (bracket.chance / totalHouseholdChance) * this.FOOD_PURCHASE_RATE;
-
-      // Score each option: Gaussian proximity to mealTarget × value factor × affordability.
       const weights = options.map(opt => {
-        const proximity   = Math.exp(-this.PROXIMITY_K * Math.pow(opt.mealValue - bracket.mealTarget, 2));
-        const valueScore  = opt.price > 0 ? opt.ingredientCost / opt.price : 0;
+        const proximity  = Math.exp(-this.PROXIMITY_K * Math.pow(opt.mealValue - bracket.mealTarget, 2));
+        const valueScore = opt.price > 0 ? opt.ingredientCost / opt.price : 0;
         return proximity * (0.5 + 0.5 * valueScore) * (opt.affordability || 0);
       });
-
       const totalWeight = weights.reduce((s, w) => s + w, 0);
       if (totalWeight === 0) return;
-
       weights.forEach((w, i) => { demanded[i] += groupVisits * (w / totalWeight); });
     });
 
-    const mealsWanted = demanded.reduce((s, d) => s + d, 0);
+    const mealsWanted = Math.round(demanded.reduce((s, d) => s + d, 0));
 
-    // ── Apply worker-capacity cap then stock cap ───────────────────────────────
-    const capacityRatio = mealsWanted > 0 ? Math.min(1, workerCapacity / mealsWanted) : 1;
+    // ── Cascade fulfillment loop ──────────────────────────────────────────────
+    // Walk options from highest to lowest mealValue. Worker capacity and stock
+    // are drained incrementally. When stock runs out for an option, the unmet
+    // demand rolls over to the next option. Capacity exhaustion is terminal —
+    // those buyers cannot be served regardless of what they wanted.
+    let remainingCapacity = workerCapacity;
+    let totalRevenue      = 0;
+    let totalSold         = 0;
+    let rollover          = 0;
 
-    let totalRevenue = 0;
-    let totalSold    = 0;
+    for (let i = 0; i < options.length; i++) {
+      if (remainingCapacity <= 0) break;
 
-    options.forEach((opt, i) => {
-      const sold = Math.min(Math.floor(demanded[i] * capacityRatio), opt.maxSell);
-      totalRevenue += sold * opt.price;
-      totalSold    += sold;
+      const opt         = options[i];
+      const totalDemand = Math.floor(demanded[i] + rollover);
+
+      // Live stock check: prior iterations may have deducted from shared ingredients.
+      const liveMax = opt.type === 'item'
+        ? (this.menuItems[opt.index].alwaysAvailable ? Infinity : this.stock[opt.index])
+        : this._comboMaxSell(opt.meal);
+
+      const sell = Math.min(totalDemand, liveMax, remainingCapacity);
+
+      totalRevenue      += sell * opt.price;
+      totalSold         += sell;
+      remainingCapacity -= sell;
+
+      // Stock shortage rolls unserved buyers to the next option down.
+      // Capacity shortage does not — those buyers simply leave.
+      rollover = Math.max(0, totalDemand - liveMax);
 
       // Deduct from freezer stock.
       if (opt.type === 'item') {
         if (!this.menuItems[opt.index].alwaysAvailable) {
-          this.stock[opt.index] = Math.max(0, this.stock[opt.index] - sold);
+          this.stock[opt.index] = Math.max(0, this.stock[opt.index] - sell);
         }
       } else {
         opt.meal.items.forEach(({ id, count }) => {
           const idx = this.menuItems.findIndex(m => m.id === id);
           if (idx >= 0 && !this.menuItems[idx].alwaysAvailable) {
-            this.stock[idx] = Math.max(0, this.stock[idx] - sold * count);
+            this.stock[idx] = Math.max(0, this.stock[idx] - sell * count);
           }
         });
       }
-    });
+    }
 
     return {
-      revenue:      Math.round(totalRevenue),
-      mealsSold:    totalSold,
-      mealsWanted:  Math.round(mealsWanted),
-      mealsServed:  Math.round(Math.min(mealsWanted, workerCapacity)),
+      revenue:     Math.round(totalRevenue),
+      mealsSold:   totalSold,
+      mealsWanted,
+      mealsServed: Math.round(Math.min(mealsWanted, workerCapacity)),
     };
+  },
+
+  // Maximum number of a given combo that can be assembled from current freezer stock.
+  _comboMaxSell(meal) {
+    return Math.min(...meal.items.map(({ id, count }) => {
+      const idx = this.menuItems.findIndex(m => m.id === id);
+      if (idx < 0) return 0;
+      return this.menuItems[idx].alwaysAvailable ? Infinity : Math.floor(this.stock[idx] / count);
+    }));
   },
 
   // Returns true when the order inputs should be disabled (week 3 through delivery).
