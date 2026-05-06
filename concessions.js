@@ -103,7 +103,7 @@ const Concessions = {
         const item = this.menuItems.find(m => m.id === id);
         return s + (item ? item.cost * count : 0);
       }, 0);
-      options.push({ type: 'meal', meal, mealIndex: mi, mealValue, price: meal.price, ingredientCost });
+      options.push({ type: 'meal', meal, mealValue, price: meal.price, ingredientCost });
     });
 
     if (options.length === 0) {
@@ -148,7 +148,7 @@ const Concessions = {
     // those buyers cannot be served regardless of what they wanted.
     // Per-item and per-meal sold counters, parallel to menuItems / meals arrays.
     const itemSoldCounts = this.menuItems.map(() => 0);
-    const mealSoldCounts = this.meals.map(() => 0);
+    this.meals.forEach(meal => { meal.sold = 0; });
 
     let remainingCapacity = workerCapacity;
     let totalRevenue      = 0;
@@ -183,7 +183,7 @@ const Concessions = {
           this.stock[opt.index] = Math.max(0, this.stock[opt.index] - sell);
         }
       } else {
-        mealSoldCounts[opt.mealIndex] += sell;
+        opt.meal.sold += sell;
         opt.meal.items.forEach(({ id, count }) => {
           const idx = this.menuItems.findIndex(m => m.id === id);
           if (idx >= 0) {
@@ -204,8 +204,8 @@ const Concessions = {
       mealsServed: Math.round(Math.min(mealsWanted, workerCapacity)),
       // Per-item totals include ingredients consumed inside combo meals.
       itemSales:   this.menuItems.map((item, i) => ({ id: item.id, name: item.name, sold: itemSoldCounts[i] })),
-      // Per-combo totals count each named meal as one sale regardless of its ingredient count.
-      mealSales:   this.meals.map((meal, mi) => ({ name: meal.name, sold: mealSoldCounts[mi] })),
+      // Per-combo totals are written directly to meal.sold and mirrored here for callers.
+      mealSales:   this.meals.map(meal => ({ name: meal.name, sold: meal.sold })),
     };
   },
 
