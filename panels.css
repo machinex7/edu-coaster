@@ -2260,4 +2260,33 @@
   border-radius: 4px; color: #fbbf24; font-size: 0.8rem; padding: 3px 5px;
   text-align: right; }
 .con-price-input:focus { outline: none; border-color: #6b7280; }
+
+/* ── Orders tab ── */
+#con-orders-view { overflow-y: hidden; }
+
+.con-order-list { flex: 1; overflow-y: auto; min-height: 0; }
+
+.con-order-header { display: grid; grid-template-columns: 1fr 68px 72px 72px 70px;
+  padding: 6px 12px; border-bottom: 1px solid #374151; }
+.con-order-header span { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.05em;
+  text-transform: uppercase; color: #6b7280; }
+
+.con-order-row { display: grid; grid-template-columns: 1fr 68px 72px 72px 70px;
+  align-items: center; padding: 8px 12px; border-bottom: 1px solid #1f2937; }
+
+.con-order-name  { font-size: 0.82rem; font-weight: 600; color: #f3f4f6; }
+.con-order-cost  { font-size: 0.75rem; color: #9ca3af; }
+.con-order-stock { font-size: 0.75rem; color: #9ca3af; }
+.con-order-line  { font-size: 0.75rem; color: #fbbf24; text-align: right; }
+
+.con-order-input { width: 58px; background: #1f2937; border: 1px solid #374151;
+  border-radius: 4px; color: #f3f4f6; font-size: 0.8rem; padding: 3px 5px; text-align: right; }
+.con-order-input:focus { outline: none; border-color: #6b7280; }
+
+.con-order-summary { flex-shrink: 0; border-top: 2px solid #374151; padding: 10px 12px 14px; }
+
+.con-summary-row { display: flex; justify-content: space-between;
+  font-size: 0.78rem; color: #9ca3af; padding: 3px 0; }
+.con-summary-total { font-size: 0.85rem; font-weight: 700; color: #f3f4f6;
+  border-top: 1px solid #374151; margin-top: 4px; padding-top: 7px; }
 .vp-person--gray      { color: #4b5563; }
