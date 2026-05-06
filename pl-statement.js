@@ -22,6 +22,7 @@ const PLStatement = {
     { key: 'staff',        label: 'Staff Wages',       correct: 'expense', histKey: 'staffExpense' },
     { key: 'utilities',    label: 'Ride Utilities',    correct: 'expense', histKey: 'utilityExpense' },
     { key: 'construction', label: 'Construction',      correct: 'expense', histKey: 'constructionExpense' },
+    { key: 'marketing',   label: 'Marketing',          correct: 'expense', histKey: 'marketingExpense' },
   ],
 
   // Wire up drag-and-drop listeners on the bank and both drop zones.
