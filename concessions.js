@@ -58,7 +58,7 @@ const Concessions = {
 
   calcFood(weeklyAttendance) {
     if (this.calcFoodTiles() === 0) {
-      return { revenue: 0, mealsSold: 0, mealsWanted: 0, mealsServed: 0 };
+      return { revenue: 0, mealsSold: 0, mealsWanted: 0, mealsServed: 0, itemSales: [], mealSales: [] };
     }
 
     // ── Worker throughput cap ─────────────────────────────────────────────────
@@ -103,11 +103,11 @@ const Concessions = {
         const item = this.menuItems.find(m => m.id === id);
         return s + (item ? item.cost * count : 0);
       }, 0);
-      options.push({ type: 'meal', meal, mealValue, price: meal.price, ingredientCost });
+      options.push({ type: 'meal', meal, mealIndex: mi, mealValue, price: meal.price, ingredientCost });
     });
 
     if (options.length === 0) {
-      return { revenue: 0, mealsSold: 0, mealsWanted: 0, mealsServed: 0 };
+      return { revenue: 0, mealsSold: 0, mealsWanted: 0, mealsServed: 0, itemSales: [], mealSales: [] };
     }
 
     // Largest meals are served first so that stock shortage cascades downward.
@@ -146,6 +146,10 @@ const Concessions = {
     // are drained incrementally. When stock runs out for an option, the unmet
     // demand rolls over to the next option. Capacity exhaustion is terminal —
     // those buyers cannot be served regardless of what they wanted.
+    // Per-item and per-meal sold counters, parallel to menuItems / meals arrays.
+    const itemSoldCounts = this.menuItems.map(() => 0);
+    const mealSoldCounts = this.meals.map(() => 0);
+
     let remainingCapacity = workerCapacity;
     let totalRevenue      = 0;
     let totalSold         = 0;
@@ -172,16 +176,22 @@ const Concessions = {
       // Capacity shortage does not — those buyers simply leave.
       rollover = Math.max(0, totalDemand - liveMax);
 
-      // Deduct from freezer stock.
+      // Deduct from freezer stock and record sales by type.
       if (opt.type === 'item') {
+        itemSoldCounts[opt.index] += sell;
         if (!this.menuItems[opt.index].alwaysAvailable) {
           this.stock[opt.index] = Math.max(0, this.stock[opt.index] - sell);
         }
       } else {
+        mealSoldCounts[opt.mealIndex] += sell;
         opt.meal.items.forEach(({ id, count }) => {
           const idx = this.menuItems.findIndex(m => m.id === id);
-          if (idx >= 0 && !this.menuItems[idx].alwaysAvailable) {
-            this.stock[idx] = Math.max(0, this.stock[idx] - sell * count);
+          if (idx >= 0) {
+            // Ingredients consumed by a combo count toward that ingredient's total.
+            itemSoldCounts[idx] += sell * count;
+            if (!this.menuItems[idx].alwaysAvailable) {
+              this.stock[idx] = Math.max(0, this.stock[idx] - sell * count);
+            }
           }
         });
       }
@@ -192,6 +202,10 @@ const Concessions = {
       mealsSold:   totalSold,
       mealsWanted,
       mealsServed: Math.round(Math.min(mealsWanted, workerCapacity)),
+      // Per-item totals include ingredients consumed inside combo meals.
+      itemSales:   this.menuItems.map((item, i) => ({ id: item.id, name: item.name, sold: itemSoldCounts[i] })),
+      // Per-combo totals count each named meal as one sale regardless of its ingredient count.
+      mealSales:   this.meals.map((meal, mi) => ({ name: meal.name, sold: mealSoldCounts[mi] })),
     };
   },
 
