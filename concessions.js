@@ -35,11 +35,15 @@ const Concessions = {
   // When true the standing order persists after each delivery; false clears it.
   repeatOrder: true,
 
+  // Player-created combo meals: [{ name, itemIds: string[], price }].
+  meals: [],
+
   // Set up initial state; called once from initHUD().
   init() {
     this.prices        = this.menuItems.map(item => Math.max(item.cost * 2, item.cost + 2));
     this.stock         = this.menuItems.map(() => 0);
     this.standingOrder = this.menuItems.map(() => 0);
+    this.meals         = [];
   },
 
   // Total active tiles across all placed food shops.
@@ -392,5 +396,181 @@ const Concessions = {
       row.appendChild(prepEl);
       container.appendChild(row);
     });
+
+    // Meals section lives below the solo item rows.
+    const mealsSection = document.createElement('div');
+    mealsSection.className = 'con-meals-section';
+    this._buildMealsSection(mealsSection);
+    container.appendChild(mealsSection);
+  },
+
+  // Render (or re-render) the saved meals list and the Add Meal button into section.
+  _buildMealsSection(section) {
+    section.innerHTML = '';
+
+    const divider = document.createElement('div');
+    divider.className = 'con-section-divider';
+    divider.textContent = 'Combo Meals';
+    section.appendChild(divider);
+
+    this.meals.forEach((meal, mi) => {
+      section.appendChild(this._makeMealCard(meal, mi, section));
+    });
+
+    const addBtn = document.createElement('button');
+    addBtn.className = 'con-add-meal-btn';
+    addBtn.textContent = '+ Add Meal';
+    addBtn.addEventListener('click', () => {
+      section.innerHTML = '';
+      this._buildMealBuilder(section);
+    });
+    section.appendChild(addBtn);
+  },
+
+  // Build a single saved-meal card that shows chips, an editable price, and a delete button.
+  _makeMealCard(meal, mealIndex, section) {
+    const card = document.createElement('div');
+    card.className = 'con-meal-card';
+
+    // Top row: name, price input, delete button.
+    const top = document.createElement('div');
+    top.className = 'con-meal-top';
+
+    const nameEl = document.createElement('span');
+    nameEl.className = 'con-meal-name';
+    nameEl.textContent = meal.name;
+
+    const priceWrap = document.createElement('span');
+    priceWrap.className = 'con-price-wrap';
+    priceWrap.innerHTML = '<span class="con-price-dollar">$</span>';
+    const priceInput = document.createElement('input');
+    priceInput.type      = 'number';
+    priceInput.className = 'con-price-input';
+    priceInput.min       = '0';
+    priceInput.step      = '0.25';
+    priceInput.value     = meal.price.toFixed(2);
+    priceInput.addEventListener('change', () => {
+      const val = parseFloat(priceInput.value);
+      if (!isNaN(val) && val >= 0) meal.price = val;
+      else priceInput.value = meal.price.toFixed(2);
+    });
+    priceWrap.appendChild(priceInput);
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className   = 'con-meal-delete';
+    deleteBtn.textContent = '×';
+    deleteBtn.addEventListener('click', () => {
+      this.meals.splice(mealIndex, 1);
+      this._buildMealsSection(section);
+    });
+
+    top.appendChild(nameEl);
+    top.appendChild(priceWrap);
+    top.appendChild(deleteBtn);
+    card.appendChild(top);
+
+    // Item chips below the top row.
+    const chips = document.createElement('div');
+    chips.className = 'con-meal-chips';
+    meal.itemIds.forEach(id => {
+      const item = this.menuItems.find(m => m.id === id);
+      if (!item) return;
+      const chip = document.createElement('span');
+      chip.className   = 'con-meal-chip';
+      chip.textContent = item.name;
+      chips.appendChild(chip);
+    });
+    card.appendChild(chips);
+
+    return card;
+  },
+
+  // Render the inline meal builder form into section.
+  _buildMealBuilder(section) {
+    const builder = document.createElement('div');
+    builder.className = 'con-builder';
+
+    // Meal name input.
+    const nameInput = document.createElement('input');
+    nameInput.type        = 'text';
+    nameInput.className   = 'con-builder-name';
+    nameInput.placeholder = 'Meal name (e.g. Value Combo)';
+    nameInput.maxLength   = 40;
+    builder.appendChild(nameInput);
+
+    // Toggleable item pills. Selecting pills auto-suggests a price.
+    const pillsWrap  = document.createElement('div');
+    pillsWrap.className = 'con-builder-pills';
+    const selectedIds = new Set();
+
+    // Price input defined here so the pill handler can reference it.
+    const priceInput = document.createElement('input');
+    priceInput.type      = 'number';
+    priceInput.className = 'con-price-input';
+    priceInput.min       = '0';
+    priceInput.step      = '0.25';
+    priceInput.value     = '0.00';
+    priceInput.addEventListener('input', () => { priceInput.dataset.edited = '1'; });
+
+    this.menuItems.forEach((item, i) => {
+      const pill = document.createElement('button');
+      pill.type      = 'button';
+      pill.className = 'con-builder-pill';
+      pill.textContent = item.name;
+      pill.addEventListener('click', () => {
+        if (selectedIds.has(item.id)) {
+          selectedIds.delete(item.id);
+          pill.classList.remove('con-builder-pill--active');
+        } else {
+          selectedIds.add(item.id);
+          pill.classList.add('con-builder-pill--active');
+        }
+        // Suggest a price equal to the sum of selected items unless the player
+        // has already manually typed a value.
+        if (!priceInput.dataset.edited) {
+          const sum = [...selectedIds].reduce((s, id) => {
+            const idx = this.menuItems.findIndex(m => m.id === id);
+            return s + (idx >= 0 ? this.prices[idx] : 0);
+          }, 0);
+          priceInput.value = sum.toFixed(2);
+        }
+      });
+      pillsWrap.appendChild(pill);
+    });
+    builder.appendChild(pillsWrap);
+
+    // Footer: price, Save, Cancel.
+    const footer = document.createElement('div');
+    footer.className = 'con-builder-footer';
+
+    const priceWrap = document.createElement('span');
+    priceWrap.className = 'con-price-wrap';
+    priceWrap.innerHTML = '<span class="con-price-dollar">$</span>';
+    priceWrap.appendChild(priceInput);
+
+    const saveBtn = document.createElement('button');
+    saveBtn.type      = 'button';
+    saveBtn.className = 'con-builder-save';
+    saveBtn.textContent = 'Save';
+    saveBtn.addEventListener('click', () => {
+      const name  = nameInput.value.trim();
+      const price = parseFloat(priceInput.value);
+      if (!name || selectedIds.size === 0 || isNaN(price) || price < 0) return;
+      this.meals.push({ name, itemIds: [...selectedIds], price });
+      this._buildMealsSection(section);
+    });
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.type      = 'button';
+    cancelBtn.className = 'con-builder-cancel';
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.addEventListener('click', () => this._buildMealsSection(section));
+
+    footer.appendChild(priceWrap);
+    footer.appendChild(saveBtn);
+    footer.appendChild(cancelBtn);
+    builder.appendChild(footer);
+
+    section.appendChild(builder);
   },
 };

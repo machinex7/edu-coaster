@@ -2315,4 +2315,46 @@
 .con-mode-label  { display: flex; align-items: center; gap: 6px;
   font-size: 0.78rem; color: #9ca3af; cursor: pointer; }
 .con-mode-label input { accent-color: #fbbf24; cursor: pointer; }
+
+/* ── Combo meals ── */
+.con-section-divider { padding: 10px 12px 6px; margin-top: 4px;
+  font-size: 0.68rem; font-weight: 700; letter-spacing: 0.05em;
+  text-transform: uppercase; color: #6b7280; border-top: 2px solid #374151; }
+
+.con-meal-card { padding: 8px 12px 10px; border-bottom: 1px solid #1f2937; }
+.con-meal-top  { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.con-meal-name { flex: 1; font-size: 0.82rem; font-weight: 600; color: #f3f4f6; }
+.con-meal-delete { background: none; border: none; color: #6b7280;
+  font-size: 1.1rem; line-height: 1; cursor: pointer; padding: 0 2px; }
+.con-meal-delete:hover { color: #f87171; }
+
+.con-meal-chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.con-meal-chip  { font-size: 0.68rem; padding: 2px 7px; border-radius: 10px;
+  background: #1f2937; border: 1px solid #374151; color: #9ca3af; }
+
+.con-add-meal-btn { display: block; width: calc(100% - 24px); margin: 10px 12px;
+  padding: 7px; background: none; border: 1px dashed #374151; border-radius: 5px;
+  color: #6b7280; font-size: 0.78rem; cursor: pointer; text-align: center; }
+.con-add-meal-btn:hover { border-color: #6b7280; color: #d1d5db; }
+
+.con-builder { padding: 10px 12px 12px; border-bottom: 1px solid #1f2937; }
+
+.con-builder-name { width: 100%; box-sizing: border-box; background: #1f2937;
+  border: 1px solid #374151; border-radius: 4px; color: #f3f4f6;
+  font-size: 0.82rem; padding: 6px 8px; margin-bottom: 8px; }
+.con-builder-name:focus { outline: none; border-color: #6b7280; }
+
+.con-builder-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+.con-builder-pill  { padding: 4px 10px; background: #1f2937; border: 1px solid #374151;
+  border-radius: 12px; color: #9ca3af; font-size: 0.75rem; cursor: pointer; }
+.con-builder-pill:hover { border-color: #6b7280; color: #d1d5db; }
+.con-builder-pill--active { background: #1e3a5f; border-color: #3b82f6; color: #93c5fd; }
+
+.con-builder-footer { display: flex; align-items: center; gap: 8px; }
+.con-builder-save   { padding: 5px 14px; background: #1e3a5f; border: 1px solid #3b82f6;
+  border-radius: 4px; color: #93c5fd; font-size: 0.78rem; cursor: pointer; }
+.con-builder-save:hover { background: #1d4ed8; color: #fff; }
+.con-builder-cancel { padding: 5px 10px; background: none; border: 1px solid #374151;
+  border-radius: 4px; color: #6b7280; font-size: 0.78rem; cursor: pointer; }
+.con-builder-cancel:hover { border-color: #6b7280; color: #d1d5db; }
 .vp-person--gray      { color: #4b5563; }
