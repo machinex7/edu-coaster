@@ -55,6 +55,7 @@ const History = {
       mealsServed:         report.food.mealsServed,
       mealSatisfaction:    report.food.mealSatisfaction,
       parkingPrice:           Finance.parkingPrice,
+      parkingAmenityBonus:    Finance.parkingAmenityBonus,
       parkingAltTransport:    report.altTransportVisitors,
       parkingSpendingMult:    report.parkingSpendingMultiplier,
       surveys:             Survey.drainPending(),

@@ -2576,3 +2576,56 @@
 }
 .parking-stat-label { color: #9ca3af; }
 .parking-stat-value { color: #d1d5db; font-weight: 600; }
+
+/* Parking amenity cards */
+.parking-amenity-note {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  line-height: 1.4;
+}
+
+/* One amenity row: name+bonus on the left, button or status on the right. */
+.parking-amenity-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid #374151;
+}
+.parking-amenity-row:last-child { border-bottom: none; }
+
+/* Dim the whole row once purchased. */
+.parking-amenity-owned { opacity: 0.6; }
+
+.parking-amenity-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.parking-amenity-label { font-size: 0.82rem; color: #d1d5db; }
+.parking-amenity-bonus { font-size: 0.72rem; color: #34d399; }
+
+/* Purchase button — reuses price-apply-btn shape but distinct color. */
+.parking-amenity-btn {
+  padding: 4px 10px;
+  background: #1d4ed8;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.parking-amenity-btn:disabled {
+  background: #374151;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+.parking-amenity-btn:not(:disabled):hover { background: #2563eb; }
+
+.parking-amenity-status {
+  font-size: 0.75rem;
+  color: #4ade80;
+  font-weight: 600;
+}

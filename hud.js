@@ -913,14 +913,15 @@ function _buildInvPurchasingView() {
 }
 
 // ── Parking panel ──────────────────────────────────────────────────────────
-// Builds the parking management panel, showing price control and per-bracket
-// affordability breakdown. Unlocked by the Parking Fees research item.
+// Builds the parking management panel, showing price control, per-bracket
+// affordability breakdown, and (if amenities research is done) one-time
+// upgrade purchases. Unlocked by the Parking Fees research item.
 function buildParkingPanel() {
   const body = document.getElementById('parking-panel-body');
   if (!body) return;
 
   const inflation  = Population.cumulativeInflation;
-  const threshold  = 10 * inflation;
+  const threshold  = (10 + Finance.parkingAmenityBonus) * inflation;
   const price      = Finance.parkingPrice;
   const brackets   = Population.INCOME_BRACKETS;
 
@@ -945,6 +946,30 @@ function buildParkingPanel() {
       </div>`;
   }).join('');
 
+  // Amenity cards — only shown once Parking Lot Amenities research is complete.
+  const amenitiesUnlocked = Research.completed.has(RESEARCH_ID.PARKING_LOT_AMENITIES);
+  const amenitySection = amenitiesUnlocked ? `
+    <div class="parking-section">
+      <div class="parking-section-title">Lot Amenities</div>
+      <div class="parking-amenity-note">One-time purchases that raise the free-zone threshold, letting you charge more without affecting in-park spending.</div>
+      ${Finance.PARKING_AMENITIES.map(a => {
+        const owned = Finance.purchasedAmenities.has(a.id);
+        const canAfford = money >= a.cost;
+        return `
+          <div class="parking-amenity-row${owned ? ' parking-amenity-owned' : ''}">
+            <div class="parking-amenity-info">
+              <span class="parking-amenity-label">${a.label}</span>
+              <span class="parking-amenity-bonus">+$${a.bonus} threshold</span>
+            </div>
+            ${owned
+              ? `<span class="parking-amenity-status">Installed</span>`
+              : `<button class="parking-amenity-btn" data-amenity="${a.id}" ${canAfford ? '' : 'disabled'}>
+                   $${a.cost.toLocaleString()}
+                 </button>`}
+          </div>`;
+      }).join('')}
+    </div>` : '';
+
   body.innerHTML = `
     <div class="parking-section">
       <div class="price-row">
@@ -967,6 +992,7 @@ function buildParkingPanel() {
       <div class="parking-section-title">Income Bracket Affordability</div>
       ${bracketRows}
     </div>
+    ${amenitySection}
     <div class="parking-section">
       <div class="parking-stat-row">
         <span class="parking-stat-label">Alt-transport visitors last round</span>
@@ -987,6 +1013,12 @@ function buildParkingPanel() {
       Finance.parkingPrice = v;
       buildParkingPanel();
     }
+  });
+
+  body.querySelectorAll('.parking-amenity-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (Finance.buyParkingAmenity(btn.dataset.amenity)) buildParkingPanel();
+    });
   });
 }
 

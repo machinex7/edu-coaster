@@ -152,5 +152,12 @@
     "description": "Establish a paid parking program. Unlocks the Parking panel where you can set per-vehicle fees and track how pricing affects visitor attendance and in-park spending.",
     "cost": 5,
     "requires": []
+  },
+  {
+    "id": "parking_lot_amenities",
+    "name": "Parking Lot Amenities",
+    "description": "Invest in the parking experience with music, art, and murals. Each one-time purchase permanently raises the fee threshold at which visitors start to feel overcharged.",
+    "cost": 4,
+    "requires": ["parking_fees"]
   }
 ]

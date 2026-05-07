@@ -229,6 +229,33 @@ const Finance = {
   // Count of visitors who arrived via alternative transport this round (no parking revenue).
   altTransportVisitors: 0,
 
+  // One-time parking lot upgrades that raise the free-zone threshold.
+  // Each purchase permanently adds its bonus (in base $) to the threshold before inflation scaling.
+  PARKING_AMENITIES: Object.freeze([
+    { id: 'speakers', label: 'Speakers & Music',  cost: 6000,  bonus: 2 },
+    { id: 'murals',   label: 'Murals',            cost: 9000,  bonus: 3 },
+    { id: 'art',      label: 'Art Installations', cost: 15000, bonus: 4 },
+  ]),
+
+  // Set of amenity ids that have been purchased this game.
+  purchasedAmenities: new Set(),
+
+  // Sum of bonus dollars from all purchased amenities. Added to the $10 base threshold before
+  // multiplying by cumulativeInflation, so the benefit compounds with visitor budget growth.
+  parkingAmenityBonus: 0,
+
+  // Purchase a parking amenity by id. Deducts cost from money immediately.
+  // Returns false if already purchased, research not done, or insufficient funds.
+  buyParkingAmenity(id) {
+    const amenity = this.PARKING_AMENITIES.find(a => a.id === id);
+    if (!amenity || this.purchasedAmenities.has(id)) return false;
+    if (money < amenity.cost) return false;
+    money -= amenity.cost;
+    this.purchasedAmenities.add(id);
+    this.parkingAmenityBonus += amenity.bonus;
+    return true;
+  },
+
   advancePriceExhaustion() {
     this.priceExhaustion = Math.max(0, this.priceExhaustion - 1);
   },
@@ -257,7 +284,7 @@ const Finance = {
     }
 
     const inflation       = Population.cumulativeInflation;
-    const threshold       = 10 * inflation;
+    const threshold       = (10 + this.parkingAmenityBonus) * inflation;
     const weeklyVehicles  = Math.floor(dailyDemand * 7 / 3);  // 1 vehicle per 3 visitors
 
     // Spending multiplier: each dollar above the free threshold cuts food/merch spending by 0.25%.
