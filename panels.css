@@ -2249,6 +2249,169 @@
   color: #d1d5db;
 }
 
+/* ── Membership Plans section (inside Admission panel) ── */
+
+/* Text inputs in forms share the same look as number inputs */
+.form-field input[type="text"] {
+  width: 100%;
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 4px;
+  color: #e5e7eb;
+  font-size: 0.82rem;
+  padding: 5px 8px;
+  box-sizing: border-box;
+}
+
+.form-field input[type="text"]:focus {
+  outline: none;
+  border-color: #3b82f6;
+}
+
+/* Full-width toolbar holding the "+ New Plan" button */
+.membership-toolbar {
+  padding: 6px 10px 6px;
+  flex-shrink: 0;
+}
+
+/* Primary add button — mirrors .new-discount-btn */
+.new-plan-btn {
+  width: 100%;
+  padding: 7px;
+  background: #1d4ed8;
+  border: none;
+  border-radius: 5px;
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.new-plan-btn:hover { background: #2563eb; }
+
+.new-plan-btn.open {
+  background: #374151;
+  color: #9ca3af;
+}
+
+.new-plan-btn.open:hover { background: #4b5563; color: #e5e7eb; }
+
+/* Creation form: extends .posting-form with a two-column row layout */
+.membership-form {
+  margin: 0 10px 10px;
+}
+
+/* Side-by-side pair of fields (price/guests, food%/merch%) */
+.membership-form-row {
+  display: flex;
+  gap: 10px;
+}
+
+.membership-form-row .form-field {
+  flex: 1;
+}
+
+/* Inline checkbox + label for the parking toggle */
+.membership-checkbox-label {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  margin-bottom: 0 !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  font-size: 0.8rem !important;
+  color: #d1d5db !important;
+}
+
+.membership-checkbox-label input[type="checkbox"] {
+  width: 14px;
+  height: 14px;
+  accent-color: #3b82f6;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+/* Scrollable list of plan cards */
+.membership-list {
+  padding: 0 10px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Individual plan card */
+.membership-card {
+  background: #111827;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  padding: 10px;
+}
+
+/* Top row: plan name (left) + annual price (right) */
+.membership-card-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.membership-card-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #e5e7eb;
+}
+
+.membership-card-price {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #60a5fa;
+  white-space: nowrap;
+}
+
+/* Key–value rows for perks */
+.membership-card-details {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-bottom: 10px;
+}
+
+.plan-detail-row {
+  display: flex;
+  gap: 6px;
+  font-size: 0.73rem;
+}
+
+/* Dim uppercase key label */
+.plan-detail-key {
+  color: #6b7280;
+  font-weight: 700;
+  text-transform: uppercase;
+  font-size: 0.65rem;
+  letter-spacing: 0.05em;
+  min-width: 44px;
+  padding-top: 1px;
+}
+
+.plan-detail-val {
+  color: #d1d5db;
+}
+
+/* Green highlight for "Included" parking perk */
+.plan-perk-yes {
+  display: inline-block;
+  padding: 1px 6px;
+  background: #14532d;
+  color: #86efac;
+  border-radius: 3px;
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
 /* ── Concessions panel ── */
 #panel-concessions,
 #panel-concessions .side-panel-inner { width: 480px; }

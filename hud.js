@@ -1083,7 +1083,8 @@ function buildFinancialPanel() {
     <div class="financial-section">
       <div class="financial-section-header">Pricing Controls</div>
       <div class="price-list">${rows}</div>
-    </div>`;
+    </div>
+    <div class="financial-section" id="membership-section"></div>`;
 
   document.querySelectorAll('.price-apply-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1095,6 +1096,8 @@ function buildFinancialPanel() {
       input.value = item.getValue();
     });
   });
+
+  Membership.buildSection();
 }
 
 /* buildBankingPanel - renders the Banking panel: loan application and active loan status */
