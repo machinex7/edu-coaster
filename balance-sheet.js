@@ -129,11 +129,11 @@ const BalanceSheet = {
     // Uses weekly payment × 52 as an approximation of the current-year obligation.
     let currentLoanPortion  = 0;
     let longtermLoanPortion = 0;
-    for (const loan of Finance.activeLoans) {
+    for (const loan of Banking.activeLoans) {
       if (loan.weeksRemaining <= 52) {
         currentLoanPortion += loan.balance;
       } else {
-        const weeklyPayment  = Finance.calcLoanPayment(loan.balance, loan.rate, loan.weeksRemaining).total;
+        const weeklyPayment  = Banking.calcLoanPayment(loan.balance, loan.rate, loan.weeksRemaining).total;
         const thisYearAmount = Math.min(weeklyPayment * 52, loan.balance);
         currentLoanPortion  += thisYearAmount;
         longtermLoanPortion += loan.balance - thisYearAmount;

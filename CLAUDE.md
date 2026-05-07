@@ -19,7 +19,7 @@ python3 -m http.server   # must be HTTP — fetch() won't work over file://
 ## Script load order (matters)
 
 ```
-constants.js → population.js → game.js → grid.js → shopping.js → finance.js → staff.js → staff-panel.js → security.js → history.js → pl-statement.js → balance-sheet.js → concessions.js → hud.js
+constants.js → population.js → game.js → grid.js → shopping.js → banking.js → finance.js → staff.js → staff-panel.js → security.js → history.js → pl-statement.js → balance-sheet.js → concessions.js → hud.js
 ```
 
 ---
