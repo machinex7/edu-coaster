@@ -225,6 +225,7 @@ function initHUD() {
   document.getElementById('next-round-btn').addEventListener('click', advanceRound);
   document.getElementById('modal-close-btn').addEventListener('click', hideRoundSummary);
   PLStatement.init();
+  BalanceSheet.init();
   Concessions.init();
   Staff.initPanel();
   initInventoryPanel();
@@ -269,6 +270,8 @@ function advanceRound() {
   if (round % 13 === 1 && round > 1) Awards.checkQuarterly();
   // Schedule the P&L exercise to appear after this round's summary closes.
   if (round % 13 === 0) PLStatement.pending = true;
+  // Schedule the annual balance sheet to chain after the P&L at year-end.
+  if (round % 52 === 0) BalanceSheet.pending = true;
   updateLockedPanels();
   updateHUD();
   refreshRidesPanel();
@@ -322,8 +325,10 @@ function showRoundSummary(report) {
 
 function hideRoundSummary() {
   document.getElementById('round-modal').classList.add('hidden');
-  // Chain into the P&L exercise at the end of each quarter.
-  if (PLStatement.pending) PLStatement.show();
+  // Chain into the P&L exercise at the end of each quarter (P&L itself chains
+  // to the balance sheet at year-end via PLStatement.hide).
+  if (PLStatement.pending)      PLStatement.show();
+  else if (BalanceSheet.pending) BalanceSheet.show();
 }
 
 // Converts the current round into "Week W, QN, YYYY".

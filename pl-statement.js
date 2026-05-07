@@ -189,9 +189,10 @@ const PLStatement = {
     resultEl.classList.remove('hidden');
   },
 
-  // Close the modal.
+  // Close the modal and chain to the annual balance sheet when due.
   hide() {
     document.getElementById('pl-modal').classList.add('hidden');
+    if (BalanceSheet.pending) BalanceSheet.show();
   },
 
 };

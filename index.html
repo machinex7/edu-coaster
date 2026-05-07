@@ -292,6 +292,29 @@
     </div>
   </div>
 
+  <!-- Annual balance sheet exercise modal -->
+  <div id="bs-modal" class="modal-overlay hidden">
+    <div class="modal-card bs-modal-card">
+      <div class="modal-title">Annual Balance Sheet</div>
+      <div class="modal-date" id="bs-year-label"></div>
+      <p class="bs-instructions">Drag each item into the correct column — Assets or Liabilities.</p>
+      <div id="bs-bank" class="bs-bank"></div>
+      <div class="bs-zones">
+        <div class="bs-zone" id="bs-zone-asset">
+          <div class="bs-zone-header bs-asset-header">Assets</div>
+          <div class="bs-zone-items" id="bs-zone-asset-items"></div>
+        </div>
+        <div class="bs-zone" id="bs-zone-liability">
+          <div class="bs-zone-header bs-liability-header">Liabilities</div>
+          <div class="bs-zone-items" id="bs-zone-liability-items"></div>
+        </div>
+      </div>
+      <div id="bs-result" class="bs-result hidden"></div>
+      <button id="bs-submit-btn" class="modal-close-btn">Check My Answer</button>
+      <button id="bs-close-btn" class="modal-close-btn hidden">Continue &rsaquo;</button>
+    </div>
+  </div>
+
   <div id="notification-stack"></div>
 
   <script src="constants.js"></script>
@@ -315,6 +338,7 @@
   <script src="marketing.js"></script>
   <script src="visitor-profile.js"></script>
   <script src="pl-statement.js"></script>
+  <script src="balance-sheet.js"></script>
   <script src="concessions.js"></script>
   <script src="hud.js"></script>
 </body>
