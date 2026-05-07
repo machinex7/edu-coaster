@@ -120,3 +120,5 @@ The Bathroom expansion. prices, more mess from rides, mess from too many people 
 Edu modes. Let teachers pick a focus and only enable features that help educate on that focus. Marketing. Inventory Management. Budgeting. Park Management. People Management.
 
 Taxes! Make people fill out a tax form for their business and then they have to have the cash on hand to pay taxes when they come due.
+
+Membership plans. I meant to so this and i never did.
