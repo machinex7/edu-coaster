@@ -1114,6 +1114,12 @@ const Finance = {
       ? Math.min(1, 0.5 + 0.5 * food.mealsServed / food.mealsWanted)
       : 0.5;
     this.calcExcitement(weeklyAttendance); // uses this round's mess, security, and meal satisfaction
+
+    // Membership sales: must run after calcExcitement() so Finance.parkExcitement
+    // already reflects this round's visitor experience (not last round's).
+    const membershipRevenue = Membership.calcSales(weeklyAttendance);
+    money += membershipRevenue;
+
     this.advancePriceExhaustion();    // decay price fatigue by 1
     if (Unlock.SECURITY) Security.advanceOpinion(security.unhandled); // decay then add unhandled incidents
     const populationEvents = Population.populationEvents.map(e => ({ ...e }));
@@ -1148,7 +1154,8 @@ const Finance = {
       shopRevenue,
       foodRevenue,
       discountLoss: Discounts.lastRoundCost,
-      totalIncome: gateRevenue + parkingRevenue + shopRevenue + foodRevenue,
+      membershipRevenue,
+      totalIncome: gateRevenue + parkingRevenue + shopRevenue + foodRevenue + membershipRevenue,
       staffCosts,
       utilityCosts,
       constructionCosts,

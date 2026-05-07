@@ -1,6 +1,18 @@
-// membership.js — Membership Plans: data model and Admission-panel section UI.
+// membership.js — Membership Plans: data model, sales simulation, and Admission-panel UI.
 // Plans let visitors pay an annual fee in exchange for free gate admission,
 // optional free parking, and percentage discounts on food and merchandise.
+
+// Fraction of eligible visitor-instances that convert to a membership purchase each week,
+// before value and excitement modifiers are applied. Tune this to control market pace.
+const MEMBERSHIP_BUY_RATE = 0.04;
+
+// Hard cap on purchase probability per visitor-instance per week.
+// Prevents runaway sales on extremely good-value plans at low attendance.
+const MEMBERSHIP_MAX_PROB = 0.10;
+
+// Highest annualVisits value across all HOUSEHOLD_SIZES brackets (Small Family = 2.5).
+// Used to normalise household visit-motivation to a 0–1 scale.
+const MEMBERSHIP_MAX_HOUSEHOLD_VISITS = 2.5;
 
 const Membership = {
 
@@ -12,6 +24,103 @@ const Membership = {
 
   // Whether the new-plan creation form is currently visible.
   _formOpen: false,
+
+  // ── Sales simulation ────────────────────────────────────────────────────────
+
+  // Called once per round by Finance.processRound() after calcExcitement() runs.
+  // Returns total membership revenue earned this round (caller adds it to money).
+  calcSales(weeklyAttendance) {
+    if (this.plans.length === 0 || weeklyAttendance <= 0) return 0;
+
+    // ── Per-visitor satisfaction score ──────────────────────────────────────
+    // Finance.parkExcitement = weeklyAttendance × rideOpinion × securityFactor
+    //                         × mealSatisfaction / messFactor
+    // Dividing by weeklyAttendance cancels attendance out, leaving a pure
+    // quality-per-visitor ratio.  A well-run park ≈ 0.6–0.9; excellent ≈ 1.0+.
+    // The happier each visitor was, the more likely they are to buy a pass.
+    const satisfactionPerVisitor = Finance.parkExcitement / weeklyAttendance;
+
+    // ── Attendance-composition weights (chance × favor) ─────────────────────
+    // The demand model weights each bracket by chance × favor, not chance alone.
+    // Favor represents earned goodwill; high-favor brackets are over-represented
+    // in who actually showed up this round, so we use the same weighting here.
+    const distanceTotalWeight  = Population.DISTANCE_BRACKETS.reduce((s, d) => s + d.chance * d.favor, 0);
+    const householdTotalWeight = Population.HOUSEHOLD_SIZES.reduce((s, h) => s + h.chance * h.favor, 0);
+
+    let totalRevenue = 0;
+
+    for (const plan of this.plans) {
+      // Find the single household-size bracket this plan is designed for.
+      // Households only buy a plan that covers their group size — a couple won't
+      // pay for unused slots, and a family of 5 won't buy a 2-person plan.
+      const hBracket = this._householdBracketFor(plan.guestCount);
+      if (!hBracket) { plan.salesThisRound = 0; continue; }
+
+      // Fraction of weekly visitors whose household size matches this plan.
+      const hFraction = (hBracket.chance * hBracket.favor) / householdTotalWeight;
+
+      // How motivated this household type is to buy a recurring pass, normalised
+      // to 0–1.  Small families (2.5 visits/yr) score higher than solos (1.0/yr).
+      const propensity = hBracket.annualVisits / MEMBERSHIP_MAX_HOUSEHOLD_VISITS;
+
+      let newSales = 0;
+
+      for (const D of Population.DISTANCE_BRACKETS) {
+        // ── Break-even check ───────────────────────────────────────────────
+        // A household only buys the plan if it saves them money vs. paying gate
+        // each visit.  annualVisits tells us how often a household at this
+        // distance actually comes, so it determines whether the plan pays off.
+        const admissionSavings = D.annualVisits * Finance.gatePrice * plan.guestCount;
+        const parkingSavings   = plan.freeParking ? D.annualVisits * Finance.parkingPrice : 0;
+        const netValue         = admissionSavings + parkingSavings - plan.annualPrice;
+
+        // No financial incentive for this distance band — skip entirely.
+        if (netValue <= 0) continue;
+
+        // ── Value ratio ────────────────────────────────────────────────────
+        // How good a deal is the plan relative to its cost?
+        // netValue = $400 on a $200 plan → ratio = 2.0 (saves twice what it costs).
+        // A ratio near 0 means marginal savings; higher means compelling value.
+        const valueRatio = netValue / plan.annualPrice;
+
+        // ── Distance-bracket attendance fraction ───────────────────────────
+        const dFraction = (D.chance * D.favor) / distanceTotalWeight;
+
+        // ── Per-visitor-instance purchase probability ──────────────────────
+        // We multiply by RATE then divide by D.annualVisits to de-duplicate
+        // repeat visitors.  A Local household (6 visits/yr) shows up in 6 weekly
+        // attendance samples over the year.  Without the division we'd sell them
+        // a membership up to 6× as often as intended.  Dividing converts
+        // "probability per visitor-instance" into "probability per unique household
+        // per visit", so the annual conversion rate works out correctly regardless
+        // of how often that household visits.
+        const prob = Math.min(
+          valueRatio * satisfactionPerVisitor * propensity * MEMBERSHIP_BUY_RATE / D.annualVisits,
+          MEMBERSHIP_MAX_PROB,
+        );
+
+        // ── Expected new sales from this (distance × household) cell ───────
+        newSales += weeklyAttendance * dFraction * hFraction * prob;
+      }
+
+      plan.salesThisRound  = Math.floor(newSales);
+      plan.totalMembers    = (plan.totalMembers ?? 0) + plan.salesThisRound;
+      totalRevenue        += plan.salesThisRound * plan.annualPrice;
+    }
+
+    return totalRevenue;
+  },
+
+  // Maps a plan's guestCount to the matching HOUSEHOLD_SIZES bracket.
+  // Solo=1, Couple=2, Small Family=3–4, Large Family=5+.
+  _householdBracketFor(guestCount) {
+    if (guestCount === 1) return Population.HOUSEHOLD_SIZES.find(h => h.name.startsWith('Solo'));
+    if (guestCount === 2) return Population.HOUSEHOLD_SIZES.find(h => h.name.startsWith('Couple'));
+    if (guestCount <= 4)  return Population.HOUSEHOLD_SIZES.find(h => h.name.includes('Small'));
+    return Population.HOUSEHOLD_SIZES.find(h => h.name.includes('Large'));
+  },
+
+  // ── Panel UI ────────────────────────────────────────────────────────────────
 
   // Populates #membership-section inside the Admission panel.
   // Called by buildFinancialPanel() in hud.js after the pricing controls render.
@@ -127,6 +236,8 @@ const Membership = {
         freeParking,
         foodDiscountPct:  foodPct,
         merchDiscountPct: merchPct,
+        salesThisRound:  0,
+        totalMembers:    0,
       });
 
       this._formOpen = false;
@@ -134,7 +245,7 @@ const Membership = {
     });
   },
 
-  // Returns HTML for a single membership plan card.
+  // Returns HTML for a single membership plan card, including this-round sales stats.
   _planCardHtml(plan) {
     const coverageLabel = `${plan.guestCount} ${plan.guestCount === 1 ? 'person' : 'people'}`;
 
@@ -143,6 +254,13 @@ const Membership = {
       plan.foodDiscountPct  > 0 ? `<div class="plan-detail-row"><span class="plan-detail-key">Food</span><span class="plan-detail-val">${plan.foodDiscountPct}% off</span></div>` : '',
       plan.merchDiscountPct > 0 ? `<div class="plan-detail-row"><span class="plan-detail-key">Merch</span><span class="plan-detail-val">${plan.merchDiscountPct}% off</span></div>` : '',
     ].join('');
+
+    const statsHtml = plan.totalMembers > 0
+      ? `<div class="plan-stats">
+           <span class="plan-stat">${plan.totalMembers.toLocaleString()} members</span>
+           ${plan.salesThisRound > 0 ? `<span class="plan-stat-new">+${plan.salesThisRound} this week</span>` : ''}
+         </div>`
+      : '';
 
     return `
       <div class="membership-card">
@@ -157,6 +275,7 @@ const Membership = {
           </div>
           ${perks}
         </div>
+        ${statsHtml}
         <button class="plan-delete-btn cancel-posting-btn" data-id="${plan.id}">Remove</button>
       </div>
     `;
