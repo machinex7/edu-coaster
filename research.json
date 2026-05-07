@@ -159,5 +159,12 @@
     "description": "Invest in the parking experience with music, art, and murals. Each one-time purchase permanently raises the fee threshold at which visitors start to feel overcharged.",
     "cost": 4,
     "requires": ["parking_fees"]
+  },
+  {
+    "id": "bus_service",
+    "name": "Bus Service",
+    "description": "Run a free shuttle bus from distant pick-up points. Visitors priced out of parking who would have skipped the trip take the bus instead, paying full gate admission and spending normally inside. Costs a weekly operating fee.",
+    "cost": 6,
+    "requires": ["parking_fees"]
   }
 ]

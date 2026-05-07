@@ -2629,3 +2629,25 @@
   color: #4ade80;
   font-weight: 600;
 }
+
+/* Bus service toggle row */
+.parking-bus-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.parking-bus-toggle {
+  padding: 4px 10px;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.parking-bus-on  { background: #166534; color: #4ade80; }
+.parking-bus-off { background: #374151; color: #9ca3af; }
+.parking-bus-on:hover  { background: #15803d; }
+.parking-bus-off:hover { background: #4b5563; }

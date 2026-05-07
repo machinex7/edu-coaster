@@ -57,6 +57,8 @@ const History = {
       parkingPrice:           Finance.parkingPrice,
       parkingAmenityBonus:    Finance.parkingAmenityBonus,
       parkingAltTransport:    report.altTransportVisitors,
+      parkingBusRiders:       report.busRiders,
+      parkingBusCost:         report.busCost,
       parkingSpendingMult:    report.parkingSpendingMultiplier,
       surveys:             Survey.drainPending(),
     });

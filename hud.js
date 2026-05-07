@@ -970,6 +970,29 @@ function buildParkingPanel() {
       }).join('')}
     </div>` : '';
 
+  // Bus section — only shown once Bus Service research is complete.
+  const busUnlocked = Research.completed.has(RESEARCH_ID.BUS_SERVICE);
+  const busSection = busUnlocked ? `
+    <div class="parking-section">
+      <div class="parking-section-title">Bus Service</div>
+      <div class="parking-amenity-note">
+        Runs a free shuttle from distant pick-up points. Visitors who would skip the trip
+        due to parking prices take the bus instead — they pay full gate admission and spend
+        normally inside. Costs $${Finance.BUS_WEEKLY_COST.toLocaleString()}/week to operate.
+      </div>
+      <div class="parking-bus-row">
+        <span class="parking-stat-label">Status</span>
+        <button class="parking-bus-toggle ${Finance.busEnabled ? 'parking-bus-on' : 'parking-bus-off'}"
+                id="parking-bus-toggle">
+          ${Finance.busEnabled ? 'Running — click to stop' : 'Stopped — click to run'}
+        </button>
+      </div>
+      <div class="parking-stat-row">
+        <span class="parking-stat-label">Bus riders last round</span>
+        <span class="parking-stat-value">${Finance.busRiders.toLocaleString()}</span>
+      </div>
+    </div>` : '';
+
   body.innerHTML = `
     <div class="parking-section">
       <div class="price-row">
@@ -993,6 +1016,7 @@ function buildParkingPanel() {
       ${bracketRows}
     </div>
     ${amenitySection}
+    ${busSection}
     <div class="parking-section">
       <div class="parking-stat-row">
         <span class="parking-stat-label">Alt-transport visitors last round</span>
@@ -1019,6 +1043,11 @@ function buildParkingPanel() {
     btn.addEventListener('click', () => {
       if (Finance.buyParkingAmenity(btn.dataset.amenity)) buildParkingPanel();
     });
+  });
+
+  document.getElementById('parking-bus-toggle')?.addEventListener('click', () => {
+    Finance.busEnabled = !Finance.busEnabled;
+    buildParkingPanel();
   });
 }
 
