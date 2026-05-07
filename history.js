@@ -56,6 +56,7 @@ const History = {
       mealSatisfaction:    report.food.mealSatisfaction,
       parkingPrice:           Finance.parkingPrice,
       parkingAmenityBonus:    Finance.parkingAmenityBonus,
+      parkingAmenitySpend:    report.parkingAmenityCosts,
       parkingAltTransport:    report.altTransportVisitors,
       parkingBusRiders:       report.busRiders,
       parkingBusCost:         report.busCost,

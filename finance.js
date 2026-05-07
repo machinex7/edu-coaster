@@ -122,6 +122,8 @@ const Finance = {
   roundMarketingCosts: 0,
   // Accumulates merchandise order costs paid between round advances; reset each round.
   roundMerchandiseCosts: 0,
+  // Accumulates parking lot amenity purchase costs paid between round advances; reset each round.
+  roundParkingAmenityCosts: 0,
 
   // Smoothed 0–1 score of how well rides are serving current crowds.
   // Starts at 1.0 (perfect); degrades when operators can't keep up with demand.
@@ -261,6 +263,7 @@ const Finance = {
     if (!amenity || this.purchasedAmenities.has(id)) return false;
     if (money < amenity.cost) return false;
     money -= amenity.cost;
+    this.roundParkingAmenityCosts += amenity.cost;
     this.purchasedAmenities.add(id);
     this.parkingAmenityBonus += amenity.bonus;
     return true;
@@ -1117,10 +1120,12 @@ const Finance = {
     Population.tickEvents();          // tick population event modifiers toward 0
     Population.decayFavor();          // nudge all bracket favors back toward 1.0
 
-    const marketingCosts     = this.roundMarketingCosts;
-    this.roundMarketingCosts  = 0;
-    const merchandiseCosts    = this.roundMerchandiseCosts;
-    this.roundMerchandiseCosts = 0;
+    const marketingCosts          = this.roundMarketingCosts;
+    this.roundMarketingCosts       = 0;
+    const merchandiseCosts         = this.roundMerchandiseCosts;
+    this.roundMerchandiseCosts     = 0;
+    const parkingAmenityCosts      = this.roundParkingAmenityCosts;
+    this.roundParkingAmenityCosts  = 0;
     Marketing.tickCampaigns();
     const arrivedOrders = Shopping.tickOrders();
     if (arrivedOrders.length > 0) {
@@ -1149,9 +1154,10 @@ const Finance = {
       constructionCosts,
       marketingCosts,
       merchandiseCosts,
+      parkingAmenityCosts,
       shopItemsSold,
       loanRepayments,
-      totalExpenses: staffCosts + utilityCosts + constructionCosts + busCost + marketingCosts + merchandiseCosts + loanRepayments,
+      totalExpenses: staffCosts + utilityCosts + constructionCosts + busCost + marketingCosts + merchandiseCosts + parkingAmenityCosts + loanRepayments,
       rideEfficiency: this.rideOpinion,
       security: { ...security, opinionAfter: Security.opinion },
       food: { ...food, mealSatisfaction: this.mealSatisfaction },
