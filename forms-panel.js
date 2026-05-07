@@ -84,7 +84,7 @@ const FormsPanel = {
 
   // Render one section (e.g. Revenue, Assets) with its line items and a subtotal.
   _renderSection(sec, allItems) {
-    const items = allItems.filter(i => i.correct === sec.key);
+    const items = allItems.filter(i => i.correct === sec.key && Math.round(i.value) !== 0);
     if (items.length === 0) return '';
     const total = items.reduce((s, i) => s + i.value, 0);
     const rows  = items.map(i => `

@@ -138,8 +138,9 @@ const BalanceSheet = {
   },
 
   // Build the two-column (D1) item list: asset vs liability.
+  // Items with a zero rounded value are excluded — they add no exercise value.
   _buildItemsD1(v) {
-    this._items = [
+    const all = [
       { key: 'cash',         label: 'Cash on Hand',             correct: 'asset',     value: v.cash },
       { key: 'merchandise',  label: 'Merchandise Inventory',    correct: 'asset',     value: v.merchandiseValue },
       { key: 'equipment',    label: 'Park Equipment',           correct: 'asset',     value: v.parkEquipmentValue },
@@ -147,13 +148,15 @@ const BalanceSheet = {
       { key: 'loans',        label: 'Outstanding Loans',        correct: 'liability', value: v.totalLoanBalance },
     ];
     if (Unlock.FOOD) {
-      this._items.splice(2, 0, { key: 'food', label: 'Food & Beverage Stock', correct: 'asset', value: v.foodStockValue });
+      all.splice(2, 0, { key: 'food', label: 'Food & Beverage Stock', correct: 'asset', value: v.foodStockValue });
     }
+    this._items = all.filter(item => Math.round(item.value) !== 0);
   },
 
   // Build the four-section (D2) item list: current/non-current split within each column.
+  // Items with a zero rounded value are excluded — they add no exercise value.
   _buildItemsD2(v) {
-    this._items = [
+    const all = [
       { key: 'cash',           label: 'Cash on Hand',             correct: 'current-asset',    value: v.cash },
       { key: 'merchandise',    label: 'Merchandise Inventory',    correct: 'current-asset',    value: v.merchandiseValue },
       { key: 'equipment',      label: 'Park Equipment',           correct: 'noncurrent-asset', value: v.parkEquipmentValue },
@@ -162,8 +165,9 @@ const BalanceSheet = {
       { key: 'longterm-loans', label: 'Long-term Loan Balance',   correct: 'longterm-liability', value: v.longtermLoanPortion },
     ];
     if (Unlock.FOOD) {
-      this._items.splice(2, 0, { key: 'food', label: 'Food & Beverage Stock', correct: 'current-asset', value: v.foodStockValue });
+      all.splice(2, 0, { key: 'food', label: 'Food & Beverage Stock', correct: 'current-asset', value: v.foodStockValue });
     }
+    this._items = all.filter(item => Math.round(item.value) !== 0);
   },
 
   // Snapshot live game state and display the exercise at the correct difficulty.
