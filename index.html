@@ -297,9 +297,10 @@
     <div class="modal-card bs-modal-card">
       <div class="modal-title">Annual Balance Sheet</div>
       <div class="modal-date" id="bs-year-label"></div>
-      <p class="bs-instructions">Drag each item into the correct column — Assets or Liabilities.</p>
+      <p id="bs-instructions" class="bs-instructions"></p>
       <div id="bs-bank" class="bs-bank"></div>
-      <div class="bs-zones">
+      <!-- Difficulty 1: two columns (Assets / Liabilities) -->
+      <div id="bs-zones-d1" class="bs-zones">
         <div class="bs-zone" id="bs-zone-asset">
           <div class="bs-zone-header bs-asset-header">Assets</div>
           <div class="bs-zone-items" id="bs-zone-asset-items"></div>
@@ -308,6 +309,41 @@
           <div class="bs-zone-header bs-liability-header">Liabilities</div>
           <div class="bs-zone-items" id="bs-zone-liability-items"></div>
         </div>
+      </div>
+      <!-- Difficulty 2: four sections (current / non-current within each column) -->
+      <div id="bs-zones-d2" class="bs-zones-d2 hidden">
+        <div class="bs-d2-col">
+          <div class="bs-d2-col-header bs-asset-header">Assets</div>
+          <div class="bs-zone" id="bs-zone-current-asset">
+            <div class="bs-zone-header">Current</div>
+            <div class="bs-zone-items" id="bs-zone-current-asset-items"></div>
+          </div>
+          <div class="bs-zone" id="bs-zone-noncurrent-asset">
+            <div class="bs-zone-header">Non-current</div>
+            <div class="bs-zone-items" id="bs-zone-noncurrent-asset-items"></div>
+          </div>
+        </div>
+        <div class="bs-d2-col">
+          <div class="bs-d2-col-header bs-liability-header">Liabilities</div>
+          <div class="bs-zone" id="bs-zone-current-liability">
+            <div class="bs-zone-header">Current</div>
+            <div class="bs-zone-items" id="bs-zone-current-liability-items"></div>
+          </div>
+          <div class="bs-zone" id="bs-zone-longterm-liability">
+            <div class="bs-zone-header">Long-term</div>
+            <div class="bs-zone-items" id="bs-zone-longterm-liability-items"></div>
+          </div>
+        </div>
+      </div>
+      <!-- D2 equity entry: shown after all drag-and-drop items are correctly placed -->
+      <div id="bs-equity-entry" class="bs-equity-entry hidden">
+        <div class="bs-equity-label">What is Owner's Equity?</div>
+        <div class="bs-equity-input-row">
+          <span class="bs-equity-dollar">$</span>
+          <input type="number" id="bs-equity-input" class="bs-equity-input" placeholder="Enter amount" />
+          <button id="bs-equity-check-btn" class="modal-close-btn">Check</button>
+        </div>
+        <div id="bs-equity-feedback" class="bs-equity-feedback"></div>
       </div>
       <div id="bs-result" class="bs-result hidden"></div>
       <button id="bs-submit-btn" class="modal-close-btn">Check My Answer</button>
