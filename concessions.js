@@ -5,6 +5,10 @@ const Concessions = {
   // Flat fee charged on every non-empty standing delivery.
   DELIVERY_FEE: 75,
 
+  // Fraction of remaining freezer stock that spoils at the start of each delivery cycle.
+  // Acts as a half-life: stock that isn't sold decays by this fraction every 4 weeks.
+  SPOILAGE_RATE: 0.25,
+
   // Base purchase transactions a concessions worker can handle per day (boosted by experience).
   MEALS_PER_WORKER_PER_DAY: 250,
 
@@ -243,6 +247,21 @@ const Concessions = {
     }
 
     if (round === this.nextDeliveryRound) {
+      // Spoil a fraction of existing stock before adding new items.
+      // alwaysAvailable items have no physical stock, so skip them.
+      const spoiledItems = [];
+      this.menuItems.forEach((item, i) => {
+        if (item.alwaysAvailable || this.stock[i] === 0) return;
+        const spoiled = Math.floor(this.stock[i] * this.SPOILAGE_RATE);
+        if (spoiled > 0) {
+          this.stock[i] -= spoiled;
+          spoiledItems.push(`${spoiled} ${item.name}`);
+        }
+      });
+      if (spoiledItems.length > 0) {
+        Notifications.push({ label: 'Spoilage', message: `Spoiled: ${spoiledItems.join(', ')}.` });
+      }
+
       // Add ordered quantities to freezer stock.
       this.menuItems.forEach((item, i) => { this.stock[i] += this.standingOrder[i]; });
       // Advance cycle.

@@ -36,12 +36,14 @@ python3 -m http.server
 | `history.js` | Append-only per-round data log for future reports/graphs (`History` object) |
 | `pl-statement.js` | Quarterly P&L statement exercise — drag-and-drop sorting modal (`PLStatement` object) |
 | `balance-sheet.js` | Annual balance sheet exercise — drag-and-drop sorting modal (`BalanceSheet` object) |
+| `concessions.js` | Concessions panel: ingredient ordering, menu pricing, combo meals, food revenue calculation (`Concessions` object) |
 | `hud.js` | HUD display, stage transitions, panel management, view mode toolbar, construction bottom bar, security SVG overlay, round summary modal, pricing panel |
 | `rides.json` | Ride catalogue |
 | `facilities.json` | Facility catalogue |
 | `shops.json` | Shop catalogue |
 | `merchandise.json` | Merchandise item catalogue (12 items: 3 price tiers × 4 categories) |
 | `suppliers.json` | Supplier catalogue (delivery time, surcharge; first entry unlocked at start) |
+| `concessions.json` | Concessions menu item catalogue (7 items: id, name, cost, mealValue; water cup is `alwaysAvailable`) |
 | `reqs.md` | Full game design document — read before adding features |
 
 **Script load order:**
@@ -68,7 +70,8 @@ const Foo = {
 |---|---|---|
 | `Population` | `population.js` | Visitor behavior rates, labor constants, economic multipliers |
 | `Finance` | `finance.js` | Pricing state, attendance model, income/cost calculations, round processing |
-| `Shopping` | `shopping.js` | Shop catalog, installed shops, revenue/theft math, food capacity, staffing ratios |
+| `Shopping` | `shopping.js` | Shop catalog, installed shops, merchandise revenue/theft math, staffing ratios |
+| `Concessions` | `concessions.js` | Menu items, freezer stock, 4-week delivery orders, combo meals, food revenue calculation |
 | `Staff` | `staff.js` + `staff-panel.js` | Roster, postings, candidates, benefits policy, experience, panel rendering |
 | `Security` | `security.js` | Opinion state, incident calculation, panel rendering |
 | `History` | `history.js` | Append-only per-round log |
@@ -91,6 +94,7 @@ FACILITY_ID    = { PARK_ENTRANCE, PATH, BATHROOM, STATUE, GARDEN, FOUNTAIN, STAF
 SECURITY_FOCUS = { PATROL, GATE, SHOP }
 ENGINEER_FOCUS = { MAINTENANCE, CONSTRUCTION }
 LOAN_STATUS    = { APPROACHING, OPEN, APPLYING, OFFERED, REVIEW }
+MENU_ITEM      = { WATER_CUP, SODA, HOT_DOG, FRIES, TATER_TOTS, BURGER, CHICKEN_TENDERS }
 MAX_EFFECTIVE_WEAR = 1000   // breakdown probability reaches 100% at this cumulative wear
 WEEKS_PER_YEAR     = 52
 COVENANT_RATE_DISCOUNT      = 0.4    // interest rate reduction per covenant accepted
@@ -282,6 +286,7 @@ Demolishing structures are excluded from all game calculations. Demolition takes
 | Gate | gate price × weekly attendance |
 | Parking | parking price × vehicle estimate derived from daily demand |
 | Shop | see `Shopping.calcRevenue()` |
+| Food | meal price × meals sold; see `Concessions.calcFood()` |
 
 ### Cost sources
 
@@ -301,7 +306,7 @@ Demolishing structures are excluded from all game calculations. Demolition takes
 3. Calc demand, throughput, attendance
 4. `computeRideOpinion()` — updates `rideOpinion`; writes `lastRoundRiders/Capacity`
 5. `processWear()` — accumulate wear, roll for breakdown (probability = wear / `MAX_EFFECTIVE_WEAR`)
-6. `Shopping.calcFood()` — compute `mealsWanted` and `mealsServed`
+6. `Concessions.calcFood()` — compute food revenue, `mealsWanted`, and `mealsServed`
 7. `processLoanRepayments()` — deduct weekly amortized payments before other costs
 8. Calc income and remaining costs; apply to `money`
 9. `processConstruction()` — deduct weekly payments, complete finished builds
@@ -461,9 +466,58 @@ Loaded from `suppliers.json` into `suppliers[]`. Active supplier tracked in `sel
 
 Storage capacity = `calcMerchandiseTiles() × STORAGE_PER_SHOP` (displayed as a progress bar in the Inventory panel Stock tab).
 
-### Food (`Shopping.calcFood`)
+---
 
-Compares meals wanted (visitor count × daily meal rate) against meals served (worker count and tier, capped by food tile count). Result stored as `Finance.mealSatisfaction`, which multiplies `parkExcitement` each round. Defaults to 0.5 when no food buildings exist.
+## Concessions system (`concessions.js`)
+
+The `Concessions` object handles food & beverage: ingredient ordering, freezer stock, menu pricing, combo meal creation, and per-round revenue calculation.
+
+### State
+
+| Property | Type | Purpose |
+|---|---|---|
+| `menuItems` | array | Loaded from `concessions.json` — 7 items with `id`, `name`, `cost`, `mealValue`, and optional `alwaysAvailable` |
+| `prices` | array | Player-set sale prices (parallel to `menuItems`); defaults to `max(cost × 2, cost + 2)` |
+| `stock` | array | Units currently in the freezer (parallel to `menuItems`); depleted by sales each round |
+| `standingOrder` | array | Quantities for the next delivery (parallel to `menuItems`); editable until order locks |
+| `meals` | array | Player-created combo meals: `[{ name, items: [{id, count}], price, sold }]` |
+| `soldLastRound` | array | Units sold in the most recent round (parallel to `menuItems`); includes ingredients consumed by combos |
+| `lockRound` | number | Round on which the current order locks and the player is charged |
+| `nextDeliveryRound` | number | Round on which ordered items arrive in the freezer |
+| `repeatOrder` | boolean | Whether the standing order persists after each delivery |
+
+### 4-week delivery cycle
+
+| Week in cycle | What happens |
+|---|---|
+| 1–2 | Order open — player edits quantities in the Orders tab |
+| 3 | Order locks (`lockRound`): player charged `subtotal + DELIVERY_FEE ($75)` |
+| 4 | Delivery (`nextDeliveryRound`): `floor(stock × SPOILAGE_RATE)` of existing stock spoils first, then ordered quantities are added; cycle advances by 4 |
+
+If `repeatOrder` is true the order carries over; otherwise it clears. The delivery fee is waived for an empty order. `alwaysAvailable` items (Water Cup) are exempt from spoilage. A "Spoilage" notification fires if any items spoiled.
+
+### Revenue calculation (`Concessions.calcFood`)
+
+1. **Worker throughput cap** — total capacity = sum of `MEALS_PER_WORKER_PER_DAY × (1 + 0.2 × tier)` for up to `min(workers, foodTiles)` concessions workers, sorted best-first. Without staffing unlocked, capacity is uncapped.
+
+2. **Option pool** — solo items (require freezer stock unless `alwaysAvailable`) and combo meals (require all ingredient stock) are added to a pool and sorted largest `mealValue` first.
+
+3. **Demand** — each `Population.HOUSEHOLD_SIZES` bracket contributes visits weighted by Gaussian proximity to its `mealTarget`, value score (`ingredientCost / price`), and income affordability.
+
+4. **Cascade fulfillment** — options are served from highest to lowest `mealValue`. Stock shortages roll unmet demand to the next option; worker capacity exhaustion is terminal.
+
+Returns `{ revenue, mealsSold, mealsWanted, mealsServed, itemSales[], mealSales[] }`. Revenue is credited to `money` in `Finance.processRound`. `mealsSold` and `mealsServed` feed `Finance.mealSatisfaction`, which multiplies `parkExcitement`.
+
+### Combo meals
+
+Players create combos via the **Menu** tab. The builder lets them set ingredient counts, an optional name (auto-generated from ingredients if blank), and a price (auto-suggested from component menu prices). Each combo card shows ingredient chips, an editable price, and a "sold last round" badge during Play. Deleting a combo removes it immediately.
+
+### Panel tabs
+
+| Tab | Content |
+|---|---|
+| **Menu** | One row per item: name, "X sold" badge (Play only), editable sale price. Combo meals section below with cards and "+ Add Meal" button. |
+| **Orders** | 4-week delivery cycle tracker; order table (Item / Cost per Unit / In Freezer / Order Qty / Line Cost); subtotal + delivery fee + total summary; Repeat Order / Clear Order radio. |
 
 ---
 
@@ -687,7 +741,9 @@ Students drag each item into an Assets or Liabilities column. On completion, Own
 - Staff Lounge facility: `floor(sqrt(count))` passive mood bonus to all employees
 - Three merchandise shop sizes: Kiosk (1 tile), Merchandise Store (2 tiles), Large Store (4 tiles)
 - Three food shop sizes: Snack Shop (1 tile), Quick Foods (2 tiles), Diner (4 tiles)
-- Food satisfaction system: `mealSatisfaction` multiplies park excitement based on concessions capacity vs. visitor demand
+- Full concessions system: 7 menu ingredients loaded from `concessions.json`; player sets sale prices, manages freezer stock, and creates combo meals; food revenue calculated per round via `Concessions.calcFood()` with Gaussian demand model, cascade fulfillment, and worker throughput cap
+- 4-week standing delivery cycle: order open → lock (player charged) → delivery (stock credited); repeat or clear mode
+- Food satisfaction system: `mealSatisfaction` multiplies park excitement based on meals served vs. meals wanted
 - Facility utility costs: facilities with a `utilityCost` field are billed each round
 - Per-round history log (attendance, income, expenses, security, food metrics, loan balance/interest/principal)
 - Merchandise inventory system: 12 items (3 tiers × 4 categories), demand-driven per-item sales, stock depletion
@@ -703,7 +759,6 @@ Students drag each item into an Assets or Liabilities column. On completion, Own
 
 - Wage adjustment UI
 - Ride breakdown repair UI (engineers repair automatically; no player-visible repair queue yet)
-- Food revenue (satisfaction penalty exists; income not yet wired)
 - Supplier unlock triggers (currently only the first supplier is ever unlocked)
 - `Population.utilityMultiplier` wired to round-by-round increases
 - Reports, graphs, and awards
