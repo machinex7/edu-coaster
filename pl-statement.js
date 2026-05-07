@@ -24,6 +24,7 @@ const PLStatement = {
     { key: 'construction', label: 'Construction',      correct: 'expense', histKey: 'constructionExpense' },
     { key: 'marketing',   label: 'Marketing',          correct: 'expense', histKey: 'marketingExpense' },
     { key: 'merchandise', label: 'Merchandise Orders', correct: 'expense', histKey: 'merchandiseExpense' },
+    { key: 'bus',         label: 'Bus Service',        correct: 'expense', histKey: 'parkingBusCost' },
   ],
 
   // Active items for the current session — ITEMS filtered to non-zero totals.
