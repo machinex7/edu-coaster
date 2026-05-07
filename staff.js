@@ -29,8 +29,8 @@ const Staff = {
   ],
 
   POSTING_WEEKLY_COST: 75,
-  SICKNESS_RATE:       0.02,   // per-round chance of 1-week illness
-  INJURY_RATE:         0.005,  // per-round chance of 4-week critical injury
+  SICKNESS_RATE:       0.01,   // per-round chance of 1-week illness
+  INJURY_RATE:         0.002,  // per-round chance of 4-week critical injury
   VACATION_RATE:        0.04,  // per-round base chance of taking a vacation
   VACATION_WEEKS:       1,     // vacation duration in weeks; effective chance = VACATION_RATE × VACATION_WEEKS
   PARENTAL_LEAVE_RATE:  0.003, // per-round chance a healthy employee goes on parental leave
@@ -95,8 +95,9 @@ const Staff = {
   init() {
     [
       JOB.RIDE_OPERATOR, JOB.RIDE_OPERATOR, JOB.RIDE_OPERATOR, JOB.RIDE_OPERATOR,
+      JOB.RIDE_OPERATOR, JOB.RIDE_OPERATOR,
       JOB.SECURITY, JOB.JANITOR, JOB.ENGINEER,
-      JOB.BOOTH_ATTENDANT, JOB.BOOTH_ATTENDANT,
+      JOB.BOOTH_ATTENDANT,
       JOB.MERCHANDISE_ATTENDANT,
     ].forEach(jobId => {
       const emp    = this.generateEmployee(0);
@@ -380,6 +381,8 @@ const Staff = {
     this.candidates = this.candidates.filter(c => c.instanceId !== instanceId);
     this.buildCandidatesView();
     refreshSecurityOverlay();
+    // Research rate changes when a BA joins; refresh the ETA pill immediately.
+    if (emp.jobId === JOB.BUSINESS_ANALYST) updateAchievementIndicators();
   },
 
   declineCandidate(instanceId) {
