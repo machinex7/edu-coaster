@@ -492,9 +492,9 @@ The `Concessions` object handles food & beverage: ingredient ordering, freezer s
 |---|---|
 | 1–2 | Order open — player edits quantities in the Orders tab |
 | 3 | Order locks (`lockRound`): player charged `subtotal + DELIVERY_FEE ($75)` |
-| 4 | Delivery (`nextDeliveryRound`): ordered quantities added to `stock`; cycle advances by 4 |
+| 4 | Delivery (`nextDeliveryRound`): `floor(stock × SPOILAGE_RATE)` of existing stock spoils first, then ordered quantities are added; cycle advances by 4 |
 
-If `repeatOrder` is true the order carries over; otherwise it clears. The delivery fee is waived for an empty order.
+If `repeatOrder` is true the order carries over; otherwise it clears. The delivery fee is waived for an empty order. `alwaysAvailable` items (Water Cup) are exempt from spoilage. A "Spoilage" notification fires if any items spoiled.
 
 ### Revenue calculation (`Concessions.calcFood`)
 
