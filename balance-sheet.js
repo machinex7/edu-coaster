@@ -101,15 +101,20 @@ const BalanceSheet = {
       : 0;
 
     // Separate completed park buildings from work still in progress.
+    // Broken-down rides use the same 10%-per-repair-week discount as Finance.parkValue().
     let parkEquipmentValue = 0;
     let constructionValue  = 0;
     for (const record of [...installedRides, ...installedFacilities, ...Shopping.installed]) {
-      if ([STATUS.ACTIVE, STATUS.CLOSED, STATUS.BROKEN_DOWN].includes(record.status)) {
+      if (record.status === STATUS.BROKEN_DOWN) {
+        const def  = rides.find(r => r.id === record.rideId);
+        const base = def?.buildCost ?? 0;
+        parkEquipmentValue += Math.max(0, base * (1 - 0.1 * record.weeksToRepair));
+      } else if (record.status === STATUS.ACTIVE || record.status === STATUS.CLOSED) {
         const def = record.rideId     ? rides.find(r => r.id === record.rideId)
                   : record.facilityId ? facilities.find(f => f.id === record.facilityId)
                   :                     Shopping.catalog.find(s => s.id === record.shopId);
         parkEquipmentValue += def?.buildCost ?? 0;
-      } else if ([STATUS.UNDER_CONSTRUCTION, STATUS.PAUSED_CONSTRUCTION].includes(record.status)) {
+      } else if (record.status === STATUS.UNDER_CONSTRUCTION || record.status === STATUS.PAUSED_CONSTRUCTION) {
         constructionValue += record.weeksCompleted * record.weeklyPayment;
       }
     }
