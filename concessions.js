@@ -512,7 +512,7 @@ const Concessions = {
 
       const soldEl = document.createElement('span');
       soldEl.className = 'con-sold-badge';
-      soldEl.textContent = stage === STAGE.PLAY ? `${this.soldLastRound[i].toLocaleString()} sold` : '';
+      soldEl.textContent = gameStage === STAGE.PLAY ? `${this.soldLastRound[i].toLocaleString()} sold` : '';
       nameEl.appendChild(soldEl);
 
       // Editable price field with a $ prefix
