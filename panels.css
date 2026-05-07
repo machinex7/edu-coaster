@@ -2487,3 +2487,5 @@
 .fp-equity-pos { color: #60a5fa; }
 /* Negative result — shared by both. */
 .fp-neg        { color: #f87171; }
+/* Not Applicable items (D2/D4 distractors) — neutral gray. */
+.fp-na         { color: #9ca3af; }

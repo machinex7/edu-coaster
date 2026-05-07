@@ -1,21 +1,24 @@
 // balance-sheet.js — Annual balance sheet exercise.
 //
-// Difficulty 1 (first year): two columns — Assets vs Liabilities.
-// Owner's Equity is revealed automatically on completion.
+// Four progressive difficulty tiers, each unlocked after completing the previous:
 //
-// Difficulty 2 (subsequent years): four sections — Current Assets,
-// Non-current Assets, Current Liabilities, Long-term Liabilities.
-// Students must also type in Owner's Equity before Continue unlocks.
+//   D1: Two zones (Assets / Liabilities). Equity auto-revealed. No distractors.
+//   D2: Two zones + Not Applicable zone. Income-statement distractors mixed in.
+//       Equity auto-revealed.
+//   D3: Four classified zones (Current Assets, Non-current Assets, Current
+//       Liabilities, Long-term Liabilities). Student types Owner's Equity.
+//       No distractors.
+//   D4: Four classified zones + Not Applicable zone. Income-statement
+//       distractors mixed in. Student types Owner's Equity.
 //
-// _difficulty increments from 1 to 2 after the first successful completion
-// and stays at 2 from then on.
+// _difficulty starts at 1 and advances by 1 after each completion (capped at 4).
 
 const BalanceSheet = {
 
   // Set to true by hud.js at the end of each year; cleared when the modal opens.
   pending: false,
 
-  // Starts at 1; advances to 2 after the first completion, then stays at 2.
+  // Current difficulty tier; advances 1→2→3→4 (stays at 4).
   _difficulty: 1,
 
   // Keys of items the student has already placed correctly this session.
@@ -24,7 +27,7 @@ const BalanceSheet = {
   // Line items built fresh each time show() is called from live game state.
   _items: [],
 
-  // Computed totals held between _submit() and _checkEquity() for D2 equity validation.
+  // Computed totals held between _submit() and _checkEquity() for D3/D4 equity validation.
   _totalAssets:      0,
   _totalLiabilities: 0,
 
@@ -36,21 +39,24 @@ const BalanceSheet = {
     'bs-zone-noncurrent-asset-items':   'noncurrent-asset',
     'bs-zone-current-liability-items':  'current-liability',
     'bs-zone-longterm-liability-items': 'longterm-liability',
+    'bs-zone-na-items':                 'na',
   },
 
-  // Wire up drag-and-drop listeners on all zones for both difficulties,
+  // Wire up drag-and-drop listeners on all zones across all difficulty tiers,
   // plus action button handlers. Called once from initHUD after the DOM is ready.
   init() {
-    // Bank — shared by both difficulties.
-    this._setupDropZone('bs-bank', 'bs-bank');
-    // Difficulty-1 zones.
-    this._setupDropZone('bs-zone-asset',     'bs-zone-asset-items');
-    this._setupDropZone('bs-zone-liability', 'bs-zone-liability-items');
-    // Difficulty-2 zones.
+    // Bank — shared by all difficulties.
+    this._setupDropZone('bs-bank',                 'bs-bank');
+    // D1/D2 zones.
+    this._setupDropZone('bs-zone-asset',           'bs-zone-asset-items');
+    this._setupDropZone('bs-zone-liability',        'bs-zone-liability-items');
+    // D3/D4 zones.
     this._setupDropZone('bs-zone-current-asset',     'bs-zone-current-asset-items');
     this._setupDropZone('bs-zone-noncurrent-asset',  'bs-zone-noncurrent-asset-items');
     this._setupDropZone('bs-zone-current-liability', 'bs-zone-current-liability-items');
     this._setupDropZone('bs-zone-longterm-liability','bs-zone-longterm-liability-items');
+    // N/A zone — shown for D2 and D4.
+    this._setupDropZone('bs-zone-na',              'bs-zone-na-items');
     document.getElementById('bs-submit-btn').addEventListener('click', () => this._submit());
     document.getElementById('bs-equity-check-btn').addEventListener('click', () => this._checkEquity());
     document.getElementById('bs-equity-input').addEventListener('keydown', e => {
@@ -87,7 +93,7 @@ const BalanceSheet = {
     document.getElementById('bs-submit-btn').disabled = !bankEmpty;
   },
 
-  // Snapshot live game state into a values object used by both item builders.
+  // Snapshot live game state into a values object used by all item builders.
   _computeValues() {
     const cash = money;
 
@@ -142,8 +148,21 @@ const BalanceSheet = {
     };
   },
 
-  // Build the two-column (D1) item list: asset vs liability.
-  // Items with a zero rounded value are excluded — they add no exercise value.
+  // Build income-statement items as "Not Applicable" distractors for D2 and D4.
+  // Only items with a non-zero year-to-date total are included.
+  _computeDistractors() {
+    const last52 = History.rounds.slice(-52);
+    const sum    = key => last52.reduce((s, r) => s + (r[key] || 0), 0);
+    return [
+      { key: 'd-wages',     label: 'Staff Wages (Year to Date)',      correct: 'na', value: sum('staffExpense') },
+      { key: 'd-utilities', label: 'Utilities (Year to Date)',        correct: 'na', value: sum('utilityExpense') },
+      { key: 'd-marketing', label: 'Marketing (Year to Date)',        correct: 'na', value: sum('marketingExpense') },
+      { key: 'd-gate',      label: 'Gate Revenue (Year to Date)',     correct: 'na', value: sum('gateIncome') },
+    ].filter(item => Math.round(item.value) !== 0);
+  },
+
+  // D1: two zones (Assets / Liabilities), no distractors.
+  // Items with a zero rounded value are excluded.
   _buildItemsD1(v) {
     const all = [
       { key: 'cash',         label: 'Cash on Hand',             correct: 'asset',     value: v.cash },
@@ -158,9 +177,14 @@ const BalanceSheet = {
     this._items = all.filter(item => Math.round(item.value) !== 0);
   },
 
-  // Build the four-section (D2) item list: current/non-current split within each column.
-  // Items with a zero rounded value are excluded — they add no exercise value.
+  // D2: same balance sheet items as D1 plus income-statement distractors.
   _buildItemsD2(v) {
+    this._buildItemsD1(v);
+    this._items = [...this._items, ...this._computeDistractors()];
+  },
+
+  // D3: four classified zones (current/non-current split), no distractors.
+  _buildItemsD3(v) {
     const all = [
       { key: 'cash',           label: 'Cash on Hand',             correct: 'current-asset',    value: v.cash },
       { key: 'merchandise',    label: 'Merchandise Inventory',    correct: 'current-asset',    value: v.merchandiseValue },
@@ -175,29 +199,46 @@ const BalanceSheet = {
     this._items = all.filter(item => Math.round(item.value) !== 0);
   },
 
+  // D4: same classified items as D3 plus income-statement distractors.
+  _buildItemsD4(v) {
+    this._buildItemsD3(v);
+    this._items = [...this._items, ...this._computeDistractors()];
+  },
+
   // Snapshot live game state and display the exercise at the correct difficulty.
   show() {
     this.pending = false;
-    const yearNum = Math.floor(round / 52);
-    const values  = this._computeValues();
-    const isD2    = this._difficulty >= 2;
+    const yearNum      = Math.floor(round / 52);
+    const values       = this._computeValues();
+    const isClassified = this._difficulty >= 3;
+    const hasNA        = this._difficulty === 2 || this._difficulty === 4;
+    const equityTyped  = this._difficulty >= 3;
 
-    if (isD2) {
-      this._buildItemsD2(values);
+    if      (this._difficulty === 1) this._buildItemsD1(values);
+    else if (this._difficulty === 2) this._buildItemsD2(values);
+    else if (this._difficulty === 3) this._buildItemsD3(values);
+    else                             this._buildItemsD4(values);
+
+    // Show the correct zone layout for this difficulty tier.
+    document.getElementById('bs-zones-d1').classList.toggle('hidden', isClassified);
+    document.getElementById('bs-zones-d2').classList.toggle('hidden', !isClassified);
+    document.getElementById('bs-zone-na').classList.toggle('hidden', !hasNA);
+
+    // Set instructions appropriate for the active difficulty tier.
+    let instructions;
+    if (isClassified && hasNA) {
+      instructions = 'Drag each item into the correct section — or "Not Applicable" if it doesn\'t belong on the balance sheet.';
+    } else if (isClassified) {
+      instructions = 'Drag each item into the correct section — Current or Non-current Assets, Current or Long-term Liabilities.';
+    } else if (hasNA) {
+      instructions = 'Drag each item into the correct column — Assets, Liabilities, or Not Applicable if it doesn\'t belong on the balance sheet.';
     } else {
-      this._buildItemsD1(values);
+      instructions = 'Drag each item into the correct column — Assets or Liabilities.';
     }
-
-    // Show the correct zone layout and set instructions accordingly.
-    document.getElementById('bs-zones-d1').classList.toggle('hidden', isD2);
-    document.getElementById('bs-zones-d2').classList.toggle('hidden', !isD2);
-    document.getElementById('bs-instructions').textContent = isD2
-      ? 'Drag each item into the correct section — Current or Non-current Assets, Current or Long-term Liabilities.'
-      : 'Drag each item into the correct column — Assets or Liabilities.';
-
+    document.getElementById('bs-instructions').textContent = instructions;
     document.getElementById('bs-year-label').textContent = `Year ${yearNum} Annual Snapshot`;
 
-    // Populate the bank with shuffled item cards.
+    // Populate the bank with shuffled item cards (including distractors if any).
     const bank     = document.getElementById('bs-bank');
     bank.innerHTML = '';
     const shuffled = [...this._items];
@@ -209,7 +250,7 @@ const BalanceSheet = {
       bank.appendChild(this._makeCard(item.key, item.label, item.value));
     }
 
-    // Clear all zone items (both D1 and D2) for a clean slate.
+    // Clear all zone items (all difficulties) for a clean slate.
     for (const id of Object.keys(this._ZONE_MAP)) {
       document.getElementById(id).innerHTML = '';
     }
@@ -248,7 +289,7 @@ const BalanceSheet = {
   },
 
   // Check placements. Correct items lock; wrong ones return to the bank.
-  // On full completion, reveals equity automatically (D1) or prompts for entry (D2).
+  // On full completion, reveals equity (D1/D2) or prompts the student to type it (D3/D4).
   _submit() {
     const bank = document.getElementById('bs-bank');
 
@@ -273,12 +314,12 @@ const BalanceSheet = {
     const resultEl = document.getElementById('bs-result');
 
     if (correct === total) {
-      // Compute totals — correct field contains 'asset' or ends with '-asset' for assets.
+      // Compute totals; 'na' distractor items are excluded from both sums.
       let totalAssets = 0, totalLiabilities = 0;
       for (const item of this._items) {
         const amt = parseInt(document.querySelector(`.bs-card-item[data-key="${item.key}"]`).dataset.amount, 10);
-        if (item.correct.includes('asset')) totalAssets      += amt;
-        else                                totalLiabilities += amt;
+        if      (item.correct.includes('asset'))     totalAssets      += amt;
+        else if (item.correct.includes('liability')) totalLiabilities += amt;
       }
       this._totalAssets      = totalAssets;
       this._totalLiabilities = totalLiabilities;
@@ -293,23 +334,22 @@ const BalanceSheet = {
       resultEl.classList.remove('hidden');
       document.getElementById('bs-submit-btn').classList.add('hidden');
 
-      if (this._difficulty >= 2) {
-        // D2: let the student compute and type in Owner's Equity.
+      if (this._difficulty >= 3) {
+        // D3/D4: let the student compute and type in Owner's Equity.
         document.getElementById('bs-equity-entry').classList.remove('hidden');
         document.getElementById('bs-equity-input').focus();
       } else {
-        // D1: reveal equity automatically, advance difficulty, show Continue.
+        // D1/D2: reveal equity automatically, then advance difficulty and show Continue.
         const equity      = totalAssets - totalLiabilities;
         const equitySign  = equity >= 0 ? '+' : '−';
         const equityClass = equity >= 0 ? 'bs-equity-pos' : 'bs-equity-neg';
         resultEl.innerHTML += `
           <div class="bs-equity ${equityClass}">Owner's Equity: ${equitySign}$${Math.abs(equity).toLocaleString()}</div>
         `;
-        // Save a snapshot for the Forms review panel.
         FormsPanel.save({
           type:             'balance-sheet',
           label:            document.getElementById('bs-year-label').textContent,
-          difficulty:       1,
+          difficulty:       this._difficulty,
           items:            this._items.map(item => ({
             label:   item.label,
             correct: item.correct,
@@ -319,7 +359,7 @@ const BalanceSheet = {
           totalLiabilities,
           equity,
         });
-        this._difficulty = 2;
+        this._difficulty = Math.min(4, this._difficulty + 1);
         document.getElementById('bs-close-btn').classList.remove('hidden');
       }
     } else {
@@ -333,7 +373,7 @@ const BalanceSheet = {
     }
   },
 
-  // Validate the typed Owner's Equity value (D2 only).
+  // Validate the typed Owner's Equity value (D3/D4 only).
   // Accepts answers within $1 of the expected value to absorb display rounding.
   _checkEquity() {
     const input    = document.getElementById('bs-equity-input');
@@ -348,17 +388,16 @@ const BalanceSheet = {
       return;
     }
 
-    // Correct — append the formatted equity line, save, and show Continue.
+    // Correct — append the formatted equity line, save, advance difficulty, show Continue.
     const equitySign  = expected >= 0 ? '+' : '−';
     const equityClass = expected >= 0 ? 'bs-equity-pos' : 'bs-equity-neg';
     document.getElementById('bs-result').innerHTML += `
       <div class="bs-equity ${equityClass}">Owner's Equity: ${equitySign}$${Math.abs(expected).toLocaleString()}</div>
     `;
-    // Save a snapshot for the Forms review panel.
     FormsPanel.save({
       type:             'balance-sheet',
       label:            document.getElementById('bs-year-label').textContent,
-      difficulty:       2,
+      difficulty:       this._difficulty,
       items:            this._items.map(item => ({
         label:   item.label,
         correct: item.correct,
@@ -368,6 +407,7 @@ const BalanceSheet = {
       totalLiabilities: this._totalLiabilities,
       equity:           expected,
     });
+    this._difficulty = Math.min(4, this._difficulty + 1);
     document.getElementById('bs-equity-entry').classList.add('hidden');
     document.getElementById('bs-close-btn').classList.remove('hidden');
   },

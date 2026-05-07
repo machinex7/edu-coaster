@@ -868,13 +868,28 @@ header h1 {
   min-height: 80px;
 }
 
-/* Drag-over highlights for D2 zones — assets blue, liabilities red. */
+/* Drag-over highlights for D3/D4 zones — assets blue, liabilities red. */
 #bs-zone-current-asset.bs-zone-over,
 #bs-zone-noncurrent-asset.bs-zone-over  { border-color: #60a5fa; }
 #bs-zone-current-liability.bs-zone-over,
 #bs-zone-longterm-liability.bs-zone-over { border-color: #f87171; }
 
-/* ── Equity entry form (D2 only) ── */
+/* ── Not Applicable zone (D2 and D4 only) ── */
+
+/* Full-width zone sitting below the main layout columns. */
+.bs-zone-na {
+  border: 2px dashed #374151;
+  border-radius: 8px;
+  padding: 8px;
+  min-height: 60px;
+  background: #111827;
+}
+
+.bs-na-header { color: #9ca3af; }
+
+#bs-zone-na.bs-zone-over { border-color: #9ca3af; }
+
+/* ── Equity entry form (D3/D4 only) ── */
 
 /* Container shown after all drag-and-drop items are locked correctly. */
 .bs-equity-entry {

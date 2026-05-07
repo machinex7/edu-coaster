@@ -19,7 +19,8 @@ const FormsPanel = {
       { key: 'asset',     label: 'Assets',      cls: 'fp-asset'     },
       { key: 'liability', label: 'Liabilities', cls: 'fp-liability' },
     ],
-    'bs-d2': [
+    // D3 and D4 use a classified layout; 'na' distractor items are not rendered.
+    'bs-d3': [
       { key: 'current-asset',     label: 'Current Assets',        cls: 'fp-asset'     },
       { key: 'noncurrent-asset',  label: 'Non-current Assets',    cls: 'fp-asset'     },
       { key: 'current-liability', label: 'Current Liabilities',   cls: 'fp-liability' },
@@ -70,7 +71,7 @@ const FormsPanel = {
     if (!r) {
       return `<div class="fp-card">${hdr}<p class="fp-empty">Not yet completed.</p></div>`;
     }
-    const sectionKey  = r.difficulty >= 2 ? 'bs-d2' : 'bs-d1';
+    const sectionKey  = r.difficulty >= 3 ? 'bs-d3' : 'bs-d1';
     const sections    = this._SECTIONS[sectionKey].map(s => this._renderSection(s, r.items)).join('');
     const equitySign  = r.equity >= 0 ? '+' : '−';
     const equityClass = r.equity >= 0 ? 'fp-equity-pos' : 'fp-neg';
