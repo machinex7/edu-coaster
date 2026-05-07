@@ -3,15 +3,19 @@
 // All methods here extend Staff via Object.assign. They may freely call
 // Staff simulation methods since both files are loaded before any execution.
 
-// Returns a colored ▲ or ▼ arrow span scaled to the mood modifier's magnitude.
+// Returns a colored ▲ or ▼ arrow span with interpolated color.
+// Modifier is clamped to ±30 (the max a $1,500 bonus produces) then
+// lerped from neutral gray toward full green (positive) or red (negative).
 function _moodArrow(modifier) {
   if (!modifier) return '';
-  const up  = modifier > 0;
-  const abs = Math.abs(modifier);
-  const color = up
-    ? (abs >= 20 ? '#22c55e' : abs >= 10 ? '#4ade80' : '#86efac')
-    : (abs >= 20 ? '#ef4444' : abs >= 10 ? '#f87171' : '#fca5a5');
-  return ` <span style="color:${color};font-style:normal">${up ? '▲' : '▼'}</span>`;
+  const up = modifier > 0;
+  const t  = Math.min(Math.abs(modifier) / 30, 1);
+  const [r1, g1, b1] = [156, 163, 175];                     // gray base
+  const [r2, g2, b2] = up ? [34, 197, 94] : [239, 68, 68]; // green or red target
+  const r = Math.round(r1 + (r2 - r1) * t);
+  const g = Math.round(g1 + (g2 - g1) * t);
+  const b = Math.round(b1 + (b2 - b1) * t);
+  return ` <span style="color:rgb(${r},${g},${b});font-style:normal">${up ? '▲' : '▼'}</span>`;
 }
 
 Object.assign(Staff, {
