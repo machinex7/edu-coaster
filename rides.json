@@ -10,7 +10,8 @@
     "buildWeeks": 4,
     "rideDuration": 180,
     "intensity": "low",
-    "ridesPerHour": 15,
+    "ridesPerHour": 6,
+    "riderCapacity": 36,
     "utilityCost": 150
   },
   {
@@ -25,7 +26,8 @@
     "buildWeeks": 7,
     "rideDuration": 300,
     "intensity": "low",
-    "ridesPerHour": 10,
+    "ridesPerHour": 5,
+    "riderCapacity": 40,
     "utilityCost": 300
   },
   {
@@ -40,7 +42,8 @@
     "buildWeeks": 4,
     "rideDuration": 120,
     "intensity": "low",
-    "ridesPerHour": 22,
+    "ridesPerHour": 12,
+    "riderCapacity": 24,
     "utilityCost": 180
   },
   {
@@ -56,7 +59,8 @@
     "buildWeeks": 9,
     "rideDuration": 150,
     "intensity": "medium",
-    "ridesPerHour": 18,
+    "ridesPerHour": 9,
+    "riderCapacity": 40,
     "utilityCost": 420
   },
   {
@@ -71,7 +75,8 @@
     "buildWeeks": 5,
     "rideDuration": 150,
     "intensity": "medium",
-    "ridesPerHour": 18,
+    "ridesPerHour": 9,
+    "riderCapacity": 24,
     "utilityCost": 220
   },
   {
@@ -86,7 +91,8 @@
     "buildWeeks": 6,
     "rideDuration": 300,
     "intensity": "low",
-    "ridesPerHour": 10,
+    "ridesPerHour": 5,
+    "riderCapacity": 20,
     "utilityCost": 480
   },
   {
@@ -100,7 +106,8 @@
     "buildWeeks": 11,
     "rideDuration": 60,
     "intensity": "high",
-    "ridesPerHour": 30,
+    "ridesPerHour": 10,
+    "riderCapacity": 16,
     "utilityCost": 520
   },
   {
@@ -115,7 +122,8 @@
     "buildWeeks": 10,
     "rideDuration": 600,
     "intensity": "low",
-    "ridesPerHour": 6,
+    "ridesPerHour": 4,
+    "riderCapacity": 20,
     "utilityCost": 380
   },
   {
@@ -132,7 +140,8 @@
     "buildWeeks": 16,
     "rideDuration": 360,
     "intensity": "medium",
-    "ridesPerHour": 8,
+    "ridesPerHour": 12,
+    "riderCapacity": 8,
     "utilityCost": 950
   },
   {
@@ -148,7 +157,8 @@
     "buildWeeks": 22,
     "rideDuration": 90,
     "intensity": "high",
-    "ridesPerHour": 24,
+    "ridesPerHour": 7,
+    "riderCapacity": 28,
     "utilityCost": 1400
   },
   {
@@ -166,7 +176,8 @@
     "buildWeeks": 38,
     "rideDuration": 120,
     "intensity": "extreme",
-    "ridesPerHour": 20,
+    "ridesPerHour": 8,
+    "riderCapacity": 36,
     "utilityCost": 2800
   }
 ]
