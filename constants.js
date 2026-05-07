@@ -100,6 +100,9 @@ const MAX_EFFECTIVE_WEAR = 10000;
 
 const WEEKS_PER_YEAR = 52;
 
+// Hours the park is open each day — used to convert ride cycles/hr to weekly rider capacity.
+const PARK_HOURS_PER_DAY = 10;
+
 const LOAN_STATUS = Object.freeze({
   APPROACHING: 'approaching',
   OPEN:        'open',

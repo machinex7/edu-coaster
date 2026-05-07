@@ -147,9 +147,12 @@ const Finance = {
 
     let totalWeeklyRiders = 0;
     runningRides.forEach(record => {
-      const rph = rides.find(r => r.id === record.rideId)?.ridesPerHour ?? 0;
-      record.lastRoundCapacity  = Math.round(rph * 7);
-      record.lastRoundRiders    = Math.round(rph * staffRatio * 7);
+      const def = rides.find(r => r.id === record.rideId);
+      const rph = def?.ridesPerHour ?? 0;
+      const cap = def?.riderCapacity ?? 1;
+      // Weekly riders = cycles/hr × riders/cycle × park hours/day × 7 days
+      record.lastRoundCapacity  = Math.round(rph * cap * PARK_HOURS_PER_DAY * 7);
+      record.lastRoundRiders    = Math.round(rph * cap * staffRatio * PARK_HOURS_PER_DAY * 7);
       totalWeeklyRiders        += record.lastRoundRiders * rideAgeFactor(record);
     });
 
