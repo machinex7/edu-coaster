@@ -269,9 +269,9 @@ function advanceRound() {
   _tickDemographicConfidence(report.weeklyAttendance);
   if (round % 13 === 1 && round > 1) Awards.checkQuarterly();
   // Schedule the P&L exercise to appear after this round's summary closes.
-  if (round % 13 === 0) PLStatement.pending = true;
+  if (round % 13 === 0 || round === 2) PLStatement.pending = true;
   // Schedule the annual balance sheet to chain after the P&L at year-end.
-  if (round % 52 === 0) BalanceSheet.pending = true;
+  if (round % 52 === 0 || round === 2) BalanceSheet.pending = true;
   updateLockedPanels();
   updateHUD();
   refreshRidesPanel();
