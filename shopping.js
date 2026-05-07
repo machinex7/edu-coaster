@@ -23,7 +23,7 @@ const Shopping = {
   orders:                   [],        // { itemIndex, itemName, count, weeksRemaining }
 
   // ── Pricing ────────────────────────────────────────────────────────────────
-  merchandiseUpcharge: 0,  // $ added on top of BASE_SPEND per buyer
+  merchandiseUpcharge: 5,  // $ added on top of BASE_SPEND per buyer
 
   // ── Constants ──────────────────────────────────────────────────────────────
   BASE_SPEND:              30,   // $ base spend per buyer (food/misc; not used in merch calcRevenue)

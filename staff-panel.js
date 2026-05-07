@@ -3,6 +3,21 @@
 // All methods here extend Staff via Object.assign. They may freely call
 // Staff simulation methods since both files are loaded before any execution.
 
+// Returns a colored ▲ or ▼ arrow span with interpolated color.
+// Modifier is clamped to ±30 (the max a $1,500 bonus produces) then
+// lerped from neutral gray toward full green (positive) or red (negative).
+function _moodArrow(modifier) {
+  if (!modifier) return '';
+  const up = modifier > 0;
+  const t  = Math.min(Math.abs(modifier) / 30, 1);
+  const [r1, g1, b1] = [156, 163, 175];                     // gray base
+  const [r2, g2, b2] = up ? [34, 197, 94] : [239, 68, 68]; // green or red target
+  const r = Math.round(r1 + (r2 - r1) * t);
+  const g = Math.round(g1 + (g2 - g1) * t);
+  const b = Math.round(b1 + (b2 - b1) * t);
+  return ` <span style="color:rgb(${r},${g},${b});font-style:normal">${up ? '▲' : '▼'}</span>`;
+}
+
 Object.assign(Staff, {
 
   // ── Panel sub-view switching ───────────────────────────────────────────────
@@ -167,7 +182,7 @@ Object.assign(Staff, {
 
     const bubblesHtml = s.events.length === 0 ? '' : `
       <div class="staff-events">
-        ${s.events.map(e => `<div class="staff-event-bubble">${e.comment}</div>`).join('')}
+        ${s.events.map(e => `<div class="staff-event-bubble">${e.comment}${_moodArrow(e.moodModifier)}</div>`).join('')}
       </div>`;
 
     container.innerHTML = `
@@ -185,27 +200,33 @@ Object.assign(Staff, {
             <span class="staff-detail-label">Salary</span>
             <span>$${s.salary.toLocaleString()}/wk</span>
           </div>
-          <div class="staff-detail-row">
+          <div class="staff-detail-row mood-bar-row">
             <span class="staff-detail-label">Mood</span>
-            <span><span class="mood-badge ${moodCls}">${moodLabel}</span></span>
+            <div class="mood-bar-track">
+              <div class="mood-bar-dot" style="left:${s.mood}%"></div>
+            </div>
           </div>
         </div>
         ${bubblesHtml}
         <div class="staff-propose-salary">
-          <label class="staff-detail-label">Propose New Salary</label>
-          <div class="staff-propose-row">
-            <input type="number" id="sdx-salary-input" min="0" value="${s.salary}">
-            <button class="ride-action-btn" id="sdx-propose">Propose</button>
+          <label class="staff-detail-label">Give Raise</label>
+          <div class="staff-raise-options">
+            ${[
+              { label: `Inflation (+${Math.round(Population.inflationRate * 100)}%)`, newSalary: s.salary + Math.round(s.salary * Population.inflationRate), pct: Population.inflationRate },
+              { label: '+10%', newSalary: s.salary + Math.round(s.salary * 0.10), pct: 0.10 },
+              { label: '+20%', newSalary: s.salary + Math.round(s.salary * 0.20), pct: 0.20 },
+            ].map(opt => `<button class="ride-action-btn sdx-raise-btn" data-salary="${opt.newSalary}" data-pct="${opt.pct}">
+                ${opt.label}<br><span class="sdx-raise-sub">$${opt.newSalary.toLocaleString()}/wk</span>
+              </button>`).join('')}
           </div>
-          <p id="sdx-propose-error" class="form-error hidden"></p>
         </div>
         <div class="staff-propose-salary">
-          <label class="staff-detail-label">Give Bonus</label>
-          <div class="staff-propose-row">
-            <input type="number" id="sdx-bonus-input" min="500" step="500" value="500">
-            <button class="ride-action-btn" id="sdx-bonus">Give</button>
+          <label class="staff-detail-label">One-Time Bonus <span class="staff-hint">+10 mood per $500</span></label>
+          <div class="staff-raise-options">
+            ${[500, 1000, 1500].map(amt =>
+              `<button class="ride-action-btn sdx-bonus-btn" data-amount="${amt}">$${amt.toLocaleString()}</button>`
+            ).join('')}
           </div>
-          <p id="sdx-bonus-error" class="form-error hidden"></p>
         </div>
         <div class="ride-detail-actions">
           <button class="ride-action-btn ride-action-danger" id="sdx-fire">Fire</button>
@@ -216,37 +237,24 @@ Object.assign(Staff, {
       this._selectedStaffId = null;
       this.buildRosterView();
     });
-    document.getElementById('sdx-propose').addEventListener('click', () => {
-      const val   = parseInt(document.getElementById('sdx-salary-input').value) || 0;
-      const errEl = document.getElementById('sdx-propose-error');
-      if (val <= 0) {
-        errEl.textContent = 'Enter a valid salary.';
-        errEl.classList.remove('hidden');
-        return;
-      }
-      if (val !== s.salary) {
-        const modifier = Math.round((val - s.salary) / s.salary * 100);
-        const comment  = modifier > 0 ? 'Happy about a raise.' : 'Unhappy about a pay cut.';
-        s.events.push({ moodModifier: modifier, comment });
-      }
-      s.salary = val;
-      errEl.classList.add('hidden');
-      document.getElementById('sdx-propose').textContent = 'Proposed ✓';
-      document.getElementById('sdx-propose').disabled = true;
+    document.querySelectorAll('.sdx-raise-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const newSalary = parseInt(btn.dataset.salary);
+        const modifier  = Math.round((newSalary - s.salary) / s.salary * 100);
+        s.events.push({ moodModifier: modifier, comment: 'Happy about a raise.' });
+        s.salary = newSalary;
+        document.querySelectorAll('.sdx-raise-btn').forEach(b => { b.disabled = true; });
+        btn.innerHTML = `Applied ✓<br><span class="sdx-raise-sub">$${newSalary.toLocaleString()}/wk</span>`;
+      });
     });
-    document.getElementById('sdx-bonus').addEventListener('click', () => {
-      const val   = parseInt(document.getElementById('sdx-bonus-input').value) || 0;
-      const errEl = document.getElementById('sdx-bonus-error');
-      if (val <= 0 || val % 500 !== 0) {
-        errEl.textContent = 'Bonus must be a multiple of $500.';
-        errEl.classList.remove('hidden');
-        return;
-      }
-      const modifier = (val / 500) * 10;
-      s.events.push({ moodModifier: modifier, comment: `Happy about a $${val.toLocaleString()} bonus.` });
-      errEl.classList.add('hidden');
-      document.getElementById('sdx-bonus').textContent = 'Given ✓';
-      document.getElementById('sdx-bonus').disabled = true;
+    document.querySelectorAll('.sdx-bonus-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const amt      = parseInt(btn.dataset.amount);
+        const modifier = (amt / 500) * 10;
+        s.events.push({ moodModifier: modifier, comment: `Happy about a $${amt.toLocaleString()} bonus.` });
+        document.querySelectorAll('.sdx-bonus-btn').forEach(b => { b.disabled = true; });
+        btn.textContent = btn.textContent + ' ✓';
+      });
     });
     document.getElementById('sdx-fire').addEventListener('click', () => {
       const actionsEl = document.querySelector('.ride-detail-actions');
