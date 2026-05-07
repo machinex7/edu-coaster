@@ -25,7 +25,61 @@ const Membership = {
   // Whether the new-plan creation form is currently visible.
   _formOpen: false,
 
+  // Round totals set by calcMemberAttendance() so other systems can reference them.
+  memberAttendanceThisRound:   0,
+  freeParkingVisitsThisRound:  0,
+
   // ── Sales simulation ────────────────────────────────────────────────────────
+
+  // Called once per round by Finance.processRound() before shopping/food/security.
+  // Returns { attendance, freeParkingVisits } and caches both on the object.
+  //
+  // For each plan we estimate how many of its active members visit this week,
+  // then multiply by the plan's guestCount (each membership covers that many people).
+  //
+  // We don't know exactly which distance bracket each member came from — we only
+  // stored the aggregate activeMembers count.  So we distribute members across
+  // brackets using the same chance×favor weights used when they bought, which is
+  // the best available approximation of the actual breakdown.
+  calcMemberAttendance() {
+    let attendance        = 0;
+    let freeParkingVisits = 0;
+
+    const distanceTotalWeight = Population.DISTANCE_BRACKETS.reduce(
+      (s, d) => s + d.chance * d.favor, 0,
+    );
+
+    for (const plan of this.plans) {
+      if (plan.activeMembers === 0) continue;
+
+      for (const D of Population.DISTANCE_BRACKETS) {
+        // Estimated share of this plan's active members who live in this bracket.
+        // High-chance, high-favor brackets are over-represented among buyers,
+        // so weighting by chance×favor is more accurate than chance alone.
+        const dFraction        = (D.chance * D.favor) / distanceTotalWeight;
+        const membersInBracket = plan.activeMembers * dFraction;
+
+        // D.annualVisits / 52 converts a yearly visit rate into a per-week
+        // probability.  Multiply by guestCount because each membership admits
+        // that many people in a single visit.
+        const weeklyVisitRate   = D.annualVisits / 52;
+        attendance             += membersInBracket * weeklyVisitRate * plan.guestCount;
+
+        // Track free-parking vehicles separately so the parking panel and
+        // future revenue logic can reference them without recomputing.
+        if (plan.freeParking) {
+          freeParkingVisits += membersInBracket * weeklyVisitRate;
+        }
+      }
+    }
+
+    this.memberAttendanceThisRound  = Math.round(attendance);
+    this.freeParkingVisitsThisRound = Math.round(freeParkingVisits);
+    return {
+      attendance:        this.memberAttendanceThisRound,
+      freeParkingVisits: this.freeParkingVisitsThisRound,
+    };
+  },
 
   // Called once per round by Finance.processRound() after calcExcitement() runs.
   // Returns total membership revenue earned this round (caller adds it to money).

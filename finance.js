@@ -1065,13 +1065,21 @@ const Finance = {
     // Always at least 35 visitors per week — a few souls wander in regardless.
     // Subtract net no-shows (0 if bus is running) before downstream calculations.
     // Bus riders are added back in since they do attend.
+    // Paying visitors only — gate revenue is calculated on this figure.
     const weeklyAttendance  = Math.max(35, Math.round(daily * 7) - parking.noShowVisitors);
+
+    // Members enter free (no gate charge) and free-parking plans skip parking fees.
+    // Add their headcount so shopping, food, security, and excitement all see the
+    // full park population this round.
+    const { attendance: memberAttendance } = Membership.calcMemberAttendance();
+    const totalAttendance   = weeklyAttendance + memberAttendance;
+
     const gateRevenue       = this.calcGateRevenue(daily);
     const parkingRevenue    = parking.revenue;
-    const { revenue: shopRevenue, itemsSold: shopItemsSold } = Shopping.calcRevenue(weeklyAttendance);
-    const food      = Concessions.calcFood(weeklyAttendance);
+    const { revenue: shopRevenue, itemsSold: shopItemsSold } = Shopping.calcRevenue(totalAttendance);
+    const food      = Concessions.calcFood(totalAttendance);
     const foodRevenue = food.revenue;
-    const security = Security.calcIncidents(weeklyAttendance, dailyDemand, dailyThroughput);
+    const security = Security.calcIncidents(totalAttendance, dailyDemand, dailyThroughput);
 
     // Income
     money += gateRevenue;
@@ -1089,7 +1097,7 @@ const Finance = {
     const constructionCosts = processConstruction();  // skips progress on unaffordable builds
     processDemolition();              // advances demolition timers, clears finished structures
     this.processCovenantBreaches();   // collect any pending breach fees and retire those covenants
-    this.processActiveCovenants(weeklyAttendance);  // check all active covenant conditions
+    this.processActiveCovenants(totalAttendance);   // check all active covenant conditions
 
     if (Unlock.STAFFING) {
       Staff.advanceMedicalInsurance();  // tick quote countdown; tick policy duration
@@ -1103,9 +1111,9 @@ const Finance = {
       Staff.advanceCandidates();        // withdrawal check, then increment weeksAsCandidate
     }
     const merchItemsSold = Unlock.MERCHANDISE ? shopItemsSold : 0;
-    this.weeklyNetMess = Math.max(0, this.calcMessGenerated(weeklyAttendance, food.mealsSold, merchItemsSold) - Staff.calcJanitorCapacity());
+    this.weeklyNetMess = Math.max(0, this.calcMessGenerated(totalAttendance, food.mealsSold, merchItemsSold) - Staff.calcJanitorCapacity());
     this.distributeMessToTiles(
-      weeklyAttendance * Population.MESS_GUEST_RATE,
+      totalAttendance * Population.MESS_GUEST_RATE,
       merchItemsSold * Population.MESS_ITEM_RATE,
       food.mealsSold * Population.MESS_FOOD_RATE
     );
@@ -1113,10 +1121,11 @@ const Finance = {
       : food.mealsWanted > 0
       ? Math.min(1, 0.5 + 0.5 * food.mealsServed / food.mealsWanted)
       : 0.5;
-    this.calcExcitement(weeklyAttendance); // uses this round's mess, security, and meal satisfaction
+    this.calcExcitement(totalAttendance); // uses this round's mess, security, and meal satisfaction
 
     // Membership sales: must run after calcExcitement() so Finance.parkExcitement
     // already reflects this round's visitor experience (not last round's).
+    // Uses paying attendance only — existing members can't rebuy their own plan.
     const membershipRevenue = Membership.calcSales(weeklyAttendance);
     money += membershipRevenue;
 
@@ -1144,7 +1153,8 @@ const Finance = {
     }
 
     return {
-      weeklyAttendance,
+      weeklyAttendance: totalAttendance,
+      memberAttendance,
       gateRevenue,
       parkingRevenue,
       altTransportVisitors: parking.altTransportVisitors,
