@@ -103,9 +103,19 @@ const Membership = {
         newSales += weeklyAttendance * dFraction * hFraction * prob;
       }
 
-      plan.salesThisRound  = Math.floor(newSales);
-      plan.totalMembers    = (plan.totalMembers ?? 0) + plan.salesThisRound;
-      totalRevenue        += plan.salesThisRound * plan.annualPrice;
+      plan.salesThisRound = Math.floor(newSales);
+
+      // Slide the 52-week window: push this week's sales in, evict the entry
+      // from one year ago once the history is full.  The running sum is the
+      // number of memberships that are still within their one-year term — i.e.
+      // currently active.  Weeks with zero sales are stored so the window
+      // always advances even in quiet rounds.
+      plan.salesHistory.push(plan.salesThisRound);
+      if (plan.salesHistory.length > 52) plan.salesHistory.shift();
+      plan.activeMembers = plan.salesHistory.reduce((s, n) => s + n, 0);
+
+      plan.totalMembers += plan.salesThisRound;
+      totalRevenue      += plan.salesThisRound * plan.annualPrice;
     }
 
     return totalRevenue;
@@ -237,6 +247,8 @@ const Membership = {
         foodDiscountPct:  foodPct,
         merchDiscountPct: merchPct,
         salesThisRound:  0,
+        salesHistory:    [],   // rolling 52-week window; sum = activeMembers
+        activeMembers:   0,
         totalMembers:    0,
       });
 
@@ -257,7 +269,8 @@ const Membership = {
 
     const statsHtml = plan.totalMembers > 0
       ? `<div class="plan-stats">
-           <span class="plan-stat">${plan.totalMembers.toLocaleString()} members</span>
+           <span class="plan-stat">${plan.activeMembers.toLocaleString()} active</span>
+           <span class="plan-stat">${plan.totalMembers.toLocaleString()} all-time</span>
            ${plan.salesThisRound > 0 ? `<span class="plan-stat-new">+${plan.salesThisRound} this week</span>` : ''}
          </div>`
       : '';
