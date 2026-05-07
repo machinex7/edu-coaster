@@ -608,7 +608,12 @@ const Finance = {
     const totalAttendance   = weeklyAttendance + memberAttendance;
 
     const gateRevenue       = this.calcGateRevenue(daily);
-    const parkingRevenue    = parking.revenue;
+    // Non-free-parking members drive in and pay the standard rate; they're
+    // committed visitors so there's no price-sensitivity or no-show risk.
+    // Only applies once parking fees research is unlocked (same gate as paying visitors).
+    const memberParkingRevenue = Research.completed.has(RESEARCH_ID.PARKING_FEES)
+      ? Membership.paidParkingVehiclesThisRound * this.parkingPrice : 0;
+    const parkingRevenue    = parking.revenue + memberParkingRevenue;
     const { revenue: shopRevenue, itemsSold: shopItemsSold } = Shopping.calcRevenue(totalAttendance);
     const food      = Concessions.calcFood(totalAttendance);
     const foodRevenue = food.revenue;

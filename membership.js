@@ -26,13 +26,14 @@ const Membership = {
   _formOpen: false,
 
   // Round totals set by calcMemberAttendance() so other systems can reference them.
-  memberAttendanceThisRound:   0,
-  freeParkingVisitsThisRound:  0,
+  memberAttendanceThisRound:    0,
+  freeParkingVisitsThisRound:   0,  // vehicle-trips from free-parking plans (no revenue)
+  paidParkingVehiclesThisRound: 0,  // vehicle-trips from non-free-parking plans (pay standard rate)
 
   // ── Sales simulation ────────────────────────────────────────────────────────
 
   // Called once per round by Finance.processRound() before shopping/food/security.
-  // Returns { attendance, freeParkingVisits } and caches both on the object.
+  // Returns { attendance, freeParkingVisits, paidParkingVehicles } and caches all on the object.
   //
   // For each plan we estimate how many of its active members visit this week,
   // then multiply by the plan's guestCount (each membership covers that many people).
@@ -41,9 +42,14 @@ const Membership = {
   // stored the aggregate activeMembers count.  So we distribute members across
   // brackets using the same chance×favor weights used when they bought, which is
   // the best available approximation of the actual breakdown.
+  //
+  // Vehicle counting: membersInBracket × weeklyVisitRate represents household-unit
+  // visits, i.e. one vehicle per visit.  Free-parking plans are tracked so Finance
+  // can skip charging them; non-free-parking plans pay the standard parking rate.
   calcMemberAttendance() {
-    let attendance        = 0;
-    let freeParkingVisits = 0;
+    let attendance          = 0;
+    let freeParkingVisits   = 0;
+    let paidParkingVehicles = 0;
 
     const distanceTotalWeight = Population.DISTANCE_BRACKETS.reduce(
       (s, d) => s + d.chance * d.favor, 0,
@@ -62,22 +68,25 @@ const Membership = {
         // D.annualVisits / 52 converts a yearly visit rate into a per-week
         // probability.  Multiply by guestCount because each membership admits
         // that many people in a single visit.
-        const weeklyVisitRate   = D.annualVisits / 52;
-        attendance             += membersInBracket * weeklyVisitRate * plan.guestCount;
+        const weeklyVisitRate = D.annualVisits / 52;
+        attendance           += membersInBracket * weeklyVisitRate * plan.guestCount;
 
-        // Track free-parking vehicles separately so the parking panel and
-        // future revenue logic can reference them without recomputing.
+        // Each household visit = one vehicle trip.  Route to the appropriate counter.
         if (plan.freeParking) {
-          freeParkingVisits += membersInBracket * weeklyVisitRate;
+          freeParkingVisits   += membersInBracket * weeklyVisitRate;
+        } else {
+          paidParkingVehicles += membersInBracket * weeklyVisitRate;
         }
       }
     }
 
-    this.memberAttendanceThisRound  = Math.round(attendance);
-    this.freeParkingVisitsThisRound = Math.round(freeParkingVisits);
+    this.memberAttendanceThisRound    = Math.round(attendance);
+    this.freeParkingVisitsThisRound   = Math.round(freeParkingVisits);
+    this.paidParkingVehiclesThisRound = Math.round(paidParkingVehicles);
     return {
-      attendance:        this.memberAttendanceThisRound,
-      freeParkingVisits: this.freeParkingVisitsThisRound,
+      attendance:          this.memberAttendanceThisRound,
+      freeParkingVisits:   this.freeParkingVisitsThisRound,
+      paidParkingVehicles: this.paidParkingVehiclesThisRound,
     };
   },
 
