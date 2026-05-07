@@ -145,5 +145,12 @@
     "cost": 6,
     "feature": "MERCHANDISE",
     "requires": []
+  },
+  {
+    "id": "parking_fees",
+    "name": "Parking Fees",
+    "description": "Establish a paid parking program. Unlocks the Parking panel where you can set per-vehicle fees and track how pricing affects visitor attendance and in-park spending.",
+    "cost": 5,
+    "requires": []
   }
 ]

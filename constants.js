@@ -79,6 +79,7 @@ const RESEARCH_ID = Object.freeze({
   BULK_ORDERING:            'bulk_ordering',
   DEMOGRAPHIC_POPULATION:             'demographic_population',
   DEMOGRAPHIC_SEGMENTATION_DISPLAY:   'demographic_segmentation_display',
+  PARKING_FEES:             'parking_fees',
 });
 
 // IDs that match the concessions menu items in Concessions.menuItems.

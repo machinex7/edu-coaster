@@ -139,8 +139,10 @@ const Concessions = {
     const totalHouseholdChance = Population.HOUSEHOLD_SIZES.reduce((s, h) => s + h.chance, 0);
     const demanded = options.map(() => 0);
 
+    // parkingSpendingMultiplier reduces food purchasing propensity when parking fees eat into visitor budgets.
+    const parkingMult = Finance.parkingSpendingMultiplier ?? 1;
     Population.HOUSEHOLD_SIZES.forEach(bracket => {
-      const groupVisits = weeklyAttendance * (bracket.chance / totalHouseholdChance) * this.FOOD_PURCHASE_RATE;
+      const groupVisits = weeklyAttendance * (bracket.chance / totalHouseholdChance) * this.FOOD_PURCHASE_RATE * parkingMult;
       const weights = options.map(opt => {
         const proximity  = Math.exp(-this.PROXIMITY_K * Math.pow(opt.mealValue - bracket.mealTarget, 2));
         const valueScore = opt.price > 0 ? opt.ingredientCost / opt.price : 0;

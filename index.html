@@ -64,6 +64,7 @@
           <button class="tool-btn" data-panel="visitor-profile">Visitor Profile</button>
           <button class="tool-btn hidden" data-panel="awards">Awards</button>
           <button class="tool-btn" data-panel="concessions">Concessions</button>
+          <button class="tool-btn hidden" data-panel="parking">Parking</button>
           <button class="tool-btn" data-panel="forms">Forms</button>
         </nav>
 
@@ -180,6 +181,14 @@
           </div>
         </div>
 
+        <!-- Parking slide panel -->
+        <div id="panel-parking" class="side-panel closed">
+          <div class="side-panel-inner">
+            <div class="panel-header">Parking</div>
+            <div id="parking-panel-body"></div>
+          </div>
+        </div>
+
         <!-- Visitor Profile full-screen panel -->
         <div id="panel-visitor-profile" class="side-panel closed">
           <div class="side-panel-inner">
@@ -246,9 +255,13 @@
           <span class="modal-stat-label">Gate Revenue</span>
           <span class="modal-stat-value income" id="summary-income"></span>
         </div>
-        <div class="modal-stat-row">
+        <div class="modal-stat-row" id="summary-parking-row">
           <span class="modal-stat-label">Parking Revenue</span>
           <span class="modal-stat-value income" id="summary-parking-income"></span>
+        </div>
+        <div class="modal-stat-row hidden" id="summary-alt-transport-row">
+          <span class="modal-stat-label">Alt-transport visitors</span>
+          <span class="modal-stat-value" id="summary-alt-transport"></span>
         </div>
         <div class="modal-stat-row">
           <span class="modal-stat-label">Shop Revenue</span>

@@ -304,7 +304,20 @@ function showRoundSummary(report) {
   document.getElementById('summary-date').textContent        = getDateLabel();
   document.getElementById('summary-attendance').textContent  = report.weeklyAttendance.toLocaleString();
   document.getElementById('summary-income').textContent         = `$${report.gateRevenue.toLocaleString()}`;
+
+  // Parking row is only meaningful after the research is unlocked.
+  const parkingRowEl = document.getElementById('summary-parking-row');
+  if (parkingRowEl) parkingRowEl.classList.toggle('hidden', !Research.completed.has(RESEARCH_ID.PARKING_FEES));
   document.getElementById('summary-parking-income').textContent = `$${report.parkingRevenue.toLocaleString()}`;
+
+  // Alt-transport row: show when parking is unlocked and at least one visitor used alternative transport.
+  const altRowEl = document.getElementById('summary-alt-transport-row');
+  if (altRowEl) {
+    const showAlt = Research.completed.has(RESEARCH_ID.PARKING_FEES) && report.altTransportVisitors > 0;
+    altRowEl.classList.toggle('hidden', !showAlt);
+    document.getElementById('summary-alt-transport').textContent = report.altTransportVisitors.toLocaleString();
+  }
+
   document.getElementById('summary-shop-income').textContent    = `$${report.shopRevenue.toLocaleString()}`;
   document.getElementById('summary-expenses').textContent    = `$${(report.staffCosts + report.utilityCosts + report.constructionCosts).toLocaleString()}`;
 
@@ -473,6 +486,10 @@ function updateLockedPanels() {
 
   const messModeBtn = document.querySelector('.view-mode-btn[data-view-mode="dirt"]');
   if (messModeBtn) messModeBtn.classList.toggle('hidden', !Unlock.MESSES);
+
+  // Parking panel unlocks when the Parking Fees research is completed.
+  const parkingNavBtn = document.querySelector('.tool-btn[data-panel="parking"]');
+  if (parkingNavBtn) parkingNavBtn.classList.toggle('hidden', !Research.completed.has(RESEARCH_ID.PARKING_FEES));
 }
 
 function togglePanel(panelId) {
@@ -502,6 +519,7 @@ function openPanel(panelId) {
   if (panelId === 'visitor-profile') VisitorProfile.buildPanel();
   if (panelId === 'concessions')     Concessions.buildPanel();
   if (panelId === 'forms')           FormsPanel.buildPanel();
+  if (panelId === 'parking')         buildParkingPanel();
 }
 
 function closePanels() {
@@ -665,17 +683,6 @@ const PRICE_ITEMS = [
       const delta = v - Finance.gatePrice;
       if (delta > 0) Finance.priceExhaustion += 2 * delta;
       Finance.gatePrice = v;
-    },
-  },
-  {
-    key:       'parking',
-    label:     'Parking',
-    unit:      '$/vehicle',
-    getValue:  () => Finance.parkingPrice,
-    setValue:  v => {
-      const delta = v - Finance.parkingPrice;
-      if (delta > 0) Finance.priceExhaustion += 1 * delta;
-      Finance.parkingPrice = v;
     },
   },
   {
@@ -902,6 +909,84 @@ function _buildInvPurchasingView() {
       updateHUD();
       _buildInvPurchasingView();
     });
+  });
+}
+
+// ── Parking panel ──────────────────────────────────────────────────────────
+// Builds the parking management panel, showing price control and per-bracket
+// affordability breakdown. Unlocked by the Parking Fees research item.
+function buildParkingPanel() {
+  const body = document.getElementById('parking-panel-body');
+  if (!body) return;
+
+  const inflation  = Population.cumulativeInflation;
+  const threshold  = 10 * inflation;
+  const price      = Finance.parkingPrice;
+  const brackets   = Population.INCOME_BRACKETS;
+
+  // Spending reduction above the free threshold.
+  const reductionPct = price > threshold
+    ? Math.min(100, ((price - threshold) / 4)).toFixed(1)
+    : 0;
+
+  // Per-bracket status rows.
+  const bracketRows = brackets.map((b, i) => {
+    const limit      = Population.PARKING_PRICE_LIMITS[i] * inflation;
+    const altRatio   = Population.PARKING_ALT_TRANSPORT_RATIO[i];
+    const pricedOut  = price > limit;
+    const status     = pricedOut
+      ? `<span class="parking-priced-out">Priced out — ${Math.round(altRatio * 100)}% alt transport, ${Math.round((1 - altRatio) * 100)}% no-show</span>`
+      : `<span class="parking-pays">Pays normally</span>`;
+    return `
+      <div class="parking-bracket-row">
+        <span class="parking-bracket-name">${b.name}</span>
+        <span class="parking-bracket-limit">Max $${limit.toFixed(0)}</span>
+        ${status}
+      </div>`;
+  }).join('');
+
+  body.innerHTML = `
+    <div class="parking-section">
+      <div class="price-row">
+        <div class="price-label">Parking Fee</div>
+        <div class="price-unit">$/vehicle</div>
+        <div class="price-controls">
+          <span class="price-current" id="parking-price-current">$${price}</span>
+          <input class="price-input" id="parking-price-input" type="number" min="0" value="${price}">
+          <button class="price-apply-btn" id="parking-apply-btn">Apply</button>
+        </div>
+      </div>
+      <div class="parking-threshold-note">
+        Free zone: $${threshold.toFixed(0)} or under — no effect on in-park spending.
+        ${price > threshold
+          ? `<br>Current overage: <strong>${reductionPct}%</strong> reduction in food &amp; merchandise spending.`
+          : ''}
+      </div>
+    </div>
+    <div class="parking-section">
+      <div class="parking-section-title">Income Bracket Affordability</div>
+      ${bracketRows}
+    </div>
+    <div class="parking-section">
+      <div class="parking-stat-row">
+        <span class="parking-stat-label">Alt-transport visitors last round</span>
+        <span class="parking-stat-value">${Finance.altTransportVisitors.toLocaleString()}</span>
+      </div>
+      <div class="parking-stat-row">
+        <span class="parking-stat-label">Spending multiplier last round</span>
+        <span class="parking-stat-value">${(Finance.parkingSpendingMultiplier * 100).toFixed(1)}%</span>
+      </div>
+    </div>
+  `;
+
+  document.getElementById('parking-apply-btn').addEventListener('click', () => {
+    const v = parseFloat(document.getElementById('parking-price-input').value);
+    if (!isNaN(v) && v >= 0) {
+      const delta = v - Finance.parkingPrice;
+      if (delta > 0) Finance.priceExhaustion += 1 * delta;
+      Finance.parkingPrice = v;
+      buildParkingPanel();
+    }
   });
 }
 

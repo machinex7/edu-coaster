@@ -217,10 +217,17 @@ const Finance = {
 
   // ── Pricing ─────────────────────────────────────────────────────────────────
   gatePrice:    20,  // $ per visitor
-  parkingPrice: 10,  // $ per vehicle
+  parkingPrice: 10,  // $ per vehicle (only active after PARKING_FEES research)
 
   // Cumulative visitor price fatigue. Rises when prices increase, decays 1/round.
   priceExhaustion: 0,
+
+  // Multiplier (0–1) applied to food and merchandise spending this round.
+  // Drops below 1 when parking fees exceed the inflation-adjusted free threshold.
+  parkingSpendingMultiplier: 1,
+
+  // Count of visitors who arrived via alternative transport this round (no parking revenue).
+  altTransportVisitors: 0,
 
   advancePriceExhaustion() {
     this.priceExhaustion = Math.max(0, this.priceExhaustion - 1);
@@ -235,9 +242,55 @@ const Finance = {
     return base - discount;
   },
 
-  // 1 vehicle per 3 visitors who want to come (based on demand, not throughput).
-  calcParkingRevenue(dailyDemand) {
-    return Math.floor(dailyDemand * 7 / 3) * this.parkingPrice;
+  // Computes parking revenue and side-effects for this round.
+  // Returns { revenue, altTransportVisitors, noShowVisitors, spendingMultiplier }.
+  //
+  // Three zones:
+  //   ≤ threshold ($10 × inflation): everyone pays, no spending effect.
+  //   > threshold:                   food/merch spending drops by (price − threshold)/4 percent.
+  //   > bracket limit × inflation:   that income bracket is "priced out" — a fraction use
+  //                                  alternative transport (still attend, no parking revenue),
+  //                                  the rest don't come at all.
+  calcParkingResult(dailyDemand) {
+    if (!Research.completed.has(RESEARCH_ID.PARKING_FEES)) {
+      return { revenue: 0, altTransportVisitors: 0, noShowVisitors: 0, spendingMultiplier: 1 };
+    }
+
+    const inflation       = Population.cumulativeInflation;
+    const threshold       = 10 * inflation;
+    const weeklyVehicles  = Math.floor(dailyDemand * 7 / 3);  // 1 vehicle per 3 visitors
+
+    // Spending multiplier: each dollar above the free threshold cuts food/merch spending by 0.25%.
+    const spendingMultiplier = this.parkingPrice > threshold
+      ? Math.max(0, 1 - (this.parkingPrice - threshold) / 400)
+      : 1;
+
+    // Split weekly vehicles across income brackets proportionally by their attendance chance.
+    const totalChance = Population.INCOME_BRACKETS.reduce((s, b) => s + b.chance, 0);
+    let payingVehicles       = 0;
+    let altTransportVehicles = 0;
+    let noShowVehicles       = 0;
+
+    for (let i = 0; i < Population.INCOME_BRACKETS.length; i++) {
+      const bracket        = Population.INCOME_BRACKETS[i];
+      const bracketLimit   = Population.PARKING_PRICE_LIMITS[i] * inflation;
+      const bracketVehicles = Math.round(weeklyVehicles * (bracket.chance / totalChance));
+
+      if (this.parkingPrice > bracketLimit) {
+        // Priced out: split between alt-transport and no-show.
+        const altRatio = Population.PARKING_ALT_TRANSPORT_RATIO[i];
+        altTransportVehicles += Math.round(bracketVehicles * altRatio);
+        noShowVehicles       += bracketVehicles - Math.round(bracketVehicles * altRatio);
+      } else {
+        payingVehicles += bracketVehicles;
+      }
+    }
+
+    const revenue            = payingVehicles * this.parkingPrice;
+    const altTransportVisitors = altTransportVehicles * 3;  // ~3 visitors per vehicle
+    const noShowVisitors       = noShowVehicles * 3;
+
+    return { revenue, altTransportVisitors, noShowVisitors, spendingMultiplier };
   },
 
   // ── Engineers ────────────────────────────────────────────────────────────────
@@ -946,10 +999,16 @@ const Finance = {
     this.computeRideOpinion(daily * 7); // updates rideOpinion for next round; sets lastRoundRiders
     this.processWear();               // accumulate wear then roll for breakdown
 
+    // Parking: compute side-effects first so we can adjust attendance before shopping/food.
+    const parking = this.calcParkingResult(dailyDemand);
+    this.parkingSpendingMultiplier = parking.spendingMultiplier;
+    this.altTransportVisitors      = parking.altTransportVisitors;
+
     // Always at least 35 visitors per week — a few souls wander in regardless.
-    const weeklyAttendance  = Math.max(35, Math.round(daily * 7));
+    // Subtract no-shows caused by parking prices before downstream calculations.
+    const weeklyAttendance  = Math.max(35, Math.round(daily * 7) - parking.noShowVisitors);
     const gateRevenue       = this.calcGateRevenue(daily);
-    const parkingRevenue    = this.calcParkingRevenue(dailyDemand);
+    const parkingRevenue    = parking.revenue;
     const { revenue: shopRevenue, itemsSold: shopItemsSold } = Shopping.calcRevenue(weeklyAttendance);
     const food      = Concessions.calcFood(weeklyAttendance);
     const foodRevenue = food.revenue;
@@ -1018,6 +1077,8 @@ const Finance = {
       weeklyAttendance,
       gateRevenue,
       parkingRevenue,
+      altTransportVisitors: parking.altTransportVisitors,
+      parkingSpendingMultiplier: parking.spendingMultiplier,
       shopRevenue,
       foodRevenue,
       discountLoss: Discounts.lastRoundCost,
