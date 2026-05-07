@@ -218,7 +218,6 @@ const Finance = {
   // ── Pricing ─────────────────────────────────────────────────────────────────
   gatePrice:    20,  // $ per visitor
   parkingPrice: 10,  // $ per vehicle
-  foodUpcharge:  0,  // $ added per food item sold
 
   // Cumulative visitor price fatigue. Rises when prices increase, decays 1/round.
   priceExhaustion: 0,
@@ -952,8 +951,8 @@ const Finance = {
     const gateRevenue       = this.calcGateRevenue(daily);
     const parkingRevenue    = this.calcParkingRevenue(dailyDemand);
     const { revenue: shopRevenue, itemsSold: shopItemsSold } = Shopping.calcRevenue(weeklyAttendance);
-    const food              = Shopping.calcFood(weeklyAttendance);
-    const foodRevenue       = Math.round(food.mealsSold * (Shopping.MEAL_BASE_PRICE + this.foodUpcharge));
+    const food      = Concessions.calcFood(weeklyAttendance);
+    const foodRevenue = food.revenue;
     const security = Security.calcIncidents(weeklyAttendance, dailyDemand, dailyThroughput);
 
     // Income

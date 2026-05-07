@@ -1,0 +1,9 @@
+[
+  { "id": "water_cup",       "name": "Water Cup",       "cost": 0.00, "mealValue": 0.1, "alwaysAvailable": true },
+  { "id": "soda",            "name": "Soda",            "cost": 0.25, "mealValue": 0.1 },
+  { "id": "hot_dog",         "name": "Hot Dog",         "cost": 1.00, "mealValue": 0.6 },
+  { "id": "fries",           "name": "Fries",           "cost": 0.75, "mealValue": 0.3 },
+  { "id": "tater_tots",      "name": "Tater Tots",      "cost": 0.75, "mealValue": 0.3 },
+  { "id": "burger",          "name": "Burger",          "cost": 2.00, "mealValue": 0.6 },
+  { "id": "chicken_tenders", "name": "Chicken Tenders", "cost": 1.50, "mealValue": 0.6 }
+]

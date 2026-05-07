@@ -225,6 +225,7 @@ function initHUD() {
   document.getElementById('next-round-btn').addEventListener('click', advanceRound);
   document.getElementById('modal-close-btn').addEventListener('click', hideRoundSummary);
   PLStatement.init();
+  Concessions.init();
   Staff.initPanel();
   initInventoryPanel();
   Charts.initModal();
@@ -256,6 +257,7 @@ function openPark() {
 
 function advanceRound() {
   round++;
+  Concessions.onRoundAdvance();
   const report     = Finance.processRound();
   const loanResult = Finance.processPendingLoan();
   Survey.processPendingSend();
@@ -277,6 +279,7 @@ function advanceRound() {
   if (loanResult && activePanel === 'financial') buildFinancialPanel();
   if (activePanel === 'survey')          Survey.buildPanel();
   if (activePanel === 'visitor-profile') VisitorProfile.buildPanel();
+  if (activePanel === 'concessions')     Concessions.buildPanel();
   showRoundSummary(report);
   nextWeekForecast   = futurecastForecast;
   futurecastForecast = forecastForRound(round + 2);
@@ -492,6 +495,7 @@ function openPanel(panelId) {
   if (panelId === 'discounts')        Discounts.buildPanel();
   if (panelId === 'marketing')       Marketing.buildPanel();
   if (panelId === 'visitor-profile') VisitorProfile.buildPanel();
+  if (panelId === 'concessions')     Concessions.buildPanel();
 }
 
 function closePanels() {
@@ -667,13 +671,6 @@ const PRICE_ITEMS = [
       if (delta > 0) Finance.priceExhaustion += 1 * delta;
       Finance.parkingPrice = v;
     },
-  },
-  {
-    key:       'food',
-    label:     'Food Upcharge',
-    unit:      '$/item',
-    getValue:  () => Finance.foodUpcharge,
-    setValue:  v => { Finance.foodUpcharge = v; },
   },
   {
     key:       'merchandise',
