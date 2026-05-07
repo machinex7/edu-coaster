@@ -54,6 +54,13 @@ const History = {
       mealsWanted:         report.food.mealsWanted,
       mealsServed:         report.food.mealsServed,
       mealSatisfaction:    report.food.mealSatisfaction,
+      parkingPrice:           Finance.parkingPrice,
+      parkingAmenityBonus:    Finance.parkingAmenityBonus,
+      parkingAmenitySpend:    report.parkingAmenityCosts,
+      parkingAltTransport:    report.altTransportVisitors,
+      parkingBusRiders:       report.busRiders,
+      parkingBusCost:         report.busCost,
+      parkingSpendingMult:    report.parkingSpendingMultiplier,
       surveys:             Survey.drainPending(),
     });
   },

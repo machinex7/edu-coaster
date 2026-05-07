@@ -42,6 +42,16 @@ const Population = {
   inflationRate:        0.02,  // annual rate; applied weekly to staff cost-of-living
   cumulativeInflation:  1,     // starts at 1; multiplied each round by (1 + inflationRate/52)
 
+  // ── Parking behavior ──────────────────────────────────────────────────────
+  // Maximum parking price (before inflation) each income bracket will pay before being "priced out".
+  // Indexed to match INCOME_BRACKETS order: Low, Lower-Mid, Middle, Upper-Mid, High.
+  PARKING_PRICE_LIMITS: [8, 15, 25, 40, 100],
+
+  // Fraction of priced-out visitors in each bracket who use alternative transport (rideshare, carpool,
+  // walking) instead of skipping the visit entirely. Remainder don't attend at all.
+  // Lower income brackets are more willing to find an alternative; higher brackets simply don't come.
+  PARKING_ALT_TRANSPORT_RATIO: [0.70, 0.50, 0.35, 0.20, 0.10],
+
   // ── Demographics ──────────────────────────────────────────────────────────
   // Loaded from demographics.json by game.js at startup via Object.assign(Population, data).
   // Each entry: { name, chance, annualVisits, count, intensityBias?, preferredCategory, favor }

@@ -156,9 +156,11 @@ const Shopping = {
       }
       if (afford === 0) continue;
 
-      const weatherMult = weatherItemMults[item.id] ?? 1;
+      const weatherMult  = weatherItemMults[item.id] ?? 1;
+      // parkingSpendingMultiplier reduces purchasing propensity when parking fees eat into visitor budgets.
+      const parkingMult  = Finance.parkingSpendingMultiplier ?? 1;
       const attempts = Math.round(
-        desire[item.category] * afford * weeklyAttendance * Population.BUYER_RATE * staffRatio * weatherMult
+        desire[item.category] * afford * weeklyAttendance * Population.BUYER_RATE * staffRatio * weatherMult * parkingMult
       );
       const sold    = Math.min(attempts, inv.count);
       inv.count    -= sold;

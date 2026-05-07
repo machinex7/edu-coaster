@@ -2513,3 +2513,141 @@
 .fp-neg        { color: #f87171; }
 /* Not Applicable items (D2/D4 distractors) — neutral gray. */
 .fp-na         { color: #9ca3af; }
+
+/* ── Parking panel ── */
+#parking-panel-body {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Grouped section within the parking panel. */
+.parking-section {
+  background: #1f2937;
+  border-radius: 6px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Section title (e.g. "Income Bracket Affordability"). */
+.parking-section-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Note below the price control explaining the free zone and spending penalty. */
+.parking-threshold-note {
+  font-size: 0.78rem;
+  color: #9ca3af;
+  line-height: 1.4;
+}
+
+/* One income bracket row: name, limit, status. */
+.parking-bracket-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.8rem;
+  padding: 4px 0;
+  border-bottom: 1px solid #374151;
+}
+.parking-bracket-row:last-child { border-bottom: none; }
+
+.parking-bracket-name  { color: #d1d5db; }
+.parking-bracket-limit { color: #9ca3af; font-size: 0.75rem; }
+
+/* Status badges. */
+.parking-pays       { color: #4ade80; }
+.parking-priced-out { color: #f87171; font-size: 0.75rem; }
+
+/* Summary stat rows at the bottom of the panel. */
+.parking-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+}
+.parking-stat-label { color: #9ca3af; }
+.parking-stat-value { color: #d1d5db; font-weight: 600; }
+
+/* Parking amenity cards */
+.parking-amenity-note {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  line-height: 1.4;
+}
+
+/* One amenity row: name+bonus on the left, button or status on the right. */
+.parking-amenity-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid #374151;
+}
+.parking-amenity-row:last-child { border-bottom: none; }
+
+/* Dim the whole row once purchased. */
+.parking-amenity-owned { opacity: 0.6; }
+
+.parking-amenity-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.parking-amenity-label { font-size: 0.82rem; color: #d1d5db; }
+.parking-amenity-bonus { font-size: 0.72rem; color: #34d399; }
+
+/* Purchase button — reuses price-apply-btn shape but distinct color. */
+.parking-amenity-btn {
+  padding: 4px 10px;
+  background: #1d4ed8;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.parking-amenity-btn:disabled {
+  background: #374151;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+.parking-amenity-btn:not(:disabled):hover { background: #2563eb; }
+
+.parking-amenity-status {
+  font-size: 0.75rem;
+  color: #4ade80;
+  font-weight: 600;
+}
+
+/* Bus service toggle row */
+.parking-bus-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.parking-bus-toggle {
+  padding: 4px 10px;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.78rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.parking-bus-on  { background: #166534; color: #4ade80; }
+.parking-bus-off { background: #374151; color: #9ca3af; }
+.parking-bus-on:hover  { background: #15803d; }
+.parking-bus-off:hover { background: #4b5563; }
