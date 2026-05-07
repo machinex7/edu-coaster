@@ -724,7 +724,7 @@ const Finance = {
     Notifications.push({
       label:   'Covenant',
       message: `In breach: "${covenant.description}". A $${penaltyAmt.toLocaleString()} fee will be assessed next round.`,
-      action:  () => openPanel('financial'),
+      action:  () => openPanel('banking'),
     });
   },
 
@@ -741,7 +741,7 @@ const Finance = {
         Notifications.push({
           label:   'Covenant',
           message: `Breach fee of $${penaltyAmt.toLocaleString()} assessed for: "${covenant.description}".`,
-          action:  () => openPanel('financial'),
+          action:  () => openPanel('banking'),
         });
       }
     }
@@ -947,7 +947,7 @@ const Finance = {
         Notifications.push({
           label:   'Loan',
           message: 'A bank is open for applications on your requested loan.',
-          action:  () => openPanel('financial'),
+          action:  () => openPanel('banking'),
         });
         return 'approved';
       } else {
@@ -955,7 +955,7 @@ const Finance = {
         Notifications.push({
           label:   'Loan',
           message: 'No banks wanted to pursue your offer at this time.',
-          action:  () => openPanel('financial'),
+          action:  () => openPanel('banking'),
         });
         return 'rejected';
       }
@@ -973,7 +973,7 @@ const Finance = {
       Notifications.push({
         label:   'Loan',
         message: `Bank offer: ${rate}% over ${this.loanApplication.term} yr — ${covenants.length} covenant${covenants.length !== 1 ? 's' : ''}.`,
-        action:  () => openPanel('financial'),
+        action:  () => openPanel('banking'),
       });
       return 'offered';
     }
@@ -998,7 +998,7 @@ const Finance = {
       Notifications.push({
         label:   'Loan',
         message: `$${amount.toLocaleString()} loan disbursed and now active.`,
-        action:  () => openPanel('financial'),
+        action:  () => openPanel('banking'),
       });
       return 'disbursed';
     }
@@ -1027,7 +1027,7 @@ const Finance = {
           Notifications.push({
             label:   'Loan',
             message: 'Loan fully repaid.',
-            action:  () => openPanel('financial'),
+            action:  () => openPanel('banking'),
           });
         }
       } else {
@@ -1036,7 +1036,7 @@ const Finance = {
         Notifications.push({
           label:   'Loan',
           message: `Missed loan payment of $${total.toLocaleString()} — insufficient funds.`,
-          action:  () => openPanel('financial'),
+          action:  () => openPanel('banking'),
         });
       }
     }

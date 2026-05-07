@@ -279,7 +279,7 @@ function advanceRound() {
   Security.refreshPanel();
   Research.refreshPanel();
   Awards.refreshPanel();
-  if (loanResult && activePanel === 'financial') buildFinancialPanel();
+  if (loanResult && activePanel === 'banking') buildBankingPanel();
   if (activePanel === 'survey')          Survey.buildPanel();
   if (activePanel === 'visitor-profile') VisitorProfile.buildPanel();
   if (activePanel === 'concessions')     Concessions.buildPanel();
@@ -390,7 +390,7 @@ function updateAchievementIndicators() {
   if (loan?.status === LOAN_STATUS.REVIEW) {
     const wks = loan.reviewWeeksRemaining;
     const wksLabel = `${wks} wk${wks !== 1 ? 's' : ''}`;
-    pills.push({ icon: '💰', text: `Loan ($${loan.amount.toLocaleString()}): ${wksLabel}`, panel: 'financial' });
+    pills.push({ icon: '💰', text: `Loan ($${loan.amount.toLocaleString()}): ${wksLabel}`, panel: 'banking' });
   }
 
   container.innerHTML = pills
@@ -520,6 +520,7 @@ function openPanel(panelId) {
   if (panelId === 'concessions')     Concessions.buildPanel();
   if (panelId === 'forms')           FormsPanel.buildPanel();
   if (panelId === 'parking')         buildParkingPanel();
+  if (panelId === 'banking')         buildBankingPanel();
 }
 
 function closePanels() {
@@ -685,13 +686,6 @@ const PRICE_ITEMS = [
       Finance.gatePrice = v;
     },
   },
-  {
-    key:       'merchandise',
-    label:     'Merchandise Upcharge',
-    unit:      '$/buyer',
-    getValue:  () => Shopping.merchandiseUpcharge,
-    setValue:  v => { Shopping.merchandiseUpcharge = v; },
-  },
 ];
 
 let _activeInvTab = 'stock';
@@ -747,6 +741,8 @@ function _buildInvStockView() {
     return `<div class="panel-section-header">${MERCH_CATEGORY_LABELS[cat]}</div>${rows}`;
   }).join('');
 
+  const upcharge = Shopping.merchandiseUpcharge;
+
   const el = document.getElementById('inv-stock-view');
   el.innerHTML = `
     <div class="inv-capacity-wrap">
@@ -756,7 +752,25 @@ function _buildInvStockView() {
       </div>
       <div class="inv-capacity-pct">${pct}%</div>
     </div>
+    <div class="financial-section">
+      <div class="price-row">
+        <div class="price-label">Merchandise Upcharge</div>
+        <div class="price-unit">$/buyer</div>
+        <div class="price-controls">
+          <span class="price-current" id="merch-upcharge-current">$${upcharge}</span>
+          <input class="price-input" id="merch-upcharge-input" type="number" min="0" value="${upcharge}">
+          <button class="price-apply-btn" id="merch-upcharge-apply">Apply</button>
+        </div>
+      </div>
+    </div>
     ${itemRows}`;
+
+  document.getElementById('merch-upcharge-apply').addEventListener('click', () => {
+    const v = Math.max(0, parseInt(document.getElementById('merch-upcharge-input').value) || 0);
+    Shopping.merchandiseUpcharge = v;
+    document.getElementById('merch-upcharge-current').textContent = `$${v}`;
+    document.getElementById('merch-upcharge-input').value = v;
+  });
 }
 
 /* _buildInvPurchasingView - per-category supplier selector and order interface */
@@ -1051,6 +1065,7 @@ function buildParkingPanel() {
   });
 }
 
+/* buildFinancialPanel - renders the Admission panel: gate price control */
 function buildFinancialPanel() {
   const rows = PRICE_ITEMS.map(item => `
     <div class="price-row">
@@ -1064,11 +1079,39 @@ function buildFinancialPanel() {
       </div>
     </div>`).join('');
 
-  const app     = Finance.loanApplication;
+  document.getElementById('financial-panel-body').innerHTML = `
+    <div class="financial-section">
+      <div class="financial-section-header">Pricing Controls</div>
+      <div class="price-list">${rows}</div>
+    </div>`;
+
+  document.querySelectorAll('.price-apply-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const item   = PRICE_ITEMS.find(p => p.key === btn.dataset.key);
+      const input  = document.getElementById(`price-input-${item.key}`);
+      const newVal = Math.max(0, parseInt(input.value) || 0);
+      item.setValue(newVal);
+      document.getElementById(`price-current-${item.key}`).textContent = `$${item.getValue()}`;
+      input.value = item.getValue();
+    });
+  });
+}
+
+/* buildBankingPanel - renders the Banking panel: loan application and active loan status */
+function buildBankingPanel() {
+  const body = document.getElementById('banking-panel-body');
+  if (!body) return;
+
+  if (!Unlock.LOANS) {
+    body.innerHTML = `<div class="financial-section"><p class="empty-note">Banking services are not yet available.</p></div>`;
+    return;
+  }
+
+  const app       = Finance.loanApplication;
   const appStatus = app?.status ?? null;
-  const locked  = app !== null;
-  const dis     = locked ? 'disabled' : '';
-  const purpose = app?.purpose ?? 'new_rides';
+  const locked    = app !== null;
+  const dis       = locked ? 'disabled' : '';
+  const purpose   = app?.purpose ?? 'new_rides';
   const purposeOptions = [
     ['new_rides', 'New Rides'],
     ['staffing',  'Staffing'],
@@ -1176,26 +1219,11 @@ function buildFinancialPanel() {
     </div>`;
   })();
 
-  document.getElementById('financial-panel-body').innerHTML = `
+  body.innerHTML = `
     <div class="financial-section">
-      <div class="financial-section-header">Pricing Controls</div>
-      <div class="price-list">${rows}</div>
-    </div>
-    ${Unlock.LOANS ? `<div class="financial-section">
       <div class="financial-section-header">Loan</div>
       ${loanSectionHtml}
-    </div>` : ''}`;
-
-  document.querySelectorAll('.price-apply-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const item   = PRICE_ITEMS.find(p => p.key === btn.dataset.key);
-      const input  = document.getElementById(`price-input-${item.key}`);
-      const newVal = Math.max(0, parseInt(input.value) || 0);
-      item.setValue(newVal);
-      document.getElementById(`price-current-${item.key}`).textContent = `$${item.getValue()}`;
-      input.value = item.getValue();
-    });
-  });
+    </div>`;
 
   if (appStatus === null) {
     document.getElementById('loan-approach-btn').addEventListener('click', () => {
@@ -1222,24 +1250,24 @@ function buildFinancialPanel() {
   if (appStatus === LOAN_STATUS.OFFERED) {
     document.getElementById('loan-reject-btn').addEventListener('click', () => {
       Finance.rejectOffer();
-      buildFinancialPanel();
+      buildBankingPanel();
     });
     document.getElementById('loan-accept-btn').addEventListener('click', () => {
       Finance.acceptOffer();
-      buildFinancialPanel();
+      buildBankingPanel();
     });
     document.getElementById('negotiate-rate-btn')?.addEventListener('click', () => {
       Finance.negotiateRate();
-      buildFinancialPanel();
+      buildBankingPanel();
     });
     document.getElementById('negotiate-fee-btn')?.addEventListener('click', () => {
       Finance.negotiateFee();
-      buildFinancialPanel();
+      buildBankingPanel();
     });
     document.querySelectorAll('[data-covenant-index]').forEach(btn => {
       btn.addEventListener('click', () => {
         Finance.negotiateCovenant(parseInt(btn.dataset.covenantIndex));
-        buildFinancialPanel();
+        buildBankingPanel();
       });
     });
   }
