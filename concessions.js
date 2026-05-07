@@ -39,11 +39,15 @@ const Concessions = {
   // Player-created combo meals: [{ name, itemIds: string[], price }].
   meals: [],
 
+  // Units sold in the most recent round, one entry per menuItem (parallel array).
+  soldLastRound: [],
+
   // Set up initial state; called once from initHUD().
   init() {
     this.prices        = this.menuItems.map(item => Math.max(item.cost * 2, item.cost + 2));
     this.stock         = this.menuItems.map(() => 0);
     this.standingOrder = this.menuItems.map(() => 0);
+    this.soldLastRound = this.menuItems.map(() => 0);
     this.meals         = [];
   },
 
@@ -57,6 +61,10 @@ const Concessions = {
   },
 
   calcFood(weeklyAttendance) {
+    // Reset sold counts before any early return so the panel always shows accurate data.
+    this.soldLastRound = this.menuItems.map(() => 0);
+    this.meals.forEach(meal => { meal.sold = 0; });
+
     if (this.calcFoodTiles() === 0) {
       return { revenue: 0, mealsSold: 0, mealsWanted: 0, mealsServed: 0, itemSales: [], mealSales: [] };
     }
@@ -146,9 +154,8 @@ const Concessions = {
     // are drained incrementally. When stock runs out for an option, the unmet
     // demand rolls over to the next option. Capacity exhaustion is terminal —
     // those buyers cannot be served regardless of what they wanted.
-    // Per-item and per-meal sold counters, parallel to menuItems / meals arrays.
+    // Per-item sold counters, parallel to menuItems.
     const itemSoldCounts = this.menuItems.map(() => 0);
-    this.meals.forEach(meal => { meal.sold = 0; });
 
     let remainingCapacity = workerCapacity;
     let totalRevenue      = 0;
@@ -196,6 +203,8 @@ const Concessions = {
         });
       }
     }
+
+    this.soldLastRound = itemSoldCounts;
 
     return {
       revenue:     Math.round(totalRevenue),
@@ -493,10 +502,18 @@ const Concessions = {
       const row = document.createElement('div');
       row.className = 'con-menu-row';
 
-      // Item name
+      // Item name with sold-last-round sub-label.
       const nameEl = document.createElement('span');
       nameEl.className = 'con-item-name';
-      nameEl.textContent = item.name;
+
+      const nameLine = document.createElement('span');
+      nameLine.textContent = item.name;
+      nameEl.appendChild(nameLine);
+
+      const soldEl = document.createElement('span');
+      soldEl.className = 'con-sold-badge';
+      soldEl.textContent = stage === STAGE.PLAY ? `${this.soldLastRound[i].toLocaleString()} sold` : '';
+      nameEl.appendChild(soldEl);
 
       // Editable price field with a $ prefix
       const priceWrap = document.createElement('span');
@@ -564,7 +581,17 @@ const Concessions = {
 
     const nameEl = document.createElement('span');
     nameEl.className = 'con-meal-name';
-    nameEl.textContent = meal.name;
+
+    const mealNameLine = document.createElement('span');
+    mealNameLine.textContent = meal.name;
+    nameEl.appendChild(mealNameLine);
+
+    if (stage === STAGE.PLAY) {
+      const mealSoldEl = document.createElement('span');
+      mealSoldEl.className = 'con-sold-badge';
+      mealSoldEl.textContent = `${meal.sold.toLocaleString()} sold`;
+      nameEl.appendChild(mealSoldEl);
+    }
 
     const priceWrap = document.createElement('span');
     priceWrap.className = 'con-price-wrap';

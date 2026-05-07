@@ -2250,8 +2250,10 @@
 .con-menu-row { display: grid; grid-template-columns: 1fr 100px;
   align-items: center; padding: 8px 12px; border-bottom: 1px solid #1f2937; }
 
-.con-item-name  { font-size: 0.82rem; font-weight: 600; color: #f3f4f6; }
+.con-item-name  { font-size: 0.82rem; font-weight: 600; color: #f3f4f6;
+  display: flex; flex-direction: column; gap: 1px; }
 .con-item-stock { font-size: 0.75rem; color: #9ca3af; text-align: right; }
+.con-sold-badge { font-size: 0.68rem; font-weight: 400; color: #6b7280; }
 
 .con-price-wrap   { display: flex; align-items: center; gap: 2px; }
 .con-price-dollar { font-size: 0.8rem; color: #9ca3af; }
@@ -2322,7 +2324,8 @@
 
 .con-meal-card { padding: 8px 12px 10px; border-bottom: 1px solid #1f2937; }
 .con-meal-top  { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-.con-meal-name { flex: 1; font-size: 0.82rem; font-weight: 600; color: #f3f4f6; }
+.con-meal-name { flex: 1; font-size: 0.82rem; font-weight: 600; color: #f3f4f6;
+  display: flex; flex-direction: column; gap: 1px; }
 .con-meal-delete { background: none; border: none; color: #6b7280;
   font-size: 1.1rem; line-height: 1; cursor: pointer; padding: 0 2px; }
 .con-meal-delete:hover { color: #f87171; }
