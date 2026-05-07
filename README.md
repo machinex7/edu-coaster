@@ -174,7 +174,7 @@ Unlock.tick()         // called once per round from advanceRound()
 | `MERCHANDISE` | Inventory nav button; merchandise shops in construction; Merchandise Attendant job type | Shopper mess contribution zeroed; theft incidents → 0; shopping excluded from survey |
 | `FOOD` | Food shops in construction; Concessions Worker job type | `mealSatisfaction` fixed at 1; food excluded from survey |
 | `SECURITY` | Security nav button; Security map mode; Guard Post in construction; Security guard job type | `Security.calcIncidents()` returns zeros (no theft, no incidents); `advanceOpinion` skipped; `securityFactor` fixed at 1 in `calcExcitement` |
-| `LOANS` | Loan section in Financial panel | *(no calculation bypass — loan mechanics simply can't be initiated)* |
+| `LOANS` | Loan section in Banking panel | *(no calculation bypass — loan mechanics simply can't be initiated)* |
 
 On park open, any hired staff whose feature is locked are automatically removed from the roster (`Staff.purgeLockedRoles()`).
 
@@ -190,7 +190,8 @@ On park open, any hired staff whose feature is locked are automatically removed 
     <div class="side-panel">     — Rides (master-detail)
     <div class="side-panel">     — Staffing (Roster / Postings / Candidates / Benefits tabs)
     <div class="side-panel">     — Security (guard list with focus assignment)
-    <div class="side-panel">     — Financial (pricing + loan)
+    <div class="side-panel">     — Admission (gate pricing)
+    <div class="side-panel">     — Banking (loan application + active loans)
     … (other side panels)
   <div id="park-view">           — flex column
     <div id="view-mode-bar">     — pill-button toolbar: Play / Build / Demolish / Security / …
@@ -323,7 +324,7 @@ Demolishing structures are excluded from all game calculations. Demolition takes
 
 ### Loans
 
-Players can apply for loans via the Financial panel. The full flow:
+Players can apply for loans via the Banking panel. The full flow:
 
 ```
 [form] → APPROACHING → (1 round risk check) → OPEN → [Apply] → APPLYING → (1 round) → OFFERED → [Accept] → REVIEW → (2 rounds) → disbursed
@@ -726,10 +727,12 @@ Students drag each item into an Assets or Liabilities column. On completion, Own
 - Security overlay: SVG drawn over the grid in Security mode showing patrol-radius circles (blue = staffed, amber = unstaffed); redraws live on hire, fire, or focus change
 - Ride detail panel: pause/resume, close/reopen, ridership bar, utility cost
 - Engineer system: repair broken rides and reduce wear; focus on construction or maintenance
-- Side panels: Rides, Staffing, Security, Financial, Inventory, Survey, Research, Marketing, Visitor Profile, Awards
+- Side panels: Rides, Staffing, Security, Admission, Banking, Inventory, Survey, Research, Marketing, Visitor Profile, Awards
 - HUD: budget, date (Week W, QN, YYYY), stage badge
 - Finance: gate/parking/shop revenue; staff/utility/construction/theft costs; round summary modal
-- Pricing panel: gate, parking, merchandise upcharge; price exhaustion suppresses demand
+- Admission panel: gate price control; price exhaustion suppresses demand
+- Banking panel: loan application flow
+- Merchandise upcharge control in Inventory → Stock tab
 - Park metrics: `parkExcitement`, `rideOpinion`, `mealSatisfaction`
 - Security system: incident tracking, two-phase handling, guard focus assignment, opinion decay
 - Shop theft: scales with tiles and understaffing; unhandled incidents lose money
