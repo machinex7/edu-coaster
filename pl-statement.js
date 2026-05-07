@@ -16,9 +16,11 @@ const PLStatement = {
   // Line items for the exercise: label shown to the student, the correct
   // category, and the History.rounds field used to sum the quarterly total.
   ITEMS: [
-    { key: 'gate',         label: 'Gate Admissions',  correct: 'revenue', histKey: 'gateIncome' },
-    { key: 'parking',      label: 'Parking',           correct: 'revenue', histKey: 'parkingIncome' },
-    { key: 'shop',         label: 'Merchandise Sales', correct: 'revenue', histKey: 'shopIncome' },
+    { key: 'gate',         label: 'Gate Admissions',   correct: 'revenue', histKey: 'gateIncome' },
+    { key: 'parking',      label: 'Parking',            correct: 'revenue', histKey: 'parkingIncome' },
+    { key: 'shop',         label: 'Merchandise Sales',  correct: 'revenue', histKey: 'shopIncome' },
+    { key: 'food',         label: 'Food & Beverage',    correct: 'revenue', histKey: 'foodIncome' },
+    { key: 'membership',   label: 'Memberships',        correct: 'revenue', histKey: 'membershipIncome' },
     { key: 'staff',        label: 'Staff Wages',       correct: 'expense', histKey: 'staffExpense' },
     { key: 'utilities',    label: 'Ride Utilities',    correct: 'expense', histKey: 'utilityExpense' },
     { key: 'construction', label: 'Construction',      correct: 'expense', histKey: 'constructionExpense' },

@@ -19,6 +19,8 @@ const History = {
       gateIncome:          report.gateRevenue,
       parkingIncome:       report.parkingRevenue,
       shopIncome:          report.shopRevenue,
+      foodIncome:          report.foodRevenue,
+      membershipIncome:    report.membershipRevenue,
       staffExpense:        report.staffCosts,
       utilityExpense:      report.utilityCosts,
       constructionExpense: report.constructionCosts,
