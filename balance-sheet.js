@@ -296,6 +296,20 @@ const BalanceSheet = {
         resultEl.innerHTML += `
           <div class="bs-equity ${equityClass}">Owner's Equity: ${equitySign}$${Math.abs(equity).toLocaleString()}</div>
         `;
+        // Save a snapshot for the Forms review panel.
+        FormsPanel.save({
+          type:             'balance-sheet',
+          label:            document.getElementById('bs-year-label').textContent,
+          difficulty:       1,
+          items:            this._items.map(item => ({
+            label:   item.label,
+            correct: item.correct,
+            value:   parseInt(document.querySelector(`.bs-card-item[data-key="${item.key}"]`).dataset.amount, 10),
+          })),
+          totalAssets,
+          totalLiabilities,
+          equity,
+        });
         this._difficulty = 2;
         document.getElementById('bs-close-btn').classList.remove('hidden');
       }
@@ -325,12 +339,26 @@ const BalanceSheet = {
       return;
     }
 
-    // Correct — append the formatted equity line and show Continue.
+    // Correct — append the formatted equity line, save, and show Continue.
     const equitySign  = expected >= 0 ? '+' : '−';
     const equityClass = expected >= 0 ? 'bs-equity-pos' : 'bs-equity-neg';
     document.getElementById('bs-result').innerHTML += `
       <div class="bs-equity ${equityClass}">Owner's Equity: ${equitySign}$${Math.abs(expected).toLocaleString()}</div>
     `;
+    // Save a snapshot for the Forms review panel.
+    FormsPanel.save({
+      type:             'balance-sheet',
+      label:            document.getElementById('bs-year-label').textContent,
+      difficulty:       2,
+      items:            this._items.map(item => ({
+        label:   item.label,
+        correct: item.correct,
+        value:   parseInt(document.querySelector(`.bs-card-item[data-key="${item.key}"]`).dataset.amount, 10),
+      })),
+      totalAssets:      this._totalAssets,
+      totalLiabilities: this._totalLiabilities,
+      equity:           expected,
+    });
     document.getElementById('bs-equity-entry').classList.add('hidden');
     document.getElementById('bs-close-btn').classList.remove('hidden');
   },

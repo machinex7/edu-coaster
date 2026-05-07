@@ -64,6 +64,7 @@
           <button class="tool-btn" data-panel="visitor-profile">Visitor Profile</button>
           <button class="tool-btn hidden" data-panel="awards">Awards</button>
           <button class="tool-btn" data-panel="concessions">Concessions</button>
+          <button class="tool-btn" data-panel="forms">Forms</button>
         </nav>
 
         <!-- Rides overview slide panel -->
@@ -160,6 +161,14 @@
           <div class="side-panel-inner">
             <div class="panel-header">Financial</div>
             <div id="financial-panel-body"></div>
+          </div>
+        </div>
+
+        <!-- Forms review slide panel -->
+        <div id="panel-forms" class="side-panel closed">
+          <div class="side-panel-inner">
+            <div class="panel-header">Forms</div>
+            <div id="forms-panel-body" class="fp-body"></div>
           </div>
         </div>
 
@@ -375,6 +384,7 @@
   <script src="visitor-profile.js"></script>
   <script src="pl-statement.js"></script>
   <script src="balance-sheet.js"></script>
+  <script src="forms-panel.js"></script>
   <script src="concessions.js"></script>
   <script src="hud.js"></script>
 </body>

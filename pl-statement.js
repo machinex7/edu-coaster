@@ -170,6 +170,19 @@ const PLStatement = {
       const netSign  = net >= 0 ? '+' : '−';
       const netClass = net >= 0 ? 'pl-net-pos' : 'pl-net-neg';
       const netLabel = net >= 0 ? 'Net Profit' : 'Net Loss';
+      // Save a snapshot for the Forms review panel.
+      FormsPanel.save({
+        type:         'pl',
+        label:        document.getElementById('pl-quarter-label').textContent,
+        items:        this.ITEMS.map(item => ({
+          label:   item.label,
+          correct: item.correct,
+          value:   parseInt(document.querySelector(`.pl-card-item[data-key="${item.key}"]`).dataset.amount, 10),
+        })),
+        totalRevenue,
+        totalExpense,
+        net,
+      });
       resultEl.innerHTML = `
         <div class="pl-score">All ${total} correct!</div>
         <div class="pl-net ${netClass}">${netLabel}: ${netSign}$${Math.abs(net).toLocaleString()}</div>

@@ -501,6 +501,7 @@ function openPanel(panelId) {
   if (panelId === 'marketing')       Marketing.buildPanel();
   if (panelId === 'visitor-profile') VisitorProfile.buildPanel();
   if (panelId === 'concessions')     Concessions.buildPanel();
+  if (panelId === 'forms')           FormsPanel.buildPanel();
 }
 
 function closePanels() {
