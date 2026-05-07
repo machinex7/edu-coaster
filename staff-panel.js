@@ -3,6 +3,17 @@
 // All methods here extend Staff via Object.assign. They may freely call
 // Staff simulation methods since both files are loaded before any execution.
 
+// Returns a colored ▲ or ▼ arrow span scaled to the mood modifier's magnitude.
+function _moodArrow(modifier) {
+  if (!modifier) return '';
+  const up  = modifier > 0;
+  const abs = Math.abs(modifier);
+  const color = up
+    ? (abs >= 20 ? '#22c55e' : abs >= 10 ? '#4ade80' : '#86efac')
+    : (abs >= 20 ? '#ef4444' : abs >= 10 ? '#f87171' : '#fca5a5');
+  return ` <span style="color:${color};font-style:normal">${up ? '▲' : '▼'}</span>`;
+}
+
 Object.assign(Staff, {
 
   // ── Panel sub-view switching ───────────────────────────────────────────────
@@ -167,7 +178,7 @@ Object.assign(Staff, {
 
     const bubblesHtml = s.events.length === 0 ? '' : `
       <div class="staff-events">
-        ${s.events.map(e => `<div class="staff-event-bubble">${e.comment}</div>`).join('')}
+        ${s.events.map(e => `<div class="staff-event-bubble">${e.comment}${_moodArrow(e.moodModifier)}</div>`).join('')}
       </div>`;
 
     container.innerHTML = `
@@ -185,9 +196,11 @@ Object.assign(Staff, {
             <span class="staff-detail-label">Salary</span>
             <span>$${s.salary.toLocaleString()}/wk</span>
           </div>
-          <div class="staff-detail-row">
+          <div class="staff-detail-row mood-bar-row">
             <span class="staff-detail-label">Mood</span>
-            <span><span class="mood-badge ${moodCls}">${moodLabel}</span></span>
+            <div class="mood-bar-track">
+              <div class="mood-bar-dot" style="left:${s.mood}%"></div>
+            </div>
           </div>
         </div>
         ${bubblesHtml}
