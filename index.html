@@ -64,6 +64,7 @@
           <button class="tool-btn" data-panel="visitor-profile">Visitor Profile</button>
           <button class="tool-btn hidden" data-panel="awards">Awards</button>
           <button class="tool-btn" data-panel="concessions">Concessions</button>
+          <button class="tool-btn" data-panel="forms">Forms</button>
         </nav>
 
         <!-- Rides overview slide panel -->
@@ -160,6 +161,14 @@
           <div class="side-panel-inner">
             <div class="panel-header">Financial</div>
             <div id="financial-panel-body"></div>
+          </div>
+        </div>
+
+        <!-- Forms review slide panel -->
+        <div id="panel-forms" class="side-panel closed">
+          <div class="side-panel-inner">
+            <div class="panel-header">Forms</div>
+            <div id="forms-panel-body" class="fp-body"></div>
           </div>
         </div>
 
@@ -272,8 +281,8 @@
   <!-- Quarterly P&L statement exercise modal -->
   <div id="pl-modal" class="modal-overlay hidden">
     <div class="modal-card pl-modal-card">
-      <div class="modal-title">Quarterly P&amp;L Statement</div>
-      <div class="modal-date" id="pl-quarter-label"></div>
+      <div class="modal-date">Quarterly P&amp;L Statement</div>
+      <div class="modal-title" id="pl-quarter-label"></div>
       <p class="pl-instructions">Drag each item into the correct column — Revenue or Expenses.</p>
       <div id="pl-bank" class="pl-bank"></div>
       <div class="pl-zones">
@@ -289,6 +298,70 @@
       <div id="pl-result" class="pl-result hidden"></div>
       <button id="pl-submit-btn" class="modal-close-btn">Check My Answer</button>
       <button id="pl-close-btn" class="modal-close-btn hidden">Continue &rsaquo;</button>
+    </div>
+  </div>
+
+  <!-- Annual balance sheet exercise modal -->
+  <div id="bs-modal" class="modal-overlay hidden">
+    <div class="modal-card bs-modal-card">
+      <div class="modal-date">Annual Balance Sheet</div>
+      <div class="modal-title" id="bs-year-label"></div>
+      <p id="bs-instructions" class="bs-instructions"></p>
+      <div id="bs-bank" class="bs-bank"></div>
+      <!-- Difficulty 1: two columns (Assets / Liabilities) -->
+      <div id="bs-zones-d1" class="bs-zones">
+        <div class="bs-zone" id="bs-zone-asset">
+          <div class="bs-zone-header bs-asset-header">Assets</div>
+          <div class="bs-zone-items" id="bs-zone-asset-items"></div>
+        </div>
+        <div class="bs-zone" id="bs-zone-liability">
+          <div class="bs-zone-header bs-liability-header">Liabilities</div>
+          <div class="bs-zone-items" id="bs-zone-liability-items"></div>
+        </div>
+      </div>
+      <!-- Difficulty 2: four sections (current / non-current within each column) -->
+      <div id="bs-zones-d2" class="bs-zones-d2 hidden">
+        <div class="bs-d2-col">
+          <div class="bs-d2-col-header bs-asset-header">Assets</div>
+          <div class="bs-zone" id="bs-zone-current-asset">
+            <div class="bs-zone-header">Current</div>
+            <div class="bs-zone-items" id="bs-zone-current-asset-items"></div>
+          </div>
+          <div class="bs-zone" id="bs-zone-noncurrent-asset">
+            <div class="bs-zone-header">Non-current</div>
+            <div class="bs-zone-items" id="bs-zone-noncurrent-asset-items"></div>
+          </div>
+        </div>
+        <div class="bs-d2-col">
+          <div class="bs-d2-col-header bs-liability-header">Liabilities</div>
+          <div class="bs-zone" id="bs-zone-current-liability">
+            <div class="bs-zone-header">Current</div>
+            <div class="bs-zone-items" id="bs-zone-current-liability-items"></div>
+          </div>
+          <div class="bs-zone" id="bs-zone-longterm-liability">
+            <div class="bs-zone-header">Long-term</div>
+            <div class="bs-zone-items" id="bs-zone-longterm-liability-items"></div>
+          </div>
+        </div>
+      </div>
+      <!-- N/A zone: shown for D2 and D4 (distractor tiers) -->
+      <div id="bs-zone-na" class="bs-zone-na hidden">
+        <div class="bs-zone-header bs-na-header">Not Applicable</div>
+        <div class="bs-zone-items" id="bs-zone-na-items"></div>
+      </div>
+      <!-- Equity entry: shown after all drag-and-drop items are correctly placed (D3/D4) -->
+      <div id="bs-equity-entry" class="bs-equity-entry hidden">
+        <div class="bs-equity-label">What is Owner's Equity?</div>
+        <div class="bs-equity-input-row">
+          <span class="bs-equity-dollar">$</span>
+          <input type="number" id="bs-equity-input" class="bs-equity-input" placeholder="Enter amount" />
+          <button id="bs-equity-check-btn" class="modal-close-btn">Check</button>
+        </div>
+        <div id="bs-equity-feedback" class="bs-equity-feedback"></div>
+      </div>
+      <div id="bs-result" class="bs-result hidden"></div>
+      <button id="bs-submit-btn" class="modal-close-btn">Check My Answer</button>
+      <button id="bs-close-btn" class="modal-close-btn hidden">Continue &rsaquo;</button>
     </div>
   </div>
 
@@ -315,6 +388,8 @@
   <script src="marketing.js"></script>
   <script src="visitor-profile.js"></script>
   <script src="pl-statement.js"></script>
+  <script src="balance-sheet.js"></script>
+  <script src="forms-panel.js"></script>
   <script src="concessions.js"></script>
   <script src="hud.js"></script>
 </body>

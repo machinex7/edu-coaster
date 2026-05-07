@@ -35,6 +35,7 @@ python3 -m http.server
 | `security.js` | Security opinion state, incident calculation, panel UI (`Security` object) |
 | `history.js` | Append-only per-round data log for future reports/graphs (`History` object) |
 | `pl-statement.js` | Quarterly P&L statement exercise — drag-and-drop sorting modal (`PLStatement` object) |
+| `balance-sheet.js` | Annual balance sheet exercise — drag-and-drop sorting modal (`BalanceSheet` object) |
 | `hud.js` | HUD display, stage transitions, panel management, view mode toolbar, construction bottom bar, security SVG overlay, round summary modal, pricing panel |
 | `rides.json` | Ride catalogue |
 | `facilities.json` | Facility catalogue |
@@ -45,7 +46,7 @@ python3 -m http.server
 
 **Script load order:**
 ```
-constants.js → unlock.js → population.js → game.js → grid.js → shopping.js → finance.js → staff.js → staff-panel.js → security.js → history.js → pl-statement.js → hud.js
+constants.js → unlock.js → population.js → game.js → grid.js → shopping.js → finance.js → staff.js → staff-panel.js → security.js → history.js → pl-statement.js → balance-sheet.js → concessions.js → hud.js
 ```
 
 All cross-file calls happen at runtime (not parse time), so forward references inside method bodies are safe.
@@ -72,6 +73,7 @@ const Foo = {
 | `Security` | `security.js` | Opinion state, incident calculation, panel rendering |
 | `History` | `history.js` | Append-only per-round log |
 | `PLStatement` | `pl-statement.js` | Quarterly P&L drag-and-drop exercise |
+| `BalanceSheet` | `balance-sheet.js` | Annual balance sheet drag-and-drop exercise |
 
 ---
 
@@ -629,9 +631,30 @@ Triggers every 13 rounds (end of each quarter). Aggregates the last 13 entries f
 
 Students drag each item into a Revenue or Expenses column. The submit button is disabled until all items have been placed. On submit, correctly placed items lock in place with a checkmark; wrong items return to the bank to be re-sorted. This repeats until all items are correct, at which point the net profit/loss is revealed and Continue appears.
 
+At year-end (round 52, 104, …), `PLStatement.hide()` chains directly to `BalanceSheet.show()` once the student clicks Continue.
+
 **CSS classes:** `.pl-modal-card`, `.pl-bank`, `.pl-zone`, `.pl-card-item`, `.pl-locked`, `.pl-correct`, `.pl-result` — all in `style.css`.
 
 **`PLStatement.ITEMS`** — array of `{ key, label, correct, histKey }` defining the line items. Edit here to add, remove, or rename items. `histKey` must match a field in `History.rounds`.
+
+### Balance sheet (`balance-sheet.js` — `BalanceSheet`)
+
+Triggers every 52 rounds (end of each in-game year), always chaining after the quarterly P&L (since every multiple of 52 is also a multiple of 13). Unlike the P&L, which sums historical records, the balance sheet reads **live game state** at the moment `show()` runs — making it a true point-in-time snapshot.
+
+Line items and their sources:
+
+| Label | Category | Source |
+|---|---|---|
+| Cash on Hand | Asset | `money` |
+| Merchandise Inventory | Asset | `merchandiseInventory[i].count × inv.price` summed |
+| Food & Beverage Stock | Asset | `Concessions.stock[i] × menuItems[i].cost` summed (only when `Unlock.FOOD`) |
+| Park Equipment | Asset | Active, closed, and broken-down rides/facilities/shops at `buildCost` |
+| Construction in Progress | Asset | In-construction items at `weeksCompleted × weeklyPayment` |
+| Outstanding Loans | Liability | `Finance.activeLoans[*].balance` summed |
+
+Students drag each item into an Assets or Liabilities column. On completion, Owner's Equity (Assets − Liabilities) is revealed. Positive equity is shown in blue; negative in red.
+
+**CSS classes:** `.bs-modal-card`, `.bs-bank`, `.bs-zone`, `.bs-card-item`, `.bs-locked`, `.bs-correct`, `.bs-result`, `.bs-equity` — all in `style.css`.
 
 ---
 
@@ -674,6 +697,7 @@ Students drag each item into a Revenue or Expenses column. The submit button is 
 - Demographic `preferredCategory` on every bracket drives per-category purchase desire
 - Loan system: multi-round application flow (approach → open → apply → offer → review → disbursed); amortized weekly repayments; 7 covenant types with enforcement and deferred breach fees; rate/covenant/fee negotiation; missed payment penalties on future rates and LTV caps
 - Quarterly P&L statement exercise: drag-and-drop modal every 13 rounds; real quarterly totals from `History`; items lock on correct placement; wrong items return to bank for retry; net income revealed on completion
+- Annual balance sheet exercise: drag-and-drop modal every 52 rounds (chained after the year-end P&L); point-in-time snapshot of assets (cash, merchandise inventory, food stock, park equipment, construction in progress) and liabilities (outstanding loans); Owner's Equity revealed on completion
 
 ## What's not yet implemented (see `reqs.md`)
 

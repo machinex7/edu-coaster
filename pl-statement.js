@@ -26,6 +26,9 @@ const PLStatement = {
     { key: 'merchandise', label: 'Merchandise Orders', correct: 'expense', histKey: 'merchandiseExpense' },
   ],
 
+  // Active items for the current session — ITEMS filtered to non-zero totals.
+  _activeItems: [],
+
   // Wire up drag-and-drop listeners on the bank and both drop zones.
   // Called once from initHUD after the DOM is ready.
   init() {
@@ -70,18 +73,19 @@ const PLStatement = {
     const quarterNum = round / 13;
     const last13     = History.rounds.slice(-13);
 
-    // Sum each line item over the last 13 rounds.
+    // Sum each line item over the last 13 rounds; exclude items with a zero total.
     const totals = {};
     for (const item of this.ITEMS) {
       totals[item.key] = last13.reduce((s, r) => s + (r[item.histKey] || 0), 0);
     }
+    this._activeItems = this.ITEMS.filter(item => totals[item.key] !== 0);
 
     document.getElementById('pl-quarter-label').textContent = `Quarter ${quarterNum}`;
 
-    // Populate the bank with shuffled item cards.
+    // Populate the bank with shuffled non-zero item cards.
     const bank = document.getElementById('pl-bank');
     bank.innerHTML = '';
-    const shuffled = [...this.ITEMS];
+    const shuffled = [...this._activeItems];
     for (let i = shuffled.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
@@ -134,7 +138,7 @@ const PLStatement = {
     );
     const bank = document.getElementById('pl-bank');
 
-    for (const item of this.ITEMS) {
+    for (const item of this._activeItems) {
       if (this._correctKeys.has(item.key)) continue; // already locked from a prior attempt
       const card   = document.querySelector(`.pl-card-item[data-key="${item.key}"]`);
       const placed = revenueKeys.has(item.key) ? 'revenue'
@@ -154,14 +158,14 @@ const PLStatement = {
       }
     }
 
-    const total    = this.ITEMS.length;
+    const total    = this._activeItems.length;
     const correct  = this._correctKeys.size;
     const resultEl = document.getElementById('pl-result');
 
     if (correct === total) {
       // All items correct — compute the net and reveal Continue.
       let totalRevenue = 0, totalExpense = 0;
-      for (const item of this.ITEMS) {
+      for (const item of this._activeItems) {
         const amt = parseInt(document.querySelector(`.pl-card-item[data-key="${item.key}"]`).dataset.amount, 10);
         if (item.correct === 'revenue') totalRevenue += amt;
         else                            totalExpense  += amt;
@@ -170,6 +174,19 @@ const PLStatement = {
       const netSign  = net >= 0 ? '+' : '−';
       const netClass = net >= 0 ? 'pl-net-pos' : 'pl-net-neg';
       const netLabel = net >= 0 ? 'Net Profit' : 'Net Loss';
+      // Save a snapshot for the Forms review panel.
+      FormsPanel.save({
+        type:         'pl',
+        label:        document.getElementById('pl-quarter-label').textContent,
+        items:        this._activeItems.map(item => ({
+          label:   item.label,
+          correct: item.correct,
+          value:   parseInt(document.querySelector(`.pl-card-item[data-key="${item.key}"]`).dataset.amount, 10),
+        })),
+        totalRevenue,
+        totalExpense,
+        net,
+      });
       resultEl.innerHTML = `
         <div class="pl-score">All ${total} correct!</div>
         <div class="pl-net ${netClass}">${netLabel}: ${netSign}$${Math.abs(net).toLocaleString()}</div>
@@ -189,9 +206,10 @@ const PLStatement = {
     resultEl.classList.remove('hidden');
   },
 
-  // Close the modal.
+  // Close the modal and chain to the annual balance sheet when due.
   hide() {
     document.getElementById('pl-modal').classList.add('hidden');
+    if (BalanceSheet.pending) BalanceSheet.show();
   },
 
 };

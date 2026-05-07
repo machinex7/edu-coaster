@@ -2394,3 +2394,122 @@
   border-radius: 4px; color: #6b7280; font-size: 0.78rem; cursor: pointer; }
 .con-builder-cancel:hover { border-color: #6b7280; color: #d1d5db; }
 .vp-person--gray      { color: #4b5563; }
+
+/* ── Forms review panel ── */
+
+#panel-forms { width: 320px; }
+
+/* Scrollable panel body. */
+.fp-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  overflow-y: auto;
+}
+
+/* Individual form review card. */
+.fp-card {
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 8px;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Form type label ("P&L Statement" / "Balance Sheet"). */
+.fp-form-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #6b7280;
+}
+
+/* Period label ("Quarter 2" / "Year 1 Annual Snapshot"). */
+.fp-period {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #f3f4f6;
+  margin-top: -4px;
+}
+
+/* Placeholder text when the form has not yet been completed. */
+.fp-empty {
+  font-size: 0.82rem;
+  color: #4b5563;
+  margin: 0;
+}
+
+/* Section block (Revenue, Expenses, Assets, Liabilities, etc.). */
+.fp-section {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding-top: 6px;
+  border-top: 1px solid #1f2937;
+}
+
+/* Coloured section name. */
+.fp-section-header {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 2px;
+}
+
+.fp-revenue   { color: #4ade80; }
+.fp-expense   { color: #f87171; }
+.fp-asset     { color: #60a5fa; }
+.fp-liability { color: #f87171; }
+
+/* Individual line item row. */
+.fp-item-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: #d1d5db;
+}
+
+.fp-item-label  { flex: 1; }
+.fp-item-amount { font-weight: 600; white-space: nowrap; }
+
+/* Section subtotal row. */
+.fp-section-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #9ca3af;
+  padding-top: 3px;
+  border-top: 1px solid #1f2937;
+  margin-top: 1px;
+}
+
+/* Final result row (net income or Owner's Equity). */
+.fp-result-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding-top: 8px;
+  border-top: 1px solid #374151;
+  margin-top: 2px;
+}
+
+/* Net profit (P&L) — green to match the P&L modal. */
+.fp-net-pos    { color: #4ade80; }
+/* Owner's Equity (balance sheet) — blue to match the BS modal. */
+.fp-equity-pos { color: #60a5fa; }
+/* Negative result — shared by both. */
+.fp-neg        { color: #f87171; }
+/* Not Applicable items (D2/D4 distractors) — neutral gray. */
+.fp-na         { color: #9ca3af; }

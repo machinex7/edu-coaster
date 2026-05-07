@@ -19,7 +19,7 @@ python3 -m http.server   # must be HTTP — fetch() won't work over file://
 ## Script load order (matters)
 
 ```
-constants.js → population.js → game.js → grid.js → shopping.js → finance.js → staff.js → staff-panel.js → security.js → history.js → pl-statement.js → hud.js
+constants.js → population.js → game.js → grid.js → shopping.js → finance.js → staff.js → staff-panel.js → security.js → history.js → pl-statement.js → balance-sheet.js → concessions.js → hud.js
 ```
 
 ---
@@ -53,7 +53,7 @@ When adding a new side panel, put its content styles in `panels.css`.
 - **Adding a job type.** Append to `Staff.JOB_TYPES` in `staff.js` and add the key to `JOB` in `constants.js`. Everything else (panel grouping, salary totals, hiring) picks it up automatically.
 - **Adding a facility.** Add to `facilities.json`. Placement rules (`edgeOnly`, `mustBeAdjacentTo`, `limit`) are enforced by `canPlaceFacility()` in `game.js` — no code change needed for existing rule types.
 - **Adding a shop type.** Add to `shops.json`. Add its id to `SHOP_ID` in `constants.js`. Placement validation reuses the facility rule system (`canPlaceFacility`).
-- **Adding an educational form.** Create a new file with a plain object implementing `pending` (boolean), `init()` (wire DOM listeners), and `show()` (build and display the modal). Add the script tag before `hud.js` in `index.html`. In `hud.js`: call `Form.init()` in `initHUD()`, set `Form.pending = true` on your trigger in `advanceRound()`, and add `if (Form.pending) Form.show()` in `hideRoundSummary()`. See `pl-statement.js` and the Educational forms section in `README.md` for the full pattern.
+- **Adding an educational form.** Create a new file with a plain object implementing `pending` (boolean), `init()` (wire DOM listeners), and `show()` (build and display the modal). Add the script tag before `hud.js` in `index.html`. In `hud.js`: call `Form.init()` in `initHUD()`, set `Form.pending = true` on your trigger in `advanceRound()`, and add `if (Form.pending) Form.show()` in `hideRoundSummary()`. If your form always follows another form (e.g. the balance sheet always follows the P&L at year-end), chain it from the preceding form's `hide()` instead, and add an `else if` fallback in `hideRoundSummary()` for robustness. See `pl-statement.js`, `balance-sheet.js`, and the Educational forms section in `README.md` for the full pattern.
 
 ---
 
@@ -85,7 +85,7 @@ Two game stages: **Setup** (instant builds, no income) → **Play** (weekly roun
 
 **Construction bar (`#construction-bar`):** Horizontal bar pinned to the bottom of `#park-view`. Visible only in `build` mode. Three tabs (Attractions / Shopping / Facilities) switch between `#ride-list`, `#shop-list`, `#facility-list` — the same divs populated by `buildRideCatalog()`, `buildFacilityList()`, and `Shopping.buildCatalog()` at game start. Items scroll horizontally as 180px-wide cards.
 
-**Educational forms (`pl-statement.js` etc.):** Periodic drag-and-drop exercises that interrupt gameplay to test financial literacy. Each form is a plain object in its own file with `pending`, `init()`, and `show()`. `hud.js` sets `Form.pending = true` on a trigger condition in `advanceRound()`, then chains `Form.show()` from `hideRoundSummary()`. The P&L statement (`PLStatement`) fires every 13 rounds, sums the last quarter from `History.rounds`, and has students sort six line items into Revenue vs. Expenses. Items lock on correct placement; wrong ones return to the bank for retry.
+**Educational forms (`pl-statement.js`, `balance-sheet.js`):** Periodic drag-and-drop exercises that interrupt gameplay to test financial literacy. Each form is a plain object in its own file with `pending`, `init()`, and `show()`. `hud.js` sets `Form.pending = true` on a trigger condition in `advanceRound()`, then chains `Form.show()` from `hideRoundSummary()`. The P&L statement (`PLStatement`) fires every 13 rounds, sums the last quarter from `History.rounds`, and has students sort line items into Revenue vs. Expenses. The balance sheet (`BalanceSheet`) fires every 52 rounds and chains directly from `PLStatement.hide()` (since year-end is always also a quarter-end); students sort point-in-time asset and liability values, then see Owner's Equity revealed. Items lock on correct placement in both forms; wrong ones return to the bank for retry.
 
 **Weather (`game.js`):** Two forecast slots: `nextWeekForecast` (applies this round) and `futurecastForecast` (2 weeks out). At the end of each round, `nextWeekForecast = futurecastForecast` and a new `futurecastForecast` is generated via `forecastForRound(round + 2)`. `forecastForRound` checks `HOLIDAY_FORECAST` (week 15 → 🐰, week 51 → 🎄) before falling back to `randomWeatherEmoji()`. Demand penalty: `WEATHER_DEMAND_REDUCTION` maps bad-weather emojis to a 0–1 reduction applied in `calcDailyDemand`. Per-item merch boost: `WEATHER_MERCHANDISE_MULTIPLIERS` maps an emoji to `{ itemId: multiplier }` applied to `attempts` in `Shopping.calcRevenue`. Weather panel in header is hidden until `WEATHER_SENSOR` research completes; futurecast slot hidden until `WEATHER_STATION`. To add a weather effect: add an entry to the relevant constant(s) in `game.js`.
 

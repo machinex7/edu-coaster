@@ -687,6 +687,261 @@ header h1 {
 .pl-net-pos { color: #4ade80; }
 .pl-net-neg { color: #f87171; }
 
+/* ── Balance sheet exercise modal ── */
+.bs-modal-card {
+  min-width: 560px;
+  max-width: 640px;
+  gap: 12px;
+}
+
+.bs-instructions {
+  font-size: 0.82rem;
+  color: #9ca3af;
+  margin: 0;
+}
+
+/* Bank: unsorted items sit here before being dragged to a zone. */
+.bs-bank {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 52px;
+  padding: 10px;
+  background: #111827;
+  border: 2px dashed #374151;
+  border-radius: 8px;
+  transition: border-color 0.15s;
+}
+
+.bs-bank.bs-zone-over { border-color: #6b7280; }
+
+.bs-zones {
+  display: flex;
+  gap: 12px;
+}
+
+/* Each drop-target column. */
+.bs-zone {
+  flex: 1;
+  padding: 10px;
+  background: #111827;
+  border: 2px dashed #374151;
+  border-radius: 8px;
+  min-height: 120px;
+  transition: border-color 0.15s;
+}
+
+/* Colour-coded drag-over highlight per column. */
+#bs-zone-asset.bs-zone-over     { border-color: #60a5fa; }
+#bs-zone-liability.bs-zone-over { border-color: #f87171; }
+
+.bs-zone-header {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+}
+
+.bs-asset-header     { color: #60a5fa; }
+.bs-liability-header { color: #f87171; }
+
+.bs-zone-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Individual draggable item card. */
+.bs-card-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  padding: 8px 10px;
+  cursor: grab;
+  user-select: none;
+  transition: border-color 0.15s, opacity 0.15s;
+}
+
+.bs-card-item:active { cursor: grabbing; }
+.bs-card-item.bs-dragging { opacity: 0.35; }
+
+/* Feedback states shown after submission. */
+.bs-card-item.bs-correct   { border-color: #60a5fa; }
+.bs-card-item.bs-incorrect { border-color: #f87171; }
+
+/* Locked cards have been confirmed correct and can no longer be dragged. */
+.bs-card-item.bs-locked {
+  cursor: default;
+  opacity: 0.75;
+}
+
+/* Disabled state while items remain in the bank. */
+#bs-submit-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.bs-card-label {
+  flex: 1;
+  font-size: 0.82rem;
+  color: #e5e7eb;
+}
+
+.bs-card-amount {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #9ca3af;
+}
+
+.bs-card-status {
+  width: 1rem;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.bs-card-item.bs-correct   .bs-card-status { color: #60a5fa; }
+.bs-card-item.bs-incorrect .bs-card-status { color: #f87171; }
+
+/* Score, totals, and equity shown after all items are correctly placed. */
+.bs-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px;
+  background: #111827;
+  border-radius: 8px;
+}
+
+.bs-score {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #f3f4f6;
+}
+
+.bs-totals {
+  display: flex;
+  gap: 16px;
+  font-size: 0.82rem;
+  color: #9ca3af;
+}
+
+.bs-equity {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.bs-equity-pos { color: #60a5fa; }
+.bs-equity-neg { color: #f87171; }
+
+/* ── Balance sheet difficulty 2: four-section layout ── */
+
+/* Two-column grid mirroring the D1 side-by-side layout. */
+.bs-zones-d2 {
+  display: flex;
+  gap: 12px;
+}
+
+/* Each column holds a header label and two stacked drop zones. */
+.bs-d2-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Column-level "Assets" / "Liabilities" label above the two sub-zones. */
+.bs-d2-col-header {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0 2px;
+}
+
+/* Smaller min-height for D2 zones since two stack per column. */
+.bs-zones-d2 .bs-zone {
+  min-height: 80px;
+}
+
+/* Drag-over highlights for D3/D4 zones — assets blue, liabilities red. */
+#bs-zone-current-asset.bs-zone-over,
+#bs-zone-noncurrent-asset.bs-zone-over  { border-color: #60a5fa; }
+#bs-zone-current-liability.bs-zone-over,
+#bs-zone-longterm-liability.bs-zone-over { border-color: #f87171; }
+
+/* ── Not Applicable zone (D2 and D4 only) ── */
+
+/* Full-width zone sitting below the main layout columns. */
+.bs-zone-na {
+  border: 2px dashed #374151;
+  border-radius: 8px;
+  padding: 8px;
+  min-height: 60px;
+  background: #111827;
+}
+
+.bs-na-header { color: #9ca3af; }
+
+#bs-zone-na.bs-zone-over { border-color: #9ca3af; }
+
+/* ── Equity entry form (D3/D4 only) ── */
+
+/* Container shown after all drag-and-drop items are locked correctly. */
+.bs-equity-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: #111827;
+  border-radius: 8px;
+}
+
+.bs-equity-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #e5e7eb;
+}
+
+/* Dollar sign + input + check button on one line. */
+.bs-equity-input-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bs-equity-dollar {
+  font-size: 0.9rem;
+  color: #9ca3af;
+}
+
+.bs-equity-input {
+  width: 160px;
+  padding: 6px 10px;
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  color: #e5e7eb;
+  font-size: 0.9rem;
+}
+
+.bs-equity-input:focus {
+  outline: none;
+  border-color: #60a5fa;
+}
+
+/* Feedback message shown on a wrong attempt. */
+.bs-equity-feedback {
+  font-size: 0.82rem;
+  min-height: 1.2em;
+}
+
+.bs-equity-wrong { color: #f87171; }
+
 /* ── Notification stack ── */
 #notification-stack {
   position: fixed;
