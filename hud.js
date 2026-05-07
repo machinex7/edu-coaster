@@ -33,7 +33,7 @@ function initViewModeBar() {
 
 // Switches the active view mode, updating button state, construction bar, demolish mode, and overlays.
 function setViewMode(modeId) {
-  if (modeId === 'demolish' && Finance.hasActiveCovenant('NO_DEMOLISH')) {
+  if (modeId === 'demolish' && Banking.hasActiveCovenant('NO_DEMOLISH')) {
     Notifications.push({ label: 'Covenant', message: 'Your loan covenant prohibits demolishing rides.' });
     return;
   }
@@ -260,7 +260,7 @@ function advanceRound() {
   round++;
   Concessions.onRoundAdvance();
   const report     = Finance.processRound();
-  const loanResult = Finance.processPendingLoan();
+  const loanResult = Banking.processPendingLoan();
   Survey.processPendingSend();
   History.record(report);
   refreshDirtOverlay();
@@ -386,7 +386,7 @@ function updateAchievementIndicators() {
   }
 
   // Show a pill when a loan is in the final review stage (cash incoming).
-  const loan = Finance.loanApplication;
+  const loan = Banking.loanApplication;
   if (loan?.status === LOAN_STATUS.REVIEW) {
     const wks = loan.reviewWeeksRemaining;
     const wksLabel = `${wks} wk${wks !== 1 ? 's' : ''}`;
@@ -453,7 +453,7 @@ function updateLockedPanels() {
 
   const demolishModeBtn = document.querySelector('.view-mode-btn[data-view-mode="demolish"]');
   if (demolishModeBtn) {
-    const demolishLocked = Finance.hasActiveCovenant('NO_DEMOLISH');
+    const demolishLocked = Banking.hasActiveCovenant('NO_DEMOLISH');
     demolishModeBtn.disabled = demolishLocked;
     demolishModeBtn.title    = demolishLocked ? 'Locked by loan covenant' : '';
   }
@@ -1083,7 +1083,8 @@ function buildFinancialPanel() {
     <div class="financial-section">
       <div class="financial-section-header">Pricing Controls</div>
       <div class="price-list">${rows}</div>
-    </div>`;
+    </div>
+    <div class="financial-section" id="membership-section"></div>`;
 
   document.querySelectorAll('.price-apply-btn').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -1095,6 +1096,8 @@ function buildFinancialPanel() {
       input.value = item.getValue();
     });
   });
+
+  Membership.buildSection();
 }
 
 /* buildBankingPanel - renders the Banking panel: loan application and active loan status */
@@ -1107,7 +1110,7 @@ function buildBankingPanel() {
     return;
   }
 
-  const app       = Finance.loanApplication;
+  const app       = Banking.loanApplication;
   const appStatus = app?.status ?? null;
   const locked    = app !== null;
   const dis       = locked ? 'disabled' : '';
@@ -1138,7 +1141,7 @@ function buildBankingPanel() {
     : '';
 
   const loanSectionHtml = (() => {
-    if (Finance.hasActiveCovenant('NO_NEW_LOANS') && !app)
+    if (Banking.hasActiveCovenant('NO_NEW_LOANS') && !app)
       return `<div class="loan-covenant-block">An active loan covenant prohibits taking on new loans.</div>`;
 
     if (appStatus === LOAN_STATUS.OFFERED) {
@@ -1230,7 +1233,7 @@ function buildBankingPanel() {
       const amount  = Math.max(0, parseInt(document.getElementById('loan-amount').value)  || 0);
       const purpose = document.getElementById('loan-purpose').value;
       const term    = Math.max(1, parseInt(document.getElementById('loan-term').value)    || 1);
-      Finance.submitLoanApplication(amount, purpose, term);
+      Banking.submitLoanApplication(amount, purpose, term);
       document.getElementById('loan-amount').disabled  = true;
       document.getElementById('loan-purpose').disabled = true;
       document.getElementById('loan-term').disabled    = true;
@@ -1241,7 +1244,7 @@ function buildBankingPanel() {
 
   if (appStatus === LOAN_STATUS.OPEN) {
     document.getElementById('loan-apply-btn').addEventListener('click', () => {
-      Finance.applyForLoan();
+      Banking.applyForLoan();
       document.querySelector('#loan-form .form-actions').innerHTML =
         `<span class="loan-approaching-label">Awaiting Offer…</span>`;
     });
@@ -1249,24 +1252,24 @@ function buildBankingPanel() {
 
   if (appStatus === LOAN_STATUS.OFFERED) {
     document.getElementById('loan-reject-btn').addEventListener('click', () => {
-      Finance.rejectOffer();
+      Banking.rejectOffer();
       buildBankingPanel();
     });
     document.getElementById('loan-accept-btn').addEventListener('click', () => {
-      Finance.acceptOffer();
+      Banking.acceptOffer();
       buildBankingPanel();
     });
     document.getElementById('negotiate-rate-btn')?.addEventListener('click', () => {
-      Finance.negotiateRate();
+      Banking.negotiateRate();
       buildBankingPanel();
     });
     document.getElementById('negotiate-fee-btn')?.addEventListener('click', () => {
-      Finance.negotiateFee();
+      Banking.negotiateFee();
       buildBankingPanel();
     });
     document.querySelectorAll('[data-covenant-index]').forEach(btn => {
       btn.addEventListener('click', () => {
-        Finance.negotiateCovenant(parseInt(btn.dataset.covenantIndex));
+        Banking.negotiateCovenant(parseInt(btn.dataset.covenantIndex));
         buildBankingPanel();
       });
     });
