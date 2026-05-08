@@ -394,8 +394,21 @@ const Animations = {
     ctx.fillStyle = 'white';
     for (const p of this.people) {
       if (p.state === 'visiting') continue;
-      // Hidden while still inside the source node (haven't reached the first path tile yet).
-      if (p.wpIdx < 2) continue;
+
+      const prev = p.waypoints[p.wpIdx - 1];
+      const next = p.waypoints[p.wpIdx];
+      const half = CELL_STEP / 2;
+
+      if (p.wpIdx === 1) {
+        // First segment: stay hidden until within half a tile of the first path tile.
+        const dx = next.x - p.x, dy = next.y - p.y;
+        if (dx * dx + dy * dy > half * half) continue;
+      } else if (p.wpIdx === p.waypoints.length - 1) {
+        // Last segment: hide once more than half a tile from the last path tile.
+        const dx = p.x - prev.x, dy = p.y - prev.y;
+        if (dx * dx + dy * dy > half * half) continue;
+      }
+
       ctx.beginPath();
       ctx.arc(p.x, p.y, this.DOT_RADIUS, 0, Math.PI * 2);
       ctx.fill();
