@@ -1223,10 +1223,9 @@ function buildBankingPanel() {
   })();
 
   // ── Savings section HTML ──────────────────────────────────────────────────────
-  const weeklyRate   = Math.pow(1 + SAVINGS_ANNUAL_RATE, 1 / WEEKS_PER_YEAR) - 1;
-  const maxDeposit   = Math.floor(money / 1000) * 1000;
-  const maxWithdraw  = Math.floor(Banking.savingsBalance / 1000) * 1000;
-  const savingsHtml  = `
+  const maxDeposit  = Math.floor(money / 1000) * 1000;
+  const maxWithdraw = Math.floor(Banking.savingsBalance / 1000) * 1000;
+  const savingsHtml = `
     <div class="posting-form">
       <div class="loan-offer-row">
         <span>Balance</span>
@@ -1250,10 +1249,98 @@ function buildBankingPanel() {
       </div>
     </div>`;
 
+  // ── Money market section HTML ─────────────────────────────────────────────────
+  const mmHtml = (() => {
+    // Close-out confirmation state: show a warning and Proceed / Cancel buttons.
+    if (Banking.mmCloseConfirmPending) {
+      return `
+        <div class="posting-form">
+          <div class="loan-offer-row">
+            <span>Balance</span>
+            <span>$${Banking.mmBalance.toLocaleString()}</span>
+          </div>
+          <div class="loan-covenant-block">
+            Withdrawing below the $${MM_MIN_BALANCE.toLocaleString()} minimum will close this account.
+            Your full balance of $${Banking.mmBalance.toLocaleString()} will be returned to cash,
+            and withdrawals will be locked for ${MM_WITHDRAWAL_COOLDOWN} rounds.
+          </div>
+          <div class="form-actions">
+            <button id="mm-cancel-btn" class="loan-reject-btn">Cancel</button>
+            <button id="mm-confirm-btn" class="loan-accept-btn">Proceed</button>
+          </div>
+        </div>`;
+    }
+
+    // Account not open: show an open-account form.
+    if (Banking.mmBalance === 0) {
+      const canOpen = Banking.mmWithdrawalCooldown === 0;
+      return `
+        <div class="posting-form">
+          <div class="loan-offer-row">
+            <span>Rate</span>
+            <span>${(MM_ANNUAL_RATE * 100).toFixed(1)}% annual, compounded weekly</span>
+          </div>
+          <div class="loan-offer-row">
+            <span>Minimum Balance</span>
+            <span>$${MM_MIN_BALANCE.toLocaleString()}</span>
+          </div>
+          ${!canOpen ? `<div class="loan-approaching-label">Withdrawals locked — ${Banking.mmWithdrawalCooldown} round${Banking.mmWithdrawalCooldown !== 1 ? 's' : ''} remaining before reopening.</div>` : ''}
+          <div class="form-field">
+            <label for="mm-open-amount">Opening Deposit (min $${MM_MIN_BALANCE.toLocaleString()})</label>
+            <input id="mm-open-amount" type="number" min="${MM_MIN_BALANCE}" step="1000"
+                   placeholder="$${MM_MIN_BALANCE.toLocaleString()}" ${!canOpen ? 'disabled' : ''}>
+          </div>
+          <div class="form-actions">
+            <button id="mm-open-btn" ${!canOpen ? 'disabled' : ''}>Open Account</button>
+          </div>
+        </div>`;
+    }
+
+    // Account open: show stats, deposit, and optional withdraw controls.
+    const cooldown    = Banking.mmWithdrawalCooldown;
+    const withdrawRow = cooldown > 0
+      ? `<div class="loan-approaching-label">Withdrawals locked — ${cooldown} round${cooldown !== 1 ? 's' : ''} remaining.</div>`
+      : `<div class="form-actions">
+           <button id="mm-withdraw-btn">Withdraw</button>
+         </div>`;
+
+    return `
+      <div class="posting-form">
+        <div class="loan-offer-row">
+          <span>Balance</span>
+          <span>$${Banking.mmBalance.toLocaleString()}</span>
+        </div>
+        <div class="loan-offer-row">
+          <span>Interest Earned (all-time)</span>
+          <span>$${Banking.mmTotalInterestEarned.toLocaleString()}</span>
+        </div>
+        <div class="loan-offer-row">
+          <span>Rate</span>
+          <span>${(MM_ANNUAL_RATE * 100).toFixed(1)}% annual, compounded weekly</span>
+        </div>
+        <div class="loan-offer-row">
+          <span>Minimum Balance</span>
+          <span>$${MM_MIN_BALANCE.toLocaleString()}</span>
+        </div>
+        <div class="form-field">
+          <label for="mm-amount">Amount ($1,000 increments)</label>
+          <input id="mm-amount" type="number" min="1000" step="1000" placeholder="$0">
+        </div>
+        <div class="form-actions">
+          <button id="mm-deposit-btn">Deposit</button>
+        </div>
+        ${withdrawRow}
+      </div>`;
+  })();
+
   body.innerHTML = `
     <div class="financial-section">
       <div class="financial-section-header">Savings Account</div>
       ${savingsHtml}
+    </div>
+    <div class="financial-section">
+      <div class="financial-section-header">Money Market Account</div>
+      ${mmHtml}
     </div>
     <div class="financial-section">
       <div class="financial-section-header">Loan</div>
@@ -1268,6 +1355,30 @@ function buildBankingPanel() {
   document.getElementById('savings-withdraw-btn').addEventListener('click', () => {
     const amount = Math.round(parseInt(document.getElementById('savings-amount').value) || 0);
     if (Banking.withdraw(amount)) buildBankingPanel();
+  });
+
+  // Money market buttons — wired conditionally based on which state is rendered.
+  document.getElementById('mm-open-btn')?.addEventListener('click', () => {
+    const amount = Math.round(parseInt(document.getElementById('mm-open-amount').value) || 0);
+    if (Banking.mmDeposit(amount)) buildBankingPanel();
+  });
+  document.getElementById('mm-deposit-btn')?.addEventListener('click', () => {
+    const amount = Math.round(parseInt(document.getElementById('mm-amount').value) || 0);
+    if (Banking.mmDeposit(amount)) buildBankingPanel();
+  });
+  document.getElementById('mm-withdraw-btn')?.addEventListener('click', () => {
+    const amount = Math.round(parseInt(document.getElementById('mm-amount').value) || 0);
+    const result = Banking.mmWithdraw(amount);
+    // 'confirm' means the withdrawal would close the account — rebuild to show the prompt.
+    if (result === true || result === 'confirm') buildBankingPanel();
+  });
+  document.getElementById('mm-confirm-btn')?.addEventListener('click', () => {
+    Banking.mmConfirmClose();
+    buildBankingPanel();
+  });
+  document.getElementById('mm-cancel-btn')?.addEventListener('click', () => {
+    Banking.mmCancelClose();
+    buildBankingPanel();
   });
 
   if (appStatus === null) {

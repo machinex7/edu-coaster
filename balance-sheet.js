@@ -141,9 +141,10 @@ const BalanceSheet = {
     }
 
     const savingsBalance = Banking.savingsBalance;
+    const mmBalance      = Banking.mmBalance;
 
     return {
-      cash, savingsBalance, merchandiseValue, foodStockValue,
+      cash, savingsBalance, mmBalance, merchandiseValue, foodStockValue,
       parkEquipmentValue, constructionValue,
       currentLoanPortion, longtermLoanPortion,
       totalLoanBalance: currentLoanPortion + longtermLoanPortion,
@@ -169,6 +170,7 @@ const BalanceSheet = {
     const all = [
       { key: 'cash',         label: 'Cash on Hand',             correct: 'asset',     value: v.cash },
       { key: 'savings',      label: 'Savings Account',          correct: 'asset',     value: v.savingsBalance },
+      { key: 'mm',           label: 'Money Market Account',     correct: 'asset',     value: v.mmBalance },
       { key: 'merchandise',  label: 'Merchandise Inventory',    correct: 'asset',     value: v.merchandiseValue },
       { key: 'equipment',    label: 'Park Equipment',           correct: 'asset',     value: v.parkEquipmentValue },
       { key: 'construction', label: 'Construction in Progress', correct: 'asset',     value: v.constructionValue },
@@ -191,6 +193,7 @@ const BalanceSheet = {
     const all = [
       { key: 'cash',           label: 'Cash on Hand',             correct: 'current-asset',    value: v.cash },
       { key: 'savings',        label: 'Savings Account',          correct: 'current-asset',    value: v.savingsBalance },
+      { key: 'mm',             label: 'Money Market Account',     correct: 'current-asset',    value: v.mmBalance },
       { key: 'merchandise',    label: 'Merchandise Inventory',    correct: 'current-asset',    value: v.merchandiseValue },
       { key: 'equipment',      label: 'Park Equipment',           correct: 'noncurrent-asset', value: v.parkEquipmentValue },
       { key: 'construction',   label: 'Construction in Progress', correct: 'noncurrent-asset', value: v.constructionValue },

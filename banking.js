@@ -162,6 +162,77 @@ const Banking = {
     return interest;
   },
 
+  // ── Money market account ─────────────────────────────────────────────────────
+
+  // Balance held in the money market account (separate from cash and savings).
+  mmBalance: 0,
+
+  // Rounds remaining before a withdrawal is permitted. Starts at MM_WITHDRAWAL_COOLDOWN
+  // after any withdrawal and decrements once per round.
+  mmWithdrawalCooldown: 0,
+
+  // All interest ever credited to the money market account.
+  mmTotalInterestEarned: 0,
+
+  // True when the player has requested a withdrawal that would drop the balance below
+  // MM_MIN_BALANCE and is waiting to confirm the close-out.
+  mmCloseConfirmPending: false,
+
+  // Deposit into the money market account. Initial deposit must be >= MM_MIN_BALANCE.
+  // Returns false if funds are insufficient or amount is not a positive multiple of 1000.
+  mmDeposit(amount) {
+    if (amount <= 0 || amount % 1000 !== 0) return false;
+    if (this.mmBalance === 0 && amount < MM_MIN_BALANCE) return false;
+    if (money < amount) return false;
+    money -= amount;
+    this.mmBalance += amount;
+    return true;
+  },
+
+  // Attempt a withdrawal. If the amount would drop the balance below MM_MIN_BALANCE,
+  // sets mmCloseConfirmPending = true and returns 'confirm' so the caller can show
+  // the close-out confirmation UI. During cooldown, returns false.
+  mmWithdraw(amount) {
+    if (amount <= 0 || amount % 1000 !== 0) return false;
+    if (this.mmWithdrawalCooldown > 0) return false;
+    if (amount > this.mmBalance) return false;
+    if (this.mmBalance - amount < MM_MIN_BALANCE) {
+      this.mmCloseConfirmPending = true;
+      return 'confirm';
+    }
+    money += amount;
+    this.mmBalance -= amount;
+    this.mmWithdrawalCooldown = MM_WITHDRAWAL_COOLDOWN;
+    return true;
+  },
+
+  // Execute a confirmed close-out: return the full balance to cash, reset the
+  // account, and start the withdrawal cooldown.
+  mmConfirmClose() {
+    money += this.mmBalance;
+    this.mmBalance = 0;
+    this.mmWithdrawalCooldown = MM_WITHDRAWAL_COOLDOWN;
+    this.mmCloseConfirmPending = false;
+  },
+
+  // Cancel a pending close-out confirmation without making any changes.
+  mmCancelClose() {
+    this.mmCloseConfirmPending = false;
+  },
+
+  // Tick the withdrawal cooldown and credit weekly compounded interest to the MM balance.
+  // Called once per round. Returns the whole-dollar interest earned this round.
+  processMmInterest() {
+    if (this.mmCloseConfirmPending) this.mmCloseConfirmPending = false; // clear stale confirmation
+    if (this.mmWithdrawalCooldown > 0) this.mmWithdrawalCooldown--;
+    if (this.mmBalance <= 0) return 0;
+    const weeklyRate = Math.pow(1 + MM_ANNUAL_RATE, 1 / WEEKS_PER_YEAR) - 1;
+    const interest   = Math.round(this.mmBalance * weeklyRate);
+    this.mmBalance            += interest;
+    this.mmTotalInterestEarned += interest;
+    return interest;
+  },
+
   // ── LTV and covenant helpers ─────────────────────────────────────────────────
 
   // Maximum loan-to-value ratio for each purpose, shrinking with missed payments.
