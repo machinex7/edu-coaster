@@ -387,9 +387,10 @@ header h1 {
   user-select: none;
 }
 
-/* Transparent SVG drawn over the grid for security (and future) overlays. */
+/* Transparent overlays drawn over the grid for security, dirt, and people. */
 #security-overlay,
-#dirt-overlay {
+#dirt-overlay,
+#people-overlay {
   position: absolute;
   top: 0;
   left: 0;

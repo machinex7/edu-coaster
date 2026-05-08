@@ -51,6 +51,11 @@ function setViewMode(modeId) {
   if (modeId === 'dirt') drawDirtOverlay();
   else clearDirtOverlay();
   _updateViewModeLegend(modeId);
+  // Spawn visitors only while the player is watching the park in play mode.
+  if (gameStage === STAGE.PLAY) {
+    if (modeId === 'play') Animations.startSpawning();
+    else Animations.stopSpawning();
+  }
 }
 
 // Populates the right-side legend area when an overlay mode is active.
@@ -234,6 +239,7 @@ function initHUD() {
   initViewModeBar();
   initCbarTabs();
   updateLockedPanels();
+  Animations.init();
 }
 
 function canOpenPark() {
@@ -253,6 +259,11 @@ function openPark() {
   document.getElementById('open-park-btn').classList.add('hidden');
   document.getElementById('next-round-btn').classList.remove('hidden');
   updateHUD();
+  // Build initial paths and start spawning visitors (view mode defaults to play).
+  setTimeout(() => {
+    Animations.buildPaths();
+    if (currentViewMode === 'play') Animations.startSpawning();
+  }, 100);
   console.log('Park is now open — simulation started.');
 }
 
