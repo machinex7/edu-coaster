@@ -45,6 +45,8 @@ const History = {
         theftCount:   stats.theftCount,
       })),
       discountLoss:        report.discountLoss,
+      savingsInterestIncome: report.savingsInterestIncome,
+      savingsBalance:      Banking.savingsBalance,
       loanBalance:         Banking.activeLoans.reduce((s, l) => s + l.balance, 0),
       loanInterestPaid:    Banking.activeLoans.reduce((s, l) => s + l.totalInterestPaid, 0),
       loanPrincipalPaid:   Banking.activeLoans.reduce((s, l) => s + l.totalPrincipalPaid, 0),

@@ -279,7 +279,7 @@ function advanceRound() {
   Security.refreshPanel();
   Research.refreshPanel();
   Awards.refreshPanel();
-  if (loanResult && activePanel === 'banking') buildBankingPanel();
+  if (activePanel === 'banking') buildBankingPanel();
   if (activePanel === 'survey')          Survey.buildPanel();
   if (activePanel === 'visitor-profile') VisitorProfile.buildPanel();
   if (activePanel === 'concessions')     Concessions.buildPanel();
@@ -1222,11 +1222,53 @@ function buildBankingPanel() {
     </div>`;
   })();
 
+  // ── Savings section HTML ──────────────────────────────────────────────────────
+  const weeklyRate   = Math.pow(1 + SAVINGS_ANNUAL_RATE, 1 / WEEKS_PER_YEAR) - 1;
+  const maxDeposit   = Math.floor(money / 1000) * 1000;
+  const maxWithdraw  = Math.floor(Banking.savingsBalance / 1000) * 1000;
+  const savingsHtml  = `
+    <div class="posting-form">
+      <div class="loan-offer-row">
+        <span>Balance</span>
+        <span>$${Banking.savingsBalance.toLocaleString()}</span>
+      </div>
+      <div class="loan-offer-row">
+        <span>Interest Earned (all-time)</span>
+        <span>$${Banking.totalInterestEarned.toLocaleString()}</span>
+      </div>
+      <div class="loan-offer-row">
+        <span>Rate</span>
+        <span>${(SAVINGS_ANNUAL_RATE * 100).toFixed(1)}% annual, compounded weekly</span>
+      </div>
+      <div class="form-field">
+        <label for="savings-amount">Amount ($1,000 increments)</label>
+        <input id="savings-amount" type="number" min="1000" step="1000" placeholder="$0">
+      </div>
+      <div class="form-actions">
+        <button id="savings-deposit-btn" ${maxDeposit <= 0 ? 'disabled' : ''}>Deposit</button>
+        <button id="savings-withdraw-btn" ${maxWithdraw <= 0 ? 'disabled' : ''}>Withdraw</button>
+      </div>
+    </div>`;
+
   body.innerHTML = `
+    <div class="financial-section">
+      <div class="financial-section-header">Savings Account</div>
+      ${savingsHtml}
+    </div>
     <div class="financial-section">
       <div class="financial-section-header">Loan</div>
       ${loanSectionHtml}
     </div>`;
+
+  // Savings deposit / withdraw buttons.
+  document.getElementById('savings-deposit-btn').addEventListener('click', () => {
+    const amount = Math.round(parseInt(document.getElementById('savings-amount').value) || 0);
+    if (Banking.deposit(amount)) buildBankingPanel();
+  });
+  document.getElementById('savings-withdraw-btn').addEventListener('click', () => {
+    const amount = Math.round(parseInt(document.getElementById('savings-amount').value) || 0);
+    if (Banking.withdraw(amount)) buildBankingPanel();
+  });
 
   if (appStatus === null) {
     document.getElementById('loan-approach-btn').addEventListener('click', () => {

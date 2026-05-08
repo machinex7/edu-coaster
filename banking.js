@@ -122,6 +122,46 @@ const Banking = {
   // Cumulative across all loans; drives future rate and LTV penalties.
   totalMissedPayments: 0,
 
+  // ── Savings account ──────────────────────────────────────────────────────────
+
+  // Current balance held in the savings account (separate from cash).
+  savingsBalance: 0,
+
+  // All interest credited to the savings account across the entire game.
+  totalInterestEarned: 0,
+
+  // Move money from cash into the savings account in $1,000 increments.
+  // Returns false if funds are insufficient or amount is not a positive multiple of 1000.
+  deposit(amount) {
+    if (amount <= 0 || amount % 1000 !== 0) return false;
+    if (money < amount) return false;
+    money -= amount;
+    this.savingsBalance += amount;
+    return true;
+  },
+
+  // Move money from the savings account back to cash in $1,000 increments.
+  // Returns false if the savings balance is insufficient or amount is invalid.
+  withdraw(amount) {
+    if (amount <= 0 || amount % 1000 !== 0) return false;
+    if (this.savingsBalance < amount) return false;
+    this.savingsBalance -= amount;
+    money += amount;
+    return true;
+  },
+
+  // Credit weekly compounded interest to the savings balance.
+  // Weekly rate = (1 + SAVINGS_ANNUAL_RATE)^(1/52) − 1.
+  // Returns the whole-dollar interest earned this round for P&L reporting.
+  processSavingsInterest() {
+    if (this.savingsBalance <= 0) return 0;
+    const weeklyRate = Math.pow(1 + SAVINGS_ANNUAL_RATE, 1 / WEEKS_PER_YEAR) - 1;
+    const interest   = Math.round(this.savingsBalance * weeklyRate);
+    this.savingsBalance      += interest;
+    this.totalInterestEarned += interest;
+    return interest;
+  },
+
   // ── LTV and covenant helpers ─────────────────────────────────────────────────
 
   // Maximum loan-to-value ratio for each purpose, shrinking with missed payments.

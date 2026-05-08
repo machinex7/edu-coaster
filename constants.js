@@ -124,6 +124,9 @@ const AWARD_ID = Object.freeze({
   MOST_BATHROOMS: 'most_bathrooms',
 });
 
+// Annual interest rate for the savings account, compounded weekly.
+const SAVINGS_ANNUAL_RATE = 0.004;
+
 // Interest rate reduction per covenant on the loan agreement.
 const COVENANT_RATE_DISCOUNT = 0.4;
 // Per missed payment: interest rate premium added to future proposals.

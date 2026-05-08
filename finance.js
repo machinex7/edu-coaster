@@ -576,7 +576,7 @@ const Finance = {
       (sum, inv) => sum + inv.count * inv.price, 0
     );
 
-    return buildingValue + inventoryValue + money;
+    return buildingValue + inventoryValue + money + Banking.savingsBalance;
   },
 
   // ── Round processing ─────────────────────────────────────────────────────────
@@ -692,6 +692,9 @@ const Finance = {
     const membershipRevenue = Membership.calcSales(weeklyAttendance);
     money += membershipRevenue;
 
+    // Savings interest: credited to the savings account balance, not to cash directly.
+    const savingsInterestIncome = Banking.processSavingsInterest();
+
     this.advancePriceExhaustion();    // decay price fatigue by 1
     if (Unlock.SECURITY) Security.advanceOpinion(security.unhandled); // decay then add unhandled incidents
     const populationEvents = Population.populationEvents.map(e => ({ ...e }));
@@ -729,7 +732,8 @@ const Finance = {
       discountLoss: Discounts.lastRoundCost,
       membershipRevenue,
       memberBenefitLoss,
-      totalIncome: grossGateRevenue + grossParkingRevenue + shopRevenue + foodRevenue + membershipRevenue,
+      savingsInterestIncome,
+      totalIncome: grossGateRevenue + grossParkingRevenue + shopRevenue + foodRevenue + membershipRevenue + savingsInterestIncome,
       staffCosts,
       utilityCosts,
       constructionCosts,

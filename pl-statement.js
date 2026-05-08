@@ -29,6 +29,7 @@ const PLStatement = {
     { key: 'bus',            label: 'Bus Service',        correct: 'expense', histKey: 'parkingBusCost' },
     { key: 'parkingAmenity', label: 'Parking Amenities',  correct: 'expense', histKey: 'parkingAmenitySpend' },
     { key: 'memberBenefit',  label: 'Membership Benefits', correct: 'expense', histKey: 'memberBenefitExpense' },
+    { key: 'savingsInterest', label: 'Savings Interest',   correct: 'revenue', histKey: 'savingsInterestIncome' },
   ],
 
   // Active items for the current session — ITEMS filtered to non-zero totals.

@@ -140,8 +140,10 @@ const BalanceSheet = {
       }
     }
 
+    const savingsBalance = Banking.savingsBalance;
+
     return {
-      cash, merchandiseValue, foodStockValue,
+      cash, savingsBalance, merchandiseValue, foodStockValue,
       parkEquipmentValue, constructionValue,
       currentLoanPortion, longtermLoanPortion,
       totalLoanBalance: currentLoanPortion + longtermLoanPortion,
@@ -166,13 +168,14 @@ const BalanceSheet = {
   _buildItemsD1(v) {
     const all = [
       { key: 'cash',         label: 'Cash on Hand',             correct: 'asset',     value: v.cash },
+      { key: 'savings',      label: 'Savings Account',          correct: 'asset',     value: v.savingsBalance },
       { key: 'merchandise',  label: 'Merchandise Inventory',    correct: 'asset',     value: v.merchandiseValue },
       { key: 'equipment',    label: 'Park Equipment',           correct: 'asset',     value: v.parkEquipmentValue },
       { key: 'construction', label: 'Construction in Progress', correct: 'asset',     value: v.constructionValue },
       { key: 'loans',        label: 'Outstanding Loans',        correct: 'liability', value: v.totalLoanBalance },
     ];
     if (Unlock.FOOD) {
-      all.splice(2, 0, { key: 'food', label: 'Food & Beverage Stock', correct: 'asset', value: v.foodStockValue });
+      all.splice(3, 0, { key: 'food', label: 'Food & Beverage Stock', correct: 'asset', value: v.foodStockValue });
     }
     this._items = all.filter(item => Math.round(item.value) !== 0);
   },
@@ -187,6 +190,7 @@ const BalanceSheet = {
   _buildItemsD3(v) {
     const all = [
       { key: 'cash',           label: 'Cash on Hand',             correct: 'current-asset',    value: v.cash },
+      { key: 'savings',        label: 'Savings Account',          correct: 'current-asset',    value: v.savingsBalance },
       { key: 'merchandise',    label: 'Merchandise Inventory',    correct: 'current-asset',    value: v.merchandiseValue },
       { key: 'equipment',      label: 'Park Equipment',           correct: 'noncurrent-asset', value: v.parkEquipmentValue },
       { key: 'construction',   label: 'Construction in Progress', correct: 'noncurrent-asset', value: v.constructionValue },
@@ -194,7 +198,7 @@ const BalanceSheet = {
       { key: 'longterm-loans', label: 'Long-term Loan Balance',   correct: 'longterm-liability', value: v.longtermLoanPortion },
     ];
     if (Unlock.FOOD) {
-      all.splice(2, 0, { key: 'food', label: 'Food & Beverage Stock', correct: 'current-asset', value: v.foodStockValue });
+      all.splice(3, 0, { key: 'food', label: 'Food & Beverage Stock', correct: 'current-asset', value: v.foodStockValue });
     }
     this._items = all.filter(item => Math.round(item.value) !== 0);
   },
