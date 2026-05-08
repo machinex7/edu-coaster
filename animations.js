@@ -311,9 +311,12 @@ const Animations = {
         p.y = target.y;
         p.wpIdx++;
 
-        // Count every tile crossing and drop trash every TRASH_INTERVAL_TILES.
+        // Count every tile crossing and drop trash. A higher mess factor
+        // (dirtier park) shortens the interval, producing more litter.
         p.tileCount++;
-        if (p.tileCount % this.TRASH_INTERVAL_TILES === 0) {
+        const messFactor     = Unlock.MESSES ? Finance.calcMessFactor() : 1;
+        const trashInterval  = Math.max(1, Math.round(this.TRASH_INTERVAL_TILES / messFactor));
+        if (p.tileCount % trashInterval === 0) {
           this._dropTrash(p.x, p.y);
         }
 
