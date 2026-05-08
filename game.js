@@ -560,6 +560,9 @@ function completeDemolition(record) {
           delete facilityTypeAtCell[`${record.row + r},${record.col + c}`];
       }
     }
+    // A demolished path tile breaks every stored A* route; discard them so
+    // they are recomputed the next time the player enters Play view mode.
+    if (record.facilityId === FACILITY_ID.PATH) Animations.paths = [];
   }
 
   updateHUD();
