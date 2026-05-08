@@ -261,6 +261,7 @@ function advanceRound() {
   Concessions.onRoundAdvance();
   const report     = Finance.processRound();
   const loanResult = Banking.processPendingLoan();
+  Banking.processPendingLoc();
   Survey.processPendingSend();
   History.record(report);
   refreshDirtOverlay();
@@ -1333,6 +1334,60 @@ function buildBankingPanel() {
       </div>`;
   })();
 
+  // ── Line of credit section HTML ───────────────────────────────────────────────
+  const locHtml = (() => {
+    const loc = Banking.locApplication;
+    const locStatus = loc?.status ?? null;
+
+    // Active account: show balance, available credit, draw/repay controls.
+    if (Banking.locActive) {
+      const available = Banking.locLimit - Banking.locBalance;
+      const canClose  = Banking.locBalance === 0;
+      return `
+        <div class="posting-form">
+          <div class="loan-offer-row"><span>Credit Limit</span><span>$${Banking.locLimit.toLocaleString()}</span></div>
+          <div class="loan-offer-row"><span>Available</span><span>$${available.toLocaleString()}</span></div>
+          <div class="loan-offer-row"><span>Outstanding Balance</span><span>$${Banking.locBalance.toLocaleString()}</span></div>
+          <div class="loan-offer-row"><span>Rate</span><span>${Banking.locRate}% annual</span></div>
+          <div class="loan-offer-row"><span>Interest Paid (all-time)</span><span>$${Banking.locTotalInterestPaid.toLocaleString()}</span></div>
+          <div class="form-field">
+            <label for="loc-amount">Amount ($1,000 increments)</label>
+            <input id="loc-amount" type="number" min="1000" step="1000" placeholder="$0">
+          </div>
+          <div class="form-actions">
+            <button id="loc-repay-btn" ${Banking.locBalance === 0 ? 'disabled' : ''}>Repay</button>
+            <button id="loc-draw-btn"  ${available === 0 ? 'disabled' : ''}>Draw</button>
+          </div>
+          ${canClose ? `<div class="form-actions"><button id="loc-close-btn" class="loan-reject-btn">Close Account</button></div>` : ''}
+        </div>`;
+    }
+
+    // Offer on the table: show terms and accept/reject.
+    if (locStatus === 'offered') {
+      return `
+        <div class="posting-form">
+          <div class="loan-offer-row"><span>Credit Limit</span><span>$${loc.limit.toLocaleString()}</span></div>
+          <div class="loan-offer-row loan-offer-rate"><span>Interest Rate</span><span>${loc.rate}% annual</span></div>
+          <div class="form-actions">
+            <button id="loc-reject-btn" class="loan-reject-btn">Reject</button>
+            <button id="loc-accept-btn" class="loan-accept-btn">Accept</button>
+          </div>
+        </div>`;
+    }
+
+    // Application pending: waiting for the bank's response.
+    if (locStatus === 'pending') {
+      return `<div class="posting-form"><span class="loan-approaching-label">Application under review — available next round.</span></div>`;
+    }
+
+    // No account, no application: show the apply button.
+    return `
+      <div class="posting-form">
+        <p class="empty-note" style="margin:0 0 8px">A revolving credit line lets you draw and repay funds freely up to an approved limit. Interest accrues only on the outstanding balance.</p>
+        <div class="form-actions"><button id="loc-apply-btn">Apply</button></div>
+      </div>`;
+  })();
+
   body.innerHTML = `
     <div class="financial-section">
       <div class="financial-section-header">Savings Account</div>
@@ -1341,6 +1396,10 @@ function buildBankingPanel() {
     <div class="financial-section">
       <div class="financial-section-header">Money Market Account</div>
       ${mmHtml}
+    </div>
+    <div class="financial-section">
+      <div class="financial-section-header">Line of Credit</div>
+      ${locHtml}
     </div>
     <div class="financial-section">
       <div class="financial-section-header">Loan</div>
@@ -1379,6 +1438,31 @@ function buildBankingPanel() {
   document.getElementById('mm-cancel-btn')?.addEventListener('click', () => {
     Banking.mmCancelClose();
     buildBankingPanel();
+  });
+
+  // Line of credit buttons.
+  document.getElementById('loc-apply-btn')?.addEventListener('click', () => {
+    Banking.submitLocApplication();
+    buildBankingPanel();
+  });
+  document.getElementById('loc-accept-btn')?.addEventListener('click', () => {
+    Banking.acceptLocOffer();
+    buildBankingPanel();
+  });
+  document.getElementById('loc-reject-btn')?.addEventListener('click', () => {
+    Banking.rejectLocOffer();
+    buildBankingPanel();
+  });
+  document.getElementById('loc-draw-btn')?.addEventListener('click', () => {
+    const amount = Math.round(parseInt(document.getElementById('loc-amount').value) || 0);
+    if (Banking.locDraw(amount)) buildBankingPanel();
+  });
+  document.getElementById('loc-repay-btn')?.addEventListener('click', () => {
+    const amount = Math.round(parseInt(document.getElementById('loc-amount').value) || 0);
+    if (Banking.locRepay(amount)) buildBankingPanel();
+  });
+  document.getElementById('loc-close-btn')?.addEventListener('click', () => {
+    if (Banking.closeLocAccount()) buildBankingPanel();
   });
 
   if (appStatus === null) {

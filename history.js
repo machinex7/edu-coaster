@@ -49,6 +49,8 @@ const History = {
       savingsBalance:        Banking.savingsBalance,
       mmInterestIncome:      report.mmInterestIncome,
       mmBalance:             Banking.mmBalance,
+      locInterestExpense:    report.locInterestExpense,
+      locBalance:            Banking.locBalance,
       loanBalance:         Banking.activeLoans.reduce((s, l) => s + l.balance, 0),
       loanInterestPaid:    Banking.activeLoans.reduce((s, l) => s + l.totalInterestPaid, 0),
       loanPrincipalPaid:   Banking.activeLoans.reduce((s, l) => s + l.totalPrincipalPaid, 0),

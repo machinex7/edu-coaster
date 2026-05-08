@@ -235,8 +235,132 @@ const Banking = {
 
   // ── LTV and covenant helpers ─────────────────────────────────────────────────
 
-  // Maximum loan-to-value ratio for each purpose, shrinking with missed payments.
-  effectiveLtvCap(purpose) {
+  // ── Line of credit ───────────────────────────────────────────────────────────
+
+  // Pending or offered application: null | { status: 'pending' | 'offered', limit, rate }
+  locApplication: null,
+
+  // True once the player has accepted an offer. Reset when the account is closed.
+  locActive: false,
+
+  // Approved revolving limit in dollars.
+  locLimit: 0,
+
+  // Annual interest rate on the outstanding balance (%).
+  locRate: 0,
+
+  // Currently drawn balance. Increases on draw, decreases on repay.
+  locBalance: 0,
+
+  // All interest ever paid on the line of credit.
+  locTotalInterestPaid: 0,
+
+  // Compute the credit limit for a new application.
+  // 25% of park value, rounded to the nearest $1,000, capped at $100,000.
+  // Returns 0 if the park is not yet valuable enough to offer any credit.
+  calcLocLimit() {
+    const raw = Math.floor(Finance.parkValue() * 0.25 / 1000) * 1000;
+    return Math.max(0, Math.min(100000, raw));
+  },
+
+  // Annual interest rate for the line of credit.
+  // inflation % + 4, floored at 5%.
+  calcLocRate() {
+    return Math.round(Math.max(5, Population.inflationRate * 100 + 4) * 100) / 100;
+  },
+
+  // Submit a line of credit application. No-ops if one is already pending or active.
+  submitLocApplication() {
+    if (this.locApplication || this.locActive) return;
+    this.locApplication = { status: 'pending' };
+  },
+
+  // Accept the offered terms and activate the line of credit.
+  acceptLocOffer() {
+    if (this.locApplication?.status !== 'offered') return;
+    this.locActive  = true;
+    this.locLimit   = this.locApplication.limit;
+    this.locRate    = this.locApplication.rate;
+    this.locApplication = null;
+  },
+
+  // Decline the offer and clear the application.
+  rejectLocOffer() {
+    if (this.locApplication?.status !== 'offered') return;
+    this.locApplication = null;
+  },
+
+  // Draw funds from the line of credit into cash.
+  // Returns false if the amount exceeds available credit, is not a positive
+  // multiple of 1000, or the account is not active.
+  locDraw(amount) {
+    if (!this.locActive) return false;
+    if (amount <= 0 || amount % 1000 !== 0) return false;
+    if (this.locBalance + amount > this.locLimit) return false;
+    money += amount;
+    this.locBalance += amount;
+    return true;
+  },
+
+  // Repay funds from cash back to the line of credit.
+  // Returns false if cash is insufficient or balance would go negative.
+  locRepay(amount) {
+    if (!this.locActive) return false;
+    if (amount <= 0 || amount % 1000 !== 0) return false;
+    if (amount > this.locBalance) return false;
+    if (money < amount) return false;
+    money -= amount;
+    this.locBalance -= amount;
+    return true;
+  },
+
+  // Close the line of credit. Requires the balance to be fully repaid first.
+  // Returns false if balance > 0.
+  closeLocAccount() {
+    if (this.locBalance > 0) return false;
+    this.locActive           = false;
+    this.locLimit            = 0;
+    this.locRate             = 0;
+    this.locTotalInterestPaid = 0;
+    return true;
+  },
+
+  // Deduct weekly compounded interest on the outstanding balance from cash.
+  // Called once per round from Finance.processRound(). Returns the dollar amount charged.
+  processLocInterest() {
+    if (!this.locActive || this.locBalance <= 0) return 0;
+    const weeklyRate = Math.pow(1 + this.locRate / 100, 1 / WEEKS_PER_YEAR) - 1;
+    const interest   = Math.round(this.locBalance * weeklyRate);
+    money                    -= interest;
+    this.locTotalInterestPaid += interest;
+    return interest;
+  },
+
+  // Advance a pending LOC application one step each round.
+  // Returns 'offered', 'rejected', or null.
+  processPendingLoc() {
+    if (!this.locApplication || this.locApplication.status !== 'pending') return null;
+    const limit = this.calcLocLimit();
+    if (limit < 5000) {
+      this.locApplication = null;
+      Notifications.push({
+        label:   'Credit',
+        message: 'Line of credit application declined — park value too low.',
+        action:  () => openPanel('banking'),
+      });
+      return 'rejected';
+    }
+    const rate = this.calcLocRate();
+    this.locApplication = { status: 'offered', limit, rate };
+    Notifications.push({
+      label:   'Credit',
+      message: `Line of credit offer: $${limit.toLocaleString()} at ${rate}%.`,
+      action:  () => openPanel('banking'),
+    });
+    return 'offered';
+  },
+
+  // ── LTV and covenant helpers ─────────────────────────────────────────────────
     const reduction = this.totalMissedPayments * MISSED_PAYMENT_LTV_PENALTY;
     if (purpose === 'emergency') return Math.max(0.05, 0.25 - reduction);
     if (purpose === 'staffing')  return Math.max(0.10, 0.50 - reduction);

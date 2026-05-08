@@ -655,6 +655,7 @@ const Finance = {
       ? this.BUS_WEEKLY_COST : 0;
     money -= busCost;
     const loanRepayments    = Banking.processLoanRepayments();
+    const locInterestExpense = Banking.processLocInterest();
     const staffCosts        = this.calcStaffCosts();
     const utilityCosts      = this.payUtilityCosts();
     const constructionCosts = processConstruction();  // skips progress on unaffordable builds
@@ -744,7 +745,8 @@ const Finance = {
       parkingAmenityCosts,
       shopItemsSold,
       loanRepayments,
-      totalExpenses: staffCosts + utilityCosts + constructionCosts + busCost + marketingCosts + merchandiseCosts + parkingAmenityCosts + loanRepayments + memberBenefitLoss,
+      locInterestExpense,
+      totalExpenses: staffCosts + utilityCosts + constructionCosts + busCost + marketingCosts + merchandiseCosts + parkingAmenityCosts + loanRepayments + locInterestExpense + memberBenefitLoss,
       rideEfficiency: this.rideOpinion,
       security: { ...security, opinionAfter: Security.opinion },
       food: { ...food, mealSatisfaction: this.mealSatisfaction },

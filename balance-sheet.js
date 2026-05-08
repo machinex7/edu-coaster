@@ -143,11 +143,14 @@ const BalanceSheet = {
     const savingsBalance = Banking.savingsBalance;
     const mmBalance      = Banking.mmBalance;
 
+    const locBalance = Banking.locBalance;
+
     return {
       cash, savingsBalance, mmBalance, merchandiseValue, foodStockValue,
       parkEquipmentValue, constructionValue,
       currentLoanPortion, longtermLoanPortion,
       totalLoanBalance: currentLoanPortion + longtermLoanPortion,
+      locBalance,
     };
   },
 
@@ -175,6 +178,7 @@ const BalanceSheet = {
       { key: 'equipment',    label: 'Park Equipment',           correct: 'asset',     value: v.parkEquipmentValue },
       { key: 'construction', label: 'Construction in Progress', correct: 'asset',     value: v.constructionValue },
       { key: 'loans',        label: 'Outstanding Loans',        correct: 'liability', value: v.totalLoanBalance },
+      { key: 'loc',          label: 'Line of Credit Balance',   correct: 'liability', value: v.locBalance },
     ];
     if (Unlock.FOOD) {
       all.splice(3, 0, { key: 'food', label: 'Food & Beverage Stock', correct: 'asset', value: v.foodStockValue });
@@ -199,6 +203,7 @@ const BalanceSheet = {
       { key: 'construction',   label: 'Construction in Progress', correct: 'noncurrent-asset', value: v.constructionValue },
       { key: 'current-loans',  label: 'Loan Payments Due (1 Yr)', correct: 'current-liability',  value: v.currentLoanPortion },
       { key: 'longterm-loans', label: 'Long-term Loan Balance',   correct: 'longterm-liability', value: v.longtermLoanPortion },
+      { key: 'loc',            label: 'Line of Credit Balance',   correct: 'current-liability',  value: v.locBalance },
     ];
     if (Unlock.FOOD) {
       all.splice(3, 0, { key: 'food', label: 'Food & Beverage Stock', correct: 'current-asset', value: v.foodStockValue });
