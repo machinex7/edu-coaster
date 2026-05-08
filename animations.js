@@ -26,12 +26,24 @@ const Animations = {
   // Dot radius in pixels.
   DOT_RADIUS: 4,
 
+  // Tiles a visitor walks before dropping a piece of trash.
+  TRASH_INTERVAL_TILES: 8,
+
+  // Starting radius of a trash piece in pixels.
+  TRASH_RADIUS: 3,
+
+  // Milliseconds a trash piece takes to shrink to nothing.
+  TRASH_DURATION: 2000,
+
   // Pre-computed unique node pairs for the current round layout.
   // Each entry: { from, to, gridPath } — gridPath is [{row,col}] or null.
   paths: [],
 
   // Currently active visitor objects.
   people: [],
+
+  // Currently visible trash pieces: { x, y, age, maxAge, maxRadius }.
+  trash: [],
 
   // Canvas overlay element and 2-D context.
   canvas: null,
@@ -212,6 +224,7 @@ const Animations = {
       returning:  false,
       fromNode:   gate,
       toNode:     firstDest,
+      tileCount:  0,        // cumulative waypoint crossings; drives trash drops
     });
   },
 
@@ -251,6 +264,11 @@ const Animations = {
       }
     }
     this._despawn(person);
+  },
+
+  // Spawns a piece of brown trash at (x, y) that shrinks to nothing.
+  _dropTrash(x, y) {
+    this.trash.push({ x, y, age: 0, maxAge: this.TRASH_DURATION, maxRadius: this.TRASH_RADIUS });
   },
 
   // Removes a visitor from the active list immediately.
@@ -293,6 +311,12 @@ const Animations = {
         p.y = target.y;
         p.wpIdx++;
 
+        // Count every tile crossing and drop trash every TRASH_INTERVAL_TILES.
+        p.tileCount++;
+        if (p.tileCount % this.TRASH_INTERVAL_TILES === 0) {
+          this._dropTrash(p.x, p.y);
+        }
+
         if (p.wpIdx >= p.waypoints.length) {
           if (p.returning) {
             this._despawn(p);
@@ -307,6 +331,12 @@ const Animations = {
       }
     }
 
+    // Age trash pieces and remove any that have fully shrunk away.
+    for (let i = this.trash.length - 1; i >= 0; i--) {
+      this.trash[i].age += dt;
+      if (this.trash[i].age >= this.trash[i].maxAge) this.trash.splice(i, 1);
+    }
+
     this._draw();
     this._animFrame = requestAnimationFrame(t => this._tick(t));
   },
@@ -317,6 +347,15 @@ const Animations = {
     const { ctx, canvas } = this;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     if (currentViewMode !== 'play') return;
+
+    // Draw trash first so people dots appear on top.
+    ctx.fillStyle = '#92400e';
+    for (const t of this.trash) {
+      const radius = t.maxRadius * (1 - t.age / t.maxAge);
+      ctx.beginPath();
+      ctx.arc(t.x, t.y, radius, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     ctx.fillStyle = 'white';
     for (const p of this.people) {
