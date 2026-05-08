@@ -286,6 +286,8 @@ function advanceRound() {
   showRoundSummary(report);
   nextWeekForecast   = futurecastForecast;
   futurecastForecast = forecastForRound(round + 2);
+  // Rebuild animation paths after the grid settles; skipped in setup stage.
+  if (gameStage === STAGE.PLAY) setTimeout(() => Animations.buildPaths(), 100);
 }
 
 // Tick demographic confidence for every active data-collection source.
