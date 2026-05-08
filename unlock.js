@@ -11,7 +11,7 @@ const _DEFS = {
   MERCHANDISE: { afterWeek: 0, name: 'Merchandise' },
   SECURITY:    { afterWeek: 0, name: 'Security' },
   FOOD:        { afterWeek: 0, name: 'Food & Dining' },
-  LOANS:       { afterWeek: 0, name: 'Business Loans' },
+  BANKING:     { afterWeek: 0, name: 'Banking' },
   WEAR:        { afterWeek: 0, name: 'Wear & Maintenance' },
 };
 
