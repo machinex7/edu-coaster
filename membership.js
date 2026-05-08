@@ -29,6 +29,10 @@ const Membership = {
   memberAttendanceThisRound:    0,
   freeParkingVisitsThisRound:   0,  // vehicle-trips from free-parking plans (no revenue)
   paidParkingVehiclesThisRound: 0,  // vehicle-trips from non-free-parking plans (pay standard rate)
+  // Weighted-average discount fractions (0–1) across all member visits this round.
+  // Finance multiplies these by the member share of revenue to compute discount losses.
+  foodDiscountFractionThisRound:  0,
+  merchDiscountFractionThisRound: 0,
 
   // ── Sales simulation ────────────────────────────────────────────────────────
 
@@ -46,10 +50,15 @@ const Membership = {
   // Vehicle counting: membersInBracket × weeklyVisitRate represents household-unit
   // visits, i.e. one vehicle per visit.  Free-parking plans are tracked so Finance
   // can skip charging them; non-free-parking plans pay the standard parking rate.
+  //
+  // Discount fractions: each plan's attendance share is weighted by its discount pcts
+  // to produce a single average fraction Finance can multiply against revenue.
   calcMemberAttendance() {
     let attendance          = 0;
     let freeParkingVisits   = 0;
     let paidParkingVehicles = 0;
+    let foodDiscountSum     = 0;  // sum of (planAttendance × foodDiscountPct/100)
+    let merchDiscountSum    = 0;  // sum of (planAttendance × merchDiscountPct/100)
 
     const distanceTotalWeight = Population.DISTANCE_BRACKETS.reduce(
       (s, d) => s + d.chance * d.favor, 0,
@@ -68,8 +77,14 @@ const Membership = {
         // D.annualVisits / 52 converts a yearly visit rate into a per-week
         // probability.  Multiply by guestCount because each membership admits
         // that many people in a single visit.
-        const weeklyVisitRate = D.annualVisits / 52;
-        attendance           += membersInBracket * weeklyVisitRate * plan.guestCount;
+        const weeklyVisitRate  = D.annualVisits / 52;
+        const planAttendance   = membersInBracket * weeklyVisitRate * plan.guestCount;
+        attendance            += planAttendance;
+
+        // Accumulate discount weight so Finance can compute a single weighted-average
+        // fraction: foodDiscountSum / totalAttendance = avg discount rate across members.
+        foodDiscountSum  += planAttendance * plan.foodDiscountPct  / 100;
+        merchDiscountSum += planAttendance * plan.merchDiscountPct / 100;
 
         // Each household visit = one vehicle trip.  Route to the appropriate counter.
         if (plan.freeParking) {
@@ -83,6 +98,10 @@ const Membership = {
     this.memberAttendanceThisRound    = Math.round(attendance);
     this.freeParkingVisitsThisRound   = Math.round(freeParkingVisits);
     this.paidParkingVehiclesThisRound = Math.round(paidParkingVehicles);
+    // Weighted-average fraction of revenue foregone due to discounts.
+    // Dividing by raw attendance (pre-rounding) keeps precision for small member counts.
+    this.foodDiscountFractionThisRound  = attendance > 0 ? foodDiscountSum  / attendance : 0;
+    this.merchDiscountFractionThisRound = attendance > 0 ? merchDiscountSum / attendance : 0;
     return {
       attendance:          this.memberAttendanceThisRound,
       freeParkingVisits:   this.freeParkingVisitsThisRound,
