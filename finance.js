@@ -619,11 +619,19 @@ const Finance = {
     const foodRevenue = food.revenue;
     const security = Security.calcIncidents(totalAttendance, dailyDemand, dailyThroughput);
 
+    // Member discount reductions: members' share of food/merch revenue is reduced by their
+    // plan's discount pct.  We model this as a revenue reduction rather than increased buying
+    // power — demand is unchanged, the park simply earns less from each member's purchase.
+    // memberFraction = share of the crowd that are members (paid gate visitors excluded).
+    const memberFraction     = totalAttendance > 0 ? memberAttendance / totalAttendance : 0;
+    const netFoodRevenue     = Math.round(foodRevenue  * (1 - memberFraction * Membership.foodDiscountFractionThisRound));
+    const netShopRevenue     = Math.round(shopRevenue  * (1 - memberFraction * Membership.merchDiscountFractionThisRound));
+
     // Income
     money += gateRevenue;
     money += parkingRevenue;
-    money += shopRevenue;
-    money += foodRevenue;
+    money += netShopRevenue;
+    money += netFoodRevenue;
 
     // Costs — income applied first so ability-to-pay reflects this week's revenue
     const busCost = (this.busEnabled && Research.completed.has(RESEARCH_ID.BUS_SERVICE))
@@ -699,11 +707,11 @@ const Finance = {
       busRiders:            parking.busRiders,
       busCost,
       parkingSpendingMultiplier: parking.spendingMultiplier,
-      shopRevenue,
-      foodRevenue,
+      shopRevenue: netShopRevenue,
+      foodRevenue: netFoodRevenue,
       discountLoss: Discounts.lastRoundCost,
       membershipRevenue,
-      totalIncome: gateRevenue + parkingRevenue + shopRevenue + foodRevenue + membershipRevenue,
+      totalIncome: gateRevenue + parkingRevenue + netShopRevenue + netFoodRevenue + membershipRevenue,
       staffCosts,
       utilityCosts,
       constructionCosts,
