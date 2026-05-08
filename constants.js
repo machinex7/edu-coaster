@@ -98,6 +98,10 @@ const MENU_ITEM = Object.freeze({
 // Breakdown probability reaches 100% at this cumulative wear value.
 const MAX_EFFECTIVE_WEAR = 10000;
 
+// Wear accumulated per rider per round. Calibrated so a heavily-ridden ride (~15 000 riders/wk)
+// accumulates ~105 wear/round and reaches MAX_EFFECTIVE_WEAR in roughly 1.8 years.
+const WEAR_PER_RIDER = 0.007;
+
 const WEEKS_PER_YEAR = 52;
 
 // Hours the park is open each day — used to convert ride cycles/hr to weekly rider capacity.
