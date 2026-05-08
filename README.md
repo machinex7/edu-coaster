@@ -39,6 +39,7 @@ python3 -m http.server
 | `balance-sheet.js` | Annual balance sheet exercise — drag-and-drop sorting modal (`BalanceSheet` object) |
 | `concessions.js` | Concessions panel: ingredient ordering, menu pricing, combo meals, food revenue calculation (`Concessions` object) |
 | `membership.js` | Membership plan definitions, sales simulation, member attendance contribution, Admission-panel UI (`Membership` object) |
+| `animations.js` | Visual-only visitor animation system — path caching, sprite movement, trash and coin particles (`Animations` object) |
 | `hud.js` | HUD display, stage transitions, panel management, view mode toolbar, construction bottom bar, security SVG overlay, round summary modal, pricing panel |
 | `rides.json` | Ride catalogue |
 | `facilities.json` | Facility catalogue |
@@ -50,7 +51,7 @@ python3 -m http.server
 
 **Script load order:**
 ```
-constants.js → unlock.js → population.js → game.js → grid.js → shopping.js → banking.js → finance.js → staff.js → staff-panel.js → security.js → history.js → pl-statement.js → balance-sheet.js → concessions.js → membership.js → hud.js
+constants.js → unlock.js → population.js → game.js → grid.js → pathfinding.js → shopping.js → banking.js → finance.js → staff.js → staff-panel.js → security.js → history.js → pl-statement.js → balance-sheet.js → concessions.js → membership.js → animations.js → hud.js
 ```
 
 All cross-file calls happen at runtime (not parse time), so forward references inside method bodies are safe.
@@ -675,6 +676,58 @@ Key signals: salary vs. cost-of-living ratio, active staff events (decay each ro
 
 ---
 
+## Visitor animation system (`animations.js`)
+
+Visual-only; has no effect on simulation mechanics or saved state.
+
+### Path caching
+
+`Animations.buildPaths()` iterates every unique pair of active nodes (rides + shops + gate) and calls `shortestPathToTile()` (`pathfinding.js`) to find the shortest A* route along PATH tiles. Results are cached in `Animations.paths` as `{ from, to, gridPath }` entries — `from`/`to` are live record references; `gridPath` is an ordered `[{row,col}]` array or `null` if unreachable.
+
+**When paths are rebuilt:**
+- On park open (`openPark()` in `hud.js`) — 100 ms after `gameStage` is set to `PLAY`
+- At the start of each play-mode round — 100 ms `setTimeout` at the end of `advanceRound()`
+- When the player enters Play view mode and `Animations.paths` is empty (e.g. after a path demolition)
+
+**Cache invalidation:** `completeDemolition()` in `game.js` clears `Animations.paths` whenever a `PATH` facility is removed (paths demolish instantly, so the invalidation is synchronous).
+
+### Sprite lifecycle
+
+Rendered on `<canvas id="people-overlay">` (inside `#grid-wrapper`, same `position:absolute; pointer-events:none` rules as the SVG overlays). The canvas is managed by `Animations.init()` (called from `initHUD()`).
+
+One visitor spawns at the gate every **5 seconds** while the view is in Play mode, up to `PERSON_LIMIT = 10` simultaneous sprites. Each visitor:
+
+1. Picks a random reachable destination (ride or shop).
+2. Walks tile-by-tile at **one tile per 2 seconds** (`SPEED = CELL_STEP / 2000` px/ms). Each tile waypoint is offset by a small random jitter (±20 % of `CELL_SIZE`) so sprites don't perfectly overlap.
+3. Hides for **5 seconds** at the destination (`VISIT_DURATION`).
+4. Repeats steps 1–3 up to **6 times** (`MAX_STOPS`), then routes back to the gate and despawns.
+
+Sprites are white dots (4 px radius). They are hidden while visiting and whenever the view mode is not `play`.
+
+### Particles
+
+| Particle | Trigger | Appearance | Lifetime |
+|---|---|---|---|
+| **Trash** | Every `TRASH_INTERVAL_TILES` (8) tile crossings per visitor. Interval shortened by `Finance.calcMessFactor()` when messes are unlocked. | Brown `#92400e` dot, 3 px → 0 px (shrinks linearly) | 2 s |
+| **Coin** | On visitor spawn at gate; also when a visitor leaves a food or merchandise shop. | Green `#4ade80` bold `$` (13 px monospace), rises 38 px, fades 1 → 0 | 700 ms |
+
+Trash is drawn before people dots; coins are drawn last (on top of everything). `ctx.save/restore` scopes `globalAlpha` changes in the coin pass.
+
+### Key constants (`animations.js`)
+
+| Constant | Value | Effect |
+|---|---|---|
+| `PERSON_LIMIT` | 10 | Max simultaneous sprites |
+| `SPEED` | `CELL_STEP / 2000` | px/ms — one tile per 2 s |
+| `VISIT_DURATION` | 5000 ms | Pause at each destination |
+| `SPAWN_INTERVAL` | 5000 ms | Gate spawn cadence |
+| `MAX_STOPS` | 6 | Visits before heading home |
+| `TRASH_INTERVAL_TILES` | 8 | Tile crossings between trash drops |
+| `TRASH_RADIUS` | 3 px | Starting radius of a trash piece |
+| `TRASH_DURATION` | 2000 ms | Time for trash to shrink away |
+
+---
+
 ## Rides panel (master-detail)
 
 **List view** — tappable rows showing name + condition badge.
@@ -835,6 +888,7 @@ Students drag each item into an Assets or Liabilities column. On completion, Own
 - Member attendance: active members contribute to weekly headcount (free gate admission); free-parking plans skip parking fees; non-free-parking member vehicles pay standard rate; all four benefit types (admission, parking, food discount, merch discount) recorded as a single gross-revenue offset expense
 - Quarterly P&L statement exercise: drag-and-drop modal every 13 rounds; real quarterly totals from `History`; items lock on correct placement; wrong items return to bank for retry; net income revealed on completion; includes Food & Beverage, Memberships (revenue), and Membership Benefits (expense)
 - Annual balance sheet exercise: drag-and-drop modal every 52 rounds (chained after the year-end P&L); point-in-time snapshot of assets (cash, merchandise inventory, food stock, park equipment, construction in progress) and liabilities (outstanding loans); Owner's Equity revealed on completion
+- Visitor animation system: white-dot sprites spawn at the gate every 5 s (capped at 10), walk A* routes between rides and shops, hide at each stop for 5 s, then return home after 6 visits; brown shrinking trash particles drop every 8 tile crossings (interval scales with mess factor); green rising `$` coin particles appear on spawn and on leaving food/merch shops; all rendered on a canvas overlay with no simulation impact
 
 ## What's not yet implemented (see `reqs.md`)
 
