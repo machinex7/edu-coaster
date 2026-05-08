@@ -505,9 +505,9 @@ function updateLockedPanels() {
   const messModeBtn = document.querySelector('.view-mode-btn[data-view-mode="dirt"]');
   if (messModeBtn) messModeBtn.classList.toggle('hidden', !Unlock.MESSES);
 
-  // Banking panel is hidden until the LOANS unlock is active.
+  // Banking panel is hidden until the BANKING unlock is active.
   const bankingNavBtn = document.querySelector('.tool-btn[data-panel="banking"]');
-  if (bankingNavBtn) bankingNavBtn.classList.toggle('hidden', !Unlock.LOANS);
+  if (bankingNavBtn) bankingNavBtn.classList.toggle('hidden', !Unlock.BANKING);
 
   // Parking panel unlocks when the Parking Fees research is completed.
   const parkingNavBtn = document.querySelector('.tool-btn[data-panel="parking"]');
@@ -1127,7 +1127,7 @@ function buildBankingPanel() {
   const body = document.getElementById('banking-panel-body');
   if (!body) return;
 
-  if (!Unlock.LOANS) {
+  if (!Unlock.BANKING) {
     body.innerHTML = `<div class="financial-section"><p class="empty-note">Banking services are not yet available.</p></div>`;
     return;
   }
