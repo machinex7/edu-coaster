@@ -276,6 +276,7 @@ function advanceRound() {
   Concessions.onRoundAdvance();
   const report     = Finance.processRound();
   const loanResult = Banking.processPendingLoan();
+  Banking.processPendingLoc();
   Survey.processPendingSend();
   History.record(report);
   refreshDirtOverlay();
@@ -294,7 +295,7 @@ function advanceRound() {
   Security.refreshPanel();
   Research.refreshPanel();
   Awards.refreshPanel();
-  if (loanResult && activePanel === 'banking') buildBankingPanel();
+  if (activePanel === 'banking') buildBankingPanel();
   if (activePanel === 'survey')          Survey.buildPanel();
   if (activePanel === 'visitor-profile') VisitorProfile.buildPanel();
   if (activePanel === 'concessions')     Concessions.buildPanel();
@@ -1239,11 +1240,247 @@ function buildBankingPanel() {
     </div>`;
   })();
 
+  // ── Savings section HTML ──────────────────────────────────────────────────────
+  const maxDeposit  = Math.floor(money / 1000) * 1000;
+  const maxWithdraw = Math.floor(Banking.savingsBalance / 1000) * 1000;
+  const savingsHtml = `
+    <div class="posting-form">
+      <div class="loan-offer-row">
+        <span>Balance</span>
+        <span>$${Banking.savingsBalance.toLocaleString()}</span>
+      </div>
+      <div class="loan-offer-row">
+        <span>Interest Earned (all-time)</span>
+        <span>$${Banking.totalInterestEarned.toLocaleString()}</span>
+      </div>
+      <div class="loan-offer-row">
+        <span>Rate</span>
+        <span>${(SAVINGS_ANNUAL_RATE * 100).toFixed(1)}% annual, compounded weekly</span>
+      </div>
+      <div class="form-field">
+        <label for="savings-amount">Amount ($1,000 increments)</label>
+        <input id="savings-amount" type="number" min="1000" step="1000" placeholder="$0">
+      </div>
+      <div class="form-actions">
+        <button id="savings-deposit-btn" ${maxDeposit <= 0 ? 'disabled' : ''}>Deposit</button>
+        <button id="savings-withdraw-btn" ${maxWithdraw <= 0 ? 'disabled' : ''}>Withdraw</button>
+      </div>
+    </div>`;
+
+  // ── Money market section HTML ─────────────────────────────────────────────────
+  const mmHtml = (() => {
+    // Close-out confirmation state: show a warning and Proceed / Cancel buttons.
+    if (Banking.mmCloseConfirmPending) {
+      return `
+        <div class="posting-form">
+          <div class="loan-offer-row">
+            <span>Balance</span>
+            <span>$${Banking.mmBalance.toLocaleString()}</span>
+          </div>
+          <div class="loan-covenant-block">
+            Withdrawing below the $${MM_MIN_BALANCE.toLocaleString()} minimum will close this account.
+            Your full balance of $${Banking.mmBalance.toLocaleString()} will be returned to cash,
+            and withdrawals will be locked for ${MM_WITHDRAWAL_COOLDOWN} rounds.
+          </div>
+          <div class="form-actions">
+            <button id="mm-cancel-btn" class="loan-reject-btn">Cancel</button>
+            <button id="mm-confirm-btn" class="loan-accept-btn">Proceed</button>
+          </div>
+        </div>`;
+    }
+
+    // Account not open: show an open-account form.
+    if (Banking.mmBalance === 0) {
+      const canOpen = Banking.mmWithdrawalCooldown === 0;
+      return `
+        <div class="posting-form">
+          <div class="loan-offer-row">
+            <span>Rate</span>
+            <span>${(MM_ANNUAL_RATE * 100).toFixed(1)}% annual, compounded weekly</span>
+          </div>
+          <div class="loan-offer-row">
+            <span>Minimum Balance</span>
+            <span>$${MM_MIN_BALANCE.toLocaleString()}</span>
+          </div>
+          ${!canOpen ? `<div class="loan-approaching-label">Withdrawals locked — ${Banking.mmWithdrawalCooldown} round${Banking.mmWithdrawalCooldown !== 1 ? 's' : ''} remaining before reopening.</div>` : ''}
+          <div class="form-field">
+            <label for="mm-open-amount">Opening Deposit (min $${MM_MIN_BALANCE.toLocaleString()})</label>
+            <input id="mm-open-amount" type="number" min="${MM_MIN_BALANCE}" step="1000"
+                   placeholder="$${MM_MIN_BALANCE.toLocaleString()}" ${!canOpen ? 'disabled' : ''}>
+          </div>
+          <div class="form-actions">
+            <button id="mm-open-btn" ${!canOpen ? 'disabled' : ''}>Open Account</button>
+          </div>
+        </div>`;
+    }
+
+    // Account open: show stats, deposit, and optional withdraw controls.
+    const cooldown    = Banking.mmWithdrawalCooldown;
+    const withdrawRow = cooldown > 0
+      ? `<div class="loan-approaching-label">Withdrawals locked — ${cooldown} round${cooldown !== 1 ? 's' : ''} remaining.</div>`
+      : `<div class="form-actions">
+           <button id="mm-withdraw-btn">Withdraw</button>
+         </div>`;
+
+    return `
+      <div class="posting-form">
+        <div class="loan-offer-row">
+          <span>Balance</span>
+          <span>$${Banking.mmBalance.toLocaleString()}</span>
+        </div>
+        <div class="loan-offer-row">
+          <span>Interest Earned (all-time)</span>
+          <span>$${Banking.mmTotalInterestEarned.toLocaleString()}</span>
+        </div>
+        <div class="loan-offer-row">
+          <span>Rate</span>
+          <span>${(MM_ANNUAL_RATE * 100).toFixed(1)}% annual, compounded weekly</span>
+        </div>
+        <div class="loan-offer-row">
+          <span>Minimum Balance</span>
+          <span>$${MM_MIN_BALANCE.toLocaleString()}</span>
+        </div>
+        <div class="form-field">
+          <label for="mm-amount">Amount ($1,000 increments)</label>
+          <input id="mm-amount" type="number" min="1000" step="1000" placeholder="$0">
+        </div>
+        <div class="form-actions">
+          <button id="mm-deposit-btn">Deposit</button>
+        </div>
+        ${withdrawRow}
+      </div>`;
+  })();
+
+  // ── Line of credit section HTML ───────────────────────────────────────────────
+  const locHtml = (() => {
+    const loc = Banking.locApplication;
+    const locStatus = loc?.status ?? null;
+
+    // Active account: show balance, available credit, draw/repay controls.
+    if (Banking.locActive) {
+      const available = Banking.locLimit - Banking.locBalance;
+      const canClose  = Banking.locBalance === 0;
+      return `
+        <div class="posting-form">
+          <div class="loan-offer-row"><span>Credit Limit</span><span>$${Banking.locLimit.toLocaleString()}</span></div>
+          <div class="loan-offer-row"><span>Available</span><span>$${available.toLocaleString()}</span></div>
+          <div class="loan-offer-row"><span>Outstanding Balance</span><span>$${Banking.locBalance.toLocaleString()}</span></div>
+          <div class="loan-offer-row"><span>Rate</span><span>${Banking.locRate}% annual</span></div>
+          <div class="loan-offer-row"><span>Interest Paid (all-time)</span><span>$${Banking.locTotalInterestPaid.toLocaleString()}</span></div>
+          <div class="form-field">
+            <label for="loc-amount">Amount ($1,000 increments)</label>
+            <input id="loc-amount" type="number" min="1000" step="1000" placeholder="$0">
+          </div>
+          <div class="form-actions">
+            <button id="loc-repay-btn" ${Banking.locBalance === 0 ? 'disabled' : ''}>Repay</button>
+            <button id="loc-draw-btn"  ${available === 0 ? 'disabled' : ''}>Draw</button>
+          </div>
+          ${canClose ? `<div class="form-actions"><button id="loc-close-btn" class="loan-reject-btn">Close Account</button></div>` : ''}
+        </div>`;
+    }
+
+    // Offer on the table: show terms and accept/reject.
+    if (locStatus === 'offered') {
+      return `
+        <div class="posting-form">
+          <div class="loan-offer-row"><span>Credit Limit</span><span>$${loc.limit.toLocaleString()}</span></div>
+          <div class="loan-offer-row loan-offer-rate"><span>Interest Rate</span><span>${loc.rate}% annual</span></div>
+          <div class="form-actions">
+            <button id="loc-reject-btn" class="loan-reject-btn">Reject</button>
+            <button id="loc-accept-btn" class="loan-accept-btn">Accept</button>
+          </div>
+        </div>`;
+    }
+
+    // Application pending: waiting for the bank's response.
+    if (locStatus === 'pending') {
+      return `<div class="posting-form"><span class="loan-approaching-label">Application under review — available next round.</span></div>`;
+    }
+
+    // No account, no application: show the apply button.
+    return `
+      <div class="posting-form">
+        <p class="empty-note" style="margin:0 0 8px">A revolving credit line lets you draw and repay funds freely up to an approved limit. Interest accrues only on the outstanding balance.</p>
+        <div class="form-actions"><button id="loc-apply-btn">Apply</button></div>
+      </div>`;
+  })();
+
   body.innerHTML = `
+    <div class="financial-section">
+      <div class="financial-section-header">Savings Account</div>
+      ${savingsHtml}
+    </div>
+    <div class="financial-section">
+      <div class="financial-section-header">Money Market Account</div>
+      ${mmHtml}
+    </div>
+    <div class="financial-section">
+      <div class="financial-section-header">Line of Credit</div>
+      ${locHtml}
+    </div>
     <div class="financial-section">
       <div class="financial-section-header">Loan</div>
       ${loanSectionHtml}
     </div>`;
+
+  // Savings deposit / withdraw buttons.
+  document.getElementById('savings-deposit-btn').addEventListener('click', () => {
+    const amount = Math.round(parseInt(document.getElementById('savings-amount').value) || 0);
+    if (Banking.deposit(amount)) buildBankingPanel();
+  });
+  document.getElementById('savings-withdraw-btn').addEventListener('click', () => {
+    const amount = Math.round(parseInt(document.getElementById('savings-amount').value) || 0);
+    if (Banking.withdraw(amount)) buildBankingPanel();
+  });
+
+  // Money market buttons — wired conditionally based on which state is rendered.
+  document.getElementById('mm-open-btn')?.addEventListener('click', () => {
+    const amount = Math.round(parseInt(document.getElementById('mm-open-amount').value) || 0);
+    if (Banking.mmDeposit(amount)) buildBankingPanel();
+  });
+  document.getElementById('mm-deposit-btn')?.addEventListener('click', () => {
+    const amount = Math.round(parseInt(document.getElementById('mm-amount').value) || 0);
+    if (Banking.mmDeposit(amount)) buildBankingPanel();
+  });
+  document.getElementById('mm-withdraw-btn')?.addEventListener('click', () => {
+    const amount = Math.round(parseInt(document.getElementById('mm-amount').value) || 0);
+    const result = Banking.mmWithdraw(amount);
+    // 'confirm' means the withdrawal would close the account — rebuild to show the prompt.
+    if (result === true || result === 'confirm') buildBankingPanel();
+  });
+  document.getElementById('mm-confirm-btn')?.addEventListener('click', () => {
+    Banking.mmConfirmClose();
+    buildBankingPanel();
+  });
+  document.getElementById('mm-cancel-btn')?.addEventListener('click', () => {
+    Banking.mmCancelClose();
+    buildBankingPanel();
+  });
+
+  // Line of credit buttons.
+  document.getElementById('loc-apply-btn')?.addEventListener('click', () => {
+    Banking.submitLocApplication();
+    buildBankingPanel();
+  });
+  document.getElementById('loc-accept-btn')?.addEventListener('click', () => {
+    Banking.acceptLocOffer();
+    buildBankingPanel();
+  });
+  document.getElementById('loc-reject-btn')?.addEventListener('click', () => {
+    Banking.rejectLocOffer();
+    buildBankingPanel();
+  });
+  document.getElementById('loc-draw-btn')?.addEventListener('click', () => {
+    const amount = Math.round(parseInt(document.getElementById('loc-amount').value) || 0);
+    if (Banking.locDraw(amount)) buildBankingPanel();
+  });
+  document.getElementById('loc-repay-btn')?.addEventListener('click', () => {
+    const amount = Math.round(parseInt(document.getElementById('loc-amount').value) || 0);
+    if (Banking.locRepay(amount)) buildBankingPanel();
+  });
+  document.getElementById('loc-close-btn')?.addEventListener('click', () => {
+    if (Banking.closeLocAccount()) buildBankingPanel();
+  });
 
   if (appStatus === null) {
     document.getElementById('loan-approach-btn').addEventListener('click', () => {

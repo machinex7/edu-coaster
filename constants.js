@@ -128,6 +128,14 @@ const AWARD_ID = Object.freeze({
   MOST_BATHROOMS: 'most_bathrooms',
 });
 
+// Annual interest rate for the savings account, compounded weekly.
+const SAVINGS_ANNUAL_RATE = 0.004;
+
+// Money market account parameters.
+const MM_ANNUAL_RATE         = 0.04;  // 4% annual, compounded weekly
+const MM_MIN_BALANCE         = 3000;  // minimum balance; falling below closes the account
+const MM_WITHDRAWAL_COOLDOWN = 4;     // rounds to wait between withdrawals
+
 // Interest rate reduction per covenant on the loan agreement.
 const COVENANT_RATE_DISCOUNT = 0.4;
 // Per missed payment: interest rate premium added to future proposals.

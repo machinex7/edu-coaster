@@ -122,10 +122,245 @@ const Banking = {
   // Cumulative across all loans; drives future rate and LTV penalties.
   totalMissedPayments: 0,
 
+  // ── Savings account ──────────────────────────────────────────────────────────
+
+  // Current balance held in the savings account (separate from cash).
+  savingsBalance: 0,
+
+  // All interest credited to the savings account across the entire game.
+  totalInterestEarned: 0,
+
+  // Move money from cash into the savings account in $1,000 increments.
+  // Returns false if funds are insufficient or amount is not a positive multiple of 1000.
+  deposit(amount) {
+    if (amount <= 0 || amount % 1000 !== 0) return false;
+    if (money < amount) return false;
+    money -= amount;
+    this.savingsBalance += amount;
+    return true;
+  },
+
+  // Move money from the savings account back to cash in $1,000 increments.
+  // Returns false if the savings balance is insufficient or amount is invalid.
+  withdraw(amount) {
+    if (amount <= 0 || amount % 1000 !== 0) return false;
+    if (this.savingsBalance < amount) return false;
+    this.savingsBalance -= amount;
+    money += amount;
+    return true;
+  },
+
+  // Credit weekly compounded interest to the savings balance.
+  // Weekly rate = (1 + SAVINGS_ANNUAL_RATE)^(1/52) − 1.
+  // Returns the whole-dollar interest earned this round for P&L reporting.
+  processSavingsInterest() {
+    if (this.savingsBalance <= 0) return 0;
+    const weeklyRate = Math.pow(1 + SAVINGS_ANNUAL_RATE, 1 / WEEKS_PER_YEAR) - 1;
+    const interest   = Math.round(this.savingsBalance * weeklyRate);
+    this.savingsBalance      += interest;
+    this.totalInterestEarned += interest;
+    return interest;
+  },
+
+  // ── Money market account ─────────────────────────────────────────────────────
+
+  // Balance held in the money market account (separate from cash and savings).
+  mmBalance: 0,
+
+  // Rounds remaining before a withdrawal is permitted. Starts at MM_WITHDRAWAL_COOLDOWN
+  // after any withdrawal and decrements once per round.
+  mmWithdrawalCooldown: 0,
+
+  // All interest ever credited to the money market account.
+  mmTotalInterestEarned: 0,
+
+  // True when the player has requested a withdrawal that would drop the balance below
+  // MM_MIN_BALANCE and is waiting to confirm the close-out.
+  mmCloseConfirmPending: false,
+
+  // Deposit into the money market account. Initial deposit must be >= MM_MIN_BALANCE.
+  // Returns false if funds are insufficient or amount is not a positive multiple of 1000.
+  mmDeposit(amount) {
+    if (amount <= 0 || amount % 1000 !== 0) return false;
+    if (this.mmBalance === 0 && amount < MM_MIN_BALANCE) return false;
+    if (money < amount) return false;
+    money -= amount;
+    this.mmBalance += amount;
+    return true;
+  },
+
+  // Attempt a withdrawal. If the amount would drop the balance below MM_MIN_BALANCE,
+  // sets mmCloseConfirmPending = true and returns 'confirm' so the caller can show
+  // the close-out confirmation UI. During cooldown, returns false.
+  mmWithdraw(amount) {
+    if (amount <= 0 || amount % 1000 !== 0) return false;
+    if (this.mmWithdrawalCooldown > 0) return false;
+    if (amount > this.mmBalance) return false;
+    if (this.mmBalance - amount < MM_MIN_BALANCE) {
+      this.mmCloseConfirmPending = true;
+      return 'confirm';
+    }
+    money += amount;
+    this.mmBalance -= amount;
+    this.mmWithdrawalCooldown = MM_WITHDRAWAL_COOLDOWN;
+    return true;
+  },
+
+  // Execute a confirmed close-out: return the full balance to cash, reset the
+  // account, and start the withdrawal cooldown.
+  mmConfirmClose() {
+    money += this.mmBalance;
+    this.mmBalance = 0;
+    this.mmWithdrawalCooldown = MM_WITHDRAWAL_COOLDOWN;
+    this.mmCloseConfirmPending = false;
+  },
+
+  // Cancel a pending close-out confirmation without making any changes.
+  mmCancelClose() {
+    this.mmCloseConfirmPending = false;
+  },
+
+  // Tick the withdrawal cooldown and credit weekly compounded interest to the MM balance.
+  // Called once per round. Returns the whole-dollar interest earned this round.
+  processMmInterest() {
+    if (this.mmCloseConfirmPending) this.mmCloseConfirmPending = false; // clear stale confirmation
+    if (this.mmWithdrawalCooldown > 0) this.mmWithdrawalCooldown--;
+    if (this.mmBalance <= 0) return 0;
+    const weeklyRate = Math.pow(1 + MM_ANNUAL_RATE, 1 / WEEKS_PER_YEAR) - 1;
+    const interest   = Math.round(this.mmBalance * weeklyRate);
+    this.mmBalance            += interest;
+    this.mmTotalInterestEarned += interest;
+    return interest;
+  },
+
   // ── LTV and covenant helpers ─────────────────────────────────────────────────
 
-  // Maximum loan-to-value ratio for each purpose, shrinking with missed payments.
-  effectiveLtvCap(purpose) {
+  // ── Line of credit ───────────────────────────────────────────────────────────
+
+  // Pending or offered application: null | { status: 'pending' | 'offered', limit, rate }
+  locApplication: null,
+
+  // True once the player has accepted an offer. Reset when the account is closed.
+  locActive: false,
+
+  // Approved revolving limit in dollars.
+  locLimit: 0,
+
+  // Annual interest rate on the outstanding balance (%).
+  locRate: 0,
+
+  // Currently drawn balance. Increases on draw, decreases on repay.
+  locBalance: 0,
+
+  // All interest ever paid on the line of credit.
+  locTotalInterestPaid: 0,
+
+  // Compute the credit limit for a new application.
+  // 25% of park value, rounded to the nearest $1,000, capped at $100,000.
+  // Returns 0 if the park is not yet valuable enough to offer any credit.
+  calcLocLimit() {
+    const raw = Math.floor(Finance.parkValue() * 0.25 / 1000) * 1000;
+    return Math.max(0, Math.min(100000, raw));
+  },
+
+  // Annual interest rate for the line of credit.
+  // inflation % + 4, floored at 5%.
+  calcLocRate() {
+    return Math.round(Math.max(5, Population.inflationRate * 100 + 4) * 100) / 100;
+  },
+
+  // Submit a line of credit application. No-ops if one is already pending or active.
+  submitLocApplication() {
+    if (this.locApplication || this.locActive) return;
+    this.locApplication = { status: 'pending' };
+  },
+
+  // Accept the offered terms and activate the line of credit.
+  acceptLocOffer() {
+    if (this.locApplication?.status !== 'offered') return;
+    this.locActive  = true;
+    this.locLimit   = this.locApplication.limit;
+    this.locRate    = this.locApplication.rate;
+    this.locApplication = null;
+  },
+
+  // Decline the offer and clear the application.
+  rejectLocOffer() {
+    if (this.locApplication?.status !== 'offered') return;
+    this.locApplication = null;
+  },
+
+  // Draw funds from the line of credit into cash.
+  // Returns false if the amount exceeds available credit, is not a positive
+  // multiple of 1000, or the account is not active.
+  locDraw(amount) {
+    if (!this.locActive) return false;
+    if (amount <= 0 || amount % 1000 !== 0) return false;
+    if (this.locBalance + amount > this.locLimit) return false;
+    money += amount;
+    this.locBalance += amount;
+    return true;
+  },
+
+  // Repay funds from cash back to the line of credit.
+  // Returns false if cash is insufficient or balance would go negative.
+  locRepay(amount) {
+    if (!this.locActive) return false;
+    if (amount <= 0 || amount % 1000 !== 0) return false;
+    if (amount > this.locBalance) return false;
+    if (money < amount) return false;
+    money -= amount;
+    this.locBalance -= amount;
+    return true;
+  },
+
+  // Close the line of credit. Requires the balance to be fully repaid first.
+  // Returns false if balance > 0.
+  closeLocAccount() {
+    if (this.locBalance > 0) return false;
+    this.locActive           = false;
+    this.locLimit            = 0;
+    this.locRate             = 0;
+    this.locTotalInterestPaid = 0;
+    return true;
+  },
+
+  // Deduct weekly compounded interest on the outstanding balance from cash.
+  // Called once per round from Finance.processRound(). Returns the dollar amount charged.
+  processLocInterest() {
+    if (!this.locActive || this.locBalance <= 0) return 0;
+    const weeklyRate = Math.pow(1 + this.locRate / 100, 1 / WEEKS_PER_YEAR) - 1;
+    const interest   = Math.round(this.locBalance * weeklyRate);
+    money                    -= interest;
+    this.locTotalInterestPaid += interest;
+    return interest;
+  },
+
+  // Advance a pending LOC application one step each round.
+  // Returns 'offered', 'rejected', or null.
+  processPendingLoc() {
+    if (!this.locApplication || this.locApplication.status !== 'pending') return null;
+    const limit = this.calcLocLimit();
+    if (limit < 5000) {
+      this.locApplication = null;
+      Notifications.push({
+        label:   'Credit',
+        message: 'Line of credit application declined — park value too low.',
+        action:  () => openPanel('banking'),
+      });
+      return 'rejected';
+    }
+    const rate = this.calcLocRate();
+    this.locApplication = { status: 'offered', limit, rate };
+    Notifications.push({
+      label:   'Credit',
+      message: `Line of credit offer: $${limit.toLocaleString()} at ${rate}%.`,
+      action:  () => openPanel('banking'),
+    });
+    return 'offered';
+  },
+
+  // ── LTV and covenant helpers ─────────────────────────────────────────────────
     const reduction = this.totalMissedPayments * MISSED_PAYMENT_LTV_PENALTY;
     if (purpose === 'emergency') return Math.max(0.05, 0.25 - reduction);
     if (purpose === 'staffing')  return Math.max(0.10, 0.50 - reduction);

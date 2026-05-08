@@ -581,7 +581,7 @@ const Finance = {
       (sum, inv) => sum + inv.count * inv.price, 0
     );
 
-    return buildingValue + inventoryValue + money;
+    return buildingValue + inventoryValue + money + Banking.savingsBalance + Banking.mmBalance;
   },
 
   // ── Round processing ─────────────────────────────────────────────────────────
@@ -660,6 +660,7 @@ const Finance = {
       ? this.BUS_WEEKLY_COST : 0;
     money -= busCost;
     const loanRepayments    = Banking.processLoanRepayments();
+    const locInterestExpense = Banking.processLocInterest();
     const staffCosts        = this.calcStaffCosts();
     const utilityCosts      = this.payUtilityCosts();
     const constructionCosts = processConstruction();  // skips progress on unaffordable builds
@@ -696,6 +697,10 @@ const Finance = {
     // Uses paying attendance only — existing members can't rebuy their own plan.
     const membershipRevenue = Membership.calcSales(weeklyAttendance);
     money += membershipRevenue;
+
+    // Savings and money market interest: credited to each account balance, not to cash directly.
+    const savingsInterestIncome = Banking.processSavingsInterest();
+    const mmInterestIncome      = Banking.processMmInterest();
 
     this.advancePriceExhaustion();    // decay price fatigue by 1
     if (Unlock.SECURITY) Security.advanceOpinion(security.unhandled); // decay then add unhandled incidents
@@ -734,7 +739,9 @@ const Finance = {
       discountLoss: Discounts.lastRoundCost,
       membershipRevenue,
       memberBenefitLoss,
-      totalIncome: grossGateRevenue + grossParkingRevenue + shopRevenue + foodRevenue + membershipRevenue,
+      savingsInterestIncome,
+      mmInterestIncome,
+      totalIncome: grossGateRevenue + grossParkingRevenue + shopRevenue + foodRevenue + membershipRevenue + savingsInterestIncome + mmInterestIncome,
       staffCosts,
       utilityCosts,
       constructionCosts,
@@ -743,7 +750,8 @@ const Finance = {
       parkingAmenityCosts,
       shopItemsSold,
       loanRepayments,
-      totalExpenses: staffCosts + utilityCosts + constructionCosts + busCost + marketingCosts + merchandiseCosts + parkingAmenityCosts + loanRepayments + memberBenefitLoss,
+      locInterestExpense,
+      totalExpenses: staffCosts + utilityCosts + constructionCosts + busCost + marketingCosts + merchandiseCosts + parkingAmenityCosts + loanRepayments + locInterestExpense + memberBenefitLoss,
       rideEfficiency: this.rideOpinion,
       security: { ...security, opinionAfter: Security.opinion },
       food: { ...food, mealSatisfaction: this.mealSatisfaction },
