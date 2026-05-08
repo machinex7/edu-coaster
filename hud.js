@@ -53,8 +53,12 @@ function setViewMode(modeId) {
   _updateViewModeLegend(modeId);
   // Spawn visitors only while the player is watching the park in play mode.
   if (gameStage === STAGE.PLAY) {
-    if (modeId === 'play') Animations.startSpawning();
-    else Animations.stopSpawning();
+    if (modeId === 'play') {
+      if (Animations.paths.length === 0) Animations.buildPaths();
+      Animations.startSpawning();
+    } else {
+      Animations.stopSpawning();
+    }
   }
 }
 
