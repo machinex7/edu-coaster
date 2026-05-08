@@ -45,6 +45,10 @@ const Animations = {
   // Currently visible trash pieces: { x, y, age, maxAge, maxRadius }.
   trash: [],
 
+  // Rising dollar-sign particles spawned at the gate on each visitor spawn.
+  // Each entry: { x, y, vy, age, maxAge }.
+  coins: [],
+
   // Canvas overlay element and 2-D context.
   canvas: null,
   ctx:    null,
@@ -226,6 +230,12 @@ const Animations = {
       toNode:     firstDest,
       tileCount:  0,        // cumulative waypoint crossings; drives trash drops
     });
+    this._spawnCoin(start.x, start.y);
+  },
+
+  // Launches a green dollar-sign particle that rises from (x, y) and fades out.
+  _spawnCoin(x, y) {
+    this.coins.push({ x, y, vy: -55, age: 0, maxAge: 700 });
   },
 
   // Assigns the visitor's next waypoint list after they finish a visit.
@@ -340,6 +350,14 @@ const Animations = {
       if (this.trash[i].age >= this.trash[i].maxAge) this.trash.splice(i, 1);
     }
 
+    // Rise and age coin particles.
+    for (let i = this.coins.length - 1; i >= 0; i--) {
+      const c = this.coins[i];
+      c.y   += c.vy * (dt / 1000);
+      c.age += dt;
+      if (c.age >= c.maxAge) this.coins.splice(i, 1);
+    }
+
     this._draw();
     this._animFrame = requestAnimationFrame(t => this._tick(t));
   },
@@ -367,6 +385,18 @@ const Animations = {
       ctx.arc(p.x, p.y, this.DOT_RADIUS, 0, Math.PI * 2);
       ctx.fill();
     }
+
+    // Draw coin particles on top of everything; fade and rise like Mario coins.
+    ctx.save();
+    ctx.font         = 'bold 13px monospace';
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle    = '#4ade80';
+    for (const c of this.coins) {
+      ctx.globalAlpha = 1 - (c.age / c.maxAge);
+      ctx.fillText('$', c.x, c.y);
+    }
+    ctx.restore();
   },
 
 };
