@@ -93,11 +93,14 @@ const Animations = {
 
   // ── node helpers ─────────────────────────────────────────────────────────
 
-  // Returns every active node that participates in visitor routing.
+  // Returns every node that participates in visitor routing.
+  // Rides are included when physically present on the grid (active, closed,
+  // or broken-down) so visitors still walk to attractions that are temporarily
+  // unavailable. Under-construction rides are excluded — there is nothing to visit yet.
   _allNodes() {
     const nodes = [];
     for (const r of installedRides) {
-      if (r.status === STATUS.ACTIVE) nodes.push(r);
+      if (r.status === STATUS.ACTIVE || r.status === STATUS.CLOSED || r.status === STATUS.BROKEN_DOWN) nodes.push(r);
     }
     for (const s of Shopping.installed) {
       if (s.status === STATUS.ACTIVE) nodes.push(s);
@@ -174,7 +177,14 @@ const Animations = {
       (p.from === fromNode && p.to === toNode) ||
       (p.from === toNode   && p.to === fromNode)
     );
-    if (!entry || !entry.gridPath || entry.gridPath.length === 0) return null;
+    if (!entry) return null;
+
+    // If no grid path was found (e.g. nodes connected only through the entrance,
+    // not via PATH tiles), fall back to a straight-line walk between centres so
+    // visitors still animate rather than freezing entirely.
+    if (!entry.gridPath || entry.gridPath.length === 0) {
+      return [this._nodeCenter(fromNode), this._nodeCenter(toNode)];
+    }
 
     // Use the stored path directly if it runs from→to; otherwise reverse it.
     const tiles = (entry.from === fromNode)
