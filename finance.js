@@ -619,19 +619,33 @@ const Finance = {
     const foodRevenue = food.revenue;
     const security = Security.calcIncidents(totalAttendance, dailyDemand, dailyThroughput);
 
-    // Member discount reductions: members' share of food/merch revenue is reduced by their
-    // plan's discount pct.  We model this as a revenue reduction rather than increased buying
-    // power — demand is unchanged, the park simply earns less from each member's purchase.
-    // memberFraction = share of the crowd that are members (paid gate visitors excluded).
-    const memberFraction     = totalAttendance > 0 ? memberAttendance / totalAttendance : 0;
-    const netFoodRevenue     = Math.round(foodRevenue  * (1 - memberFraction * Membership.foodDiscountFractionThisRound));
-    const netShopRevenue     = Math.round(shopRevenue  * (1 - memberFraction * Membership.merchDiscountFractionThisRound));
+    // ── Membership benefit costs ──────────────────────────────────────────────
+    // The park foregoes revenue on four fronts for members.  Each is computed as
+    // a gross benefit value so the income lines stay at full-price amounts and the
+    // membership program's total cost appears as a single opposing expense.
+    //
+    //   Admission  — members enter free; gross up gate revenue then subtract.
+    //   Parking    — free-parking plans skip the fee; gross up parking then subtract.
+    //   Food       — discount pct applied to members' proportional share of food revenue.
+    //   Merch      — same pattern for merchandise revenue.
+    const memberFraction        = totalAttendance > 0 ? memberAttendance / totalAttendance : 0;
+    const memberAdmissionLoss   = Math.round(memberAttendance * this.gatePrice);
+    const freeParkingLoss       = Research.completed.has(RESEARCH_ID.PARKING_FEES)
+      ? Math.round(Membership.freeParkingVisitsThisRound * this.parkingPrice) : 0;
+    const memberFoodDiscountLoss  = Math.round(foodRevenue * memberFraction * Membership.foodDiscountFractionThisRound);
+    const memberMerchDiscountLoss = Math.round(shopRevenue * memberFraction * Membership.merchDiscountFractionThisRound);
+    const memberBenefitLoss     = memberAdmissionLoss + freeParkingLoss + memberFoodDiscountLoss + memberMerchDiscountLoss;
 
-    // Income
-    money += gateRevenue;
-    money += parkingRevenue;
-    money += netShopRevenue;
-    money += netFoodRevenue;
+    // Gross revenues — what each stream would earn if members paid full price.
+    const grossGateRevenue    = gateRevenue + memberAdmissionLoss;
+    const grossParkingRevenue = parkingRevenue + freeParkingLoss;
+
+    // Income — gross amounts added, all benefit costs subtracted as one line item
+    money += grossGateRevenue;
+    money += grossParkingRevenue;
+    money += shopRevenue;
+    money += foodRevenue;
+    money -= memberBenefitLoss;
 
     // Costs — income applied first so ability-to-pay reflects this week's revenue
     const busCost = (this.busEnabled && Research.completed.has(RESEARCH_ID.BUS_SERVICE))
@@ -701,17 +715,18 @@ const Finance = {
     return {
       weeklyAttendance: totalAttendance,
       memberAttendance,
-      gateRevenue,
-      parkingRevenue,
+      gateRevenue:   grossGateRevenue,
+      parkingRevenue: grossParkingRevenue,
       altTransportVisitors: parking.altTransportVisitors,
       busRiders:            parking.busRiders,
       busCost,
       parkingSpendingMultiplier: parking.spendingMultiplier,
-      shopRevenue: netShopRevenue,
-      foodRevenue: netFoodRevenue,
+      shopRevenue,
+      foodRevenue,
       discountLoss: Discounts.lastRoundCost,
       membershipRevenue,
-      totalIncome: gateRevenue + parkingRevenue + netShopRevenue + netFoodRevenue + membershipRevenue,
+      memberBenefitLoss,
+      totalIncome: grossGateRevenue + grossParkingRevenue + shopRevenue + foodRevenue + membershipRevenue,
       staffCosts,
       utilityCosts,
       constructionCosts,
@@ -720,7 +735,7 @@ const Finance = {
       parkingAmenityCosts,
       shopItemsSold,
       loanRepayments,
-      totalExpenses: staffCosts + utilityCosts + constructionCosts + busCost + marketingCosts + merchandiseCosts + parkingAmenityCosts + loanRepayments,
+      totalExpenses: staffCosts + utilityCosts + constructionCosts + busCost + marketingCosts + merchandiseCosts + parkingAmenityCosts + loanRepayments + memberBenefitLoss,
       rideEfficiency: this.rideOpinion,
       security: { ...security, opinionAfter: Security.opinion },
       food: { ...food, mealSatisfaction: this.mealSatisfaction },
