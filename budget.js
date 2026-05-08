@@ -103,10 +103,20 @@ const Budget = {
       this._buildSection('expense', 'Expenses', priorProj, priorActuals, priorLabel, hasComparison)
     );
 
+    // Net bar sits below both tables and updates live as the player types.
+    const netBar = document.createElement('div');
+    netBar.className = 'budget-net-bar';
+    netBar.innerHTML = `
+      <span class="budget-net-label">Projected Net</span>
+      <span class="budget-net-value" id="budget-net-value"></span>`;
+    wrapper.appendChild(netBar);
+
+    this._bindTotals();
     document.getElementById('budget-modal').classList.remove('hidden');
   },
 
   // Build one section (Revenue or Expenses) as a table with optional comparison columns.
+  // Includes a tfoot row showing column subtotals; the Projection total updates live.
   _buildSection(sectionKey, sectionLabel, priorProj, priorActuals, priorLabel, hasComparison) {
     const items    = this.ITEMS.filter(i => i.section === sectionKey);
     const hdrClass = sectionKey === 'revenue' ? 'budget-revenue-header' : 'budget-expense-header';
@@ -159,6 +169,29 @@ const Budget = {
         </tr>`;
     }).join('');
 
+    // Subtotals for the comparison columns (static; computed once at render time).
+    const priorProjTotal   = priorProj    ? items.reduce((s, i) => s + (priorProj[i.key]    || 0), 0) : null;
+    const priorActualTotal = priorActuals ? items.reduce((s, i) => s + (priorActuals[i.key] || 0), 0) : null;
+
+    let totalComparisonCells = '';
+    if (hasComparison) {
+      const projTotalStr   = priorProjTotal   !== null ? `$${Math.round(priorProjTotal).toLocaleString()}`   : '—';
+      const actualTotalStr = priorActualTotal !== null ? `$${Math.round(priorActualTotal).toLocaleString()}` : '—';
+
+      let totalVarianceEl = '';
+      if (priorProjTotal !== null && priorActualTotal !== null) {
+        const variance  = priorActualTotal - priorProjTotal;
+        const favorable = sectionKey === 'revenue' ? variance >= 0 : variance <= 0;
+        const varClass  = favorable ? 'budget-var-favorable' : 'budget-var-unfavorable';
+        const varSign   = variance >= 0 ? '+' : '−';
+        totalVarianceEl = `<span class="budget-variance ${varClass}">${varSign}$${Math.abs(Math.round(variance)).toLocaleString()}</span>`;
+      }
+
+      totalComparisonCells = `
+        <td class="budget-td budget-total-num">${projTotalStr}</td>
+        <td class="budget-td budget-total-num">${actualTotalStr}${totalVarianceEl}</td>`;
+    }
+
     const div = document.createElement('div');
     div.innerHTML = `
       <div class="budget-section">
@@ -171,9 +204,50 @@ const Budget = {
             </tr>
           </thead>
           <tbody>${rows}</tbody>
+          <tfoot>
+            <tr class="budget-total-row">
+              <td class="budget-td budget-total-label">Total</td>
+              ${totalComparisonCells}
+              <td class="budget-td budget-total-proj" id="budget-total-${sectionKey}">$0</td>
+            </tr>
+          </tfoot>
         </table>
       </div>`.trim();
     return div.firstElementChild;
+  },
+
+  // Wire input event listeners so the section totals and net bar update as the player types.
+  _bindTotals() {
+    document.querySelectorAll('#budget-table-wrapper .budget-input').forEach(input => {
+      input.addEventListener('input', () => this._updateTotals());
+    });
+    this._updateTotals();
+  },
+
+  // Recompute section subtotals and the net bar from current input values.
+  _updateTotals() {
+    let revenueTotal = 0, expenseTotal = 0;
+    document.querySelectorAll('#budget-table-wrapper .budget-input').forEach(input => {
+      const val  = parseFloat(input.value) || 0;
+      const item = this.ITEMS.find(i => i.key === input.dataset.key);
+      if (item.section === 'revenue') revenueTotal += val;
+      else                            expenseTotal += val;
+    });
+
+    const revEl = document.getElementById('budget-total-revenue');
+    const expEl = document.getElementById('budget-total-expense');
+    const netEl = document.getElementById('budget-net-value');
+
+    if (revEl) revEl.textContent = `$${Math.round(revenueTotal).toLocaleString()}`;
+    if (expEl) expEl.textContent = `$${Math.round(expenseTotal).toLocaleString()}`;
+
+    if (netEl) {
+      const net      = revenueTotal - expenseTotal;
+      const netSign  = net >= 0 ? '+' : '−';
+      const netClass = net >= 0 ? 'budget-net-pos' : 'budget-net-neg';
+      netEl.textContent = `${netSign}$${Math.abs(Math.round(net)).toLocaleString()}`;
+      netEl.className   = `budget-net-value ${netClass}`;
+    }
   },
 
   // Collect input values, store under current quarter number, save to FormsPanel, and close.

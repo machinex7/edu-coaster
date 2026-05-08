@@ -1074,6 +1074,64 @@ header h1 {
 /* Subtle row hover to help the eye track across wide tables. */
 .budget-row:hover .budget-td { background: #111827; }
 
+/* Total row at the bottom of each section table (tfoot). */
+.budget-total-row td {
+  border-top: 2px solid #374151;
+  border-bottom: none;
+}
+
+/* "Total" label cell in the tfoot row. */
+.budget-total-label {
+  text-align: left;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #9ca3af;
+}
+
+/* Prior-projection and prior-actual total cells. */
+.budget-total-num {
+  font-weight: 700;
+  white-space: nowrap;
+  text-align: right;
+}
+
+/* Live-updating new-projection total cell. */
+.budget-total-proj {
+  font-weight: 700;
+  font-size: 0.9rem;
+  text-align: right;
+}
+
+/* Net bar below both tables. */
+.budget-net-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 14px;
+  background: #111827;
+  border: 1px solid #374151;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.budget-net-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9ca3af;
+}
+
+.budget-net-value {
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.budget-net-pos { color: #4ade80; }
+.budget-net-neg { color: #f87171; }
+
 /* ── Notification stack ── */
 #notification-stack {
   position: fixed;
