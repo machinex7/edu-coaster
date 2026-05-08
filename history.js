@@ -21,6 +21,7 @@ const History = {
       shopIncome:          report.shopRevenue,
       foodIncome:          report.foodRevenue,
       membershipIncome:    report.membershipRevenue,
+      memberBenefitExpense: report.memberBenefitLoss,
       staffExpense:        report.staffCosts,
       utilityExpense:      report.utilityCosts,
       constructionExpense: report.constructionCosts,
