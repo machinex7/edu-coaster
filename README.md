@@ -30,6 +30,7 @@ python3 -m http.server
 | `grid.js` | Grid DOM, cell painting, mouse/touch event handlers |
 | `shopping.js` | Shop catalog, installed shops, revenue and theft calculations (`Shopping` object) |
 | `finance.js` | Attendance model, park metrics, all income/cost sources, round processing (`Finance` object) |
+| `banking.js` | Loan applications, covenants, repayments, and negotiation (`Banking` object) |
 | `staff.js` | Job registry, employee generation, staff/candidates/postings/benefits simulation logic (`Staff` object) |
 | `staff-panel.js` | All staffing panel UI — roster, postings, candidates, benefits views (extends `Staff` via `Object.assign`) |
 | `security.js` | Security opinion state, incident calculation, panel UI (`Security` object) |
@@ -37,6 +38,7 @@ python3 -m http.server
 | `pl-statement.js` | Quarterly P&L statement exercise — drag-and-drop sorting modal (`PLStatement` object) |
 | `balance-sheet.js` | Annual balance sheet exercise — drag-and-drop sorting modal (`BalanceSheet` object) |
 | `concessions.js` | Concessions panel: ingredient ordering, menu pricing, combo meals, food revenue calculation (`Concessions` object) |
+| `membership.js` | Membership plan definitions, sales simulation, member attendance contribution, Admission-panel UI (`Membership` object) |
 | `hud.js` | HUD display, stage transitions, panel management, view mode toolbar, construction bottom bar, security SVG overlay, round summary modal, pricing panel |
 | `rides.json` | Ride catalogue |
 | `facilities.json` | Facility catalogue |
@@ -48,7 +50,7 @@ python3 -m http.server
 
 **Script load order:**
 ```
-constants.js → unlock.js → population.js → game.js → grid.js → shopping.js → finance.js → staff.js → staff-panel.js → security.js → history.js → pl-statement.js → balance-sheet.js → concessions.js → hud.js
+constants.js → unlock.js → population.js → game.js → grid.js → shopping.js → banking.js → finance.js → staff.js → staff-panel.js → security.js → history.js → pl-statement.js → balance-sheet.js → concessions.js → membership.js → hud.js
 ```
 
 All cross-file calls happen at runtime (not parse time), so forward references inside method bodies are safe.
@@ -70,8 +72,10 @@ const Foo = {
 |---|---|---|
 | `Population` | `population.js` | Visitor behavior rates, labor constants, economic multipliers |
 | `Finance` | `finance.js` | Pricing state, attendance model, income/cost calculations, round processing |
+| `Banking` | `banking.js` | Loan applications, covenants, repayments, negotiation |
 | `Shopping` | `shopping.js` | Shop catalog, installed shops, merchandise revenue/theft math, staffing ratios |
 | `Concessions` | `concessions.js` | Menu items, freezer stock, 4-week delivery orders, combo meals, food revenue calculation |
+| `Membership` | `membership.js` | Annual membership plan definitions, weekly sales simulation, member attendance and parking, food/merch discount tracking |
 | `Staff` | `staff.js` + `staff-panel.js` | Roster, postings, candidates, benefits policy, experience, panel rendering |
 | `Security` | `security.js` | Opinion state, incident calculation, panel rendering |
 | `History` | `history.js` | Append-only per-round log |
@@ -282,12 +286,15 @@ Demolishing structures are excluded from all game calculations. Demolition takes
 
 ### Income sources
 
+All revenue is recorded at **gross** (full-price) amounts. The cost of membership benefits is subtracted separately as a single expense line so each stream's true potential is visible.
+
 | Source | Signals |
 |---|---|
-| Gate | gate price × weekly attendance |
-| Parking | parking price × vehicle estimate derived from daily demand |
-| Shop | see `Shopping.calcRevenue()` |
-| Food | meal price × meals sold; see `Concessions.calcFood()` |
+| Gate | gate price × weekly paying attendance + member admission value (grossed up) |
+| Parking | parking price × paying vehicle estimate + non-free-parking member vehicles + free-parking member vehicle value (grossed up) |
+| Shop | see `Shopping.calcRevenue()` (full price regardless of member discounts) |
+| Food | see `Concessions.calcFood()` (full price regardless of member discounts) |
+| Memberships | annual price × new sales this round; see `Membership.calcSales()` |
 
 ### Cost sources
 
@@ -299,6 +306,7 @@ Demolishing structures are excluded from all game calculations. Demolition takes
 | Facility utilities | active facilities with a `utilityCost` field × `Population.utilityMultiplier` |
 | Construction | weekly installment per item under construction |
 | Theft loss | unhandled shop incidents × `THEFT_LOSS_PER` |
+| Membership benefits | sum of: free admission value (memberAttendance × gatePrice), free parking value (freeParkingVehicles × parkingPrice, only when PARKING_FEES unlocked), food discount loss, merch discount loss |
 
 ### Round processing order (`Finance.processRound`)
 
@@ -307,20 +315,23 @@ Demolishing structures are excluded from all game calculations. Demolition takes
 3. Calc demand, throughput, attendance
 4. `computeRideOpinion()` — updates `rideOpinion`; writes `lastRoundRiders/Capacity`
 5. `processWear()` — accumulate wear, roll for breakdown (probability = wear / `MAX_EFFECTIVE_WEAR`)
-6. `Concessions.calcFood()` — compute food revenue, `mealsWanted`, and `mealsServed`
-7. `processLoanRepayments()` — deduct weekly amortized payments before other costs
-8. Calc income and remaining costs; apply to `money`
-9. `processConstruction()` — deduct weekly payments, complete finished builds
-9a. `processDemolition()` — advance demolition timers, remove completed demolitions
-10. `processCovenantBreaches()` — collect deferred breach fees; retire breached covenants
-11. `processActiveCovenants(weeklyAttendance)` — check ongoing covenants; call `breachCovenant` on violations
-12. `Staff.processSickness()` — decrement absences, roll for new illness/injury/vacation
-13. `Staff.advanceExperience/applyInflation/updateMoods/advancePostings/generateCandidates/advanceCandidates()`
-14. Calc `weeklyNetMess`; compute `mealSatisfaction`; call `calcExcitement()`
-15. `advancePriceExhaustion()`
-16. `Security.advanceOpinion(unhandled)`
+6. `Membership.calcMemberAttendance()` — estimate member visits, free/paid parking vehicles, food/merch discount fractions
+7. `Concessions.calcFood()` — compute food revenue, `mealsWanted`, and `mealsServed`
+8. Calc membership benefit costs; gross up gate and parking revenues; subtract combined benefit loss
+9. `Banking.processLoanRepayments()` — deduct weekly amortized payments before other costs
+10. Calc remaining costs; apply to `money`
+11. `processConstruction()` — deduct weekly payments, complete finished builds
+11a. `processDemolition()` — advance demolition timers, remove completed demolitions
+12. `Banking.processCovenantBreaches()` — collect deferred breach fees; retire breached covenants
+13. `Banking.processActiveCovenants(weeklyAttendance)` — check ongoing covenants; call `breachCovenant` on violations
+14. `Staff.processSickness()` — decrement absences, roll for new illness/injury/vacation
+15. `Staff.advanceExperience/applyInflation/updateMoods/advancePostings/generateCandidates/advanceCandidates()`
+16. Calc `weeklyNetMess`; compute `mealSatisfaction`; call `calcExcitement()`
+17. `Membership.calcSales()` — simulate membership purchases; update 52-week sliding windows; return revenue
+18. `advancePriceExhaustion()`
+19. `Security.advanceOpinion(unhandled)`
 
-`advanceRound()` (in `hud.js`) calls `Finance.processPendingLoan()` each round to advance the loan application state machine.
+`advanceRound()` (in `hud.js`) calls `Banking.processPendingLoan()` each round to advance the loan application state machine.
 
 ### Loans
 
@@ -330,7 +341,7 @@ Players can apply for loans via the Banking panel. The full flow:
 [form] → APPROACHING → (1 round risk check) → OPEN → [Apply] → APPLYING → (1 round) → OFFERED → [Accept] → REVIEW → (2 rounds) → disbursed
 ```
 
-**State machine (`Finance.loanApplication`):**
+**State machine (`Banking.loanApplication`):**
 
 | State | Meaning |
 |---|---|
@@ -341,11 +352,11 @@ Players can apply for loans via the Banking panel. The full flow:
 | `REVIEW` | Accepted; 2-round final review before funds arrive |
 | `null` | No active application |
 
-**Eligibility (`processPendingLoan`, APPROACHING state):**
+**Eligibility (`Banking.processPendingLoan`, APPROACHING state):**
 
-`Finance.parkValue()` sums: active/closed building costs; in-construction payments made so far; broken-down rides at a 10%-per-repair-week discount; merchandise inventory value; current cash. The requested amount must be positive and below `effectiveLtvCap(purpose) × parkValue`. LTV caps by purpose: new rides 70%, staffing 50%, emergency 90%; each missed payment reduces the cap by `MISSED_PAYMENT_LTV_PENALTY`.
+`Finance.parkValue()` sums: active/closed building costs; in-construction payments made so far; broken-down rides at a 10%-per-repair-week discount; merchandise inventory value; current cash. The requested amount must be positive and below `Banking.effectiveLtvCap(purpose) × parkValue`. LTV caps by purpose: new rides 70%, staffing 50%, emergency 90%; each missed payment reduces the cap by `MISSED_PAYMENT_LTV_PENALTY`.
 
-**Interest rate (`Finance.calcLoanRate`):**
+**Interest rate (`Banking.calcLoanRate`):**
 
 `baseRate = Population.inflationRate × 100 + 1`, then additive premiums:
 
@@ -376,11 +387,11 @@ Players can apply for loans via the Banking panel. The full flow:
 
 **Negotiation:** Spending bank favor allows: removing a covenant (+0.3% rate), reducing the rate by 0.5% (with a free covenant) or 0.2% (without), or reducing the breach fee by 5% (floor 5%).
 
-**Repayment (`Finance.calcLoanPayment`):**
+**Repayment (`Banking.calcLoanPayment`):**
 
-Standard amortization: `PMT = P × r(1+r)^n / ((1+r)^n − 1)` where `r = annualRate/100/52` and `n = weeksRemaining`. Returns `{ total, principal }` where `principal = total − (balance × r)`. If `weeksRemaining ≤ 1` the full balance is returned as principal. Loans are fully paid off when `balance ≤ 0`; they are removed from `Finance.activeLoans` automatically.
+Standard amortization: `PMT = P × r(1+r)^n / ((1+r)^n − 1)` where `r = annualRate/100/52` and `n = weeksRemaining`. Returns `{ total, principal }` where `principal = total − (balance × r)`. If `weeksRemaining ≤ 1` the full balance is returned as principal. Loans are fully paid off when `balance ≤ 0`; they are removed from `Banking.activeLoans` automatically.
 
-Missed payments increment `loan.missedPayments` and `Finance.totalMissedPayments`, which permanently penalise future loan rates and LTV caps.
+Missed payments increment `loan.missedPayments` and `Banking.totalMissedPayments`, which permanently penalise future loan rates and LTV caps.
 
 **History:** Each round's `History` entry records `loanBalance`, `loanInterestPaid`, and `loanPrincipalPaid` across all active loans.
 
@@ -519,6 +530,71 @@ Players create combos via the **Menu** tab. The builder lets them set ingredient
 |---|---|
 | **Menu** | One row per item: name, "X sold" badge (Play only), editable sale price. Combo meals section below with cards and "+ Add Meal" button. |
 | **Orders** | 4-week delivery cycle tracker; order table (Item / Cost per Unit / In Freezer / Order Qty / Line Cost); subtotal + delivery fee + total summary; Repeat Order / Clear Order radio. |
+
+---
+
+## Membership system (`membership.js`)
+
+The `Membership` object handles annual membership plans sold to visitors, their ongoing attendance contribution, and the associated benefit costs.
+
+### Plan definition
+
+Each plan is created by the player in the Admission panel and stored in `Membership.plans[]`:
+
+```js
+{
+  id, name,
+  annualPrice,       // $ per year
+  guestCount,        // people admitted per membership household
+  freeParking,       // boolean — skips parking fee for member vehicles
+  foodDiscountPct,   // 0–100: percentage off food purchases
+  merchDiscountPct,  // 0–100: percentage off merchandise purchases
+  salesThisRound,    // new memberships sold this week
+  salesHistory,      // rolling 52-entry array; one entry per round (including zeros)
+  activeMembers,     // salesHistory.reduce(sum) — members still within their annual term
+  totalMembers,      // cumulative all-time sales
+}
+```
+
+### 52-week sliding window
+
+Each round, `salesThisRound` is pushed onto `salesHistory`. When the array exceeds 52 entries the oldest entry is shifted off. `activeMembers = salesHistory.reduce((s,n) => s+n, 0)` — members whose annual term has not yet expired.
+
+### Sales simulation (`Membership.calcSales`)
+
+Called after `calcExcitement()` so `Finance.parkExcitement` reflects this round's visitor experience.
+
+Per plan, per distance bracket:
+1. **Break-even check** — `admissionSavings + parkingSavings - annualPrice > 0`; distance brackets with no financial incentive are skipped entirely.
+2. **Value ratio** — `netValue / annualPrice`; higher = more compelling deal.
+3. **Household match** — Solo plans target Solo brackets, Couple → Couple, 3–4 guests → Small Family, 5+ → Large Family. Households won't buy a plan that doesn't match their size.
+4. **Purchase probability** — `min(valueRatio × satisfactionPerVisitor × propensity × MEMBERSHIP_BUY_RATE / D.annualVisits, MEMBERSHIP_MAX_PROB)`. Dividing by `D.annualVisits` de-duplicates repeat visitors so frequent locals aren't counted multiple times over the year.
+5. **Expected sales** — `weeklyAttendance × dFraction × hFraction × prob` summed across all brackets.
+
+`satisfactionPerVisitor = Finance.parkExcitement / weeklyAttendance` — a per-visitor quality score independent of crowd size.
+
+### Member attendance (`Membership.calcMemberAttendance`)
+
+Called before shopping/food/security each round. For each plan × distance bracket:
+
+- `membersInBracket × weeklyVisitRate × guestCount` → added to `memberAttendanceThisRound` (headcount)
+- `membersInBracket × weeklyVisitRate` → vehicle trips; routed to `freeParkingVisitsThisRound` (free parking plans) or `paidParkingVehiclesThisRound` (paid)
+- Per-plan attendance weighted by `foodDiscountPct` and `merchDiscountPct` → accumulates into `foodDiscountFractionThisRound` and `merchDiscountFractionThisRound` (weighted-average discount rates)
+
+`totalAttendance = weeklyAttendance (paying) + memberAttendance (free)`. Members boost shopping, food, security, and excitement calculations without paying gate admission.
+
+### Membership benefit costs
+
+All revenue streams are reported at **gross** (full-price) amounts. A single `memberBenefitLoss` expense covers all four benefit types:
+
+| Component | Formula |
+|---|---|
+| Free admission | `memberAttendance × gatePrice` |
+| Free parking | `freeParkingVehicles × parkingPrice` (only when PARKING_FEES unlocked) |
+| Food discount | `foodRevenue × memberFraction × foodDiscountFractionThisRound` |
+| Merch discount | `shopRevenue × memberFraction × merchDiscountFractionThisRound` |
+
+This nets to the same cash result as applying discounts directly, but keeps gross revenues visible for budgeting. Recorded in `History` as `memberBenefitExpense`; shown in the P&L exercise as **Membership Benefits**.
 
 ---
 
@@ -682,7 +758,7 @@ The form's `.pending` flag is set by the trigger condition in `advanceRound()` a
 
 ### P&L statement (`pl-statement.js` — `PLStatement`)
 
-Triggers every 13 rounds (end of each quarter). Aggregates the last 13 entries from `History.rounds` to produce real quarterly totals for six line items: Gate Admissions, Parking, Merchandise Sales, Staff Wages, Ride Utilities, and Construction.
+Triggers every 13 rounds (end of each quarter). Aggregates the last 13 entries from `History.rounds` to produce real quarterly totals. Active line items (those with a non-zero quarterly total): Gate Admissions, Parking, Merchandise Sales, Food & Beverage, Memberships (revenue), Staff Wages, Ride Utilities, Construction, Marketing, Merchandise Orders, Bus Service, Parking Amenities, Membership Benefits (expense).
 
 Students drag each item into a Revenue or Expenses column. The submit button is disabled until all items have been placed. On submit, correctly placed items lock in place with a checkmark; wrong items return to the bank to be re-sorted. This repeats until all items are correct, at which point the net profit/loss is revealed and Continue appears.
 
@@ -705,7 +781,7 @@ Line items and their sources:
 | Food & Beverage Stock | Asset | `Concessions.stock[i] × menuItems[i].cost` summed (only when `Unlock.FOOD`) |
 | Park Equipment | Asset | Active, closed, and broken-down rides/facilities/shops at `buildCost` |
 | Construction in Progress | Asset | In-construction items at `weeksCompleted × weeklyPayment` |
-| Outstanding Loans | Liability | `Finance.activeLoans[*].balance` summed |
+| Outstanding Loans | Liability | `Banking.activeLoans[*].balance` summed |
 
 Students drag each item into an Assets or Liabilities column. On completion, Owner's Equity (Assets − Liabilities) is revealed. Positive equity is shown in blue; negative in red.
 
@@ -755,7 +831,9 @@ Students drag each item into an Assets or Liabilities column. On completion, Own
 - `Population.cumulativeInflation`: weekly compound tracker, multiplies restock order costs
 - Demographic `preferredCategory` on every bracket drives per-category purchase desire
 - Loan system: multi-round application flow (approach → open → apply → offer → review → disbursed); amortized weekly repayments; 7 covenant types with enforcement and deferred breach fees; rate/covenant/fee negotiation; missed payment penalties on future rates and LTV caps
-- Quarterly P&L statement exercise: drag-and-drop modal every 13 rounds; real quarterly totals from `History`; items lock on correct placement; wrong items return to bank for retry; net income revealed on completion
+- Membership plans: player-created annual plans with guest count, optional free parking, food discount %, and merch discount %; 52-week sliding window tracks active members per plan; weekly sales simulation uses distance/household demographics, break-even value, and per-visitor satisfaction score
+- Member attendance: active members contribute to weekly headcount (free gate admission); free-parking plans skip parking fees; non-free-parking member vehicles pay standard rate; all four benefit types (admission, parking, food discount, merch discount) recorded as a single gross-revenue offset expense
+- Quarterly P&L statement exercise: drag-and-drop modal every 13 rounds; real quarterly totals from `History`; items lock on correct placement; wrong items return to bank for retry; net income revealed on completion; includes Food & Beverage, Memberships (revenue), and Membership Benefits (expense)
 - Annual balance sheet exercise: drag-and-drop modal every 52 rounds (chained after the year-end P&L); point-in-time snapshot of assets (cash, merchandise inventory, food stock, park equipment, construction in progress) and liabilities (outstanding loans); Owner's Equity revealed on completion
 
 ## What's not yet implemented (see `reqs.md`)
