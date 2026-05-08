@@ -9,10 +9,10 @@
 const Animations = {
 
   // Hard cap on simultaneously rendered visitor sprites.
-  PERSON_LIMIT: 25,
+  PERSON_LIMIT: 50,
 
   // One sprite is shown per this many weekly visitors (scales up to PERSON_LIMIT).
-  ATTENDANCE_PER_PERSON: 50,
+  ATTENDANCE_PER_PERSON: 40,
 
   // Walking speed: one CELL_STEP per 2 seconds (px per ms).
   SPEED: CELL_STEP / 1200,
@@ -394,8 +394,8 @@ const Animations = {
     ctx.fillStyle = 'white';
     for (const p of this.people) {
       if (p.state === 'visiting') continue;
-      // Hide as soon as the person steps off the last path tile into a destination.
-      if (p.wpIdx >= p.waypoints.length - 1) continue;
+      // Hidden while still inside the source node (haven't reached the first path tile yet).
+      if (p.wpIdx < 2) continue;
       ctx.beginPath();
       ctx.arc(p.x, p.y, this.DOT_RADIUS, 0, Math.PI * 2);
       ctx.fill();
