@@ -37,6 +37,11 @@ const Finance = {
   // total divided by weekly attendance. rideOpinion = min(1, ridesPerPerson /
   // DESIRED_RIDES) — 1.0 means guests rode at least as much as they wanted.
   computeRideOpinion(weeklyAttendance) {
+    // Broken-down rides had riders last time they ran; zero them out so the display is accurate.
+    installedRides
+      .filter(r => r.status === STATUS.BROKEN_DOWN)
+      .forEach(r => { r.lastRoundRiders = 0; r.lastRoundCapacity = 0; });
+
     const runningRides = installedRides.filter(r => r.status === STATUS.ACTIVE && isRideConnected(r));
     if (runningRides.length === 0) return;
 
