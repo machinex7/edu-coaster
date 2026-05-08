@@ -235,7 +235,7 @@ function initHUD() {
   document.getElementById('modal-close-btn').addEventListener('click', hideRoundSummary);
   PLStatement.init();
   BalanceSheet.init();
-  Concessions.init();
+  Budget.init();  Concessions.init();
   Staff.initPanel();
   initInventoryPanel();
   Charts.initModal();
@@ -284,6 +284,10 @@ function advanceRound() {
   Unlock.tick();
   _tickDemographicConfidence(report.weeklyAttendance);
   if (round % 13 === 1 && round > 1) Awards.checkQuarterly();
+  // Tentative budget fires 2 rounds before quarter end (time to forecast before P&L).
+  if (round % 13 === 11) Budget.pendingTentative = true;
+  // Revised budget fires 1 week into the new quarter, after the P&L has been seen.
+  if (round % 13 === 1 && round > 1) Budget.pendingRevised = true;
   // Schedule the P&L exercise to appear after this round's summary closes.
   if (round % 13 === 0) PLStatement.pending = true;
   // Schedule the annual balance sheet to chain after the P&L at year-end.
@@ -356,10 +360,11 @@ function showRoundSummary(report) {
 
 function hideRoundSummary() {
   document.getElementById('round-modal').classList.add('hidden');
-  // Chain into the P&L exercise at the end of each quarter (P&L itself chains
-  // to the balance sheet at year-end via PLStatement.hide).
-  if (PLStatement.pending)      PLStatement.show();
+  // Budget (tentative) → P&L → Budget (revised); P&L chains to balance sheet at year-end.
+  if (Budget.pendingTentative)   Budget.show('tentative');
+  else if (PLStatement.pending)  PLStatement.show();
   else if (BalanceSheet.pending) BalanceSheet.show();
+  else if (Budget.pendingRevised) Budget.show('revised');
 }
 
 // Converts the current round into "Week W, QN, YYYY".

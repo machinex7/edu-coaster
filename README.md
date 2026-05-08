@@ -37,6 +37,7 @@ python3 -m http.server
 | `history.js` | Append-only per-round data log for future reports/graphs (`History` object) |
 | `pl-statement.js` | Quarterly P&L statement exercise — drag-and-drop sorting modal (`PLStatement` object) |
 | `balance-sheet.js` | Annual balance sheet exercise — drag-and-drop sorting modal (`BalanceSheet` object) |
+| `budget.js` | Two-phase quarterly budget projection exercise — tentative forecast + post-P&L revision (`Budget` object) |
 | `concessions.js` | Concessions panel: ingredient ordering, menu pricing, combo meals, food revenue calculation (`Concessions` object) |
 | `membership.js` | Membership plan definitions, sales simulation, member attendance contribution, Admission-panel UI (`Membership` object) |
 | `animations.js` | Visual-only visitor animation system — path caching, sprite movement, trash and coin particles (`Animations` object) |
@@ -51,7 +52,7 @@ python3 -m http.server
 
 **Script load order:**
 ```
-constants.js → unlock.js → population.js → game.js → grid.js → pathfinding.js → shopping.js → banking.js → finance.js → staff.js → staff-panel.js → security.js → history.js → pl-statement.js → balance-sheet.js → concessions.js → membership.js → animations.js → hud.js
+constants.js → unlock.js → population.js → game.js → grid.js → pathfinding.js → shopping.js → banking.js → finance.js → staff.js → staff-panel.js → security.js → history.js → pl-statement.js → balance-sheet.js → budget.js → forms-panel.js → concessions.js → membership.js → animations.js → hud.js
 ```
 
 All cross-file calls happen at runtime (not parse time), so forward references inside method bodies are safe.
@@ -82,6 +83,8 @@ const Foo = {
 | `History` | `history.js` | Append-only per-round log |
 | `PLStatement` | `pl-statement.js` | Quarterly P&L drag-and-drop exercise |
 | `BalanceSheet` | `balance-sheet.js` | Annual balance sheet drag-and-drop exercise |
+| `Budget` | `budget.js` | Two-phase quarterly budget projection exercise |
+| `FormsPanel` | `forms-panel.js` | Review panel — stores and renders the latest completed submission for each form type |
 
 ---
 
@@ -799,15 +802,22 @@ Each form file exports a single object with three public entry points called fro
 | `Form.pending = true` | `advanceRound()` | Schedule the form to appear after the round summary |
 | `Form.show()` | `hideRoundSummary()` | Build and display the modal |
 
-The form's `.pending` flag is set by the trigger condition in `advanceRound()` and cleared inside `show()`. `hideRoundSummary()` checks it and chains `show()` so the round summary always appears first.
+The form's `.pending` flag is set by the trigger condition in `advanceRound()` and cleared inside `show()`. `hideRoundSummary()` checks flags in priority order and chains `show()` so the round summary always appears first. Forms with multiple phases (e.g. `Budget`) use separate flags per phase (`pendingTentative`, `pendingRevised`) and pass a phase argument to `show(phase)`.
+
+**Chain order in `hideRoundSummary()`:**
+```
+Budget (tentative) → P&L → Balance Sheet → Budget (revised)
+```
+The budget tentative fires two rounds before quarter end. P&L fires at quarter end and chains to the balance sheet at year-end. The budget revised fires one round into the new quarter, after the player has seen the P&L.
 
 ### Adding a new form
 
 1. Create `my-form.js` with a `MyForm` object implementing `pending`, `init()`, and `show()`.
-2. Add `<script src="my-form.js"></script>` to `index.html` immediately before `hud.js`.
+2. Add `<script src="my-form.js"></script>` to `index.html` before `hud.js` (after `forms-panel.js`).
 3. Add the modal HTML to `index.html`.
 4. Add form-specific styles to `style.css` (modal styles) or `panels.css` (panel content).
-5. In `hud.js`: call `MyForm.init()` in `initHUD()`, set `MyForm.pending = true` on your trigger condition in `advanceRound()`, and add `if (MyForm.pending) MyForm.show();` in `hideRoundSummary()`.
+5. In `hud.js`: call `MyForm.init()` in `initHUD()`, set `MyForm.pending = true` on your trigger in `advanceRound()`, and add `if (MyForm.pending) MyForm.show();` in `hideRoundSummary()`.
+6. Optionally add a review card to `forms-panel.js`: call `FormsPanel.save({ type: 'my-form', ... })` on completion and add a `_renderMyFormCard()` method to `FormsPanel`.
 
 ### P&L statement (`pl-statement.js` — `PLStatement`)
 
@@ -839,6 +849,51 @@ Line items and their sources:
 Students drag each item into an Assets or Liabilities column. On completion, Owner's Equity (Assets − Liabilities) is revealed. Positive equity is shown in blue; negative in red.
 
 **CSS classes:** `.bs-modal-card`, `.bs-bank`, `.bs-zone`, `.bs-card-item`, `.bs-locked`, `.bs-correct`, `.bs-result`, `.bs-equity` — all in `style.css`.
+
+### Budget (`budget.js` — `Budget`)
+
+Two-phase exercise that teaches budgeting and variance analysis. Unlike the P&L and balance sheet (which are scored drag-and-drop exercises), the budget form is a manual-entry planning activity with no right/wrong grading.
+
+#### Phase 1 — Tentative (trigger: `round % 13 === 11`)
+
+Fires two rounds before the end of each quarter (week 11 of 13). The player has not yet seen the quarter-end P&L, so this is a genuine forward forecast. Inputs start at `$0`; no pre-population from history, to prevent copying rather than reasoning.
+
+| Column | Content |
+|---|---|
+| *(comparison, if available)* | Prior quarter's **revised** budget — shown as a scale reference from the most recent completed plan |
+| Projection | Player's number inputs for the upcoming quarter |
+
+The label shows the **calendar quarter being budgeted** (the next quarter, e.g. "Q4 2024 Tentative Budget"). The submitted values are stored in `Budget._tentative[targetQNum]`.
+
+#### Phase 2 — Revised (trigger: `round % 13 === 1 && round > 1`)
+
+Fires one week into the new quarter, the round after the P&L exercise. Now the player has full information and can calibrate. Inputs pre-populate from the tentative values to make editing incremental.
+
+| Column | Content |
+|---|---|
+| Tentative Budget | The values submitted in Phase 1 |
+| *(prior quarter label)* Actual | Summed from `History.rounds` for the quarter that just ended |
+| Projection | Editable inputs, pre-filled from the tentative |
+
+The submitted values are stored in `Budget._revised[targetQNum]`.
+
+#### Quarter numbering
+
+`targetQNum` is a monotonically increasing game-wide quarter index (`Math.ceil(round / 13)` for revised; `+1` for tentative). It is used to key both `_tentative` and `_revised` dictionaries so Phase 2 can look up the Phase 1 values by matching index.
+
+`Budget._calendarLabel(gameQNum)` converts a game quarter index to a "Q3 2024" display string using the same `STARTING_WEEK_OF_YEAR` / `STARTING_YEAR` calculation as `getDateLabel()` in `hud.js`.
+
+#### Totals and net bar
+
+Each Revenue and Expenses table has a `<tfoot>` row with static comparison-column subtotals and a live-updating Projection total (recomputes on every `input` event). A Projected Net bar below both tables shows Revenue − Expenses in real time.
+
+#### Forms panel
+
+Saving either phase calls `FormsPanel.save({ type: 'budget-tentative' | 'budget-revised', ... })`. The Forms panel renders two separate cards — "Budget — Tentative" and "Budget — Revised" — showing non-zero projected line items, section totals, and the projected net.
+
+**CSS classes:** `.budget-modal-card`, `.budget-table`, `.budget-th`, `.budget-td`, `.budget-input`, `.budget-total-row`, `.budget-net-bar`, `.budget-var-favorable`, `.budget-var-unfavorable` — all in `style.css`.
+
+**`Budget.ITEMS`** — array of `{ key, label, section, histKey }`. `section` is `'revenue'` or `'expense'`; `histKey` matches a field in `History.rounds`. Edit here to add, remove, or rename line items.
 
 ---
 
@@ -888,6 +943,7 @@ Students drag each item into an Assets or Liabilities column. On completion, Own
 - Member attendance: active members contribute to weekly headcount (free gate admission); free-parking plans skip parking fees; non-free-parking member vehicles pay standard rate; all four benefit types (admission, parking, food discount, merch discount) recorded as a single gross-revenue offset expense
 - Quarterly P&L statement exercise: drag-and-drop modal every 13 rounds; real quarterly totals from `History`; items lock on correct placement; wrong items return to bank for retry; net income revealed on completion; includes Food & Beverage, Memberships (revenue), and Membership Benefits (expense)
 - Annual balance sheet exercise: drag-and-drop modal every 52 rounds (chained after the year-end P&L); point-in-time snapshot of assets (cash, merchandise inventory, food stock, park equipment, construction in progress) and liabilities (outstanding loans); Owner's Equity revealed on completion
+- Two-phase quarterly budget exercise: Phase 1 (tentative, round 11 of each quarter) fires before the P&L — player forecasts blind with prior quarter's revised budget as a reference, inputs start at $0; Phase 2 (revised, round 1 of the next quarter) fires after the P&L — shows tentative budget and last quarter's actuals side by side, inputs pre-populated from Phase 1; live-updating section subtotals and projected net bar; both phases saved as separate cards in the Forms review panel
 - Visitor animation system: white-dot sprites spawn at the gate every 5 s (capped at 10), walk A* routes between rides and shops, hide at each stop for 5 s, then return home after 6 visits; brown shrinking trash particles drop every 8 tile crossings (interval scales with mess factor); green rising `$` coin particles appear on spawn and on leaving food/merch shops; all rendered on a canvas overlay with no simulation impact
 
 ## What's not yet implemented (see `reqs.md`)
