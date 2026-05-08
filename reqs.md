@@ -122,3 +122,5 @@ Edu modes. Let teachers pick a focus and only enable features that help educate 
 Taxes! Make people fill out a tax form for their business and then they have to have the cash on hand to pay taxes when they come due.
 
 Membership plans. I meant to so this and i never did.
+
+Add trees that have to be demolished before you can build in some areas. Add ability to do land purchases and expand your park size. Add water way that you cannot demolish or build rides over, only paths. But they count as decorative tiles.
