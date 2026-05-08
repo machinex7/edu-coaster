@@ -40,9 +40,67 @@ const FormsPanel = {
   // Render all form cards into the panel body.
   buildPanel() {
     document.getElementById('forms-panel-body').innerHTML = [
+      this._renderBudgetCard(),
       this._renderPLCard(),
       this._renderBSCard(),
     ].join('');
+  },
+
+  // Render the budget projection review card, or a placeholder if not yet completed.
+  _renderBudgetCard() {
+    const r   = this._records.budget;
+    const hdr = '<div class="fp-form-title">Budget Projection</div>';
+    if (!r) {
+      return `<div class="fp-card">${hdr}<p class="fp-empty">Not yet completed.</p></div>`;
+    }
+
+    // Build Revenue section rows (skip zero-projected items).
+    const revenueRows = Budget.ITEMS
+      .filter(i => i.section === 'revenue' && (r.projection[i.key] || 0) !== 0)
+      .map(i => `
+        <div class="fp-item-row">
+          <span class="fp-item-label">${i.label}</span>
+          <span class="fp-item-amount">$${Math.round(r.projection[i.key] || 0).toLocaleString()}</span>
+        </div>`).join('');
+
+    // Build Expenses section rows (skip zero-projected items).
+    const expenseRows = Budget.ITEMS
+      .filter(i => i.section === 'expense' && (r.projection[i.key] || 0) !== 0)
+      .map(i => `
+        <div class="fp-item-row">
+          <span class="fp-item-label">${i.label}</span>
+          <span class="fp-item-amount">$${Math.round(r.projection[i.key] || 0).toLocaleString()}</span>
+        </div>`).join('');
+
+    const netSign  = r.netProjected >= 0 ? '+' : '−';
+    const netClass = r.netProjected >= 0 ? 'fp-net-pos' : 'fp-neg';
+    const netLabel = r.netProjected >= 0 ? 'Projected Profit' : 'Projected Loss';
+
+    const sections = `
+      <div class="fp-section">
+        <div class="fp-section-header fp-revenue">Revenue</div>
+        ${revenueRows || '<div class="fp-item-row"><span class="fp-item-label" style="color:#4b5563">None projected</span></div>'}
+        <div class="fp-section-total">
+          <span>Total</span>
+          <span>$${Math.round(r.revenueTotal).toLocaleString()}</span>
+        </div>
+      </div>
+      <div class="fp-section">
+        <div class="fp-section-header fp-expense">Expenses</div>
+        ${expenseRows || '<div class="fp-item-row"><span class="fp-item-label" style="color:#4b5563">None projected</span></div>'}
+        <div class="fp-section-total">
+          <span>Total</span>
+          <span>$${Math.round(r.expenseTotal).toLocaleString()}</span>
+        </div>
+      </div>`;
+
+    const footer = `
+      <div class="fp-result-row ${netClass}">
+        <span>${netLabel}</span>
+        <span>${netSign}$${Math.abs(Math.round(r.netProjected)).toLocaleString()}</span>
+      </div>`;
+
+    return `<div class="fp-card">${hdr}<div class="fp-period">${r.label}</div>${sections}${footer}</div>`;
   },
 
   // Render the P&L review card, or a placeholder if not yet completed.

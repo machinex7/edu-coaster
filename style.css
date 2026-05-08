@@ -943,6 +943,137 @@ header h1 {
 
 .bs-equity-wrong { color: #f87171; }
 
+/* ── Budget projection form ─────────────────────────────────────────────── */
+
+/* Wider than the PL card to accommodate the three data columns. */
+.budget-modal-card {
+  min-width: 520px;
+  max-width: 860px;
+  width: 90vw;
+  gap: 14px;
+}
+
+.budget-instructions {
+  font-size: 0.82rem;
+  color: #9ca3af;
+  margin: 0;
+}
+
+/* Scrollable container holding the Revenue and Expenses section tables. */
+.budget-table-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.budget-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.budget-th {
+  padding: 6px 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-align: right;
+  border-bottom: 1px solid #374151;
+  color: #9ca3af;
+  white-space: nowrap;
+}
+
+/* Left-aligned section name header cell. */
+.budget-th-label {
+  text-align: left;
+  width: 35%;
+}
+
+/* Section name colours match the PL statement. */
+.budget-revenue-header   { color: #4ade80; }
+.budget-expense-header   { color: #f87171; }
+/* New-projection column header colours match their section. */
+.budget-input-hdr-revenue { color: #4ade80; }
+.budget-input-hdr-expense { color: #f87171; }
+
+.budget-td {
+  padding: 5px 10px;
+  font-size: 0.82rem;
+  border-bottom: 1px solid #1f2937;
+  color: #e5e7eb;
+  text-align: right;
+  vertical-align: middle;
+}
+
+.budget-td-label {
+  text-align: left;
+  color: #d1d5db;
+}
+
+/* Number cells hold dollar amounts and an optional variance badge. */
+.budget-td-num {
+  white-space: nowrap;
+}
+
+/* Input cell is slightly wider to give the number field room. */
+.budget-td-input {
+  width: 140px;
+}
+
+.budget-input-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  background: #111827;
+  border: 1px solid #374151;
+  border-radius: 5px;
+  padding: 3px 6px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.budget-dollar {
+  font-size: 0.78rem;
+  color: #6b7280;
+  flex-shrink: 0;
+}
+
+.budget-input {
+  background: transparent;
+  border: none;
+  color: #e5e7eb;
+  font-size: 0.82rem;
+  flex: 1;
+  min-width: 0;
+  text-align: right;
+  outline: none;
+}
+
+.budget-input:focus { color: #fff; }
+
+/* Hide browser number spinners. */
+.budget-input::-webkit-inner-spin-button,
+.budget-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.budget-input[type=number]               { -moz-appearance: textfield; }
+
+/* Small variance badge shown next to the Actual column value. */
+.budget-variance {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+/* Green = result moved in the right direction (more revenue or less expense). */
+.budget-var-favorable   { color: #4ade80; }
+/* Red = result moved in the wrong direction. */
+.budget-var-unfavorable { color: #f87171; }
+
+/* Subtle row hover to help the eye track across wide tables. */
+.budget-row:hover .budget-td { background: #111827; }
+
 /* ── Notification stack ── */
 #notification-stack {
   position: fixed;

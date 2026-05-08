@@ -235,6 +235,7 @@ function initHUD() {
   document.getElementById('modal-close-btn').addEventListener('click', hideRoundSummary);
   PLStatement.init();
   BalanceSheet.init();
+  Budget.init();
   Concessions.init();
   Staff.initPanel();
   initInventoryPanel();
@@ -284,6 +285,8 @@ function advanceRound() {
   Unlock.tick();
   _tickDemographicConfidence(report.weeklyAttendance);
   if (round % 13 === 1 && round > 1) Awards.checkQuarterly();
+  // Schedule the budget projection form four rounds before each quarter ends.
+  if (round % 13 === 9) Budget.pending = true;
   // Schedule the P&L exercise to appear after this round's summary closes.
   if (round % 13 === 0) PLStatement.pending = true;
   // Schedule the annual balance sheet to chain after the P&L at year-end.
@@ -356,9 +359,10 @@ function showRoundSummary(report) {
 
 function hideRoundSummary() {
   document.getElementById('round-modal').classList.add('hidden');
-  // Chain into the P&L exercise at the end of each quarter (P&L itself chains
-  // to the balance sheet at year-end via PLStatement.hide).
-  if (PLStatement.pending)      PLStatement.show();
+  // Chain into the budget form mid-quarter, then the P&L at quarter-end (P&L
+  // itself chains to the balance sheet at year-end via PLStatement.hide).
+  if (Budget.pending)            Budget.show();
+  else if (PLStatement.pending)  PLStatement.show();
   else if (BalanceSheet.pending) BalanceSheet.show();
 }
 
