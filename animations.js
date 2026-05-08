@@ -8,17 +8,20 @@
 
 const Animations = {
 
-  // Maximum simultaneously rendered visitor sprites.
-  PERSON_LIMIT: 10,
+  // Hard cap on simultaneously rendered visitor sprites.
+  PERSON_LIMIT: 25,
+
+  // One sprite is shown per this many weekly visitors (scales up to PERSON_LIMIT).
+  ATTENDANCE_PER_PERSON: 50,
 
   // Walking speed: one CELL_STEP per 2 seconds (px per ms).
-  SPEED: CELL_STEP / 2000,
+  SPEED: CELL_STEP / 1200,
 
   // Milliseconds a visitor pauses (hidden) at each destination.
   VISIT_DURATION: 5000,
 
   // Milliseconds between gate spawns.
-  SPAWN_INTERVAL: 5000,
+  SPAWN_INTERVAL: 3000,
 
   // Number of destinations a visitor makes before returning to the gate.
   MAX_STOPS: 6,
@@ -187,10 +190,18 @@ const Animations = {
 
   // ── person lifecycle ─────────────────────────────────────────────────────
 
+  // Returns the current sprite cap: 1 sprite per ATTENDANCE_PER_PERSON weekly
+  // visitors from the last round, bounded to [3, PERSON_LIMIT].
+  _effectiveLimit() {
+    const last = History.rounds[History.rounds.length - 1];
+    const attendance = last ? last.attendance : 0;
+    return Math.min(this.PERSON_LIMIT, Math.max(3, Math.floor(attendance / this.ATTENDANCE_PER_PERSON)));
+  },
+
   // Creates one visitor at the gate (if under the cap) and sends them
   // toward a random reachable destination.
   _spawnPerson() {
-    if (this.people.length >= this.PERSON_LIMIT) return;
+    if (this.people.length >= this._effectiveLimit()) return;
     if (gameStage !== STAGE.PLAY)               return;
     if (this.paths.length === 0)                return;
 
@@ -383,6 +394,8 @@ const Animations = {
     ctx.fillStyle = 'white';
     for (const p of this.people) {
       if (p.state === 'visiting') continue;
+      // Hide as soon as the person steps off the last path tile into a destination.
+      if (p.wpIdx >= p.waypoints.length - 1) continue;
       ctx.beginPath();
       ctx.arc(p.x, p.y, this.DOT_RADIUS, 0, Math.PI * 2);
       ctx.fill();
@@ -390,7 +403,7 @@ const Animations = {
 
     // Draw coin particles on top of everything; fade and rise like Mario coins.
     ctx.save();
-    ctx.font         = 'bold 13px monospace';
+    ctx.font         = 'bold 20px monospace';
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle    = '#4ade80';
