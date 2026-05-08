@@ -156,7 +156,7 @@ const Animations = {
     for (let i = 0; i < nodes.length; i++) {
       for (let j = i + 1; j < nodes.length; j++) {
         const result = this._pathBetween(nodes[i], nodes[j]);
-        if (result) this.paths.push({ from: nodes[i], to: nodes[j], gridPath: result.gridPath });
+        if (result) this.paths.push({ from: nodes[i], to: nodes[j], gridPath: result.path });
       }
     }
   },
