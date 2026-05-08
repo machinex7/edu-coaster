@@ -1,18 +1,28 @@
-// budget.js — Quarterly budget projection exercise.
+// budget.js — Two-phase quarterly budget projection exercise.
 //
-// Fires at round % 13 === 9 (four rounds before each quarter ends). Students
-// enter projected revenue and expense totals for the current quarter. On
-// subsequent firings, they first see how last quarter's actuals compared to
-// their prior projection before setting the new quarter's budget.
+// Phase 1 — Tentative: fires at round % 13 === 11 (two rounds before quarter
+// end). Shows the prior quarter's revised budget as a planning reference;
+// student enters a blind forecast for the upcoming quarter before the P&L.
+//
+// Phase 2 — Revised: fires at round % 13 === 1 (one week after the P&L,
+// round > 1). Shows the tentative budget and last quarter's actuals side by
+// side; student refines with full information.
 
 const Budget = {
 
-  // Set to true by hud.js at round % 13 === 9; cleared when the modal opens.
-  pending: false,
+  // Set to true by hud.js; cleared when the modal opens.
+  pendingTentative: false,
+  pendingRevised:   false,
 
-  // Stored projections keyed by game-quarter number (1-based, across all years).
-  // { 1: { gate: 50000, parking: 3000, ... }, 2: { ... }, ... }
-  _projections: {},
+  // Tentative budgets keyed by target game-quarter number (1-based, game-wide).
+  _tentative: {},
+
+  // Revised budgets keyed by target game-quarter number.
+  _revised: {},
+
+  // Active phase and target quarter; set in show(), read in _save().
+  _currentPhase:      null,
+  _currentTargetQNum: null,
 
   // All revenue and expense line items, matching PLStatement categories and histKeys.
   ITEMS: [
@@ -44,7 +54,7 @@ const Budget = {
     return Math.ceil(round / 13);
   },
 
-  // Returns "Q3 2024" style label for the last calendar date in the given game quarter.
+  // Returns "Q3 2024" style label for the calendar period of the given game quarter.
   // Mirrors the getDateLabel() calculation in hud.js using the quarter's last round.
   _calendarLabel(gameQNum) {
     const lastRound    = gameQNum * 13;
@@ -61,49 +71,44 @@ const Budget = {
     return slice.reduce((s, r) => s + (r[histKey] || 0), 0);
   },
 
-  // Build and display the modal for the current projection period.
-  show() {
-    this.pending = false;
-    const qNum      = this._gameQuarterNum();
-    const priorQNum = qNum - 1;
+  // Build and display the modal for the given phase ('tentative' or 'revised').
+  show(phase) {
+    this.pendingTentative = false;
+    this.pendingRevised   = false;
 
-    // Retrieve the projection that was made for the quarter that just ended.
-    const priorProj = priorQNum >= 1 ? (this._projections[priorQNum] || null) : null;
+    const currentQNum = this._gameQuarterNum();
 
-    // Prior quarter actuals: exactly the 13 History rounds for game Q(priorQNum).
-    // Available only after at least one full quarter of play has been recorded.
-    let priorActuals = null;
-    if (priorQNum >= 1) {
-      const startIdx = (priorQNum - 1) * 13;
-      const endIdx   = priorQNum * 13;
-      const slice    = History.rounds.slice(startIdx, endIdx);
-      if (slice.length === 13) {
-        priorActuals = {};
-        for (const item of this.ITEMS) {
-          priorActuals[item.key] = this._sumSlice(slice, item.histKey);
-        }
-      }
+    // Tentative: projecting the NEXT quarter (about to start).
+    // Revised: refining the CURRENT quarter (just started after the P&L).
+    const targetQNum  = phase === 'tentative' ? currentQNum + 1 : currentQNum;
+    const targetLabel = this._calendarLabel(targetQNum);
+
+    const compCols     = this._buildCompCols(phase, targetQNum);
+    const hasComp      = compCols.length > 0;
+
+    // Instructions vary by phase and whether comparison data is available.
+    let instructions;
+    if (phase === 'tentative') {
+      instructions = hasComp
+        ? `Review last quarter's budget, then enter your tentative ${targetLabel} projections before seeing the final P&L.`
+        : `Enter your tentative revenue and expense projections for ${targetLabel}.`;
+    } else {
+      instructions = hasComp
+        ? `You've seen the P&L — review your tentative budget and last quarter's actuals, then revise your ${targetLabel} projections.`
+        : `Now that you've seen the P&L, enter your revised ${targetLabel} budget.`;
     }
 
-    const hasComparison = priorProj !== null || priorActuals !== null;
-    const currentLabel  = this._calendarLabel(qNum);
-    const priorLabel    = priorQNum >= 1 ? this._calendarLabel(priorQNum) : '';
+    document.getElementById('budget-quarter-label').textContent = `${targetLabel} ${phase === 'tentative' ? 'Tentative' : 'Revised'} Budget`;
+    document.getElementById('budget-instructions').textContent  = instructions;
 
-    document.getElementById('budget-quarter-label').textContent = `${currentLabel} Budget`;
-    document.getElementById('budget-instructions').textContent  = hasComparison
-      ? `Review last quarter's performance, then set your ${currentLabel} projections.`
-      : `Set your projected revenue and expenses for ${currentLabel}.`;
+    // Revised phase pre-populates inputs from the tentative values; tentative starts at 0.
+    const inputDefaults = phase === 'revised' ? (this._tentative[targetQNum] || null) : null;
 
     const wrapper = document.getElementById('budget-table-wrapper');
     wrapper.innerHTML = '';
-    wrapper.appendChild(
-      this._buildSection('revenue', 'Revenue', priorProj, priorActuals, priorLabel, hasComparison)
-    );
-    wrapper.appendChild(
-      this._buildSection('expense', 'Expenses', priorProj, priorActuals, priorLabel, hasComparison)
-    );
+    wrapper.appendChild(this._buildSection('revenue', 'Revenue',  compCols, inputDefaults));
+    wrapper.appendChild(this._buildSection('expense', 'Expenses', compCols, inputDefaults));
 
-    // Net bar sits below both tables and updates live as the player types.
     const netBar = document.createElement('div');
     netBar.className = 'budget-net-bar';
     netBar.innerHTML = `
@@ -111,55 +116,79 @@ const Budget = {
       <span class="budget-net-value" id="budget-net-value"></span>`;
     wrapper.appendChild(netBar);
 
+    this._currentPhase      = phase;
+    this._currentTargetQNum = targetQNum;
     this._bindTotals();
     document.getElementById('budget-modal').classList.remove('hidden');
   },
 
-  // Build one section (Revenue or Expenses) as a table with optional comparison columns.
-  // Includes a tfoot row showing column subtotals; the Projection total updates live.
-  _buildSection(sectionKey, sectionLabel, priorProj, priorActuals, priorLabel, hasComparison) {
+  // Assemble the read-only comparison column definitions for the given phase.
+  // Each column: { header: string, values: { key: number } }
+  _buildCompCols(phase, targetQNum) {
+    const cols = [];
+
+    if (phase === 'tentative') {
+      // Show the previous quarter's revised budget so the student has a scale reference.
+      const priorRevised = this._revised[targetQNum - 1];
+      if (priorRevised) {
+        cols.push({
+          header: `${this._calendarLabel(targetQNum - 1)} Budget`,
+          values: priorRevised,
+        });
+      }
+    } else {
+      // Revised: show the tentative budget they submitted before the P&L.
+      const tentative = this._tentative[targetQNum];
+      if (tentative) {
+        cols.push({ header: 'Tentative Budget', values: tentative });
+      }
+
+      // Also show last quarter's actuals as a calibration reference.
+      const priorQNum = targetQNum - 1;
+      if (priorQNum >= 1) {
+        const startIdx = (priorQNum - 1) * 13;
+        const endIdx   = priorQNum * 13;
+        const slice    = History.rounds.slice(startIdx, endIdx);
+        if (slice.length === 13) {
+          const actuals = {};
+          for (const item of this.ITEMS) {
+            actuals[item.key] = this._sumSlice(slice, item.histKey);
+          }
+          cols.push({
+            header: `${this._calendarLabel(priorQNum)} Actual`,
+            values: actuals,
+          });
+        }
+      }
+    }
+
+    return cols;
+  },
+
+  // Build one section (Revenue or Expenses) as a table with any number of
+  // read-only comparison columns followed by the live projection input column.
+  _buildSection(sectionKey, sectionLabel, compCols, inputDefaults) {
     const items    = this.ITEMS.filter(i => i.section === sectionKey);
     const hdrClass = sectionKey === 'revenue' ? 'budget-revenue-header' : 'budget-expense-header';
     const colClass = sectionKey === 'revenue' ? 'budget-input-hdr-revenue' : 'budget-input-hdr-expense';
 
-    let extraHeaders = '';
-    if (hasComparison) {
-      extraHeaders = `
-        <th class="budget-th">${priorLabel} Projection</th>
-        <th class="budget-th">${priorLabel} Actual</th>`;
-    }
+    const extraHeaders = compCols
+      .map(col => `<th class="budget-th">${col.header}</th>`)
+      .join('');
 
     const rows = items.map(item => {
-      const prevProj   = priorProj    ? (priorProj[item.key]    || 0) : null;
-      const prevActual = priorActuals ? (priorActuals[item.key] || 0) : null;
+      const compCells = compCols.map(col => {
+        const val = col.values ? (col.values[item.key] || 0) : 0;
+        return `<td class="budget-td budget-td-num">$${Math.round(val).toLocaleString()}</td>`;
+      }).join('');
 
-      let comparisonCells = '';
-      if (hasComparison) {
-        const projStr   = prevProj   !== null ? `$${Math.round(prevProj).toLocaleString()}`   : '—';
-        const actualStr = prevActual !== null ? `$${Math.round(prevActual).toLocaleString()}` : '—';
-
-        let varianceEl = '';
-        if (prevProj !== null && prevActual !== null) {
-          const variance  = prevActual - prevProj;
-          // Revenue: higher actual is favorable; expense: lower actual is favorable.
-          const favorable = sectionKey === 'revenue' ? variance >= 0 : variance <= 0;
-          const varClass  = favorable ? 'budget-var-favorable' : 'budget-var-unfavorable';
-          const varSign   = variance >= 0 ? '+' : '−';
-          varianceEl = `<span class="budget-variance ${varClass}">${varSign}$${Math.abs(Math.round(variance)).toLocaleString()}</span>`;
-        }
-
-        comparisonCells = `
-          <td class="budget-td budget-td-num">${projStr}</td>
-          <td class="budget-td budget-td-num">${actualStr}${varianceEl}</td>`;
-      }
-
-      // Pre-populate input with prior actuals as a planning baseline; default to 0.
-      const defaultVal = prevActual !== null ? Math.round(prevActual) : 0;
+      // Revised phase starts from tentative values; tentative starts blank (0).
+      const defaultVal = inputDefaults ? Math.round(inputDefaults[item.key] || 0) : 0;
 
       return `
         <tr class="budget-row">
           <td class="budget-td budget-td-label">${item.label}</td>
-          ${comparisonCells}
+          ${compCells}
           <td class="budget-td budget-td-input">
             <div class="budget-input-wrap">
               <span class="budget-dollar">$</span>
@@ -169,28 +198,13 @@ const Budget = {
         </tr>`;
     }).join('');
 
-    // Subtotals for the comparison columns (static; computed once at render time).
-    const priorProjTotal   = priorProj    ? items.reduce((s, i) => s + (priorProj[i.key]    || 0), 0) : null;
-    const priorActualTotal = priorActuals ? items.reduce((s, i) => s + (priorActuals[i.key] || 0), 0) : null;
-
-    let totalComparisonCells = '';
-    if (hasComparison) {
-      const projTotalStr   = priorProjTotal   !== null ? `$${Math.round(priorProjTotal).toLocaleString()}`   : '—';
-      const actualTotalStr = priorActualTotal !== null ? `$${Math.round(priorActualTotal).toLocaleString()}` : '—';
-
-      let totalVarianceEl = '';
-      if (priorProjTotal !== null && priorActualTotal !== null) {
-        const variance  = priorActualTotal - priorProjTotal;
-        const favorable = sectionKey === 'revenue' ? variance >= 0 : variance <= 0;
-        const varClass  = favorable ? 'budget-var-favorable' : 'budget-var-unfavorable';
-        const varSign   = variance >= 0 ? '+' : '−';
-        totalVarianceEl = `<span class="budget-variance ${varClass}">${varSign}$${Math.abs(Math.round(variance)).toLocaleString()}</span>`;
-      }
-
-      totalComparisonCells = `
-        <td class="budget-td budget-total-num">${projTotalStr}</td>
-        <td class="budget-td budget-total-num">${actualTotalStr}${totalVarianceEl}</td>`;
-    }
+    // Static subtotals for each comparison column.
+    const totalCompCells = compCols.map(col => {
+      const total = col.values
+        ? items.reduce((s, i) => s + (col.values[i.key] || 0), 0)
+        : 0;
+      return `<td class="budget-td budget-total-num">$${Math.round(total).toLocaleString()}</td>`;
+    }).join('');
 
     const div = document.createElement('div');
     div.innerHTML = `
@@ -207,7 +221,7 @@ const Budget = {
           <tfoot>
             <tr class="budget-total-row">
               <td class="budget-td budget-total-label">Total</td>
-              ${totalComparisonCells}
+              ${totalCompCells}
               <td class="budget-td budget-total-proj" id="budget-total-${sectionKey}">$0</td>
             </tr>
           </tfoot>
@@ -216,7 +230,7 @@ const Budget = {
     return div.firstElementChild;
   },
 
-  // Wire input event listeners so the section totals and net bar update as the player types.
+  // Wire input event listeners so section totals and the net bar update as the player types.
   _bindTotals() {
     document.querySelectorAll('#budget-table-wrapper .budget-input').forEach(input => {
       input.addEventListener('input', () => this._updateTotals());
@@ -250,14 +264,17 @@ const Budget = {
     }
   },
 
-  // Collect input values, store under current quarter number, save to FormsPanel, and close.
+  // Collect input values, store to the correct phase dict, save to FormsPanel, and close.
   _save() {
-    const qNum       = this._gameQuarterNum();
+    const phase      = this._currentPhase;
+    const qNum       = this._currentTargetQNum;
     const projection = {};
     document.querySelectorAll('#budget-table-wrapper .budget-input').forEach(input => {
       projection[input.dataset.key] = parseFloat(input.value) || 0;
     });
-    this._projections[qNum] = projection;
+
+    if (phase === 'tentative') this._tentative[qNum] = projection;
+    else                       this._revised[qNum]   = projection;
 
     const revenueTotal = this.ITEMS
       .filter(i => i.section === 'revenue')
@@ -267,7 +284,8 @@ const Budget = {
       .reduce((s, i) => s + (projection[i.key] || 0), 0);
 
     FormsPanel.save({
-      type:         'budget',
+      type:         `budget-${phase}`,
+      phase,
       label:        document.getElementById('budget-quarter-label').textContent,
       quarterNum:   qNum,
       projection,

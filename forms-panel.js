@@ -40,16 +40,18 @@ const FormsPanel = {
   // Render all form cards into the panel body.
   buildPanel() {
     document.getElementById('forms-panel-body').innerHTML = [
-      this._renderBudgetCard(),
+      this._renderBudgetCard('budget-tentative', 'Budget — Tentative'),
+      this._renderBudgetCard('budget-revised',   'Budget — Revised'),
       this._renderPLCard(),
       this._renderBSCard(),
     ].join('');
   },
 
-  // Render the budget projection review card, or a placeholder if not yet completed.
-  _renderBudgetCard() {
-    const r   = this._records.budget;
-    const hdr = '<div class="fp-form-title">Budget Projection</div>';
+  // Render a budget card (tentative or revised), or a placeholder if not yet completed.
+  // typeKey matches the record.type saved by Budget._save(); title is the panel heading.
+  _renderBudgetCard(typeKey, title) {
+    const r   = this._records[typeKey];
+    const hdr = `<div class="fp-form-title">${title}</div>`;
     if (!r) {
       return `<div class="fp-card">${hdr}<p class="fp-empty">Not yet completed.</p></div>`;
     }
