@@ -302,8 +302,14 @@ const Animations = {
       if (p.state === 'visiting') {
         p.visitTimer -= dt;
         if (p.visitTimer <= 0) {
+          // Check the node they're leaving before _pickNextDestination reassigns toNode.
+          const visited   = p.toNode;
+          const shopDef   = visited.shopId && Shopping.catalog.find(s => s.id === visited.shopId);
+          const isShop    = shopDef && (shopDef.shopType === 'food' || shopDef.shopType === 'merchandise');
           p.stops++;
           this._pickNextDestination(p);
+          // Spawn coin above the guest as they re-emerge from a shop.
+          if (isShop && p.state === 'walking') this._spawnCoin(p.x, p.y);
         }
         continue;
       }
