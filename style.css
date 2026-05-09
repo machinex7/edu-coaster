@@ -943,6 +943,177 @@ header h1 {
 
 .bs-equity-wrong { color: #f87171; }
 
+/* ── Cash flow statement exercise modal ── */
+.cf-modal-card {
+  min-width: 600px;
+  max-width: 700px;
+  gap: 12px;
+}
+
+.cf-instructions {
+  font-size: 0.82rem;
+  color: #9ca3af;
+  margin: 0;
+}
+
+/* Bank: unsorted items sit here before being dragged to a zone. */
+.cf-bank {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 52px;
+  padding: 10px;
+  background: #111827;
+  border: 2px dashed #374151;
+  border-radius: 8px;
+  transition: border-color 0.15s;
+}
+
+.cf-bank.cf-zone-over { border-color: #6b7280; }
+
+.cf-zones {
+  display: flex;
+  gap: 10px;
+}
+
+/* Each drop-target column. */
+.cf-zone {
+  flex: 1;
+  padding: 10px;
+  background: #111827;
+  border: 2px dashed #374151;
+  border-radius: 8px;
+  min-height: 100px;
+  transition: border-color 0.15s;
+}
+
+#cf-zone-operating.cf-zone-over { border-color: #4ade80; }
+#cf-zone-investing.cf-zone-over { border-color: #facc15; }
+#cf-zone-financing.cf-zone-over { border-color: #a78bfa; }
+
+.cf-zone-header {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+}
+
+.cf-operating-header { color: #4ade80; }
+.cf-investing-header  { color: #facc15; }
+.cf-financing-header  { color: #a78bfa; }
+
+.cf-zone-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Individual draggable item card. */
+.cf-card-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  padding: 8px 10px;
+  cursor: grab;
+  user-select: none;
+  transition: border-color 0.15s, opacity 0.15s;
+}
+
+.cf-card-item:active { cursor: grabbing; }
+.cf-card-item.cf-dragging { opacity: 0.35; }
+
+.cf-card-item.cf-correct   { border-color: #4ade80; }
+.cf-card-item.cf-incorrect { border-color: #f87171; }
+
+.cf-card-item.cf-locked {
+  cursor: default;
+  opacity: 0.75;
+}
+
+#cf-submit-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.cf-card-label {
+  flex: 1;
+  font-size: 0.82rem;
+  color: #e5e7eb;
+}
+
+.cf-card-amount {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #9ca3af;
+}
+
+/* Upward arrow = inflow, downward = outflow. */
+.cf-card-arrow {
+  font-size: 0.7rem;
+  width: 0.8rem;
+  text-align: center;
+}
+
+.cf-arrow-in  { color: #4ade80; }
+.cf-arrow-out { color: #f87171; }
+
+.cf-card-status {
+  width: 1rem;
+  text-align: center;
+  font-size: 0.9rem;
+}
+
+.cf-card-item.cf-correct .cf-card-status { color: #4ade80; }
+
+/* Result area shown after submission. */
+.cf-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: #111827;
+  border-radius: 8px;
+}
+
+.cf-score {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #f3f4f6;
+}
+
+.cf-totals {
+  width: 100%;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cf-totals-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: #d1d5db;
+}
+
+.cf-totals-divider {
+  border-top: 1px solid #374151;
+  margin: 4px 0;
+}
+
+.cf-totals-net {
+  font-weight: 700;
+  color: #f3f4f6;
+}
+
+.cf-net-pos { color: #4ade80; }
+.cf-net-neg { color: #f87171; }
+
 /* ── Budget projection form ─────────────────────────────────────────────── */
 
 /* Wider than the PL card to accommodate the three data columns. */

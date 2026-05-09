@@ -122,6 +122,9 @@ const Banking = {
   // Cumulative across all loans; drives future rate and LTV penalties.
   totalMissedPayments: 0,
 
+  // Loan amount disbursed this round; reset by History.record() after each round.
+  roundDisbursement: 0,
+
   // ── Savings account ──────────────────────────────────────────────────────────
 
   // Current balance held in the savings account (separate from cash).
@@ -681,6 +684,7 @@ const Banking = {
       // Disburse — credit cash, move to active loans, clear application
       const { amount: amt, purpose: pur, term, rate, covenants, covenantPenaltyPct } = this.loanApplication;
       money += amt;
+      this.roundDisbursement += amt;
       this.activeLoans.push({
         id: Date.now(),
         amount: amt, purpose: pur, term, rate, covenants, covenantPenaltyPct,

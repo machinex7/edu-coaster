@@ -70,8 +70,11 @@ const History = {
       parkingBusRiders:       report.busRiders,
       parkingBusCost:         report.busCost,
       parkingSpendingMult:    report.parkingSpendingMultiplier,
+      loanRepayment:       report.loanRepayments,
+      loanDisbursement:    Banking.roundDisbursement,
       surveys:             Survey.drainPending(),
     });
+    Banking.roundDisbursement = 0;
   },
 
 };

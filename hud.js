@@ -235,6 +235,7 @@ function initHUD() {
   document.getElementById('modal-close-btn').addEventListener('click', hideRoundSummary);
   PLStatement.init();
   BalanceSheet.init();
+  CashFlow.init();
   Budget.init();  Concessions.init();
   Staff.initPanel();
   initInventoryPanel();
@@ -290,8 +291,9 @@ function advanceRound() {
   if (round % 13 === 1 && round > 1) Budget.pendingRevised = true;
   // Schedule the P&L exercise to appear after this round's summary closes.
   if (round % 13 === 0) PLStatement.pending = true;
-  // Schedule the annual balance sheet to chain after the P&L at year-end.
+  // Schedule the annual balance sheet and cash flow statement to chain after the P&L at year-end.
   if (round % 52 === 0) BalanceSheet.pending = true;
+  if (round % 52 === 0) CashFlow.pending = true;
   updateLockedPanels();
   updateHUD();
   refreshRidesPanel();
@@ -360,10 +362,12 @@ function showRoundSummary(report) {
 
 function hideRoundSummary() {
   document.getElementById('round-modal').classList.add('hidden');
-  // Budget (tentative) → P&L → Budget (revised); P&L chains to balance sheet at year-end.
+  // Budget (tentative) → P&L → Balance Sheet → Cash Flow → Budget (revised).
+  // P&L chains to Balance Sheet; Balance Sheet chains to Cash Flow at year-end.
   if (Budget.pendingTentative)   Budget.show('tentative');
   else if (PLStatement.pending)  PLStatement.show();
   else if (BalanceSheet.pending) BalanceSheet.show();
+  else if (CashFlow.pending)     CashFlow.show();
   else if (Budget.pendingRevised) Budget.show('revised');
 }
 
