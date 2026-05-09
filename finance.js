@@ -342,16 +342,13 @@ const Finance = {
 
   // ── Mess generation ──────────────────────────────────────────────────────────
 
-  // Sum of tree tiles plus 2× decoration tiles (fountain, garden, statue).
-  // Higher values reflect a more visually appealing and green park.
+  // Sum of appeal values across all installed facilities.
+  // Each facility's appeal is defined in facilities.json; omitted entries contribute 0.
   calcParkAppeal() {
-    const treeTiles = installedFacilities.filter(f => f.facilityId === FACILITY_ID.TREE).length;
-    const decoTiles = installedFacilities.filter(f =>
-      f.facilityId === FACILITY_ID.FOUNTAIN ||
-      f.facilityId === FACILITY_ID.GARDEN   ||
-      f.facilityId === FACILITY_ID.STATUE
-    ).length;
-    return treeTiles + decoTiles * 2;
+    return installedFacilities.reduce((sum, f) => {
+      const def = facilities.find(d => d.id === f.facilityId);
+      return sum + (def?.appeal ?? 0);
+    }, 0);
   },
 
   // Exponential penalty from unhandled mess spread across path and decorative tiles.
