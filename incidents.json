@@ -621,5 +621,53 @@
         ]
       }
     ]
+  },
+
+  {
+    "id": "free_childcare",
+    "name": "Free Childcare Act",
+    "emoji": "👶",
+    "weight": 2,
+    "minRound": 12,
+    "cooldown": 999,
+    "phases": [
+      {
+        "name": "Policy Announcement",
+        "durationWeeks": 2,
+        "flavor": [
+          "👶 The government has signed the Free Childcare Act into law. Universal no-cost childcare begins next month. Young families across the country are already reshuffling their discretionary budgets — and amusement parks are near the top of the list.",
+          "👶 Economists are projecting a sustained increase in family leisure spending as childcare costs vanish from household budgets. The child and family visitor market is about to grow permanently."
+        ],
+        "effects": [
+          { "type": "demand_multiplier", "value": 1.1 }
+        ]
+      },
+      {
+        "name": "Baby Boom",
+        "durationWeeks": 6,
+        "flavor": [
+          "👶 With childcare costs eliminated, your staff are starting families at triple the normal rate. Expect a sustained surge in parental leave requests. Simultaneously, the Child and Family demographic brackets have permanently doubled in size — a larger market awaits you.",
+          "👶 Parental leave requests are flooding in from across every department. Cross-training staff and maintaining deeper hiring pipelines is now more important than ever.",
+          "👶 The demographic shift is visible in attendance data. Families with young children are visiting more often and in larger groups. Child-friendly attractions and food options are outperforming everything else.",
+          "👶 A generation of new parents is discovering your park. Stroller-friendly paths, mild rides, and family meal options are now strategic priorities, not afterthoughts.",
+          "👶 The baby boom is accelerating your workforce's family formation. Your HR team is managing more parental leave coverage than ever before — a real operational cost of a generous social policy.",
+          "👶 The demographic changes are now structural. The child and family population in your market area has doubled and is not going back. Businesses that positioned early will benefit most."
+        ],
+        "effects": [
+          { "type": "staff_parental_rate_multiplier", "value": 3.0, "timing": "on_start" },
+          { "type": "demographic_count_multiplier", "bracketKey": "AGE_BRACKETS",    "bracketIndices": [0],    "value": 2.0, "timing": "on_start" },
+          { "type": "demographic_count_multiplier", "bracketKey": "HOUSEHOLD_SIZES", "bracketIndices": [2, 3], "value": 2.0, "timing": "on_start" }
+        ]
+      },
+      {
+        "name": "New Normal",
+        "durationWeeks": 2,
+        "flavor": [
+          "👶 The policy has fully settled in. Children and family households now represent a dramatically larger share of the leisure market. Parks that serve them well will have a structural advantage for years to come.",
+          "👶 The Free Childcare era has begun. Your staff will continue having children at elevated rates, and your family visitor base is permanently larger. How you serve that market is up to you."
+        ],
+        "effects": []
+      }
+    ]
   }
 ]

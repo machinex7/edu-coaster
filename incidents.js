@@ -297,6 +297,8 @@ const Incidents = {
 
       case 'demographic_chance_multiplier': {
         // Permanently mutate the targeted demographic brackets' chance values.
+        // Do NOT reset baselineFavorablePopulation — the reduced chance must
+        // create a lasting multiplier < 1 to reflect permanent loss of market share.
         const brackets = Population[effect.bracketKey];
         if (!brackets) break;
         (effect.bracketIndices ?? []).forEach(i => {
@@ -304,8 +306,6 @@ const Incidents = {
             brackets[i].chance = +(brackets[i].chance * effect.value).toFixed(4);
           }
         });
-        // Refresh the baseline so demand multiplier normalises correctly.
-        Population.baselineFavorablePopulation = Population.calcFavorablePopulation();
         this._permanentMods.push({
           label: `${this.active?.def.name ?? 'Incident'}: local/nearby visitor interest permanently reduced.`,
         });
@@ -317,6 +317,33 @@ const Incidents = {
         Population.DESIRED_RIDES += effect.value;
         this._permanentMods.push({
           label: `${this.active?.def.name ?? 'Incident'}: guests now expect ${Population.DESIRED_RIDES} rides per visit.`,
+        });
+        break;
+      }
+
+      case 'staff_parental_rate_multiplier': {
+        // Permanently multiply the per-round chance that a healthy employee
+        // has a child. Staff.processAbsences() reads PARENTAL_LEAVE_RATE directly.
+        Staff.PARENTAL_LEAVE_RATE = +(Staff.PARENTAL_LEAVE_RATE * effect.value).toFixed(6);
+        this._permanentMods.push({
+          label: `${this.active?.def.name ?? 'Incident'}: staff parental leave rate permanently ×${effect.value} (${(Staff.PARENTAL_LEAVE_RATE * 100).toFixed(2)}%/wk).`,
+        });
+        break;
+      }
+
+      case 'demographic_count_multiplier': {
+        // Permanently multiply the population count for targeted demographic
+        // brackets. Does NOT reset baselineFavorablePopulation so the larger
+        // market produces a sustained multiplier > 1 in calcDemandMultiplier().
+        const brackets = Population[effect.bracketKey];
+        if (!brackets) break;
+        (effect.bracketIndices ?? []).forEach(i => {
+          if (brackets[i] != null) {
+            brackets[i].count = Math.round(brackets[i].count * effect.value);
+          }
+        });
+        this._permanentMods.push({
+          label: `${this.active?.def.name ?? 'Incident'}: ${effect.bracketKey} bracket counts permanently ×${effect.value}.`,
         });
         break;
       }
@@ -550,6 +577,10 @@ const Incidents = {
         return `Staff sick-out rate ×${effect.value}`;
       case 'ingredient_cost_multiplier':
         return `${(effect.itemIds ?? []).join(', ')} cost ×${effect.value}`;
+      case 'staff_parental_rate_multiplier':
+        return `Staff parental leave rate ×${effect.value} (permanent, applied on phase start)`;
+      case 'demographic_count_multiplier':
+        return `${effect.bracketKey} bracket populations ×${effect.value} (permanent, applied on phase start)`;
       default:
         return effect.type;
     }

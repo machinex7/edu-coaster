@@ -131,6 +131,7 @@ const INCIDENT_ID = Object.freeze({
   UNION_THREAT:       'union_threat',
   EMBEZZLEMENT:       'embezzlement',
   ALIEN_ENCOUNTER:    'alien_encounter',
+  FREE_CHILDCARE:     'free_childcare',
 });
 
 const AWARD_ID = Object.freeze({
