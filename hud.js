@@ -518,6 +518,10 @@ function updateLockedPanels() {
   const bankingNavBtn = document.querySelector('.tool-btn[data-panel="banking"]');
   if (bankingNavBtn) bankingNavBtn.classList.toggle('hidden', !Unlock.BANKING);
 
+  // Marketing panel is hidden until the MARKETING unlock is active.
+  const marketingNavBtn = document.querySelector('.tool-btn[data-panel="marketing"]');
+  if (marketingNavBtn) marketingNavBtn.classList.toggle('hidden', !Unlock.MARKETING);
+
   // Parking panel unlocks when the Parking Fees research is completed.
   const parkingNavBtn = document.querySelector('.tool-btn[data-panel="parking"]');
   if (parkingNavBtn) parkingNavBtn.classList.toggle('hidden', !Research.completed.has(RESEARCH_ID.PARKING_FEES));

@@ -1047,7 +1047,7 @@
 
 .research-tree-content {
   position: relative;
-  display: inline-flex;
+  display: block;
   padding: 24px 28px;
   min-width: 100%;
   box-sizing: border-box;
@@ -1061,9 +1061,26 @@
   z-index: 0;
 }
 
-.research-columns {
+#research-cols {
   position: relative;
   z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.research-group-header {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #4b5563;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #1f2937;
+}
+
+.research-columns {
   display: flex;
   flex-direction: row;
   gap: 56px;
