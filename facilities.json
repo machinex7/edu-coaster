@@ -86,5 +86,16 @@
     "buildCost": 15000,
     "buildWeeks": 3,
     "limit": null
+  },
+  {
+    "id": "tree",
+    "name": "Tree",
+    "color": "#15803d",
+    "footprint": [[1]],
+    "buildCost": 0,
+    "buildWeeks": 0,
+    "notBuildable": true,
+    "demolishCost": 500,
+    "limit": null
   }
 ]
