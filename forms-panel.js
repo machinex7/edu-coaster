@@ -26,6 +26,11 @@ const FormsPanel = {
       { key: 'current-liability', label: 'Current Liabilities',   cls: 'fp-liability' },
       { key: 'longterm-liability',label: 'Long-term Liabilities', cls: 'fp-liability' },
     ],
+    cf: [
+      { key: 'operating', label: 'Operating Activities', cls: 'fp-cf-operating' },
+      { key: 'investing',  label: 'Investing Activities', cls: 'fp-cf-investing'  },
+      { key: 'financing',  label: 'Financing Activities', cls: 'fp-cf-financing'  },
+    ],
   },
 
   // Save or replace the latest completion record for a form type.
@@ -44,6 +49,7 @@ const FormsPanel = {
       this._renderBudgetCard('budget-revised',   'Budget — Revised'),
       this._renderPLCard(),
       this._renderBSCard(),
+      this._renderCFCard(),
     ].join('');
   },
 
@@ -141,6 +147,53 @@ const FormsPanel = {
         <span>${equitySign}$${Math.abs(r.equity).toLocaleString()}</span>
       </div>`;
     return `<div class="fp-card">${hdr}<div class="fp-period">${r.label}</div>${sections}${footer}</div>`;
+  },
+
+  // Render the cash flow statement review card, or a placeholder if not yet completed.
+  _renderCFCard() {
+    const r   = this._records['cash-flow'];
+    const hdr = '<div class="fp-form-title">Cash Flow Statement</div>';
+    if (!r) {
+      return `<div class="fp-card">${hdr}<p class="fp-empty">Not yet completed.</p></div>`;
+    }
+
+    const sections = this._SECTIONS.cf.map(s => this._renderCFSection(s, r.items)).join('');
+
+    const _fmtNet = (n) => {
+      const sign  = n >= 0 ? '+' : '−';
+      const cls   = n >= 0 ? 'fp-net-pos' : 'fp-neg';
+      return `<div class="fp-result-row ${cls}"><span>Net Cash Change</span><span>${sign}$${Math.abs(n).toLocaleString()}</span></div>`;
+    };
+
+    return `<div class="fp-card">${hdr}<div class="fp-period">${r.label}</div>${sections}${_fmtNet(r.netCF)}</div>`;
+  },
+
+  // Render one cash flow section (Operating / Investing / Financing) with sign-adjusted totals.
+  _renderCFSection(sec, allItems) {
+    const items = allItems.filter(i => i.correct === sec.key && Math.round(i.value) !== 0);
+    if (items.length === 0) return '';
+    const total = items.reduce((s, i) => s + (i.flow === 'in' ? i.value : -i.value), 0);
+    const rows  = items.map(i => {
+      const signed = i.flow === 'in' ? i.value : -i.value;
+      const cls    = signed >= 0 ? 'fp-cf-inflow' : 'fp-cf-outflow';
+      const sign   = signed >= 0 ? '' : '−';
+      return `
+        <div class="fp-item-row">
+          <span class="fp-item-label">${i.label}</span>
+          <span class="fp-item-amount ${cls}">${sign}$${Math.abs(Math.round(i.value)).toLocaleString()}</span>
+        </div>`;
+    }).join('');
+    const totalSign  = total >= 0 ? '+' : '−';
+    const totalClass = total >= 0 ? 'fp-net-pos' : 'fp-neg';
+    return `
+      <div class="fp-section">
+        <div class="fp-section-header ${sec.cls}">${sec.label}</div>
+        ${rows}
+        <div class="fp-section-total ${totalClass}">
+          <span>Net</span>
+          <span>${totalSign}$${Math.abs(Math.round(total)).toLocaleString()}</span>
+        </div>
+      </div>`;
   },
 
   // Render one section (e.g. Revenue, Assets) with its line items and a subtotal.

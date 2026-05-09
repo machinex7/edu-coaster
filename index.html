@@ -335,6 +335,33 @@
     </div>
   </div>
 
+  <!-- Annual cash flow statement exercise modal -->
+  <div id="cf-modal" class="modal-overlay hidden">
+    <div class="modal-card cf-modal-card">
+      <div class="modal-date">Annual Cash Flow Statement</div>
+      <div class="modal-title" id="cf-year-label"></div>
+      <p class="cf-instructions">Drag each item into the correct section — Operating, Investing, or Financing activities.</p>
+      <div id="cf-bank" class="cf-bank"></div>
+      <div class="cf-zones">
+        <div class="cf-zone" id="cf-zone-operating">
+          <div class="cf-zone-header cf-operating-header">Operating</div>
+          <div class="cf-zone-items" id="cf-zone-operating-items"></div>
+        </div>
+        <div class="cf-zone" id="cf-zone-investing">
+          <div class="cf-zone-header cf-investing-header">Investing</div>
+          <div class="cf-zone-items" id="cf-zone-investing-items"></div>
+        </div>
+        <div class="cf-zone" id="cf-zone-financing">
+          <div class="cf-zone-header cf-financing-header">Financing</div>
+          <div class="cf-zone-items" id="cf-zone-financing-items"></div>
+        </div>
+      </div>
+      <div id="cf-result" class="cf-result hidden"></div>
+      <button id="cf-submit-btn" class="modal-close-btn">Check My Answer</button>
+      <button id="cf-close-btn" class="modal-close-btn hidden">Continue &rsaquo;</button>
+    </div>
+  </div>
+
   <!-- Annual balance sheet exercise modal -->
   <div id="bs-modal" class="modal-overlay hidden">
     <div class="modal-card bs-modal-card">
@@ -424,6 +451,7 @@
   <script src="visitor-profile.js"></script>
   <script src="pl-statement.js"></script>
   <script src="balance-sheet.js"></script>
+  <script src="cash-flow.js"></script>
   <script src="budget.js"></script>
   <script src="forms-panel.js"></script>
   <script src="concessions.js"></script>

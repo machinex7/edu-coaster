@@ -2652,6 +2652,13 @@
 .fp-expense   { color: #f87171; }
 .fp-asset     { color: #60a5fa; }
 .fp-liability { color: #f87171; }
+/* Cash flow section header colours. */
+.fp-cf-operating { color: #4ade80; }
+.fp-cf-investing  { color: #facc15; }
+.fp-cf-financing  { color: #a78bfa; }
+/* Cash flow item amount colours: inflow green, outflow red. */
+.fp-cf-inflow  { color: #4ade80; }
+.fp-cf-outflow { color: #f87171; }
 
 /* Individual line item row. */
 .fp-item-row {

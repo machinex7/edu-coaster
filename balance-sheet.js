@@ -424,9 +424,10 @@ const BalanceSheet = {
     document.getElementById('bs-close-btn').classList.remove('hidden');
   },
 
-  // Close the modal.
+  // Close the modal and chain to the annual cash flow statement when due.
   hide() {
     document.getElementById('bs-modal').classList.add('hidden');
+    if (CashFlow.pending) CashFlow.show();
   },
 
 };
