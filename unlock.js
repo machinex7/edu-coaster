@@ -3,6 +3,12 @@
 // Read feature state directly: Unlock.SECURITY (boolean).
 // Set afterWeek to null to permanently disable a feature — useful for teachers
 // who want to focus on a single concept without other systems appearing.
+//
+// Teacher modes: pass ?mode=<name> in the URL to lock all out-of-scope features.
+//   banking   — only Banking active
+//   staffing  — locks Banking and Marketing
+//   shop      — locks Messes, Wear, Banking, and Marketing
+//   marketing — only Marketing active
 
 // Private config: afterWeek (rounds of play until auto-unlock), name (for notifications).
 const _DEFS = {
@@ -15,6 +21,18 @@ const _DEFS = {
   WEAR:        { afterWeek: 0, name: 'Wear & Maintenance' },
   MARKETING:   { afterWeek: 0, name: 'Marketing' },
 };
+
+// Features permanently locked by each teacher mode.
+const _MODES = {
+  banking:   ['STAFFING', 'MESSES', 'MERCHANDISE', 'SECURITY', 'FOOD', 'WEAR', 'MARKETING'],
+  staffing:  ['BANKING', 'MARKETING'],
+  shop:      ['MESSES', 'WEAR', 'BANKING', 'MARKETING'],
+  marketing: ['STAFFING', 'MESSES', 'MERCHANDISE', 'SECURITY', 'FOOD', 'BANKING', 'WEAR'],
+};
+
+// Features locked by the active mode (empty set = no mode / full game).
+const _modeParam   = new URLSearchParams(window.location.search).get('mode') ?? '';
+const _modeLocked  = new Set(_MODES[_modeParam] ?? []);
 
 // Rounds remaining until each feature unlocks. null = permanently locked.
 const UnlockWeeks = {};
@@ -37,8 +55,10 @@ const Unlock = {
   },
 };
 
-// Initialise boolean flags and week countdowns from _DEFS.
+// Initialise boolean flags and week countdowns. Mode-locked features are treated
+// as afterWeek: null — permanently off for this session.
 for (const [key, def] of Object.entries(_DEFS)) {
-  Unlock[key]      = def.afterWeek === 0;
-  UnlockWeeks[key] = def.afterWeek != null ? Math.max(0, def.afterWeek - 1) : null;
+  const afterWeek  = _modeLocked.has(key) ? null : def.afterWeek;
+  Unlock[key]      = afterWeek === 0;
+  UnlockWeeks[key] = afterWeek != null ? Math.max(0, afterWeek - 1) : null;
 }
