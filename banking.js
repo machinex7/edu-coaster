@@ -10,7 +10,7 @@
 const LOAN_COVENANT_TEMPLATES = [
   {
     id: 'MIN_CASH',
-    applicable: ['new_rides', 'staffing', 'emergency'],
+    applicable: ['new_rides', 'staffing', 'emergency', 'refinance'],
     generate(app) {
       const value = Math.max(1000, Math.round(app.amount * 0.15 / 1000) * 1000);
       return {
@@ -23,7 +23,7 @@ const LOAN_COVENANT_TEMPLATES = [
   },
   {
     id: 'NO_NEW_LOANS',
-    applicable: ['new_rides', 'staffing', 'emergency'],
+    applicable: ['new_rides', 'staffing', 'emergency', 'refinance'],
     generate(app) {
       return {
         id: 'NO_NEW_LOANS',
@@ -97,6 +97,39 @@ const LOAN_COVENANT_TEMPLATES = [
       return {
         id: 'SECURITY_THRESHOLD',
         description: `Keep security opinion below ${value} for the duration`,
+        weeks: app.term * WEEKS_PER_YEAR,
+        value,
+      };
+    },
+  },
+  // Refinance: must pay down a target amount of combined principal within a deadline.
+  {
+    id: 'DEBT_PAYDOWN',
+    applicable: ['refinance'],
+    generate(app) {
+      const value = Math.max(1000, Math.round(app.amount * 0.20 / 1000) * 1000);
+      const weeks = Math.max(8, Math.ceil(app.term * WEEKS_PER_YEAR * 0.25));
+      return {
+        id: 'DEBT_PAYDOWN',
+        description: `Pay down at least $${value.toLocaleString()} in combined loan principal within ${weeks} weeks`,
+        weeks,
+        value,
+      };
+    },
+  },
+  // Refinance: average weekly revenue must not fall below a floor for the loan's duration.
+  {
+    id: 'INCOME_FLOOR',
+    applicable: ['refinance'],
+    generate(app) {
+      const recent = History.rounds.slice(-4);
+      const avgIncome = recent.length > 0
+        ? recent.reduce((s, r) => s + r.gateIncome + r.parkingIncome + r.shopIncome, 0) / recent.length
+        : 1000;
+      const value = Math.max(500, Math.round(avgIncome * 0.70 / 100) * 100);
+      return {
+        id: 'INCOME_FLOOR',
+        description: `Maintain average weekly revenue above $${value.toLocaleString()} for the duration`,
         weeks: app.term * WEEKS_PER_YEAR,
         value,
       };
@@ -364,9 +397,14 @@ const Banking = {
   },
 
   // ── LTV and covenant helpers ─────────────────────────────────────────────────
+
+  // Maximum loan-to-park-value ratio the bank will approve for each purpose.
+  // Missed payments erode the cap by MISSED_PAYMENT_LTV_PENALTY per miss.
+  effectiveLtvCap(purpose) {
     const reduction = this.totalMissedPayments * MISSED_PAYMENT_LTV_PENALTY;
-    if (purpose === 'emergency') return Math.max(0.05, 0.25 - reduction);
-    if (purpose === 'staffing')  return Math.max(0.10, 0.50 - reduction);
+    if (purpose === 'emergency')  return Math.max(0.05, 0.25 - reduction);
+    if (purpose === 'staffing')   return Math.max(0.10, 0.50 - reduction);
+    if (purpose === 'refinance')  return Math.max(0.10, 0.75 - reduction);
     return Math.max(0.10, 1.00 - reduction);
   },
 
@@ -484,6 +522,32 @@ const Banking = {
             if (Security.opinion > covenant.value)
               this.breachCovenant(loan, covenant);
             break;
+
+          case 'DEBT_PAYDOWN': {
+            // Snapshot total principal paid across all loans at first evaluation.
+            if (covenant.initialPrincipalPaid === undefined) {
+              covenant.initialPrincipalPaid = this.activeLoans.reduce((s, l) => s + l.totalPrincipalPaid, 0);
+              covenant.weeksRemaining       = covenant.weeks;
+            }
+            const totalPaid = this.activeLoans.reduce((s, l) => s + l.totalPrincipalPaid, 0);
+            if (totalPaid - covenant.initialPrincipalPaid >= covenant.value) {
+              covenant.satisfied = true;
+            } else {
+              covenant.weeksRemaining--;
+              if (covenant.weeksRemaining <= 0) this.breachCovenant(loan, covenant);
+            }
+            break;
+          }
+
+          case 'INCOME_FLOOR': {
+            // Breach if the trailing 4-round average revenue falls below the floor.
+            const recent = History.rounds.slice(-4);
+            if (recent.length > 0) {
+              const avgIncome = recent.reduce((s, r) => s + r.gateIncome + r.parkingIncome + r.shopIncome, 0) / recent.length;
+              if (avgIncome < covenant.value) this.breachCovenant(loan, covenant);
+            }
+            break;
+          }
         }
       }
     }
@@ -624,7 +688,10 @@ const Banking = {
     // Missed payment penalty — compounds across all historical missed payments
     const missedPenalty = this.totalMissedPayments * MISSED_PAYMENT_RATE_PENALTY;
 
-    return Math.round((baseRate + ltvPremium + coveragePremium + termPremium + favorPremium - covenantDiscount + missedPenalty) * 100) / 100;
+    // Refinance discount — restructuring existing debt is lower-risk for the bank
+    const refinanceDiscount = this.loanApplication.purpose === 'refinance' ? 0.75 : 0;
+
+    return Math.round((baseRate + ltvPremium + coveragePremium + termPremium + favorPremium - covenantDiscount - refinanceDiscount + missedPenalty) * 100) / 100;
   },
 
   // ── Round processing ─────────────────────────────────────────────────────────
@@ -661,7 +728,10 @@ const Banking = {
     }
 
     if (status === LOAN_STATUS.APPLYING) {
-      const covenants          = [this.pickCovenant()].filter(Boolean);
+      // Refinance loans carry two covenants; all other purposes carry one.
+      const first    = this.pickCovenant();
+      const second   = purpose === 'refinance' ? this.pickCovenant(first ? [first.id] : []) : null;
+      const covenants = [first, second].filter(Boolean);
       const rate               = this.calcLoanRate(covenants);
       // Penalty for breaching any covenant: 5–20% of loan amount in 5% steps
       const covenantPenaltyPct = covenants.length > 0 ? (Math.floor(Math.random() * 4) + 1) * 5 : 0;

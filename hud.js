@@ -1147,9 +1147,10 @@ function buildBankingPanel() {
   const dis       = locked ? 'disabled' : '';
   const purpose   = app?.purpose ?? 'new_rides';
   const purposeOptions = [
-    ['new_rides', 'New Rides'],
-    ['staffing',  'Staffing'],
-    ['emergency', 'Emergency'],
+    ['new_rides',  'New Rides'],
+    ['staffing',   'Staffing'],
+    ['emergency',  'Emergency'],
+    ['refinance',  'Refinance'],
   ].map(([v, l]) => `<option value="${v}"${v === purpose ? ' selected' : ''}>${l}</option>`).join('');
 
   const loanActionHtml = appStatus === LOAN_STATUS.OPEN
@@ -1425,7 +1426,7 @@ function buildBankingPanel() {
       ${Banking.activeLoans.map((loan, i) => {
         const { total: weeklyPayment } = Banking.calcLoanPayment(loan.balance, loan.rate, loan.weeksRemaining);
         const maxExtra = Math.floor(Math.min(money, loan.balance) / 500) * 500;
-        const purposeLabel = { new_rides: 'New Rides', staffing: 'Staffing', emergency: 'Emergency' }[loan.purpose] ?? loan.purpose;
+        const purposeLabel = { new_rides: 'New Rides', staffing: 'Staffing', emergency: 'Emergency', refinance: 'Refinance' }[loan.purpose] ?? loan.purpose;
         return `
           <div class="posting-form" style="margin-bottom:8px">
             <div class="loan-offer-row"><span>Purpose</span><span>${purposeLabel}</span></div>
