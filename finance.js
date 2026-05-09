@@ -98,12 +98,15 @@ const Finance = {
 
   // Recomputes parkExcitement at end of round for use next round.
   // Uses rideOpinion (set by computeRideOpinion this round) as the ride satisfaction factor.
+  // Park appeal supplements rideOpinion: 100 appeal points = 1/DESIRED_RIDES bonus, capped at 1.
   // Security opinion and mess density degrade the result.
   // Mess penalty: unhandled mess spread across path tiles; 1.25^(mess per path) as divisor.
   calcExcitement(weeklyAttendance) {
-    const securityFactor = Unlock.SECURITY ? Math.max(0, 1 - Math.sqrt(Security.opinion) / 100) : 1;
-    const messFactor     = Unlock.MESSES   ? this.calcMessFactor() : 1;
-    this.parkExcitement  = Math.max(0, (weeklyAttendance * this.rideOpinion * securityFactor * this.mealSatisfaction) / messFactor);
+    const appealBonus        = this.calcParkAppeal() / (100 * Population.DESIRED_RIDES);
+    const effectiveRideOpinion = Math.min(1, this.rideOpinion + appealBonus);
+    const securityFactor     = Unlock.SECURITY ? Math.max(0, 1 - Math.sqrt(Security.opinion) / 100) : 1;
+    const messFactor         = Unlock.MESSES   ? this.calcMessFactor() : 1;
+    this.parkExcitement      = Math.max(0, (weeklyAttendance * effectiveRideOpinion * securityFactor * this.mealSatisfaction) / messFactor);
   },
 
   // How many people can actually enter: booth attendants are the bottleneck.
@@ -338,6 +341,15 @@ const Finance = {
   },
 
   // ── Mess generation ──────────────────────────────────────────────────────────
+
+  // Sum of appeal values across all installed facilities.
+  // Each facility's appeal is defined in facilities.json; omitted entries contribute 0.
+  calcParkAppeal() {
+    return installedFacilities.reduce((sum, f) => {
+      const def = facilities.find(d => d.id === f.facilityId);
+      return sum + (def?.appeal ?? 0);
+    }, 0);
+  },
 
   // Exponential penalty from unhandled mess spread across path and decorative tiles.
   // Decorative tiles (fountain, garden, statue) count as 2 paths each.

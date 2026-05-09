@@ -54,6 +54,7 @@ const History = {
       loanBalance:         Banking.activeLoans.reduce((s, l) => s + l.balance, 0),
       loanInterestPaid:    Banking.activeLoans.reduce((s, l) => s + l.totalInterestPaid, 0),
       loanPrincipalPaid:   Banking.activeLoans.reduce((s, l) => s + l.totalPrincipalPaid, 0),
+      parkAppeal:          Finance.calcParkAppeal(),
       weeklyNetMess:       Finance.weeklyNetMess,
       theftItemsStolen:    report.security.theftItemsStolen,
       securityIncidents:   report.security.total,
