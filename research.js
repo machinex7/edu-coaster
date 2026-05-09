@@ -77,14 +77,33 @@ const Research = {
     return Math.max(...item.requires.map(r => this._getDepth(r))) + 1;
   },
 
-  _buildColumns() {
-    const columns = [];
-    this.items.filter(item => !this._isFeatureLocked(item)).forEach(item => {
-      const depth = this._getDepth(item.id);
-      if (!columns[depth]) columns[depth] = [];
-      columns[depth].push(item);
-    });
-    return columns;
+  // Ordered group definitions matching unlock categories; null feature = always-visible General group.
+  _GROUP_ORDER: [
+    { feature: null,          label: 'General' },
+    { feature: 'STAFFING',    label: 'Staffing' },
+    { feature: 'MESSES',      label: 'Messes' },
+    { feature: 'MERCHANDISE', label: 'Merchandise' },
+    { feature: 'SECURITY',    label: 'Security' },
+    { feature: 'FOOD',        label: 'Food & Dining' },
+    { feature: 'BANKING',     label: 'Banking' },
+    { feature: 'WEAR',        label: 'Wear & Maintenance' },
+    { feature: 'MARKETING',   label: 'Marketing' },
+  ],
+
+  // Partitions visible items into per-feature groups, each with depth-based columns.
+  _buildGroups() {
+    const visible = this.items.filter(item => !this._isFeatureLocked(item));
+    return this._GROUP_ORDER.map(({ feature, label }) => {
+      const items = visible.filter(i => (i.feature ?? null) === feature);
+      if (items.length === 0) return null;
+      const columns = [];
+      items.forEach(item => {
+        const depth = this._getDepth(item.id);
+        if (!columns[depth]) columns[depth] = [];
+        columns[depth].push(item);
+      });
+      return { label, columns: columns.filter(Boolean) };
+    }).filter(Boolean);
   },
 
   _getStatus(item) {
@@ -151,17 +170,23 @@ const Research = {
   },
 
   _renderPanel() {
-    const body    = document.getElementById('research-panel-body');
-    const columns = this._buildColumns();
-    const rate    = this._researchRate();
+    const body   = document.getElementById('research-panel-body');
+    const groups = this._buildGroups();
+    const rate   = this._researchRate();
     const rateLabel = `${rate % 1 === 0 ? rate : rate.toFixed(1)} pts/wk`;
     const activeLabel = this.activeId
       ? `Researching: ${this.items.find(i => i.id === this.activeId)?.name ?? ''}`
       : 'No active research';
 
-    const columnsHtml = columns.map(col =>
-      `<div class="research-col">${col.map(i => this._nodeHtml(i)).join('')}</div>`
-    ).join('');
+    const groupsHtml = groups.map(g => {
+      const colsHtml = g.columns.map(col =>
+        `<div class="research-col">${col.map(i => this._nodeHtml(i)).join('')}</div>`
+      ).join('');
+      return `<div class="research-group">
+        <div class="research-group-header">${g.label}</div>
+        <div class="research-columns">${colsHtml}</div>
+      </div>`;
+    }).join('');
 
     body.innerHTML = `
       <div class="research-info-bar">
@@ -171,7 +196,7 @@ const Research = {
       <div class="research-tree-scroll">
         <div class="research-tree-content">
           <svg class="research-connectors" id="research-svg"></svg>
-          <div class="research-columns" id="research-cols">${columnsHtml}</div>
+          <div id="research-cols">${groupsHtml}</div>
         </div>
       </div>`;
 

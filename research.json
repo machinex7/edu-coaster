@@ -7,14 +7,6 @@
     "requires": []
   },
   {
-    "id": "license_plate_monitoring",
-    "name": "License Plate Monitoring",
-    "description": "Cross-reference parking data with regional records to estimate visitor origin and repeat visit rates.",
-    "cost": 8,
-    "feature": "SECURITY",
-    "requires": ["surveys"]
-  },
-  {
     "id": "quarterly_survey_results",
     "name": "Quarterly Survey Results",
     "description": "Compile survey responses into trend-focused quarterly reports with demographic breakdowns.",
@@ -50,6 +42,42 @@
     "requires": ["weather_sensor"]
   },
   {
+    "id": "demographic_population",
+    "name": "Population Census Data",
+    "description": "Commission a regional demographic study to reveal the true population size of each visitor segment. Unlocks population counts in the Visitor Profile.",
+    "cost": 6,
+    "requires": ["surveys"]
+  },
+  {
+    "id": "demographic_segmentation_display",
+    "name": "Demographic Segmentation Display",
+    "description": "Restructure visitor profile charts so icons are grouped by sentiment: unfavorable (red) first, unknown (grey) in the middle, and favorable (green) last. Makes the health of each segment instantly scannable.",
+    "cost": 4,
+    "requires": ["demographic_population"]
+  },
+  {
+    "id": "parking_fees",
+    "name": "Parking Fees",
+    "description": "Establish a paid parking program. Unlocks the Parking panel where you can set per-vehicle fees and track how pricing affects visitor attendance and in-park spending.",
+    "cost": 5,
+    "requires": []
+  },
+  {
+    "id": "parking_lot_amenities",
+    "name": "Parking Lot Amenities",
+    "description": "Invest in the parking experience with music, art, and murals. Each one-time purchase permanently raises the fee threshold at which visitors start to feel overcharged.",
+    "cost": 4,
+    "requires": ["parking_fees"]
+  },
+  {
+    "id": "bus_service",
+    "name": "Bus Service",
+    "description": "Run a free shuttle bus from distant pick-up points. Visitors priced out of parking who would have skipped the trip take the bus instead, paying full gate admission and spending normally inside. Costs a weekly operating fee.",
+    "cost": 6,
+    "requires": ["parking_fees"]
+  },
+
+  {
     "id": "employee_benefits",
     "name": "Employee Benefits",
     "description": "Establish a formal benefits program. Prerequisite for all staff benefit research.",
@@ -83,62 +111,6 @@
   },
 
   {
-    "id": "mkt_emotional_messaging",
-    "name": "Emotional Messaging",
-    "description": "Train your team to craft emotionally resonant campaigns. Unlocks the Emotional message type.",
-    "cost": 4,
-    "requires": []
-  },
-  {
-    "id": "mkt_household_targeting",
-    "name": "Household Segmentation",
-    "description": "Analyze campaigns by household size to reach families and couples more effectively. Unlocks Household as a demographic axis.",
-    "cost": 4,
-    "requires": ["mkt_emotional_messaging"]
-  },
-  {
-    "id": "mkt_urgency_messaging",
-    "name": "Urgency Marketing",
-    "description": "Design time-limited campaigns that drive immediate action. Unlocks the Urgency-Driven message type.",
-    "cost": 6,
-    "requires": ["mkt_household_targeting"]
-  },
-  {
-    "id": "mkt_distance_targeting",
-    "name": "Geographic Reach Analysis",
-    "description": "Segment your market by travel distance to calibrate regional advertising spend. Unlocks Distance as a demographic axis.",
-    "cost": 6,
-    "requires": ["mkt_urgency_messaging"]
-  },
-  {
-    "id": "mkt_celebrity_hook",
-    "name": "Celebrity Partnerships",
-    "description": "Build industry relationships needed to negotiate celebrity endorsements. Unlocks Celebrity Cameo as a campaign hook.",
-    "cost": 8,
-    "requires": ["mkt_distance_targeting"]
-  },
-  {
-    "id": "mkt_area_targeting",
-    "name": "Urban/Rural Segmentation",
-    "description": "Tailor campaigns to urban and rural audiences with different travel and leisure habits. Unlocks Area as a demographic axis.",
-    "cost": 8,
-    "requires": ["mkt_celebrity_hook"]
-  },
-  {
-    "id": "demographic_population",
-    "name": "Population Census Data",
-    "description": "Commission a regional demographic study to reveal the true population size of each visitor segment. Unlocks population counts in the Visitor Profile.",
-    "cost": 6,
-    "requires": ["surveys"]
-  },
-  {
-    "id": "demographic_segmentation_display",
-    "name": "Demographic Segmentation Display",
-    "description": "Restructure visitor profile charts so icons are grouped by sentiment: unfavorable (red) first, unknown (grey) in the middle, and favorable (green) last. Makes the health of each segment instantly scannable.",
-    "cost": 4,
-    "requires": ["demographic_population"]
-  },
-  {
     "id": "bulk_ordering",
     "name": "Bulk Ordering",
     "description": "Negotiate volume purchasing agreements with suppliers. Unlocks the +100 unit order size for merchandise restocking.",
@@ -146,25 +118,62 @@
     "feature": "MERCHANDISE",
     "requires": []
   },
+
   {
-    "id": "parking_fees",
-    "name": "Parking Fees",
-    "description": "Establish a paid parking program. Unlocks the Parking panel where you can set per-vehicle fees and track how pricing affects visitor attendance and in-park spending.",
-    "cost": 5,
+    "id": "license_plate_monitoring",
+    "name": "License Plate Monitoring",
+    "description": "Cross-reference parking data with regional records to estimate visitor origin and repeat visit rates.",
+    "cost": 8,
+    "feature": "SECURITY",
+    "requires": []
+  },
+
+  {
+    "id": "mkt_emotional_messaging",
+    "name": "Emotional Messaging",
+    "description": "Train your team to craft emotionally resonant campaigns. Unlocks the Emotional message type.",
+    "cost": 4,
+    "feature": "MARKETING",
     "requires": []
   },
   {
-    "id": "parking_lot_amenities",
-    "name": "Parking Lot Amenities",
-    "description": "Invest in the parking experience with music, art, and murals. Each one-time purchase permanently raises the fee threshold at which visitors start to feel overcharged.",
+    "id": "mkt_household_targeting",
+    "name": "Household Segmentation",
+    "description": "Analyze campaigns by household size to reach families and couples more effectively. Unlocks Household as a demographic axis.",
     "cost": 4,
-    "requires": ["parking_fees"]
+    "feature": "MARKETING",
+    "requires": ["mkt_emotional_messaging"]
   },
   {
-    "id": "bus_service",
-    "name": "Bus Service",
-    "description": "Run a free shuttle bus from distant pick-up points. Visitors priced out of parking who would have skipped the trip take the bus instead, paying full gate admission and spending normally inside. Costs a weekly operating fee.",
+    "id": "mkt_urgency_messaging",
+    "name": "Urgency Marketing",
+    "description": "Design time-limited campaigns that drive immediate action. Unlocks the Urgency-Driven message type.",
     "cost": 6,
-    "requires": ["parking_fees"]
+    "feature": "MARKETING",
+    "requires": ["mkt_household_targeting"]
+  },
+  {
+    "id": "mkt_distance_targeting",
+    "name": "Geographic Reach Analysis",
+    "description": "Segment your market by travel distance to calibrate regional advertising spend. Unlocks Distance as a demographic axis.",
+    "cost": 6,
+    "feature": "MARKETING",
+    "requires": ["mkt_urgency_messaging"]
+  },
+  {
+    "id": "mkt_celebrity_hook",
+    "name": "Celebrity Partnerships",
+    "description": "Build industry relationships needed to negotiate celebrity endorsements. Unlocks Celebrity Cameo as a campaign hook.",
+    "cost": 8,
+    "feature": "MARKETING",
+    "requires": ["mkt_distance_targeting"]
+  },
+  {
+    "id": "mkt_area_targeting",
+    "name": "Urban/Rural Segmentation",
+    "description": "Tailor campaigns to urban and rural audiences with different travel and leisure habits. Unlocks Area as a demographic axis.",
+    "cost": 8,
+    "feature": "MARKETING",
+    "requires": ["mkt_celebrity_hook"]
   }
 ]
