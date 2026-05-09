@@ -1418,6 +1418,33 @@ function buildBankingPanel() {
       </div>`;
   })();
 
+  // ── Active loans section HTML ─────────────────────────────────────────────────
+  const activeLoansHtml = Banking.activeLoans.length === 0 ? '' : `
+    <div class="financial-section">
+      <div class="financial-section-header">Active Loans</div>
+      ${Banking.activeLoans.map((loan, i) => {
+        const { total: weeklyPayment } = Banking.calcLoanPayment(loan.balance, loan.rate, loan.weeksRemaining);
+        const maxExtra = Math.floor(Math.min(money, loan.balance) / 500) * 500;
+        const purposeLabel = { new_rides: 'New Rides', staffing: 'Staffing', emergency: 'Emergency' }[loan.purpose] ?? loan.purpose;
+        return `
+          <div class="posting-form" style="margin-bottom:8px">
+            <div class="loan-offer-row"><span>Purpose</span><span>${purposeLabel}</span></div>
+            <div class="loan-offer-row"><span>Balance Remaining</span><span>$${loan.balance.toLocaleString()}</span></div>
+            <div class="loan-offer-row"><span>Rate</span><span>${loan.rate}%</span></div>
+            <div class="loan-offer-row"><span>Weekly Payment</span><span>$${weeklyPayment.toLocaleString()}</span></div>
+            <div class="loan-offer-row"><span>Est. Weeks Remaining</span><span>${loan.weeksRemaining}</span></div>
+            <div class="form-field">
+              <label for="extra-payment-${i}">Extra Payment ($500 increments)</label>
+              <input id="extra-payment-${i}" type="number" min="500" max="${maxExtra}" step="500"
+                     placeholder="$0" ${maxExtra < 500 ? 'disabled' : ''} data-loan-index="${i}">
+            </div>
+            <div class="form-actions">
+              <button class="extra-payment-btn" data-loan-index="${i}" ${maxExtra < 500 ? 'disabled' : ''}>Pay Extra</button>
+            </div>
+          </div>`;
+      }).join('')}
+    </div>`;
+
   body.innerHTML = `
     <div class="financial-section">
       <div class="financial-section-header">Savings Account</div>
@@ -1431,10 +1458,21 @@ function buildBankingPanel() {
       <div class="financial-section-header">Line of Credit</div>
       ${locHtml}
     </div>
+    ${activeLoansHtml}
     <div class="financial-section">
       <div class="financial-section-header">Loan</div>
       ${loanSectionHtml}
     </div>`;
+
+  // Extra loan payment buttons.
+  document.querySelectorAll('.extra-payment-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const i      = parseInt(btn.dataset.loanIndex);
+      const input  = document.getElementById(`extra-payment-${i}`);
+      const amount = Math.round(parseInt(input?.value) || 0);
+      if (Banking.makeExtraPayment(i, amount)) buildBankingPanel();
+    });
+  });
 
   // Savings deposit / withdraw buttons.
   document.getElementById('savings-deposit-btn').addEventListener('click', () => {

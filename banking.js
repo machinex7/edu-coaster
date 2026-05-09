@@ -706,6 +706,46 @@ const Banking = {
     return null;
   },
 
+  // Applies an extra principal payment to the given active loan, reducing its balance
+  // and recalculating weeksRemaining so the regular payment stays the same (term shortens).
+  // Returns true on success, false if the amount is invalid or cash is insufficient.
+  makeExtraPayment(loanIndex, amount) {
+    const loan = this.activeLoans[loanIndex];
+    if (!loan || amount <= 0 || amount > money) return false;
+
+    // Capture the current scheduled payment before altering the balance.
+    const { total: scheduledPayment } = this.calcLoanPayment(loan.balance, loan.rate, loan.weeksRemaining);
+
+    money        -= amount;
+    loan.balance  = Math.max(0, loan.balance - amount);
+    loan.totalPrincipalPaid += amount;
+
+    if (loan.balance <= 0) {
+      this.activeLoans.splice(loanIndex, 1);
+      Notifications.push({
+        label:   'Loan',
+        message: 'Loan fully repaid via extra payment.',
+        action:  () => openPanel('banking'),
+      });
+      return true;
+    }
+
+    // Recalculate weeks needed to pay off new balance at the same scheduled payment.
+    const r = loan.rate / 100 / 52;
+    let newWeeks;
+    if (r === 0) {
+      newWeeks = Math.ceil(loan.balance / scheduledPayment);
+    } else {
+      const ratio = r * loan.balance / scheduledPayment;
+      // If ratio >= 1 the payment no longer covers interest; clamp to current weeksRemaining.
+      newWeeks = ratio >= 1
+        ? loan.weeksRemaining
+        : Math.ceil(-Math.log(1 - ratio) / Math.log(1 + r));
+    }
+    loan.weeksRemaining = Math.max(1, Math.min(newWeeks, loan.weeksRemaining));
+    return true;
+  },
+
   // Deducts the weekly payment from cash, splits it into interest and principal,
   // and removes loans that have been fully repaid.
   // Returns total cash deducted this round across all loans.
