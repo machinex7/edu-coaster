@@ -490,6 +490,14 @@ function startDemolition(row, col) {
     return;
   }
 
+  // Demolition costs 10% of the original build cost, charged upfront.
+  const demolishCost = Math.ceil((record.buildCost ?? 0) / 10);
+  if (demolishCost > 0 && money < demolishCost) {
+    Notifications.push({ label: 'Demolish', message: `Not enough funds. Demolishing ${record.name} costs $${demolishCost.toLocaleString()}.` });
+    return;
+  }
+  money -= demolishCost;
+
   // Paths are removed immediately; everything else takes at least 1 round.
   const isPath = record.facilityId === FACILITY_ID.PATH;
   const demolishWeeks = isPath ? 0 : Math.max(1, Math.ceil((record.weeksTotal || 0) / 2));
