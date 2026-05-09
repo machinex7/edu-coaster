@@ -131,6 +131,7 @@ async function init() {
   gridState = Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS).fill(null));
 
   buildGrid();
+  scatterTrees();
   buildRideCatalog();
   buildFacilityList();
   Shopping.buildCatalog();
@@ -152,11 +153,25 @@ function buildRideCatalog() {
 function buildFacilityList() {
   const list = document.getElementById('facility-list');
   facilities
-    .filter(f => (Unlock.SECURITY || f.id !== FACILITY_ID.GUARD_STATION) &&
+    .filter(f => !f.notBuildable &&
+                 (Unlock.SECURITY || f.id !== FACILITY_ID.GUARD_STATION) &&
                  (Unlock.STAFFING || f.id !== FACILITY_ID.STAFF_LOUNGE))
     .forEach(facility => list.appendChild(createItemCard(facility, 'facility')));
 }
 
+// Randomly places trees on the grid at a 1-in-9 chance per cell.
+// Trees are pre-existing obstacles the player must build around or demolish.
+function scatterTrees() {
+  const treeDef = facilities.find(f => f.id === FACILITY_ID.TREE);
+  if (!treeDef) return;
+  for (let r = 0; r < GRID_ROWS; r++) {
+    for (let c = 0; c < GRID_COLS; c++) {
+      if (Math.random() < 1 / 9) {
+        _commitPlace(treeDef, CATEGORY.FACILITY, r, c, STATUS.ACTIVE);
+      }
+    }
+  }
+}
 
 function createItemCard(item, category) {
   const card = document.createElement('div');
@@ -375,10 +390,14 @@ function placeItem(item, category, startRow, startCol) {
   }
 }
 
+// Monotonically increasing counter to guarantee unique instanceIds even when
+// multiple placements happen within the same millisecond (e.g. scatterTrees).
+let _placeSeq = 0;
+
 // Records the placement in the installed array and paints the grid cells.
 // Returns the pushed record so callers can grab the instanceId.
 function _commitPlace(item, category, startRow, startCol, status) {
-  const instanceId = `${category}_${item.id}_${Date.now()}`;
+  const instanceId = `${category}_${item.id}_${Date.now()}_${++_placeSeq}`;
   const color      = item._color ?? item.color ?? '#888';
 
   const record = {
@@ -490,9 +509,17 @@ function startDemolition(row, col) {
     return;
   }
 
-  // Paths are removed immediately; everything else takes at least 1 round.
-  const isPath = record.facilityId === FACILITY_ID.PATH;
-  const demolishWeeks = isPath ? 0 : Math.max(1, Math.ceil((record.weeksTotal || 0) / 2));
+  // Demolition costs 10% of the original build cost, charged upfront.
+  const demolishCost = Math.ceil((record.buildCost ?? 0) / 10);
+  if (demolishCost > 0 && money < demolishCost) {
+    Notifications.push({ label: 'Demolish', message: `Not enough funds. Demolishing ${record.name} costs $${demolishCost.toLocaleString()}.` });
+    return;
+  }
+  money -= demolishCost;
+
+  // Paths and trees are removed immediately; everything else takes at least 1 round.
+  const isInstant = record.facilityId === FACILITY_ID.PATH || record.facilityId === FACILITY_ID.TREE;
+  const demolishWeeks = isInstant ? 0 : Math.max(1, Math.ceil((record.weeksTotal || 0) / 2));
   if (demolishWeeks === 0) {
     completeDemolition(record);
     return;

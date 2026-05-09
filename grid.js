@@ -68,8 +68,25 @@ function clearHighlights() {
 // ── Demolish hover highlight ───────────────────────────────────────────────
 let _demolishHoverInstance = null;
 
+// Finds the placed record for a given instanceId across all installed collections.
+function _recordByInstanceId(instanceId) {
+  return installedRides.find(r => r.instanceId === instanceId) ||
+         installedFacilities.find(f => f.instanceId === instanceId) ||
+         Shopping.installed.find(s => s.instanceId === instanceId) || null;
+}
+
 function clearDemolishHighlight() {
-  document.querySelectorAll('.demolish-hover').forEach(el => el.classList.remove('demolish-hover'));
+  // Restore original name-only titles before clearing the hover class.
+  if (_demolishHoverInstance) {
+    const rec = _recordByInstanceId(_demolishHoverInstance);
+    const origTitle = rec?.name ?? '';
+    document.querySelectorAll('.demolish-hover').forEach(el => {
+      el.classList.remove('demolish-hover');
+      el.title = origTitle;
+    });
+  } else {
+    document.querySelectorAll('.demolish-hover').forEach(el => el.classList.remove('demolish-hover'));
+  }
   _demolishHoverInstance = null;
 }
 
@@ -91,9 +108,20 @@ function updateDemolishHighlight(clientX, clientY) {
 
   if (!instanceId) return;
 
+  // Build a tooltip that shows the demolition cost in Play mode.
+  const rec = _recordByInstanceId(instanceId);
+  const demolishCost = (gameStage === STAGE.PLAY && rec)
+    ? Math.ceil((rec.buildCost ?? 0) / 10) : 0;
+  const tooltip = demolishCost > 0
+    ? `${rec.name} — Demolish cost: $${demolishCost.toLocaleString()}`
+    : (rec?.name ?? '');
+
   for (let r = 0; r < GRID_ROWS; r++) {
     for (let c = 0; c < GRID_COLS; c++) {
-      if (gridState[r][c] === instanceId) gridCells[r][c].classList.add('demolish-hover');
+      if (gridState[r][c] === instanceId) {
+        gridCells[r][c].classList.add('demolish-hover');
+        gridCells[r][c].title = tooltip;
+      }
     }
   }
 }
