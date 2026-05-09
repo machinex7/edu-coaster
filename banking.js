@@ -124,7 +124,7 @@ const LOAN_COVENANT_TEMPLATES = [
     generate(app) {
       const recent = History.rounds.slice(-4);
       const avgIncome = recent.length > 0
-        ? recent.reduce((s, r) => s + r.gateIncome + r.parkingIncome + r.shopIncome, 0) / recent.length
+        ? recent.reduce((s, r) => s + r.gateIncome + r.parkingIncome + r.shopIncome + r.foodIncome + r.membershipIncome, 0) / recent.length
         : 1000;
       const value = Math.max(500, Math.round(avgIncome * 0.70 / 100) * 100);
       return {
@@ -540,10 +540,10 @@ const Banking = {
           }
 
           case 'INCOME_FLOOR': {
-            // Breach if the trailing 4-round average revenue falls below the floor.
+            // Breach if the trailing 4-round average total revenue falls below the floor.
             const recent = History.rounds.slice(-4);
             if (recent.length > 0) {
-              const avgIncome = recent.reduce((s, r) => s + r.gateIncome + r.parkingIncome + r.shopIncome, 0) / recent.length;
+              const avgIncome = recent.reduce((s, r) => s + r.gateIncome + r.parkingIncome + r.shopIncome + r.foodIncome + r.membershipIncome, 0) / recent.length;
               if (avgIncome < covenant.value) this.breachCovenant(loan, covenant);
             }
             break;
