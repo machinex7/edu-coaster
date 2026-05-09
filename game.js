@@ -407,7 +407,6 @@ function _commitPlace(item, category, startRow, startCol, status) {
     color, status,
     buildCost: item.buildCost ?? 0,
   };
-  if (item.demolishCost != null) record.demolishCost = item.demolishCost;
 
   if (category === CATEGORY.RIDE) {
     record.rideId        = item.id;
@@ -510,8 +509,8 @@ function startDemolition(row, col) {
     return;
   }
 
-  // Demolition costs 10% of the original build cost (or a fixed demolishCost if set), charged upfront.
-  const demolishCost = record.demolishCost ?? Math.ceil((record.buildCost ?? 0) / 10);
+  // Demolition costs 10% of the original build cost, charged upfront.
+  const demolishCost = Math.ceil((record.buildCost ?? 0) / 10);
   if (demolishCost > 0 && money < demolishCost) {
     Notifications.push({ label: 'Demolish', message: `Not enough funds. Demolishing ${record.name} costs $${demolishCost.toLocaleString()}.` });
     return;

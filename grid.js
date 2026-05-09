@@ -111,7 +111,7 @@ function updateDemolishHighlight(clientX, clientY) {
   // Build a tooltip that shows the demolition cost in Play mode.
   const rec = _recordByInstanceId(instanceId);
   const demolishCost = (gameStage === STAGE.PLAY && rec)
-    ? (rec.demolishCost ?? Math.ceil((rec.buildCost ?? 0) / 10)) : 0;
+    ? Math.ceil((rec.buildCost ?? 0) / 10) : 0;
   const tooltip = demolishCost > 0
     ? `${rec.name} — Demolish cost: $${demolishCost.toLocaleString()}`
     : (rec?.name ?? '');

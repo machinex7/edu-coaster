@@ -92,10 +92,9 @@
     "name": "Tree",
     "color": "#15803d",
     "footprint": [[1]],
-    "buildCost": 0,
+    "buildCost": 5000,
     "buildWeeks": 0,
     "notBuildable": true,
-    "demolishCost": 500,
     "limit": null
   }
 ]
