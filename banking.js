@@ -665,7 +665,7 @@ const Banking = {
     if (recent.length === 0) {
       coveragePremium = 0.5;
     } else {
-      const avgIncome = recent.reduce((s, r) => s + r.gateIncome + r.parkingIncome + r.shopIncome, 0) / recent.length;
+      const avgIncome = recent.reduce((s, r) => s + r.gateIncome + r.parkingIncome + r.shopIncome + r.foodIncome + r.membershipIncome, 0) / recent.length;
       const avgOpEx   = recent.reduce((s, r) => s + r.staffExpense + r.utilityExpense, 0) / recent.length;
       const ratio     = avgOpEx > 0 ? avgIncome / avgOpEx : (avgIncome > 0 ? 2 : 0);
       coveragePremium = ratio >= 2.0 ? -0.5
