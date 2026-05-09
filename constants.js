@@ -116,6 +116,23 @@ const LOAN_STATUS = Object.freeze({
   REVIEW:      'review',
 });
 
+// IDs that match the "id" field in incidents.json.
+const INCIDENT_ID = Object.freeze({
+  HEATWAVE:           'heatwave',
+  ECONOMIC_CRISIS:    'economic_crisis',
+  POTATO_PLAGUE:      'potato_plague',
+  TORNADO:            'tornado',
+  FLOOD:              'flood',
+  PRESIDENTIAL_VISIT: 'presidential_visit',
+  PLUMBING_CRISIS:    'plumbing_crisis',
+  NAUSEA_PLAGUE:      'nausea_plague',
+  ILLNESS_OUTBREAK:   'illness_outbreak',
+  COMPETING_PARK:     'competing_park',
+  UNION_THREAT:       'union_threat',
+  EMBEZZLEMENT:       'embezzlement',
+  ALIEN_ENCOUNTER:    'alien_encounter',
+});
+
 const AWARD_ID = Object.freeze({
   HIGHEST_RIDE: 'highest_ride',
   LONGEST_RIDE: 'longest_ride',

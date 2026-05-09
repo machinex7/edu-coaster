@@ -1,0 +1,625 @@
+[
+  {
+    "id": "heatwave",
+    "name": "Heatwave",
+    "emoji": "🌡️",
+    "weight": 3,
+    "minRound": 4,
+    "cooldown": 26,
+    "phases": [
+      {
+        "name": "Heat Advisory",
+        "durationWeeks": 1,
+        "flavor": [
+          "🌡️ The National Weather Service has issued a severe heat advisory. Temperatures are forecast to shatter records next week — and your freezers are already struggling."
+        ],
+        "effects": [
+          { "type": "demand_multiplier", "value": 1.05 }
+        ]
+      },
+      {
+        "name": "Heatwave Strikes",
+        "durationWeeks": 2,
+        "flavor": [
+          "🌡️ The heatwave has arrived in full force. Your walk-in freezers have been overwhelmed — all perishable food stock has spoiled. The heat is drawing thrill-seekers, but there's nothing to feed them.",
+          "🌡️ Temperatures remain punishing. Visitors are clustering near fountains and shade structures. Ride queues are shorter than normal as guests take shelter between attractions."
+        ],
+        "effects": [
+          { "type": "spoil_all_food", "timing": "on_start" },
+          { "type": "demand_multiplier", "value": 1.08 }
+        ]
+      },
+      {
+        "name": "Cool Front",
+        "durationWeeks": 1,
+        "flavor": [
+          "🌡️ A cool front has broken the heatwave. Temperatures are returning to normal and your freezers are back online. Time to restock before the next rush."
+        ],
+        "effects": []
+      }
+    ]
+  },
+
+  {
+    "id": "economic_crisis",
+    "name": "Economic Crisis",
+    "emoji": "📉",
+    "weight": 1,
+    "minRound": 26,
+    "cooldown": 104,
+    "phases": [
+      {
+        "name": "Market Volatility",
+        "durationWeeks": 4,
+        "flavor": [
+          "📉 Financial markets opened sharply down this week. Analysts are warning of serious systemic instability — consumers are already pulling back on discretionary spending.",
+          "📉 Market volatility is accelerating. Two regional banks have frozen withdrawals. Consumer confidence fell to a ten-year low in the latest survey.",
+          "📉 The Federal Reserve held an emergency meeting. Layoffs are spreading across major employers in your region. Visitor spending on non-essentials is tightening noticeably.",
+          "📉 A formal recession has been declared. The economic crisis is here — begin preparing for a prolonged period of reduced revenue and rising costs."
+        ],
+        "effects": [
+          { "type": "demand_multiplier", "value": 0.9 }
+        ]
+      },
+      {
+        "name": "Full Recession",
+        "durationWeeks": 26,
+        "flavor": [
+          "📉 Inflation is now running at 10% annually. Your supply and staffing costs are rising fast while visitor wallets are tighter than ever.",
+          "📉 Unemployment in your region climbed again this month. Families are cutting back on non-essential outings — your attendance is feeling it.",
+          "📉 Consumer sentiment remains deeply negative. Discretionary spending on entertainment is a luxury fewer households can afford.",
+          "📉 A string of local business closures has hit your visitor base. Lower and middle income brackets are visiting significantly less.",
+          "📉 Despite government stimulus discussions, no relief has arrived. Costs keep climbing while ticket price increases risk further demand erosion.",
+          "📉 Six weeks into the recession. Some economists are cautiously predicting a bottom, but there's no sign of recovery in your revenue figures yet.",
+          "📉 Midpoint of the crisis. A rival entertainment venue has temporarily closed — a grim reminder that this environment is dangerous for the industry.",
+          "📉 Wage growth is finally outpacing inflation in some sectors, but it hasn't reached your visitors' pockets yet. Hold the course.",
+          "📉 Early leading indicators — housing starts, consumer credit — are ticking upward. Recovery may be months away, but it is coming.",
+          "📉 The stock market has staged a tentative rally. Economists remain cautious, but the worst of the recession appears to be behind us."
+        ],
+        "effects": [
+          { "type": "inflation_override", "value": 0.10 },
+          { "type": "demand_multiplier", "value": 0.75 }
+        ]
+      },
+      {
+        "name": "Slow Recovery",
+        "durationWeeks": 8,
+        "flavor": [
+          "📉 The recession has officially ended, though recovery will be gradual. Inflation is easing back toward normal levels.",
+          "📉 Consumer confidence is slowly rebuilding. A few higher-income visitors are returning, but broader recovery will take time.",
+          "📉 Employment is rising. Your attendance numbers are beginning to creep back up toward pre-crisis levels.",
+          "📉 The economic recovery is broadening. Spending on leisure and entertainment is recovering faster than many economists predicted."
+        ],
+        "effects": [
+          { "type": "demand_multiplier", "value": 0.88 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "id": "potato_plague",
+    "name": "Potato Blight",
+    "emoji": "🥔",
+    "weight": 2,
+    "minRound": 8,
+    "cooldown": 52,
+    "phases": [
+      {
+        "name": "Blight Detected",
+        "durationWeeks": 2,
+        "flavor": [
+          "🥔 The USDA has confirmed a fast-spreading blight in potato crops across the region. Early estimates suggest supply disruptions within weeks.",
+          "🥔 The blight is spreading faster than containment efforts. Several major potato processors have halted operations. Prices are already ticking upward."
+        ],
+        "effects": [
+          { "type": "ingredient_cost_multiplier", "itemIds": ["fries", "tater_tots"], "value": 1.5 }
+        ]
+      },
+      {
+        "name": "Price Spike",
+        "durationWeeks": 6,
+        "flavor": [
+          "🥔 The potato shortage has peaked. Fries and tater tots now cost four times their normal price — if you can even source them. Consider whether your menu pricing reflects this reality.",
+          "🥔 Suppliers are rationing potato products. Long lines at your concession stands are revealing just how much guests expect fries with everything.",
+          "🥔 There is no end in sight for the potato crisis. Operators who diversified their menus early are faring far better than those who did not.",
+          "🥔 Alternative potato sources from overseas are arriving, but logistics costs are keeping prices sky-high. Combo meals built around potatoes are a losing proposition right now.",
+          "🥔 Some farms are reporting early signs of new growth, but it will be weeks before supply normalizes. Ingredient costs remain punishing.",
+          "🥔 The blight appears to be receding in the northern growing regions. Economists expect a price correction within the next few weeks."
+        ],
+        "effects": [
+          { "type": "ingredient_cost_multiplier", "itemIds": ["fries", "tater_tots"], "value": 4.0 }
+        ]
+      },
+      {
+        "name": "Market Normalizing",
+        "durationWeeks": 2,
+        "flavor": [
+          "🥔 Fresh harvests are coming in from unaffected regions. Potato prices are dropping — though it will take another week or two to fully normalize.",
+          "🥔 The potato blight is over. Supply chains have fully restored. Your concessions ingredient costs are back to normal."
+        ],
+        "effects": [
+          { "type": "ingredient_cost_multiplier", "itemIds": ["fries", "tater_tots"], "value": 1.5 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "id": "tornado",
+    "name": "Freak Tornado",
+    "emoji": "🌪️",
+    "weight": 1,
+    "minRound": 6,
+    "cooldown": 78,
+    "phases": [
+      {
+        "name": "Tornado Watch",
+        "durationWeeks": 1,
+        "flavor": [
+          "🌪️ The National Weather Service has issued a tornado watch for the county. Conditions are unusually favorable for rotation. Many guests are cutting their visits short — attendance is down sharply."
+        ],
+        "effects": [
+          { "type": "demand_multiplier", "value": 0.55 }
+        ]
+      },
+      {
+        "name": "Direct Hit",
+        "durationWeeks": 1,
+        "flavor": [
+          "🌪️ A tornado touched down directly in the park. Structural damage is severe across the board — every ride has accumulated 500 additional wear points from debris impacts and stress loads. Your engineers have their work cut out."
+        ],
+        "effects": [
+          { "type": "wear_all_rides", "amount": 500, "timing": "on_start" },
+          { "type": "demand_multiplier", "value": 0.1 }
+        ]
+      },
+      {
+        "name": "Assessment & Cleanup",
+        "durationWeeks": 2,
+        "flavor": [
+          "🌪️ Debris crews are clearing the park. Safety inspectors are working through each attraction one by one. Some rides may require significant repairs before they can reopen.",
+          "🌪️ Cleanup is nearly complete. Insurance adjusters have filed their reports. The park is operational again, though visitor confidence is still recovering."
+        ],
+        "effects": [
+          { "type": "demand_multiplier", "value": 0.7 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "id": "flood",
+    "name": "Catastrophic Flood",
+    "emoji": "🌊",
+    "weight": 1,
+    "minRound": 6,
+    "cooldown": 78,
+    "phases": [
+      {
+        "name": "Flood Warning",
+        "durationWeeks": 1,
+        "flavor": [
+          "🌊 Upstream dams are at capacity after record rainfall. Emergency services have issued a flood warning for the park's watershed. Prepare for the worst — floodwaters could arrive as early as next week."
+        ],
+        "effects": [
+          { "type": "demand_multiplier", "value": 0.45 }
+        ]
+      },
+      {
+        "name": "The Flood",
+        "durationWeeks": 1,
+        "flavor": [
+          "🌊 Floodwaters have surged through the park. Half your path infrastructure has been washed away or rendered unsafe and demolished. Every ride has sustained 100 wear points of water damage. The park is closed until further notice."
+        ],
+        "effects": [
+          { "type": "wear_all_rides", "amount": 100, "timing": "on_start" },
+          { "type": "demolish_paths_fraction", "fraction": 0.5, "timing": "on_start" },
+          { "type": "demand_multiplier", "value": 0.05 }
+        ]
+      },
+      {
+        "name": "Drainage",
+        "durationWeeks": 2,
+        "flavor": [
+          "🌊 Waters are receding. The scale of the path damage is becoming clear — rebuilding the park's walkways will require significant investment and planning.",
+          "🌊 Drainage is complete. Engineers can now safely assess ride damage. Reconstruction of lost paths can begin immediately."
+        ],
+        "effects": [
+          { "type": "demand_multiplier", "value": 0.5 }
+        ]
+      },
+      {
+        "name": "Recovery",
+        "durationWeeks": 2,
+        "flavor": [
+          "🌊 The park is reopening in stages as paths and rides are restored. Visitors are returning cautiously.",
+          "🌊 Flood recovery is complete. Operations are fully restored. The experience has given your team a new appreciation for infrastructure resilience."
+        ],
+        "effects": [
+          { "type": "demand_multiplier", "value": 0.8 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "id": "presidential_visit",
+    "name": "Presidential Visit",
+    "emoji": "🇺🇸",
+    "weight": 2,
+    "minRound": 12,
+    "cooldown": 104,
+    "phases": [
+      {
+        "name": "Secret Service Contact",
+        "durationWeeks": 1,
+        "flavor": [
+          "🇺🇸 Two Secret Service agents arrived at your management office this morning. The President is considering a very public visit to your park — but only if your security record is spotless. You have four weeks to prove it. Any unhandled incident will disqualify the visit."
+        ],
+        "effects": []
+      },
+      {
+        "name": "Security Window",
+        "durationWeeks": 4,
+        "flavor": [
+          "🇺🇸 Week one of the security window. The advance team has established a command post near your entrance. Every unhandled incident is being logged. Zero tolerance.",
+          "🇺🇸 Week two. An advance team member was spotted observing your gate operations this morning. Your security staff are performing under scrutiny.",
+          "🇺🇸 Week three. The President's schedule is being finalized. Your record so far is being reviewed at the highest levels. Hold the line.",
+          "🇺🇸 Final week. The decision will be made after this round. A flawless security record today seals the deal."
+        ],
+        "challenge": {
+          "conditionType": "security_clean",
+          "failImmediately": true,
+          "onSuccess": 2,
+          "onFail": 3
+        },
+        "effects": []
+      },
+      {
+        "name": "Successful Visit",
+        "durationWeeks": 2,
+        "flavor": [
+          "🇺🇸 The President visited your park today. National media coverage is extraordinary — footage of the visit has aired on every major network. Attendance is surging from across the country.",
+          "🇺🇸 The buzz from the presidential visit continues into a second week. Tour operators are adding your park to regional packages. Enjoy the spotlight."
+        ],
+        "effects": [
+          { "type": "demand_multiplier", "value": 1.45 }
+        ]
+      },
+      {
+        "name": "Visit Cancelled",
+        "durationWeeks": 1,
+        "flavor": [
+          "🇺🇸 The visit has been cancelled. The Secret Service cited security concerns at your facility. The story has made the local news — a public reminder that your security operation fell short when it mattered most."
+        ],
+        "effects": [
+          { "type": "demand_multiplier", "value": 0.88 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "id": "plumbing_crisis",
+    "name": "City Plumbing Crisis",
+    "emoji": "🚽",
+    "weight": 3,
+    "minRound": 8,
+    "cooldown": 26,
+    "phases": [
+      {
+        "name": "Reports Coming In",
+        "durationWeeks": 1,
+        "flavor": [
+          "🚽 Maintenance is receiving a flood of complaints about bathrooms across the park. City water pressure readings are anomalous — something bigger may be brewing in the municipal supply lines."
+        ],
+        "effects": []
+      },
+      {
+        "name": "Full Breakdown",
+        "durationWeeks": 2,
+        "flavor": [
+          "🚽 A major failure in the city's water main has taken out plumbing across a wide area including your park. Your bathrooms are non-functional — they're generating no cleaning benefit and guests are not happy. Portable units have been ordered but supply is limited.",
+          "🚽 Portable restroom units have arrived but they're no substitute. Mess is accumulating faster than your janitors can manage without the bathroom network helping. City repairs are underway but delayed."
+        ],
+        "effects": [
+          { "type": "bathroom_disabled" }
+        ]
+      },
+      {
+        "name": "Service Restored",
+        "durationWeeks": 1,
+        "flavor": [
+          "🚽 City workers completed the main repair overnight. Water service and full bathroom functionality are restored across the park. Your cleaning situation should normalize within the week."
+        ],
+        "effects": []
+      }
+    ]
+  },
+
+  {
+    "id": "nausea_plague",
+    "name": "Nausea Plague",
+    "emoji": "🤢",
+    "weight": 2,
+    "minRound": 10,
+    "cooldown": 52,
+    "phases": [
+      {
+        "name": "Initial Reports",
+        "durationWeeks": 2,
+        "flavor": [
+          "🤢 A mysterious illness causing sudden, intense nausea is being reported across the region. Early speculation — not yet confirmed — suggests a link to high-intensity thrill rides. Visitors are beginning to hesitate.",
+          "🤢 More cases are being reported and the local news has picked up the story. Ride attendance is softening as rumors spread faster than the facts."
+        ],
+        "effects": [
+          { "type": "ride_demand_multiplier", "value": 0.92 }
+        ]
+      },
+      {
+        "name": "Outbreak Spreading",
+        "durationWeeks": 4,
+        "flavor": [
+          "🤢 Health officials have confirmed the nausea outbreak is real, though the cause remains unclear. Ride demand is dropping sharply. Consider leaning harder on food, merchandise, and other attractions to compensate.",
+          "🤢 The outbreak is intensifying. Major media coverage is keeping the story alive. Almost no one wants to ride anything — your non-ride revenue streams are now your lifeline.",
+          "🤢 Public health guidance is actively discouraging thrill rides. Ride revenue has collapsed. Food and shopping are carrying the park.",
+          "🤢 A slight flattening in new case counts offers cautious hope. Experts believe the outbreak may peak within the next few weeks."
+        ],
+        "effects": [
+          { "type": "ride_demand_multiplier", "value": 0.7, "rampPerRound": -0.06 }
+        ]
+      },
+      {
+        "name": "Receding",
+        "durationWeeks": 2,
+        "flavor": [
+          "🤢 Case counts are dropping. The health scare is receding and cautious visitors are beginning to return to ride queues.",
+          "🤢 The nausea plague has ended. Health officials have cleared thrill rides of any connection to the outbreak. Ride attendance is returning to normal."
+        ],
+        "effects": [
+          { "type": "ride_demand_multiplier", "value": 0.85 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "id": "illness_outbreak",
+    "name": "Staff Illness Outbreak",
+    "emoji": "🤒",
+    "weight": 3,
+    "minRound": 6,
+    "cooldown": 26,
+    "phases": [
+      {
+        "name": "First Cases",
+        "durationWeeks": 1,
+        "flavor": [
+          "🤒 A nasty bug is circulating through your workforce. Several staff members called out sick today. Monitor your roster — this could spread quickly."
+        ],
+        "effects": [
+          { "type": "staff_sick_multiplier", "value": 1.5 }
+        ]
+      },
+      {
+        "name": "Full Outbreak",
+        "durationWeeks": 4,
+        "flavor": [
+          "🤒 The illness has swept through your staff. Sick-out rates are triple normal levels. Skeleton crews are struggling to maintain safe operations — consider temporarily closing lower-priority attractions.",
+          "🤒 The outbreak shows no sign of peaking. Healthy employees are picking up extra shifts and morale is fraying. Watch your staffing coverage carefully.",
+          "🤒 Still no end in sight. Long shifts for your remaining healthy staff are unsustainable. This is the economic argument for cross-training employees across job roles.",
+          "🤒 Case counts appear to be stabilizing. With any luck, staff will begin returning next week. Hang on."
+        ],
+        "effects": [
+          { "type": "staff_sick_multiplier", "value": 3.0 }
+        ]
+      },
+      {
+        "name": "Recovery",
+        "durationWeeks": 2,
+        "flavor": [
+          "🤒 Staff are starting to return. The worst of the outbreak is behind you.",
+          "🤒 The illness has fully cleared your workforce. Normal staffing levels are restored."
+        ],
+        "effects": [
+          { "type": "staff_sick_multiplier", "value": 1.5 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "id": "competing_park",
+    "name": "Competing Park Opens",
+    "emoji": "🏟️",
+    "weight": 1,
+    "minRound": 30,
+    "cooldown": 999,
+    "phases": [
+      {
+        "name": "Construction Rumors",
+        "durationWeeks": 4,
+        "flavor": [
+          "🏟️ Local news is reporting that a national amusement park chain has purchased a large parcel of land fifteen miles from your park. No construction has begun, but the rumor alone has visitors wondering about their options.",
+          "🏟️ Groundbreaking at the new park has been confirmed. The chain is promising a major investment — they're targeting your local and nearby visitor base directly.",
+          "🏟️ Steel is going up at the competing park at an impressive pace. Visitor surveys are showing growing awareness of the rival attraction. You have one week before they open.",
+          "🏟️ The new park opens next week. Prepare yourself — the competitive landscape is about to change permanently."
+        ],
+        "effects": []
+      },
+      {
+        "name": "Grand Opening",
+        "durationWeeks": 1,
+        "flavor": [
+          "🏟️ The competing park has opened. Local and nearby visitors now have a genuine alternative — your local and nearby demographic attendance chances have been permanently cut in half. Guests who do visit also expect more: desired rides per visit has permanently increased."
+        ],
+        "effects": [
+          { "type": "demographic_chance_multiplier", "bracketKey": "DISTANCE_BRACKETS", "bracketIndices": [0, 1], "value": 0.5, "timing": "on_start" },
+          { "type": "desired_rides_addend", "value": 1, "timing": "on_start" }
+        ]
+      },
+      {
+        "name": "New Normal",
+        "durationWeeks": 2,
+        "flavor": [
+          "🏟️ The dust is settling. Your local visitor numbers are down but stabilizing. The path to growth now runs through the regional and destination markets — or through delivering an experience the competition simply cannot match.",
+          "🏟️ Competition is permanent. There are no shortcuts back to the old attendance figures. Strategy matters more than ever."
+        ],
+        "effects": []
+      }
+    ]
+  },
+
+  {
+    "id": "union_threat",
+    "name": "Union Organizing Drive",
+    "emoji": "✊",
+    "weight": 2,
+    "minRound": 15,
+    "cooldown": 78,
+    "phases": [
+      {
+        "name": "Rumblings",
+        "durationWeeks": 2,
+        "flavor": [
+          "✊ Workers are talking in break rooms and parking lots. Whispers of unionization have reached management — wages, working conditions, and benefits are the recurring themes.",
+          "✊ The talk is getting louder and more organized. A small group of employees has begun circulating union authorization cards. Management cannot ignore this much longer."
+        ],
+        "effects": []
+      },
+      {
+        "name": "Formal Demands",
+        "durationWeeks": 8,
+        "flavor": [
+          "✊ A formal organizing committee has presented management with a written demand: provide employee benefits within 8 weeks or they will authorize a strike. Unlock Employee Benefits through Business Research to avert this.",
+          "✊ 7 weeks remaining. The organizing committee is holding regular meetings with growing attendance. Unlock Employee Benefits to demonstrate goodwill.",
+          "✊ 6 weeks remaining. Union literature is appearing throughout staff areas. This is an organizing drive with real momentum behind it.",
+          "✊ 5 weeks remaining. A solidarity march through the park during operating hours drew attention from guests. The pressure is mounting.",
+          "✊ 4 weeks remaining. National union leadership has arrived to support the organizing campaign. The story has made the regional business press.",
+          "✊ 3 weeks remaining. A strike authorization vote passed with a strong majority. Unlock Employee Benefits — this is your clearest warning yet.",
+          "✊ 2 weeks remaining. Picket signs have been spotted in staff lockers. This is your final opportunity to prevent a walkout.",
+          "✊ Final week. The decision is made after this round. Unlock Employee Benefits or face the consequences of a strike."
+        ],
+        "challenge": {
+          "conditionType": "benefits_unlocked",
+          "failImmediately": false,
+          "onSuccess": 2,
+          "onFail": 3
+        },
+        "effects": []
+      },
+      {
+        "name": "Agreement Reached",
+        "durationWeeks": 2,
+        "flavor": [
+          "✊ Management has met the workers' demands. The organizing drive has been suspended. Staff morale has surged — employees feel heard and valued in a way they have not felt before.",
+          "✊ A new sense of partnership has taken hold. Workers are energized. This difficult episode has strengthened your organization."
+        ],
+        "effects": [
+          { "type": "staff_mood_bonus", "value": 20, "timing": "on_start" }
+        ]
+      },
+      {
+        "name": "Strike",
+        "durationWeeks": 3,
+        "flavor": [
+          "✊ Workers have walked off the job. 30% of your staff are now on strike and refusing to report. Operations are severely degraded across all departments.",
+          "✊ The strike continues. Guests are seeing picket lines at your entrance. Some are turning around. The cost of not acting earlier is now visible in every revenue line.",
+          "✊ After weeks on the line, strikers are beginning to return — demoralized but back. The strike is ending, but trust has been damaged. Employee Benefits remain the right response."
+        ],
+        "effects": [
+          { "type": "staff_strike_fraction", "value": 0.3, "timing": "on_start" }
+        ]
+      }
+    ]
+  },
+
+  {
+    "id": "embezzlement",
+    "name": "Embezzlement Discovered",
+    "emoji": "💸",
+    "weight": 2,
+    "minRound": 10,
+    "cooldown": 104,
+    "triggerCondition": { "type": "has_employee", "jobId": "business_analyst" },
+    "phases": [
+      {
+        "name": "Audit Anomaly",
+        "durationWeeks": 2,
+        "flavor": [
+          "💸 Your accounting team has flagged irregular transactions in the operating ledger. The discrepancies are small but systematic — the kind a careful person might create intentionally. An internal audit has been launched.",
+          "💸 The audit is deepening. The pattern of irregularities suggests someone with direct access to financial systems. Investigators believe the total exposure may be significant."
+        ],
+        "effects": []
+      },
+      {
+        "name": "The Discovery",
+        "durationWeeks": 1,
+        "flavor": [
+          "💸 The audit is complete. One of your Business Analysts has been systematically siphoning funds through falsified vendor invoices. Half your liquid cash balance is gone. The employee has been terminated and the matter referred to law enforcement. This is why financial controls, audits, and oversight exist."
+        ],
+        "effects": [
+          { "type": "halve_cash", "timing": "on_start" },
+          { "type": "fire_employee", "jobId": "business_analyst", "timing": "on_start" }
+        ]
+      },
+      {
+        "name": "Aftermath",
+        "durationWeeks": 2,
+        "flavor": [
+          "💸 Investigators are pursuing the case. Your accounting procedures have been overhauled with stronger internal controls. The lesson is expensive but clear.",
+          "💸 The investigation is closed. You have implemented segregation of duties and mandatory dual-approval on large transactions. A painful but important lesson in financial governance."
+        ],
+        "effects": []
+      }
+    ]
+  },
+
+  {
+    "id": "alien_encounter",
+    "name": "Alien Encounter",
+    "emoji": "👽",
+    "weight": 1,
+    "minRound": 20,
+    "cooldown": 999,
+    "phases": [
+      {
+        "name": "Object Detected",
+        "durationWeeks": 2,
+        "flavor": [
+          "👽 NASA has confirmed an enormous unidentified object in a stable orbit above Earth. No communication, no explanation. Scientists are baffled. The public is fixated — and in a very strange way, this is great for amusement park attendance.",
+          "👽 The object has not moved or made contact. Excitement and anxiety are at a global boil. People are coping by seeking out entertainment and shared experiences. Your attendance is benefiting from the collective need to distract."
+        ],
+        "effects": [
+          { "type": "demand_multiplier", "value": 1.3 }
+        ]
+      },
+      {
+        "name": "Invasion",
+        "durationWeeks": 3,
+        "flavor": [
+          "👽 They are not friendly. The invasion has begun. Military assets have been deployed globally. Your park is empty — visitors are nowhere near recreational spending mode right now. Every ride has sustained mysterious energy-based damage.",
+          "👽 Alien forces have established a perimeter twenty miles from your location. The government has issued shelter-in-place advisories for non-essential businesses. Your rides are sitting idle, accruing stress from the periodic shockwave events.",
+          "👽 Resistance efforts are gaining ground. The military has pushed the perimeter back significantly. There are early reports of critical vulnerabilities in the alien technology. Cautious optimism is spreading."
+        ],
+        "effects": [
+          { "type": "wear_all_rides", "amount": 200, "timing": "on_start" },
+          { "type": "demand_multiplier", "value": 0.04 }
+        ]
+      },
+      {
+        "name": "Humanity Prevails",
+        "durationWeeks": 3,
+        "flavor": [
+          "👽 The alien forces have been repelled. Humanity has prevailed. The world is celebrating and your park is the perfect place to do it — attendance is at record levels as people pour out to reclaim normalcy and joy.",
+          "👽 Post-invasion euphoria is driving the strongest attendance you have ever seen. People desperately want to feel alive and have fun. Every revenue stream is surging.",
+          "👽 The shared experience of surviving the invasion has drawn communities together in ways nothing else could. That solidarity is still driving above-normal attendance. A strange but welcome silver lining."
+        ],
+        "effects": [
+          { "type": "demand_multiplier", "value": 1.55 }
+        ]
+      }
+    ]
+  }
+]

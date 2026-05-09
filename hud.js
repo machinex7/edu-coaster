@@ -237,6 +237,7 @@ function initHUD() {
   BalanceSheet.init();
   CashFlow.init();
   Budget.init();  Concessions.init();
+  Incidents.init();
   Staff.initPanel();
   initInventoryPanel();
   Charts.initModal();
@@ -275,6 +276,9 @@ function openPark() {
 function advanceRound() {
   round++;
   Concessions.onRoundAdvance();
+  // Tick incidents before processRound so computed properties (demandMultiplier,
+  // inflationOverride, etc.) are current when this round's revenue is calculated.
+  if (gameStage === STAGE.PLAY) Incidents.tick();
   const report     = Finance.processRound();
   const loanResult = Banking.processPendingLoan();
   Banking.processPendingLoc();
@@ -305,6 +309,7 @@ function advanceRound() {
   if (activePanel === 'survey')          Survey.buildPanel();
   if (activePanel === 'visitor-profile') VisitorProfile.buildPanel();
   if (activePanel === 'concessions')     Concessions.buildPanel();
+  if (activePanel === 'incidents')       Incidents.refreshPanel();
   showRoundSummary(report);
   nextWeekForecast   = futurecastForecast;
   futurecastForecast = forecastForRound(round + 2);
@@ -350,8 +355,13 @@ function showRoundSummary(report) {
   netEl.className   = net >= 0 ? 'summary-pos' : 'summary-neg';
 
   const eventsEl = document.getElementById('summary-events');
-  if (report.populationEvents.length > 0) {
-    eventsEl.innerHTML = report.populationEvents.map(e => `<div class="modal-event">${e.comment}</div>`).join('');
+  const incidentFlavor = Incidents.currentFlavor();
+  const allEvents = [
+    ...(incidentFlavor ? [{ comment: incidentFlavor }] : []),
+    ...report.populationEvents,
+  ];
+  if (allEvents.length > 0) {
+    eventsEl.innerHTML = allEvents.map(e => `<div class="modal-event">${e.comment}</div>`).join('');
     eventsEl.classList.remove('hidden');
   } else {
     eventsEl.classList.add('hidden');
@@ -387,6 +397,10 @@ function getDateLabel() {
 function updateAchievementIndicators() {
   const container = document.getElementById('achievement-indicators');
   const pills = [];
+
+  // Active incident pill — always shown first when an incident is running.
+  const incidentPill = Incidents.hudPill();
+  if (incidentPill) pills.push(incidentPill);
 
   if (Research.activeId) {
     const item = Research.items.find(i => i.id === Research.activeId);
@@ -553,6 +567,7 @@ function openPanel(panelId) {
   if (panelId === 'marketing')       Marketing.buildPanel();
   if (panelId === 'visitor-profile') VisitorProfile.buildPanel();
   if (panelId === 'concessions')     Concessions.buildPanel();
+  if (panelId === 'incidents')       Incidents.buildPanel();
   if (panelId === 'forms')           FormsPanel.buildPanel();
   if (panelId === 'parking')         buildParkingPanel();
   if (panelId === 'banking')         buildBankingPanel();

@@ -8,6 +8,11 @@ const Security = {
   // Read by calcDailyDemand() in finance.js.
   opinion: 0,
 
+  // Unhandled incident count from the most recently completed round.
+  // Set by Finance.processRound() so Incidents can evaluate the presidential
+  // visit challenge (requires 0 unhandled incidents each week).
+  lastRoundUnhandled: 0,
+
   // ── Coverage calculation ──────────────────────────────────────────────────
   // Returns how many path tiles fall within GUARD_RADIUS of at least one
   // staffed guard post. Posts are active guard_station facilities plus the

@@ -2862,3 +2862,93 @@
 .parking-bus-off { background: #374151; color: #9ca3af; }
 .parking-bus-on:hover  { background: #15803d; }
 .parking-bus-off:hover { background: #4b5563; }
+
+/* ── Incidents panel ── */
+.incidents-section {
+  padding: 10px 12px;
+  border-bottom: 1px solid #374151;
+}
+.incidents-section:last-child { border-bottom: none; }
+
+.incidents-section-header {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+.incident-active-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.incident-emoji  { font-size: 1.8rem; line-height: 1; flex-shrink: 0; }
+.incident-name   { font-size: 0.88rem; font-weight: 600; color: #f3f4f6; }
+.incident-phase  { font-size: 0.75rem; color: #9ca3af; margin-top: 2px; }
+.incident-weeks  { margin-left: auto; font-size: 0.75rem; color: #fbbf24; white-space: nowrap; }
+
+.incident-flavor {
+  font-size: 0.78rem;
+  color: #d1d5db;
+  line-height: 1.5;
+  margin: 0 0 10px;
+  font-style: italic;
+}
+
+.incident-effects-label {
+  font-size: 0.7rem;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+.incident-effects-list {
+  margin: 0;
+  padding-left: 16px;
+  font-size: 0.76rem;
+  color: #e5e7eb;
+  line-height: 1.6;
+}
+
+.incident-challenge-box {
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  padding: 8px 10px;
+  margin-top: 8px;
+}
+.incident-challenge-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #fbbf24;
+  margin-bottom: 4px;
+}
+.incident-challenge-desc {
+  font-size: 0.78rem;
+  color: #e5e7eb;
+  margin-bottom: 4px;
+}
+.incident-challenge-meta {
+  font-size: 0.7rem;
+  color: #6b7280;
+}
+
+.incident-perm-mod {
+  font-size: 0.76rem;
+  color: #f87171;
+  margin: 0 0 4px;
+}
+
+.incident-log-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  border-bottom: 1px solid #1f2937;
+  font-size: 0.75rem;
+}
+.incident-log-row:last-child { border-bottom: none; }
+.incident-log-emoji  { flex-shrink: 0; }
+.incident-log-name   { flex: 1; color: #d1d5db; }
+.incident-log-phase  { flex: 1; color: #6b7280; font-style: italic; }
+.incident-log-rounds { color: #4b5563; white-space: nowrap; }
