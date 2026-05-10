@@ -47,6 +47,8 @@ const Incidents = {
   bathroomsDisabled:        false, // stops bathrooms contributing to mess cleaning
   staffSickMultiplier:      1,     // multiplied into Staff sick-out rate
   ingredientCostMultipliers: {},   // { itemId: multiplier } on concessions orders
+  rideBuildCostMultiplier:  1,     // multiplied into ride/facility build cost in placeItem()
+  utilityCostMultiplier:    1,     // multiplied into per-ride utility cost in processRound()
 
   // ── Init ───────────────────────────────────────────────────────────────────
   // Loads incident definitions from incidents.json. Called from initHUD().
@@ -361,6 +363,8 @@ const Incidents = {
     this.bathroomsDisabled        = false;
     this.staffSickMultiplier      = 1;
     this.ingredientCostMultipliers = {};
+    this.rideBuildCostMultiplier  = 1;
+    this.utilityCostMultiplier    = 1;
 
     if (!this.active) return;
 
@@ -407,6 +411,24 @@ const Incidents = {
             (this.ingredientCostMultipliers[id] ?? 1) * effect.value;
         });
         break;
+
+      case 'ride_build_cost_multiplier': {
+        // Supports rampPerRound so costs climb week-over-week during a shortage
+        // and fall back during recovery. Clamped at 1.0 — costs never go below normal.
+        const ramp      = effect.rampPerRound ?? 0;
+        const effective = Math.max(1, effect.value + ramp * phaseWeeksElapsed);
+        this.rideBuildCostMultiplier *= effective;
+        break;
+      }
+
+      case 'utility_cost_multiplier': {
+        // Supports rampPerRound for escalating/recovering energy price shocks.
+        // Clamped at 1.0 so utility costs cannot drop below their baseline.
+        const ramp      = effect.rampPerRound ?? 0;
+        const effective = Math.max(1, effect.value + ramp * phaseWeeksElapsed);
+        this.utilityCostMultiplier *= effective;
+        break;
+      }
     }
   },
 
@@ -581,6 +603,18 @@ const Incidents = {
         return `Staff parental leave rate ×${effect.value} (permanent, applied on phase start)`;
       case 'demographic_count_multiplier':
         return `${effect.bracketKey} bracket populations ×${effect.value} (permanent, applied on phase start)`;
+      case 'ride_build_cost_multiplier': {
+        const ramp = effect.rampPerRound
+          ? ` (${effect.rampPerRound > 0 ? '+' : ''}${Math.round(effect.rampPerRound * 100)}%/wk)`
+          : '';
+        return `Ride & facility build costs ×${effect.value}${ramp}`;
+      }
+      case 'utility_cost_multiplier': {
+        const ramp = effect.rampPerRound
+          ? ` (${effect.rampPerRound > 0 ? '+' : ''}${Math.round(effect.rampPerRound * 100)}%/wk)`
+          : '';
+        return `Ride utility costs ×${effect.value}${ramp}`;
+      }
       default:
         return effect.type;
     }
