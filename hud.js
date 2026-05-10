@@ -357,11 +357,25 @@ function showRoundSummary(report) {
   const eventsEl = document.getElementById('summary-events');
   const incidentFlavor = Incidents.currentFlavor();
   const allEvents = [
-    ...(incidentFlavor ? [{ comment: incidentFlavor }] : []),
+    ...(incidentFlavor ? [{ comment: incidentFlavor, isIncident: true }] : []),
     ...report.populationEvents,
   ];
   if (allEvents.length > 0) {
-    eventsEl.innerHTML = allEvents.map(e => `<div class="modal-event">${e.comment}</div>`).join('');
+    eventsEl.innerHTML = allEvents.map(e => {
+      if (e.isIncident) {
+        // Strip leading emoji for the newspaper headline body.
+        const bodyText = e.comment.replace(/^[\p{Emoji_Presentation}\p{Extended_Pictographic}\s]+/u, '').trim();
+        const inc = Incidents.active;
+        const headline = inc ? `${inc.def.name}: ${inc.def.phases[inc.phaseIndex].name}` : 'Breaking News';
+        return `<div class="modal-event modal-event--incident">
+          <div class="modal-incident-masthead">★ The Daily Coaster ★</div>
+          <div class="modal-incident-rule"></div>
+          <div class="modal-incident-headline">${headline.toUpperCase()}</div>
+          <p class="modal-incident-body">${bodyText}</p>
+        </div>`;
+      }
+      return `<div class="modal-event">${e.comment}</div>`;
+    }).join('');
     eventsEl.classList.remove('hidden');
   } else {
     eventsEl.classList.add('hidden');

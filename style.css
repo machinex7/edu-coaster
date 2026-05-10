@@ -544,6 +544,55 @@ header h1 {
   text-align: center;
 }
 
+/* Newspaper clipping variant for incident flavor in the round summary modal. */
+.modal-event--incident {
+  background: #f5f0e4;
+  border: 1px solid #c4a86a;
+  border-top: 4px solid #1a1208;
+  border-radius: 2px;
+  padding: 8px 12px 10px;
+  box-shadow: 2px 3px 8px rgba(0,0,0,0.5);
+  text-align: left;
+  font-style: normal;
+  color: inherit;
+  margin-bottom: 4px;
+}
+
+.modal-incident-masthead {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 0.63rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #1a1208;
+  text-align: center;
+  margin-bottom: 3px;
+}
+
+.modal-incident-rule {
+  border: none;
+  border-top: 1px solid #1a1208;
+  margin: 0 0 5px;
+}
+
+.modal-incident-headline {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #0e0a04;
+  line-height: 1.2;
+  margin-bottom: 5px;
+}
+
+.modal-incident-body {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 0.76rem;
+  color: #1a1208;
+  line-height: 1.5;
+  margin: 0;
+  text-align: justify;
+}
+
 /* ── P&L statement exercise modal ── */
 .pl-modal-card {
   min-width: 560px;

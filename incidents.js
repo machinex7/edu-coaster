@@ -499,13 +499,39 @@ const Incidents = {
       `;
       activeSection.appendChild(hdr);
 
-      // Current flavor text.
+      // Current flavor text — rendered as a newspaper article clipping.
       const flavor = this.currentFlavor();
       if (flavor) {
-        const p = document.createElement('p');
-        p.className = 'incident-flavor';
-        p.textContent = flavor;
-        activeSection.appendChild(p);
+        const article = document.createElement('div');
+        article.className = 'incident-newspaper';
+
+        const masthead = document.createElement('div');
+        masthead.className = 'incident-newspaper-masthead';
+        masthead.textContent = '★ The Daily Coaster ★';
+
+        const rule = document.createElement('div');
+        rule.className = 'incident-newspaper-rule';
+
+        const headline = document.createElement('div');
+        headline.className = 'incident-newspaper-headline';
+        // Phase name as headline; incident name as kicker above it.
+        headline.innerHTML = `<span class="incident-newspaper-kicker">${def.name}</span>${phase.name}`;
+
+        const dateline = document.createElement('div');
+        dateline.className = 'incident-newspaper-dateline';
+        dateline.textContent = `${getDateLabel()} — SPECIAL REPORT`;
+
+        const body = document.createElement('p');
+        body.className = 'incident-newspaper-body';
+        // Strip leading emoji cluster for cleaner body copy.
+        body.textContent = flavor.replace(/^[\p{Emoji_Presentation}\p{Extended_Pictographic}\s]+/u, '').trim();
+
+        article.appendChild(masthead);
+        article.appendChild(rule);
+        article.appendChild(headline);
+        article.appendChild(dateline);
+        article.appendChild(body);
+        activeSection.appendChild(article);
       }
 
       // Effects summary.

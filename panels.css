@@ -2889,12 +2889,71 @@
 .incident-phase  { font-size: 0.75rem; color: #9ca3af; margin-top: 2px; }
 .incident-weeks  { margin-left: auto; font-size: 0.75rem; color: #fbbf24; white-space: nowrap; }
 
-.incident-flavor {
-  font-size: 0.78rem;
-  color: #d1d5db;
-  line-height: 1.5;
-  margin: 0 0 10px;
+/* Newspaper article clipping that wraps the incident flavor text. */
+.incident-newspaper {
+  background: #f5f0e4;
+  border: 1px solid #c4a86a;
+  border-top: 4px solid #1a1208;
+  border-radius: 2px;
+  padding: 10px 12px 12px;
+  margin: 0 0 12px;
+  box-shadow: 2px 3px 8px rgba(0,0,0,0.45);
+}
+
+.incident-newspaper-masthead {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #1a1208;
+  text-align: center;
+  margin-bottom: 4px;
+}
+
+.incident-newspaper-rule {
+  border: none;
+  border-top: 1px solid #1a1208;
+  margin: 0 0 6px;
+}
+
+.incident-newspaper-headline {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0e0a04;
+  line-height: 1.2;
+  text-transform: uppercase;
+  margin-bottom: 3px;
+}
+
+.incident-newspaper-kicker {
+  display: block;
+  font-size: 0.62rem;
+  font-weight: 400;
   font-style: italic;
+  letter-spacing: 0.05em;
+  color: #5a4a30;
+  text-transform: none;
+  margin-bottom: 1px;
+}
+
+.incident-newspaper-dateline {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 0.62rem;
+  font-style: italic;
+  color: #6b5a3e;
+  margin-bottom: 6px;
+  letter-spacing: 0.03em;
+}
+
+.incident-newspaper-body {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 0.78rem;
+  color: #1a1208;
+  line-height: 1.55;
+  margin: 0;
+  text-align: justify;
 }
 
 .incident-effects-label {
