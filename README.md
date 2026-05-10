@@ -42,17 +42,19 @@ python3 -m http.server
 | `membership.js` | Membership plan definitions, sales simulation, member attendance contribution, Admission-panel UI (`Membership` object) |
 | `animations.js` | Visual-only visitor animation system — path caching, sprite movement, trash and coin particles (`Animations` object) |
 | `hud.js` | HUD display, stage transitions, panel management, view mode toolbar, construction bottom bar, security SVG overlay, round summary modal, pricing panel |
+| `incidents.js` | Random multi-phase incident system — spawn logic, phase management, computed property outputs, panel rendering (`Incidents` object) |
 | `rides.json` | Ride catalogue |
 | `facilities.json` | Facility catalogue |
 | `shops.json` | Shop catalogue |
 | `merchandise.json` | Merchandise item catalogue (12 items: 3 price tiers × 4 categories) |
 | `suppliers.json` | Supplier catalogue (delivery time, surcharge; first entry unlocked at start) |
 | `concessions.json` | Concessions menu item catalogue (7 items: id, name, cost, mealValue; water cup is `alwaysAvailable`) |
+| `incidents.json` | Incident definitions — all incidents, their phases, effects, and challenge conditions |
 | `reqs.md` | Full game design document — read before adding features |
 
 **Script load order:**
 ```
-constants.js → unlock.js → population.js → game.js → grid.js → pathfinding.js → shopping.js → banking.js → finance.js → staff.js → staff-panel.js → security.js → history.js → pl-statement.js → balance-sheet.js → budget.js → forms-panel.js → concessions.js → membership.js → animations.js → hud.js
+constants.js → unlock.js → population.js → game.js → grid.js → pathfinding.js → shopping.js → banking.js → finance.js → staff.js → staff-panel.js → security.js → history.js → notifications.js → charts.js → survey.js → research.js → awards.js → discounts.js → marketing.js → visitor-profile.js → pl-statement.js → balance-sheet.js → cash-flow.js → budget.js → forms-panel.js → concessions.js → incidents.js → membership.js → animations.js → hud.js
 ```
 
 All cross-file calls happen at runtime (not parse time), so forward references inside method bodies are safe.
@@ -85,6 +87,7 @@ const Foo = {
 | `BalanceSheet` | `balance-sheet.js` | Annual balance sheet drag-and-drop exercise |
 | `Budget` | `budget.js` | Two-phase quarterly budget projection exercise |
 | `FormsPanel` | `forms-panel.js` | Review panel — stores and renders the latest completed submission for each form type |
+| `Incidents` | `incidents.js` | Random multi-phase incident system — spawn logic, phase management, computed property outputs, panel rendering |
 
 ---
 
@@ -429,6 +432,156 @@ At the end of each `advanceRound`: `nextWeekForecast = futurecastForecast`, then
 |---|---|
 | `WEATHER_SENSOR` | Shows the weather panel (Next Wk forecast) |
 | `WEATHER_STATION` | Additionally shows the +2 Wks futurecast slot |
+
+---
+
+## Incidents system (`incidents.js` + `incidents.json`)
+
+Random multi-phase events defined entirely in `incidents.json`. No code changes are required to add new incidents.
+
+### Spawn rules
+
+| Rule | Value |
+|---|---|
+| Per-round spawn chance (when eligible) | `SPAWN_CHANCE = 0.05` (5%) |
+| Global cooldown after any incident ends | `GLOBAL_COOLDOWN_ROUNDS = 4` rounds |
+| Annual cap | No more than 2 incidents may begin within any rolling 52-round window |
+| Per-incident cooldown | `cooldown` field in JSON; incident cannot re-spawn until that many rounds have passed since it last ended |
+| Minimum round | `minRound` field; incident not eligible until that round |
+| Trigger condition | Optional `triggerCondition` — e.g. `has_employee` requires a specific job to exist on the roster |
+
+When eligible, a weighted random draw selects from all qualifying incidents (`weight` field controls relative probability). Only one incident can be active at a time; `tick()` skips the spawn check entirely while `active !== null`.
+
+### Incident JSON schema (`incidents.json`)
+
+```json
+{
+  "id":               "unique_snake_case_string",
+  "name":             "Display Name",
+  "emoji":            "🌡️",
+  "weight":           2,
+  "minRound":         8,
+  "cooldown":         26,
+  "triggerCondition": { "type": "has_employee", "jobId": "business_analyst" },
+  "phases": [ ... ]
+}
+```
+
+| Field | Required | Notes |
+|---|---|---|
+| `id` | Yes | Unique identifier; used for per-incident cooldown tracking |
+| `name` | Yes | Panel and notification display name |
+| `emoji` | Yes | Used in notifications, HUD pill, and panel header |
+| `weight` | No | Relative spawn probability (default 1) |
+| `minRound` | No | Earliest round the incident can spawn (default 0) |
+| `cooldown` | No | Rounds before this incident can spawn again (default 0); use 999 for once-per-game |
+| `triggerCondition` | No | Additional runtime check; currently only `has_employee` is supported |
+| `phases` | Yes | Ordered array of phase objects |
+
+### Phase schema
+
+```json
+{
+  "name":          "Phase Display Name",
+  "durationWeeks": 4,
+  "flavor":        ["Week 1 narrative.", "Week 2 narrative."],
+  "challenge":     { ... },
+  "effects":       [ ... ]
+}
+```
+
+| Field | Notes |
+|---|---|
+| `name` | Shown in panel header and phase-change notifications |
+| `durationWeeks` | How many rounds this phase lasts before auto-advancing |
+| `flavor` | Array of narrative strings. Index 0 plays on the spawn round; subsequent indices play on subsequent weeks. The last entry repeats if elapsed > array length. |
+| `challenge` | Optional — see Challenge schema below |
+| `effects` | Array of effect objects (may be empty) |
+
+### Challenge schema
+
+```json
+{
+  "conditionType": "security_clean",
+  "failImmediately": true,
+  "onSuccess": 2,
+  "onFail": 3
+}
+```
+
+| Field | Notes |
+|---|---|
+| `conditionType` | `"security_clean"` — zero unhandled incidents last round; `"benefits_unlocked"` — EMPLOYEE_BENEFITS research completed |
+| `failImmediately` | `true`: condition re-evaluated every round — first failure jumps to `onFail` immediately; `false`: condition evaluated only once at phase end |
+| `onSuccess` | Phase index to advance to on success (0-based) |
+| `onFail` | Phase index to advance to on failure (0-based) |
+
+`onSuccess`/`onFail` indices that exceed the phase array length end the incident. Pass `null` to end the incident immediately.
+
+### Effect schema
+
+Each effect object has at minimum a `type` field. Effects with `"timing": "on_start"` fire exactly once when their phase begins; all others are recurring (recomputed every tick).
+
+#### Recurring effects (reset each tick, read by other systems)
+
+| `type` | Extra fields | What it does |
+|---|---|---|
+| `demand_multiplier` | `value` | Multiplied into `Finance.calcDailyDemand()` |
+| `ride_demand_multiplier` | `value`, `rampPerRound?` | Multiplied into `Finance.calcExcitement()`. Optional `rampPerRound` changes the effective value by that amount per week elapsed: `Math.max(0, value + rampPerRound × elapsed)` |
+| `inflation_override` | `value` | Replaces `Population.inflationRate` for the duration |
+| `bathroom_disabled` | *(none)* | Stops bathrooms contributing to mess cleanup |
+| `staff_sick_multiplier` | `value` | Multiplied into sick-out rate in `Staff.processSickness()` |
+| `ingredient_cost_multiplier` | `value`, `itemIds[]` | Multiplied into `Concessions` ingredient order costs for the listed item IDs |
+| `ride_build_cost_multiplier` | `value`, `rampPerRound?` | Multiplied into ride/facility build cost in `placeItem()`. Clamped at 1.0 minimum. Optional `rampPerRound`: `Math.max(1, value + rampPerRound × elapsed)` |
+| `utility_cost_multiplier` | `value`, `rampPerRound?` | Multiplied into per-ride utility cost in `Finance.calcUtilityCosts()`. Clamped at 1.0 minimum. Optional `rampPerRound`: `Math.max(1, value + rampPerRound × elapsed)` |
+
+#### One-shot effects (`"timing": "on_start"`)
+
+| `type` | Extra fields | What it does |
+|---|---|---|
+| `spoil_all_food` | *(none)* | Zeros all non-`alwaysAvailable` concessions stock |
+| `wear_all_rides` | `amount` | Adds `amount` wear points to every installed ride |
+| `demolish_paths_fraction` | `fraction` | Randomly demolishes `floor(paths.length × fraction)` path tiles immediately; clears animation path cache |
+| `halve_cash` | *(none)* | Sets `money = floor(money / 2)` |
+| `fire_employee` | `jobId` | Removes the first employee with matching `jobId` from the roster |
+| `staff_mood_bonus` | `value` | Adds `value` mood points (capped at 100) to every employee |
+| `staff_strike_fraction` | `value` | Forces `floor(working.length × value)` currently-working staff onto a 3-week absence |
+| `demographic_chance_multiplier` | `bracketKey`, `bracketIndices[]`, `value` | **Permanent.** Multiplies the `chance` field of the targeted `Population[bracketKey]` entries. Do NOT reset `baselineFavorablePopulation` afterward — the reduced market must produce a lasting multiplier < 1. |
+| `desired_rides_addend` | `value` | **Permanent.** Adds `value` to `Population.DESIRED_RIDES` |
+| `staff_parental_rate_multiplier` | `value` | **Permanent.** Multiplies `Staff.PARENTAL_LEAVE_RATE` by `value` |
+| `demographic_count_multiplier` | `bracketKey`, `bracketIndices[]`, `value` | **Permanent.** Multiplies the `count` field of the targeted `Population[bracketKey]` entries. Do NOT reset `baselineFavorablePopulation` — the enlarged market must produce a lasting multiplier > 1. |
+
+### Computed properties
+
+`Incidents._recomputeProperties()` runs every tick. All properties reset to their defaults, then the active phase's recurring effects are applied. Other systems read these properties directly — no scattered conditionals in those files.
+
+| Property | Default | Pending integration point |
+|---|---|---|
+| `demandMultiplier` | `1` | `Finance.calcDailyDemand()` |
+| `rideExcitementMultiplier` | `1` | `Finance.calcExcitement()` |
+| `inflationOverride` | `null` | Replace `Population.inflationRate` when non-null |
+| `bathroomsDisabled` | `false` | Mess cleanup logic |
+| `staffSickMultiplier` | `1` | `Staff.processSickness()` |
+| `ingredientCostMultipliers` | `{}` | `Concessions` order cost calculation |
+| `rideBuildCostMultiplier` | `1` | `placeItem()` in `game.js` |
+| `utilityCostMultiplier` | `1` | `Finance.calcUtilityCosts()` |
+
+### `hud.js` integration points
+
+| Where | What |
+|---|---|
+| `initHUD()` | `Incidents.init()` — fetches and parses `incidents.json` |
+| `advanceRound()` | `Incidents.tick()` called before `Finance.processRound()` |
+| `advanceRound()` | `Incidents.refreshPanel()` called after the round completes if the incidents panel is open |
+| `showRoundSummary()` | `Incidents.currentFlavor()` prepended to the population events list |
+| `updateAchievementIndicators()` | `Incidents.hudPill()` contributes a pill to the HUD indicator row |
+| `openPanel()` | `Incidents.buildPanel()` builds the side panel on open |
+
+### Adding a new incident
+
+1. Add an object to `incidents.json` with the schema above.
+2. If the incident requires a new effect type: add a `case` to `_applyOneShotEffect` (one-shot) or `_applyRecurringEffect` (recurring) in `incidents.js`, then read the new computed property in the relevant system file.
+3. If the incident requires a new challenge condition: add a `case` to `_evalChallenge` and a `case` to `_describeChallenge` in `incidents.js`.
 
 ---
 
@@ -954,5 +1107,13 @@ Saving either phase calls `FormsPanel.save({ type: 'budget-tentative' | 'budget-
 - `Population.utilityMultiplier` wired to round-by-round increases
 - Reports, graphs, and awards
 - Marketing and reputation
-- Events system and demographics
 - Login stage and teacher configuration
+- **Incidents integration hooks** — all `Incidents.*` computed properties are defined but not yet wired into the systems that should read them:
+  - `Incidents.demandMultiplier` → `Finance.calcDailyDemand()`
+  - `Incidents.rideExcitementMultiplier` → `Finance.calcExcitement()`
+  - `Incidents.inflationOverride` → inflation rate calculation
+  - `Incidents.bathroomsDisabled` → mess cleanup logic
+  - `Incidents.staffSickMultiplier` → `Staff.processSickness()`
+  - `Incidents.ingredientCostMultipliers` → `Concessions` order cost
+  - `Incidents.rideBuildCostMultiplier` → `placeItem()` in `game.js`
+  - `Incidents.utilityCostMultiplier` → `Finance.calcUtilityCosts()`

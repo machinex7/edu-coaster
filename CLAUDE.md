@@ -19,7 +19,7 @@ python3 -m http.server   # must be HTTP — fetch() won't work over file://
 ## Script load order (matters)
 
 ```
-constants.js → population.js → game.js → grid.js → pathfinding.js → shopping.js → banking.js → finance.js → staff.js → staff-panel.js → security.js → history.js → pl-statement.js → balance-sheet.js → cash-flow.js → concessions.js → membership.js → animations.js → hud.js
+constants.js → unlock.js → population.js → game.js → grid.js → pathfinding.js → shopping.js → banking.js → finance.js → staff.js → staff-panel.js → security.js → history.js → notifications.js → charts.js → survey.js → research.js → awards.js → discounts.js → marketing.js → visitor-profile.js → pl-statement.js → balance-sheet.js → cash-flow.js → budget.js → forms-panel.js → concessions.js → incidents.js → membership.js → animations.js → hud.js
 ```
 
 ---
@@ -97,6 +97,25 @@ Two game stages: **Setup** (instant builds, no income) → **Play** (weekly roun
 
 **Weather (`game.js`):** Two forecast slots: `nextWeekForecast` (applies this round) and `futurecastForecast` (2 weeks out). At the end of each round, `nextWeekForecast = futurecastForecast` and a new `futurecastForecast` is generated via `forecastForRound(round + 2)`. `forecastForRound` checks `HOLIDAY_FORECAST` (week 15 → 🐰, week 51 → 🎄) before falling back to `randomWeatherEmoji()`. Demand penalty: `WEATHER_DEMAND_REDUCTION` maps bad-weather emojis to a 0–1 reduction applied in `calcDailyDemand`. Per-item merch boost: `WEATHER_MERCHANDISE_MULTIPLIERS` maps an emoji to `{ itemId: multiplier }` applied to `attempts` in `Shopping.calcRevenue`. Weather panel in header is hidden until `WEATHER_SENSOR` research completes; futurecast slot hidden until `WEATHER_STATION`. To add a weather effect: add an entry to the relevant constant(s) in `game.js`.
 
+**Incidents (`Incidents` object in `incidents.js`):** Random multi-phase events defined entirely in `incidents.json` — no code changes needed to add new incidents. Only one incident is active at a time; the global spawn chance is 5% per round with a 4-round global cooldown after each incident ends and a hard cap of 2 incidents per 52-round year. Each incident is a sequence of named phases; phases advance automatically when their `durationWeeks` expires. Some phases have a `challenge` condition (`security_clean`, `benefits_unlocked`) that branches to an `onSuccess` or `onFail` phase index; `failImmediately: true` re-evaluates the challenge every round instead of only at phase end.
+
+`Incidents.tick()` is called in `advanceRound()` before `Finance.processRound()` so computed properties are fresh when revenue is calculated. After ticking, `_recomputeProperties()` resets all computed properties to their defaults and re-applies the active phase's recurring effects:
+
+| Property | Default | What reads it |
+|---|---|---|
+| `demandMultiplier` | 1 | `Finance.calcDailyDemand()` (pending hook) |
+| `rideExcitementMultiplier` | 1 | `Finance.calcExcitement()` (pending hook) |
+| `inflationOverride` | null | `Population.inflationRate` override (pending hook) |
+| `bathroomsDisabled` | false | Mess cleanup logic (pending hook) |
+| `staffSickMultiplier` | 1 | `Staff.processSickness()` (pending hook) |
+| `ingredientCostMultipliers` | `{}` | `Concessions` order cost (pending hook) |
+| `rideBuildCostMultiplier` | 1 | `placeItem()` in `game.js` (pending hook) |
+| `utilityCostMultiplier` | 1 | `Finance.calcUtilityCosts()` (pending hook) |
+
+Permanent effects (competing park, free childcare, embezzlement) mutate `Population` brackets or `Staff` constants directly via `on_start` one-shot effects; they never revert. **Do not reset `Population.baselineFavorablePopulation` after a permanent `demographic_chance_multiplier` or `demographic_count_multiplier` effect** — the baseline must stay at its game-start value so the mutated market produces a lasting multiplier ≠ 1.
+
+To add an incident: add an entry to `incidents.json`. No code changes required unless you need a new effect type (add a case to `_applyOneShotEffect` or `_applyRecurringEffect`) or a new challenge condition (add a case to `_evalChallenge`). See README.md for the full JSON schema.
+
 ---
 
 ## What's not yet implemented (priority candidates)
@@ -109,3 +128,4 @@ Two game stages: **Setup** (instant builds, no income) → **Play** (weekly roun
 - `Population.inflationRate` wired to cost adjustments
 - `Population.utilityMultiplier` wired to round-by-round increases
 - Supplier unlock triggers (currently only first supplier is ever unlocked)
+- **Incidents integration hooks** — all computed properties are defined but not yet read by other systems: `Incidents.demandMultiplier` in `Finance.calcDailyDemand()`, `Incidents.rideExcitementMultiplier` in `Finance.calcExcitement()`, `Incidents.inflationOverride` in inflation calculation, `Incidents.bathroomsDisabled` in mess cleanup, `Incidents.staffSickMultiplier` in `Staff.processSickness()`, `Incidents.ingredientCostMultipliers` in `Concessions` order cost, `Incidents.rideBuildCostMultiplier` in `placeItem()`, `Incidents.utilityCostMultiplier` in `Finance.calcUtilityCosts()`
