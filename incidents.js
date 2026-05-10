@@ -32,6 +32,7 @@ const Incidents = {
   // ── Cooldown tracking ──────────────────────────────────────────────────────
   _globalCooldown: 0,         // rounds before next spawn attempt
   _lastRoundById:  {},        // incidentId → round on which it last ended
+  _startRounds:    [],        // round number recorded each time any incident begins
 
   // ── Security challenge tracking ────────────────────────────────────────────
   // Set by Finance.processRound() each round so the challenge condition can
@@ -83,6 +84,9 @@ const Incidents = {
       return true;
     });
     if (eligible.length === 0) return;
+    // Hard cap: no more than 2 incidents may begin within any 52-round window.
+    const recentStarts = this._startRounds.filter(r => r > round - WEEKS_PER_YEAR).length;
+    if (recentStarts >= 2) return;
     if (Math.random() > this.SPAWN_CHANCE) return;
 
     const totalWeight = eligible.reduce((s, d) => s + (d.weight ?? 1), 0);
@@ -106,6 +110,7 @@ const Incidents = {
   // Initialises active state, applies phase-0 on_start effects, pushes a
   // notification, and injects the first flavor string into populationEvents.
   _startIncident(def) {
+    this._startRounds.push(round);
     this.active = {
       def,
       phaseIndex:         0,
