@@ -80,7 +80,9 @@ const Population = {
     this.populationEvents = this.populationEvents
       .map(e => ({ ...e, modifier: e.modifier > 0 ? e.modifier - 4 : e.modifier + 4 }))
       .filter(e => Math.abs(e.modifier) >= 4);
-    this.cumulativeInflation *= (1 + this.inflationRate / 52);
+    // Incidents can override the inflation rate for the duration of an economic event.
+    const effectiveInflationRate = Incidents.inflationOverride ?? this.inflationRate;
+    this.cumulativeInflation *= (1 + effectiveInflationRate / 52);
   },
 
   // Exponentially decays every bracket's favor toward 1.0 each round.

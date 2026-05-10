@@ -159,7 +159,9 @@ const Staff = {
   // point on top (3 kids + 2% global = 5% annual for that employee).
   applyInflation() {
     this.roster.forEach(s => {
-      const annualRate = Population.inflationRate + s.kids / 100;
+      // Incident inflation override replaces the baseline rate during economic crises.
+      const baseRate   = Incidents.inflationOverride ?? Population.inflationRate;
+      const annualRate = baseRate + s.kids / 100;
       s.costOfLiving = Math.round(s.costOfLiving * (1 + annualRate / 52));
     });
   },
@@ -201,7 +203,8 @@ const Staff = {
         const roll              = Math.random();
         const moodPenalty       = (100 - s.mood) / 2000; // low mood raises injury/sickness chance
         const injuryRate        = this.INJURY_RATE   + moodPenalty;
-        const sicknessRate      = this.SICKNESS_RATE + moodPenalty;
+        // Incident multiplier scales illness probability only (not injuries or vacation).
+        const sicknessRate      = this.SICKNESS_RATE * Incidents.staffSickMultiplier + moodPenalty;
         const vacationChance    = this.VACATION_RATE * this.VACATION_WEEKS;
         const parentalThreshold = injuryRate + sicknessRate + vacationChance + this.PARENTAL_LEAVE_RATE;
         if (roll < injuryRate) {

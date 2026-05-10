@@ -103,14 +103,14 @@ Two game stages: **Setup** (instant builds, no income) → **Play** (weekly roun
 
 | Property | Default | What reads it |
 |---|---|---|
-| `demandMultiplier` | 1 | `Finance.calcDailyDemand()` (pending hook) |
-| `rideExcitementMultiplier` | 1 | `Finance.calcExcitement()` (pending hook) |
-| `inflationOverride` | null | `Population.inflationRate` override (pending hook) |
-| `bathroomsDisabled` | false | Mess cleanup logic (pending hook) |
-| `staffSickMultiplier` | 1 | `Staff.processSickness()` (pending hook) |
-| `ingredientCostMultipliers` | `{}` | `Concessions` order cost (pending hook) |
-| `rideBuildCostMultiplier` | 1 | `placeItem()` in `game.js` (pending hook) |
-| `utilityCostMultiplier` | 1 | `Finance.calcUtilityCosts()` (pending hook) |
+| `demandMultiplier` | 1 | `Finance.calcDailyDemand()` |
+| `rideExcitementMultiplier` | 1 | `Finance.calcExcitement()` — scales effective ride opinion |
+| `inflationOverride` | null | `Population.tickEvents()` + `Staff.applyInflation()` — replaces `inflationRate` when non-null |
+| `bathroomsDisabled` | false | `Finance.calcMessGenerated()` — maximizes intense-ride mess distance |
+| `staffSickMultiplier` | 1 | `Staff.processSickness()` — multiplied into `SICKNESS_RATE` |
+| `ingredientCostMultipliers` | `{}` | `Concessions.onRoundAdvance()` + order panel display |
+| `rideBuildCostMultiplier` | 1 | `placeItem()` in `game.js` — multiplied at placement time |
+| `utilityCostMultiplier` | 1 | `Finance.payUtilityCosts()` |
 
 Permanent effects (competing park, free childcare, embezzlement) mutate `Population` brackets or `Staff` constants directly via `on_start` one-shot effects; they never revert. **Do not reset `Population.baselineFavorablePopulation` after a permanent `demographic_chance_multiplier` or `demographic_count_multiplier` effect** — the baseline must stay at its game-start value so the mutated market produces a lasting multiplier ≠ 1.
 
@@ -128,4 +128,3 @@ To add an incident: add an entry to `incidents.json`. No code changes required u
 - `Population.inflationRate` wired to cost adjustments
 - `Population.utilityMultiplier` wired to round-by-round increases
 - Supplier unlock triggers (currently only first supplier is ever unlocked)
-- **Incidents integration hooks** — all computed properties are defined but not yet read by other systems: `Incidents.demandMultiplier` in `Finance.calcDailyDemand()`, `Incidents.rideExcitementMultiplier` in `Finance.calcExcitement()`, `Incidents.inflationOverride` in inflation calculation, `Incidents.bathroomsDisabled` in mess cleanup, `Incidents.staffSickMultiplier` in `Staff.processSickness()`, `Incidents.ingredientCostMultipliers` in `Concessions` order cost, `Incidents.rideBuildCostMultiplier` in `placeItem()`, `Incidents.utilityCostMultiplier` in `Finance.calcUtilityCosts()`

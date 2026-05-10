@@ -557,14 +557,14 @@ Each effect object has at minimum a `type` field. Effects with `"timing": "on_st
 
 | Property | Default | Pending integration point |
 |---|---|---|
-| `demandMultiplier` | `1` | `Finance.calcDailyDemand()` |
-| `rideExcitementMultiplier` | `1` | `Finance.calcExcitement()` |
-| `inflationOverride` | `null` | Replace `Population.inflationRate` when non-null |
-| `bathroomsDisabled` | `false` | Mess cleanup logic |
-| `staffSickMultiplier` | `1` | `Staff.processSickness()` |
-| `ingredientCostMultipliers` | `{}` | `Concessions` order cost calculation |
-| `rideBuildCostMultiplier` | `1` | `placeItem()` in `game.js` |
-| `utilityCostMultiplier` | `1` | `Finance.calcUtilityCosts()` |
+| `demandMultiplier` | `1` | `Finance.calcDailyDemand()` — multiplied with other demand factors |
+| `rideExcitementMultiplier` | `1` | `Finance.calcExcitement()` — scales effective ride opinion before excitement is computed |
+| `inflationOverride` | `null` | `Population.tickEvents()` and `Staff.applyInflation()` — replaces `Population.inflationRate` when non-null |
+| `bathroomsDisabled` | `false` | `Finance.calcMessGenerated()` — uses max distance for intense-ride mess when true |
+| `staffSickMultiplier` | `1` | `Staff.processSickness()` — multiplied into `SICKNESS_RATE` |
+| `ingredientCostMultipliers` | `{}` | `Concessions.onRoundAdvance()` and order panel — per-item cost multiplied by `multipliers[item.id] ?? 1` |
+| `rideBuildCostMultiplier` | `1` | `placeItem()` in `game.js` — multiplied into build cost and weekly payment at placement time |
+| `utilityCostMultiplier` | `1` | `Finance.payUtilityCosts()` — multiplied into per-ride and per-facility utility cost |
 
 ### `hud.js` integration points
 
@@ -1108,12 +1108,3 @@ Saving either phase calls `FormsPanel.save({ type: 'budget-tentative' | 'budget-
 - Reports, graphs, and awards
 - Marketing and reputation
 - Login stage and teacher configuration
-- **Incidents integration hooks** — all `Incidents.*` computed properties are defined but not yet wired into the systems that should read them:
-  - `Incidents.demandMultiplier` → `Finance.calcDailyDemand()`
-  - `Incidents.rideExcitementMultiplier` → `Finance.calcExcitement()`
-  - `Incidents.inflationOverride` → inflation rate calculation
-  - `Incidents.bathroomsDisabled` → mess cleanup logic
-  - `Incidents.staffSickMultiplier` → `Staff.processSickness()`
-  - `Incidents.ingredientCostMultipliers` → `Concessions` order cost
-  - `Incidents.rideBuildCostMultiplier` → `placeItem()` in `game.js`
-  - `Incidents.utilityCostMultiplier` → `Finance.calcUtilityCosts()`
