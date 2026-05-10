@@ -32,6 +32,7 @@ const Incidents = {
   // ── Cooldown tracking ──────────────────────────────────────────────────────
   _globalCooldown: 0,         // rounds before next spawn attempt
   _lastRoundById:  {},        // incidentId → round on which it last ended
+  _startRounds:    [],        // round number recorded each time any incident begins
 
   // ── Security challenge tracking ────────────────────────────────────────────
   // Set by Finance.processRound() each round so the challenge condition can
@@ -47,6 +48,8 @@ const Incidents = {
   bathroomsDisabled:        false, // stops bathrooms contributing to mess cleaning
   staffSickMultiplier:      1,     // multiplied into Staff sick-out rate
   ingredientCostMultipliers: {},   // { itemId: multiplier } on concessions orders
+  rideBuildCostMultiplier:  1,     // multiplied into ride/facility build cost in placeItem()
+  utilityCostMultiplier:    1,     // multiplied into per-ride utility cost in processRound()
 
   // ── Init ───────────────────────────────────────────────────────────────────
   // Loads incident definitions from incidents.json. Called from initHUD().
@@ -81,6 +84,9 @@ const Incidents = {
       return true;
     });
     if (eligible.length === 0) return;
+    // Hard cap: no more than 2 incidents may begin within any 52-round window.
+    const recentStarts = this._startRounds.filter(r => r > round - WEEKS_PER_YEAR).length;
+    if (recentStarts >= 2) return;
     if (Math.random() > this.SPAWN_CHANCE) return;
 
     const totalWeight = eligible.reduce((s, d) => s + (d.weight ?? 1), 0);
@@ -104,6 +110,7 @@ const Incidents = {
   // Initialises active state, applies phase-0 on_start effects, pushes a
   // notification, and injects the first flavor string into populationEvents.
   _startIncident(def) {
+    this._startRounds.push(round);
     this.active = {
       def,
       phaseIndex:         0,
@@ -361,6 +368,8 @@ const Incidents = {
     this.bathroomsDisabled        = false;
     this.staffSickMultiplier      = 1;
     this.ingredientCostMultipliers = {};
+    this.rideBuildCostMultiplier  = 1;
+    this.utilityCostMultiplier    = 1;
 
     if (!this.active) return;
 
@@ -407,6 +416,24 @@ const Incidents = {
             (this.ingredientCostMultipliers[id] ?? 1) * effect.value;
         });
         break;
+
+      case 'ride_build_cost_multiplier': {
+        // Supports rampPerRound so costs climb week-over-week during a shortage
+        // and fall back during recovery. Clamped at 1.0 — costs never go below normal.
+        const ramp      = effect.rampPerRound ?? 0;
+        const effective = Math.max(1, effect.value + ramp * phaseWeeksElapsed);
+        this.rideBuildCostMultiplier *= effective;
+        break;
+      }
+
+      case 'utility_cost_multiplier': {
+        // Supports rampPerRound for escalating/recovering energy price shocks.
+        // Clamped at 1.0 so utility costs cannot drop below their baseline.
+        const ramp      = effect.rampPerRound ?? 0;
+        const effective = Math.max(1, effect.value + ramp * phaseWeeksElapsed);
+        this.utilityCostMultiplier *= effective;
+        break;
+      }
     }
   },
 
@@ -581,6 +608,18 @@ const Incidents = {
         return `Staff parental leave rate ×${effect.value} (permanent, applied on phase start)`;
       case 'demographic_count_multiplier':
         return `${effect.bracketKey} bracket populations ×${effect.value} (permanent, applied on phase start)`;
+      case 'ride_build_cost_multiplier': {
+        const ramp = effect.rampPerRound
+          ? ` (${effect.rampPerRound > 0 ? '+' : ''}${Math.round(effect.rampPerRound * 100)}%/wk)`
+          : '';
+        return `Ride & facility build costs ×${effect.value}${ramp}`;
+      }
+      case 'utility_cost_multiplier': {
+        const ramp = effect.rampPerRound
+          ? ` (${effect.rampPerRound > 0 ? '+' : ''}${Math.round(effect.rampPerRound * 100)}%/wk)`
+          : '';
+        return `Ride utility costs ×${effect.value}${ramp}`;
+      }
       default:
         return effect.type;
     }

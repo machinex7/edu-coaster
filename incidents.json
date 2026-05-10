@@ -669,5 +669,122 @@
         "effects": []
       }
     ]
+  },
+
+  {
+    "id": "steel_tariffs",
+    "name": "Steel Tariffs",
+    "emoji": "🔩",
+    "weight": 2,
+    "minRound": 8,
+    "cooldown": 78,
+    "phases": [
+      {
+        "name": "Tariff Announcement",
+        "durationWeeks": 2,
+        "flavor": [
+          "🔩 The government has imposed sweeping tariffs on imported steel and aluminum. Construction firms are warning of significant cost increases ahead — the effects on your ride build costs have not yet been felt, but they're coming.",
+          "🔩 Steel suppliers are already notifying contractors of incoming price adjustments. Lock in any ride construction you had planned to start soon; costs are about to climb."
+        ],
+        "effects": [
+          { "type": "demand_multiplier", "value": 0.97 }
+        ]
+      },
+      {
+        "name": "Steel Shortage",
+        "durationWeeks": 8,
+        "flavor": [
+          "🔩 The tariffs have hit supply chains hard. Domestic steel production cannot meet demand — ride construction costs are 20% above normal and rising each week.",
+          "🔩 Steel prices climbed again this week. Your ride construction costs are now 30% above baseline. Projects underway are being charged the elevated rate on each weekly payment.",
+          "🔩 The shortage is deepening. Overseas suppliers have redirected shipments elsewhere. Ride build costs are now 40% over normal.",
+          "🔩 Midpoint of the steel crisis. Costs are up over 50%. Industry groups are lobbying for tariff relief, but no policy change is expected soon.",
+          "🔩 Any new ride you begin construction on this week is priced at 60% above the baseline. Engineers are advising clients to delay non-essential builds where possible.",
+          "🔩 Steel prices are at their peak. Construction costs are 70% above normal — the most expensive building environment your park has faced.",
+          "🔩 There are early signs that domestic mills are ramping up capacity, but prices are still 80% over normal. Relief is at least weeks away.",
+          "🔩 Analysts expect the shortage to begin easing soon. Costs have reached roughly 90% above normal — the ceiling appears to be near."
+        ],
+        "effects": [
+          { "type": "ride_build_cost_multiplier", "value": 1.2, "rampPerRound": 0.1 }
+        ]
+      },
+      {
+        "name": "Supply Catches Up",
+        "durationWeeks": 6,
+        "flavor": [
+          "🔩 New domestic mills have come online. Steel supply is increasing and prices are beginning to fall from their peak of roughly 2× normal.",
+          "🔩 The tariff situation is stabilizing. Build costs are still elevated but falling week by week as supply catches up with demand.",
+          "🔩 Construction cost relief is accelerating. Contractors are reporting more competitive bids as the steel glut builds.",
+          "🔩 Ride build costs have dropped significantly from their peak. The market is normalizing as supply fully catches up.",
+          "🔩 Almost back to normal. A few more weeks and construction costs will return to pre-tariff levels.",
+          "🔩 Steel prices have fully normalized. Ride construction costs are back to their baseline — the tariff crisis is over."
+        ],
+        "effects": [
+          { "type": "ride_build_cost_multiplier", "value": 1.9, "rampPerRound": -0.15 }
+        ]
+      }
+    ]
+  },
+
+  {
+    "id": "energy_crisis",
+    "name": "Middle East War",
+    "emoji": "⚡",
+    "weight": 2,
+    "minRound": 10,
+    "cooldown": 78,
+    "phases": [
+      {
+        "name": "Regional Tensions",
+        "durationWeeks": 2,
+        "flavor": [
+          "⚡ Armed conflict has broken out in a major oil-producing region. Energy markets are reacting with anxiety — utility costs are rising and economists are warning of a prolonged price shock.",
+          "⚡ Fighting is intensifying near key oil infrastructure. Futures markets have spiked. Your weekly utility costs for running rides are already noticeably higher."
+        ],
+        "effects": [
+          { "type": "utility_cost_multiplier", "value": 1.5 },
+          { "type": "demand_multiplier", "value": 0.96 }
+        ]
+      },
+      {
+        "name": "War Escalates",
+        "durationWeeks": 5,
+        "flavor": [
+          "⚡ The conflict has spread to additional producing nations. Global oil supply has been severely disrupted — utility costs to operate your rides are now double normal and climbing.",
+          "⚡ Pipeline attacks have taken major capacity offline. Energy prices are at a multi-year high. Running your rides is eating deeply into your margins.",
+          "⚡ No ceasefire appears imminent. Energy markets remain in crisis. Consider closing lower-attendance rides to reduce your utility burden.",
+          "⚡ The war shows no sign of resolution. Your utility costs per ride are now roughly three times what they were before the conflict began.",
+          "⚡ Economists are calling this the worst energy shock in decades. Every ride running this week is generating significant utility cost. Your ride portfolio efficiency matters now more than ever."
+        ],
+        "effects": [
+          { "type": "utility_cost_multiplier", "value": 2.0, "rampPerRound": 0.2 },
+          { "type": "demand_multiplier", "value": 0.9 }
+        ]
+      },
+      {
+        "name": "Ceasefire Negotiations",
+        "durationWeeks": 4,
+        "flavor": [
+          "⚡ International mediators have brokered a preliminary ceasefire. Energy markets are cautiously welcoming the news — utility costs are slowly coming down from their peak.",
+          "⚡ The ceasefire is holding. Oil shipments are resuming from previously blockaded ports. Your utility costs are declining week by week.",
+          "⚡ Peace talks are progressing. Energy prices are falling steadily as the market anticipates a full resolution.",
+          "⚡ A formal peace agreement has been signed. Energy markets have largely normalized — utility costs are nearly back to pre-war levels."
+        ],
+        "effects": [
+          { "type": "utility_cost_multiplier", "value": 2.8, "rampPerRound": -0.45 },
+          { "type": "demand_multiplier", "value": 0.94 }
+        ]
+      },
+      {
+        "name": "Stabilization",
+        "durationWeeks": 2,
+        "flavor": [
+          "⚡ Global energy markets are stabilizing. Utility costs remain slightly above the long-run average but are no longer a crisis. Reconstruction of damaged infrastructure is underway.",
+          "⚡ The energy crisis is over. Utility costs have returned to normal. The episode is a reminder of how exposed entertainment businesses are to global energy markets."
+        ],
+        "effects": [
+          { "type": "utility_cost_multiplier", "value": 1.15 }
+        ]
+      }
+    ]
   }
 ]
