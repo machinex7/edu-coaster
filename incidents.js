@@ -381,6 +381,8 @@ const Incidents = {
     this.ingredientCostMultipliers = {};
     this.rideBuildCostMultiplier  = 1;
     this.utilityCostMultiplier    = 1;
+    // Percentage points subtracted from loan interest rates while active.
+    this.loanRateDiscount         = 0;
 
     if (!this.active) return;
 
@@ -441,6 +443,12 @@ const Incidents = {
         this.utilityCostMultiplier *= effective;
         break;
       }
+
+      case 'loan_rate_discount':
+        // Reduces the interest rate offered on new loans by this many percentage points.
+        // Read by Banking.calcLoanRate() to lower offers during stimulus windows.
+        this.loanRateDiscount += effect.value;
+        break;
     }
   },
 
@@ -651,6 +659,8 @@ const Incidents = {
           : '';
         return `Ride utility costs ×${effect.value}${ramp}`;
       }
+      case 'loan_rate_discount':
+        return `Loan interest rates −${effect.value}%`;
       default:
         return effect.type;
     }
