@@ -105,7 +105,6 @@ Two game stages: **Setup** (instant builds, no income) → **Play** (weekly roun
 |---|---|---|
 | `demandMultiplier` | 1 | `Finance.calcDailyDemand()` |
 | `rideExcitementMultiplier` | 1 | `Finance.calcExcitement()` — scales effective ride opinion |
-| `inflationOverride` | null | `Population.tickEvents()` + `Staff.applyInflation()` — replaces `inflationRate` when non-null |
 | `bathroomsDisabled` | false | `Finance.calcMessGenerated()` — maximizes intense-ride mess distance |
 | `staffSickMultiplier` | 1 | `Staff.processSickness()` — multiplied into `SICKNESS_RATE` |
 | `ingredientCostMultipliers` | `{}` | `Concessions.onRoundAdvance()` + order panel display |

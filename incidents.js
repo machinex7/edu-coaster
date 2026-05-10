@@ -44,7 +44,6 @@ const Incidents = {
   // Other systems read these — no scattered conditionals in those files needed.
   demandMultiplier:         1,     // multiplied into calcDailyDemand()
   rideExcitementMultiplier: 1,     // multiplied into calcExcitement()
-  inflationOverride:        null,  // replaces Population.inflationRate when non-null
   bathroomsDisabled:        false, // stops bathrooms contributing to mess cleaning
   staffSickMultiplier:      1,     // multiplied into Staff sick-out rate
   ingredientCostMultipliers: {},   // { itemId: multiplier } on concessions orders
@@ -354,6 +353,19 @@ const Incidents = {
         });
         break;
       }
+
+      case 'inflation_addend': {
+        // Permanently shifts the annual inflation rate by effect.value percentage points.
+        // Positive values raise the baseline (economic crisis); negative values lower it
+        // (partial recovery). Clamped at 0 so inflation can never go negative.
+        const before = Population.inflationRate;
+        Population.inflationRate = Math.max(0, +(Population.inflationRate + effect.value).toFixed(4));
+        const pct = pctStr => `${(pctStr * 100).toFixed(1)}%`;
+        this._permanentMods.push({
+          label: `${this.active?.def.name ?? 'Incident'}: inflation permanently ${effect.value >= 0 ? '+' : ''}${pct(effect.value)} (${pct(before)} → ${pct(Population.inflationRate)} annually).`,
+        });
+        break;
+      }
     }
   },
 
@@ -364,7 +376,6 @@ const Incidents = {
   _recomputeProperties() {
     this.demandMultiplier         = 1;
     this.rideExcitementMultiplier = 1;
-    this.inflationOverride        = null;
     this.bathroomsDisabled        = false;
     this.staffSickMultiplier      = 1;
     this.ingredientCostMultipliers = {};
@@ -397,10 +408,6 @@ const Incidents = {
         this.rideExcitementMultiplier *= effective;
         break;
       }
-
-      case 'inflation_override':
-        this.inflationOverride = effect.value;
-        break;
 
       case 'bathroom_disabled':
         this.bathroomsDisabled = true;
@@ -596,8 +603,6 @@ const Incidents = {
         const ramp = effect.rampPerRound ? ` (worsens ${Math.abs(Math.round(effect.rampPerRound * 100))}%/wk)` : '';
         return `Ride interest reduced to ${Math.round(effect.value * 100)}%${ramp}`;
       }
-      case 'inflation_override':
-        return `Inflation locked at ${Math.round(effect.value * 100)}% annually`;
       case 'bathroom_disabled':
         return 'Bathrooms not reducing mess this week';
       case 'staff_sick_multiplier':

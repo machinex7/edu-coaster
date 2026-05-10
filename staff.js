@@ -159,9 +159,7 @@ const Staff = {
   // point on top (3 kids + 2% global = 5% annual for that employee).
   applyInflation() {
     this.roster.forEach(s => {
-      // Incident inflation override replaces the baseline rate during economic crises.
-      const baseRate   = Incidents.inflationOverride ?? Population.inflationRate;
-      const annualRate = baseRate + s.kids / 100;
+      const annualRate = Population.inflationRate + s.kids / 100;
       s.costOfLiving = Math.round(s.costOfLiving * (1 + annualRate / 52));
     });
   },
