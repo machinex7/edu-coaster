@@ -362,12 +362,15 @@ function isRideConnected(record) {
 // ── Placing items ──────────────────────────────────────────────────────────
 function placeItem(item, category, startRow, startCol) {
   const instant = gameStage === STAGE.SETUP || item.buildWeeks === 0;
+  // Incidents can raise build costs (e.g. steel tariffs). Only applies in play mode
+  // since Incidents.tick() never runs during setup, keeping the multiplier at 1.
+  const costMult = Incidents.rideBuildCostMultiplier;
 
   if (instant) {
-    money -= item.buildCost;
+    money -= Math.round(item.buildCost * costMult);
     _commitPlace(item, category, startRow, startCol, STATUS.ACTIVE);
   } else {
-    const weeklyPayment = Math.ceil(item.buildCost / item.buildWeeks);
+    const weeklyPayment = Math.ceil(item.buildCost * costMult / item.buildWeeks);
     money -= weeklyPayment;
     const record = _commitPlace(item, category, startRow, startCol, STATUS.UNDER_CONSTRUCTION);
     record.weeksTotal     = item.buildWeeks;

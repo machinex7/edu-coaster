@@ -65,7 +65,7 @@
         "name": "Full Recession",
         "durationWeeks": 26,
         "flavor": [
-          "📉 Inflation is now running at 10% annually. Your supply and staffing costs are rising fast while visitor wallets are tighter than ever.",
+          "📉 Inflation has permanently shifted — your baseline annual rate is now 8 points higher. Staff cost-of-living, restock orders, and loan rates will all reflect this new normal going forward.",
           "📉 Unemployment in your region climbed again this month. Families are cutting back on non-essential outings — your attendance is feeling it.",
           "📉 Consumer sentiment remains deeply negative. Discretionary spending on entertainment is a luxury fewer households can afford.",
           "📉 A string of local business closures has hit your visitor base. Lower and middle income brackets are visiting significantly less.",
@@ -77,7 +77,7 @@
           "📉 The stock market has staged a tentative rally. Economists remain cautious, but the worst of the recession appears to be behind us."
         ],
         "effects": [
-          { "type": "inflation_override", "value": 0.10 },
+          { "type": "inflation_addend", "value": 0.08, "timing": "on_start" },
           { "type": "demand_multiplier", "value": 0.75 }
         ]
       },
@@ -85,12 +85,13 @@
         "name": "Slow Recovery",
         "durationWeeks": 8,
         "flavor": [
-          "📉 The recession has officially ended, though recovery will be gradual. Inflation is easing back toward normal levels.",
+          "📉 The recession has officially ended. Inflation is easing — 6 points have come back off the baseline, though 2 points remain permanently elevated. Recessions leave scars.",
           "📉 Consumer confidence is slowly rebuilding. A few higher-income visitors are returning, but broader recovery will take time.",
           "📉 Employment is rising. Your attendance numbers are beginning to creep back up toward pre-crisis levels.",
           "📉 The economic recovery is broadening. Spending on leisure and entertainment is recovering faster than many economists predicted."
         ],
         "effects": [
+          { "type": "inflation_addend", "value": -0.06, "timing": "on_start" },
           { "type": "demand_multiplier", "value": 0.88 }
         ]
       }

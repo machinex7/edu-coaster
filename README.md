@@ -528,7 +528,6 @@ Each effect object has at minimum a `type` field. Effects with `"timing": "on_st
 |---|---|---|
 | `demand_multiplier` | `value` | Multiplied into `Finance.calcDailyDemand()` |
 | `ride_demand_multiplier` | `value`, `rampPerRound?` | Multiplied into `Finance.calcExcitement()`. Optional `rampPerRound` changes the effective value by that amount per week elapsed: `Math.max(0, value + rampPerRound × elapsed)` |
-| `inflation_override` | `value` | Replaces `Population.inflationRate` for the duration |
 | `bathroom_disabled` | *(none)* | Stops bathrooms contributing to mess cleanup |
 | `staff_sick_multiplier` | `value` | Multiplied into sick-out rate in `Staff.processSickness()` |
 | `ingredient_cost_multiplier` | `value`, `itemIds[]` | Multiplied into `Concessions` ingredient order costs for the listed item IDs |
@@ -550,6 +549,7 @@ Each effect object has at minimum a `type` field. Effects with `"timing": "on_st
 | `desired_rides_addend` | `value` | **Permanent.** Adds `value` to `Population.DESIRED_RIDES` |
 | `staff_parental_rate_multiplier` | `value` | **Permanent.** Multiplies `Staff.PARENTAL_LEAVE_RATE` by `value` |
 | `demographic_count_multiplier` | `bracketKey`, `bracketIndices[]`, `value` | **Permanent.** Multiplies the `count` field of the targeted `Population[bracketKey]` entries. Do NOT reset `baselineFavorablePopulation` — the enlarged market must produce a lasting multiplier > 1. |
+| `inflation_addend` | `value` | **Permanent.** Adds `value` (decimal) to `Population.inflationRate`. Use positive values to spike inflation (e.g. economic crisis `+0.08`) and negative values for partial recovery (e.g. `−0.06`). Clamped at 0. Cascades to staff cost-of-living growth, cumulative inflation, and loan rate calculations. |
 
 ### Computed properties
 
@@ -557,14 +557,13 @@ Each effect object has at minimum a `type` field. Effects with `"timing": "on_st
 
 | Property | Default | Pending integration point |
 |---|---|---|
-| `demandMultiplier` | `1` | `Finance.calcDailyDemand()` |
-| `rideExcitementMultiplier` | `1` | `Finance.calcExcitement()` |
-| `inflationOverride` | `null` | Replace `Population.inflationRate` when non-null |
-| `bathroomsDisabled` | `false` | Mess cleanup logic |
-| `staffSickMultiplier` | `1` | `Staff.processSickness()` |
-| `ingredientCostMultipliers` | `{}` | `Concessions` order cost calculation |
-| `rideBuildCostMultiplier` | `1` | `placeItem()` in `game.js` |
-| `utilityCostMultiplier` | `1` | `Finance.calcUtilityCosts()` |
+| `demandMultiplier` | `1` | `Finance.calcDailyDemand()` — multiplied with other demand factors |
+| `rideExcitementMultiplier` | `1` | `Finance.calcExcitement()` — scales effective ride opinion before excitement is computed |
+| `bathroomsDisabled` | `false` | `Finance.calcMessGenerated()` — uses max distance for intense-ride mess when true |
+| `staffSickMultiplier` | `1` | `Staff.processSickness()` — multiplied into `SICKNESS_RATE` |
+| `ingredientCostMultipliers` | `{}` | `Concessions.onRoundAdvance()` and order panel — per-item cost multiplied by `multipliers[item.id] ?? 1` |
+| `rideBuildCostMultiplier` | `1` | `placeItem()` in `game.js` — multiplied into build cost and weekly payment at placement time |
+| `utilityCostMultiplier` | `1` | `Finance.payUtilityCosts()` — multiplied into per-ride and per-facility utility cost |
 
 ### `hud.js` integration points
 
@@ -1108,12 +1107,3 @@ Saving either phase calls `FormsPanel.save({ type: 'budget-tentative' | 'budget-
 - Reports, graphs, and awards
 - Marketing and reputation
 - Login stage and teacher configuration
-- **Incidents integration hooks** — all `Incidents.*` computed properties are defined but not yet wired into the systems that should read them:
-  - `Incidents.demandMultiplier` → `Finance.calcDailyDemand()`
-  - `Incidents.rideExcitementMultiplier` → `Finance.calcExcitement()`
-  - `Incidents.inflationOverride` → inflation rate calculation
-  - `Incidents.bathroomsDisabled` → mess cleanup logic
-  - `Incidents.staffSickMultiplier` → `Staff.processSickness()`
-  - `Incidents.ingredientCostMultipliers` → `Concessions` order cost
-  - `Incidents.rideBuildCostMultiplier` → `placeItem()` in `game.js`
-  - `Incidents.utilityCostMultiplier` → `Finance.calcUtilityCosts()`

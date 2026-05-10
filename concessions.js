@@ -242,7 +242,11 @@ const Concessions = {
   onRoundAdvance() {
     if (round === this.lockRound) {
       // Charge the player for the upcoming delivery, but only if something was ordered.
-      const subtotal = this.menuItems.reduce((sum, item, i) => sum + this.standingOrder[i] * item.cost, 0);
+      // Incident ingredient multipliers (e.g. potato blight) inflate per-item costs.
+      const subtotal = this.menuItems.reduce((sum, item, i) => {
+        const costMult = Incidents.ingredientCostMultipliers[item.id] ?? 1;
+        return sum + this.standingOrder[i] * item.cost * costMult;
+      }, 0);
       if (subtotal > 0) {
         money -= subtotal + this.DELIVERY_FEE;
       }
@@ -417,7 +421,9 @@ const Concessions = {
 
       const costEl = document.createElement('span');
       costEl.className = 'con-order-cost';
-      costEl.textContent = `$${item.cost.toFixed(2)}`;
+      // Show the incident-adjusted cost per unit so the player sees the true price.
+      const unitCostMult = Incidents.ingredientCostMultipliers[item.id] ?? 1;
+      costEl.textContent = `$${(item.cost * unitCostMult).toFixed(2)}`;
 
       const stockEl = document.createElement('span');
       stockEl.className = 'con-order-stock';
@@ -493,10 +499,12 @@ const Concessions = {
   },
 
   // Recompute every line cost and the subtotal / delivery fee / total display.
+  // Incident ingredient multipliers inflate the displayed cost so players see the true price.
   _refreshOrderSummary(lineCostEls, subtotalEl, deliveryEl, totalEl) {
     let subtotal = 0;
     lineCostEls.forEach(({ el, index }) => {
-      const line = this.standingOrder[index] * this.menuItems[index].cost;
+      const costMult = Incidents.ingredientCostMultipliers[this.menuItems[index].id] ?? 1;
+      const line = this.standingOrder[index] * this.menuItems[index].cost * costMult;
       subtotal += line;
       el.textContent = `$${line.toFixed(2)}`;
     });

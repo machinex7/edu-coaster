@@ -83,7 +83,8 @@ const Finance = {
     const eventFactor       = Population.populationEvents.reduce((f, e) => f * (1 + e.modifier / 100), 1);
     const weatherFactor     = 1 - (WEATHER_DEMAND_REDUCTION[nextWeekForecast] ?? 0);
     const demandMultiplier  = Population.calcDemandMultiplier();
-    const result            = this.parkExcitement * exhaustionFactor * eventFactor * demandMultiplier * weatherFactor;
+    const incidentFactor    = Incidents.demandMultiplier;
+    const result            = this.parkExcitement * exhaustionFactor * eventFactor * demandMultiplier * weatherFactor * incidentFactor;
     console.log(
       '[demand]',
       'excitement:', this.parkExcitement.toFixed(2),
@@ -91,6 +92,7 @@ const Finance = {
       '| event:', eventFactor.toFixed(4),
       '| demandMult:', demandMultiplier.toFixed(4),
       '| weather:', weatherFactor.toFixed(4),
+      '| incident:', incidentFactor.toFixed(4),
       '| dailyDemand:', result.toFixed(2)
     );
     return result;
@@ -103,7 +105,9 @@ const Finance = {
   // Mess penalty: unhandled mess spread across path tiles; 1.25^(mess per path) as divisor.
   calcExcitement(weeklyAttendance) {
     const appealBonus        = this.calcParkAppeal() / (100 * Population.DESIRED_RIDES);
-    const effectiveRideOpinion = Math.min(1, this.rideOpinion + appealBonus);
+    // Incident ride multiplier suppresses ride interest (e.g. nausea plague); clamped to [0, 1].
+    const rideIncidentMult   = Math.min(1, Math.max(0, Incidents.rideExcitementMultiplier));
+    const effectiveRideOpinion = Math.min(1, (this.rideOpinion + appealBonus) * rideIncidentMult);
     const securityFactor     = Unlock.SECURITY ? Math.max(0, 1 - Math.sqrt(Security.opinion) / 100) : 1;
     const messFactor         = Unlock.MESSES   ? this.calcMessFactor() : 1;
     this.parkExcitement      = Math.max(0, (weeklyAttendance * effectiveRideOpinion * securityFactor * this.mealSatisfaction) / messFactor);
@@ -375,7 +379,10 @@ const Finance = {
       .filter(r => r.status === STATUS.ACTIVE && isRideConnected(r)
                 && rides.find(d => d.id === r.rideId)?.intensity === 'extreme')
       .reduce((sum, r) => {
-        const { dist } = nearestBathroom(r);
+        // When bathrooms are disabled by an incident, they provide no proximity benefit —
+        // treat every ride as if no bathroom is reachable (maximum distance = GRID_COLS).
+        const { dist: realDist } = nearestBathroom(r);
+        const dist = Incidents.bathroomsDisabled ? GRID_COLS : realDist;
         return sum + (r.lastRoundRiders ?? 0) * Population.MESS_EXTREME_RIDER_RATE * dist;
       }, 0);
 
@@ -383,7 +390,8 @@ const Finance = {
       .filter(r => r.status === STATUS.ACTIVE && isRideConnected(r)
                 && rides.find(d => d.id === r.rideId)?.intensity === 'high')
       .reduce((sum, r) => {
-        const { dist } = nearestBathroom(r);
+        const { dist: realDist } = nearestBathroom(r);
+        const dist = Incidents.bathroomsDisabled ? GRID_COLS : realDist;
         return sum + (r.lastRoundRiders ?? 0) * Population.MESS_HIGH_RIDER_RATE * dist;
       }, 0);
 
@@ -531,7 +539,7 @@ const Finance = {
     for (const r of installedRides) {
       if (r.status !== STATUS.ACTIVE || !isRideConnected(r)) continue;
       const def = rides.find(d => d.id === r.rideId);
-      const cost = (def?.utilityCost ?? 0) * Population.utilityMultiplier;
+      const cost = (def?.utilityCost ?? 0) * Population.utilityMultiplier * Incidents.utilityCostMultiplier;
       if (money >= cost) {
         money -= cost;
         paid += cost;
@@ -544,7 +552,7 @@ const Finance = {
     for (const f of installedFacilities) {
       if (f.status !== STATUS.ACTIVE) continue;
       const def = facilities.find(d => d.id === f.facilityId);
-      const cost = (def?.utilityCost ?? 0) * Population.utilityMultiplier;
+      const cost = (def?.utilityCost ?? 0) * Population.utilityMultiplier * Incidents.utilityCostMultiplier;
       if (money >= cost) {
         money -= cost;
         paid += cost;
@@ -638,6 +646,8 @@ const Finance = {
     const food      = Concessions.calcFood(totalAttendance);
     const foodRevenue = food.revenue;
     const security = Security.calcIncidents(totalAttendance, dailyDemand, dailyThroughput);
+    // Store for the presidential-visit challenge condition evaluated next round.
+    Incidents.lastRoundUnhandled = security.unhandled;
 
     // ── Membership benefit costs ──────────────────────────────────────────────
     // The park foregoes revenue on four fronts for members.  Each is computed as
