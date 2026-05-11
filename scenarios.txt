@@ -5,3 +5,20 @@ Converting a garden to a park. A large facility with lots of gardeners and trees
 Drought incident: trees and gardens and fountains provide no appeal.
 
 Reopen an abandoned park. Lots of rides, but every single one is broken down. Tons of trees. A few facilities. No staff. Take out a loan and get started slowly rebuilding and hiring staff to turn it thriving again.
+
+
+Bad with money: Multiple loans with a bad rate. Too much money in low interest Savings account. Overstaffed in multiple areas.
+
+
+Island Park: Low local population, high distant, else none. Lots of rain and heat wearher. Can you make your park work?
+
+
+Risky Business: A park is falling victim to frequent thefts and fights even though they have many staff. Can you investigate the sources of anger and improve it? High interest but not enough attendants or operators. Stores with insufficient coverage.
+
+
+Stinky: Your park has had lots of complaints about the smell. Can you clean up the mess? Lots of extreme rides and no bathrooms. Lots of shops and restaurants and only 1 or 2 janitors.
+
+
+Old times: A failing economy has caused most to move away. Only the older folks are around. Can you transform your park to appeal to them?
+Shift demo to older population.
+
