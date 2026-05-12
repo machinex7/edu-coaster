@@ -727,6 +727,69 @@
   },
 
   {
+    "id": "superhero_film",
+    "name": "Superhero Film",
+    "emoji": "🎬",
+    "weight": 2,
+    "minRound": 12,
+    "cooldown": 104,
+    "phases": [
+      {
+        "name": "Production Company Approaches",
+        "durationWeeks": 4,
+        "flavor": [
+          "🎬 A location scout from a major production company arrived unannounced at your management office this morning. They're shooting a superhero film and they want your park — all of it, exclusively, for one week of filming. The fee is substantial. The catch: the park must be completely closed to the public during production. Filming begins in one month.",
+          "🎬 Contract negotiations with the production company are ongoing. Legal teams are reviewing liability, insurance, and park access terms. The fee looks very good on paper — but your guests will be locked out for an entire week.",
+          "🎬 The deal is nearly finalized. The production company has submitted their shot list — they want every major attraction in the film. A closed park for a week hurts your short-term revenue, but the downstream publicity could be significant.",
+          "🎬 The contract has been signed. Filming begins next week. You've arranged refunds and rescheduling for any guests with advance bookings. The crew is already moving equipment into position at the perimeter."
+        ],
+        "effects": [
+          { "type": "demand_multiplier", "value": 1.05 }
+        ]
+      },
+      {
+        "name": "Lights, Camera, Action",
+        "durationWeeks": 1,
+        "flavor": [
+          "🎬 The park is closed to the public. Film crews have taken over every corner — cameras mounted on coasters, stunt coordinators blocking scenes at the gate, catering trucks where your concessions usually stand. The filming fee has been wired to your account. No guests, no revenue from operations — just a very busy, very cinematic week."
+        ],
+        "effects": [
+          { "type": "cash_grant", "amount": 200000, "timing": "on_start" },
+          { "type": "demand_multiplier", "value": 0 }
+        ]
+      },
+      {
+        "name": "Post-Production",
+        "durationWeeks": 7,
+        "flavor": [
+          "🎬 Filming wrapped successfully. The crew has packed up and the park is open again. Somewhere in an editing suite, footage of your rides is being cut into a superhero action sequence. The movie releases in about two months.",
+          "🎬 The production company has released a brief behind-the-scenes clip that mentions your park by name. Fans are already speculating online about which rides appear in the film.",
+          "🎬 The official trailer dropped. Your coaster is unmistakable in a three-second shot during the climax sequence. Fan forums are going wild. Kids and teenagers are circling the release date.",
+          "🎬 Box office projections for the film are strong. Analysts are tracking it as a potential top-grossing opener. The movie's young fanbase is exactly the demographic that visits theme parks.",
+          "🎬 Advance tickets for the film are selling at a record pace. Social media is full of fans tagging your park and asking if they can ride the same coaster the hero jumped from.",
+          "🎬 Press junket coverage is running wall-to-wall. Your park earns a name-drop in a major entertainment interview. One more week until release.",
+          "🎬 Opening weekend is days away. The anticipation among kids and teenagers has reached a fever pitch. Prepare for a surge — fans will want to experience the locations firsthand."
+        ],
+        "effects": []
+      },
+      {
+        "name": "Box Office Boom",
+        "durationWeeks": 4,
+        "flavor": [
+          "🎬 The film opened to record-breaking numbers. Children and teenagers who saw the movie are showing up in droves — your park is the closest thing they have to stepping inside the film. Demand from the youth demographic has surged dramatically.",
+          "🎬 The film is holding strong in its second week. Word of mouth among kids and teens is keeping the momentum going — your park is showing up in reviews, fan blogs, and social media posts tied to the movie.",
+          "🎬 The film has crossed the $300 million domestic mark. Every new milestone keeps your park in the news cycle. The youth favor boost is still very much alive.",
+          "🎬 The theatrical run is winding down, but the film's cultural footprint is not. Home release announcements will keep the fan energy alive for months. The most intense attendance wave is behind you, but the park has gained lasting visibility with a new generation of fans."
+        ],
+        "effects": [
+          { "type": "demand_multiplier", "value": 1.25 },
+          { "type": "demographic_favor_addend", "bracketKey": "AGE_BRACKETS", "bracketIndices": [0, 1], "value": 0.45 }
+        ]
+      }
+    ]
+  },
+
+  {
     "id": "olympics",
     "name": "Olympic Games",
     "emoji": "🏅",

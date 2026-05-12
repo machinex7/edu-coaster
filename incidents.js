@@ -264,6 +264,17 @@ const Incidents = {
         break;
       }
 
+      case 'cash_grant': {
+        // Award a lump-sum cash payment directly to the park balance.
+        money += effect.amount;
+        updateHUD();
+        Notifications.push({
+          label:   '🎬',
+          message: `Filming fee received: +$${effect.amount.toLocaleString()}.`,
+        });
+        break;
+      }
+
       case 'fire_employee': {
         // Remove the first matching employee from the roster.
         const idx = Staff.roster.findIndex(s => s.jobId === effect.jobId);
@@ -383,6 +394,9 @@ const Incidents = {
     this.utilityCostMultiplier    = 1;
     // Percentage points subtracted from loan interest rates while active.
     this.loanRateDiscount         = 0;
+    // Temporary per-bracket favor boosts keyed by bracketKey → bracketIndex → amount.
+    // Read by Incidents.getFavorBoost() inside Population.calcDemandMultiplier().
+    this.tempFavorBoosts          = {};
 
     if (!this.active) return;
 
@@ -449,7 +463,25 @@ const Incidents = {
         // Read by Banking.calcLoanRate() to lower offers during stimulus windows.
         this.loanRateDiscount += effect.value;
         break;
+
+      case 'demographic_favor_addend': {
+        // Temporarily boosts favor for specific demographic brackets (by index).
+        // Stored in tempFavorBoosts and read each round by Population.calcDemandMultiplier()
+        // via Incidents.getFavorBoost() — stored favor values are never mutated.
+        const bk = effect.bracketKey;
+        if (!this.tempFavorBoosts[bk]) this.tempFavorBoosts[bk] = {};
+        (effect.bracketIndices ?? []).forEach(i => {
+          this.tempFavorBoosts[bk][i] = (this.tempFavorBoosts[bk][i] ?? 0) + effect.value;
+        });
+        break;
+      }
     }
+  },
+
+  // Returns the temporary favor boost for a bracket, keyed by bracketKey and index.
+  // Called by Population.calcDemandMultiplier() alongside Discounts.getFavorBoost().
+  getFavorBoost(bracketKey, bracketIndex) {
+    return (this.tempFavorBoosts[bracketKey] ?? {})[bracketIndex] ?? 0;
   },
 
   // ── Flavor text ────────────────────────────────────────────────────────────
@@ -661,6 +693,10 @@ const Incidents = {
       }
       case 'loan_rate_discount':
         return `Loan interest rates −${effect.value}%`;
+      case 'cash_grant':
+        return `One-time cash payment +$${(effect.amount ?? 0).toLocaleString()} (applied on phase start)`;
+      case 'demographic_favor_addend':
+        return `${effect.bracketKey} brackets [${(effect.bracketIndices ?? []).join(', ')}] favor +${effect.value}`;
       default:
         return effect.type;
     }
