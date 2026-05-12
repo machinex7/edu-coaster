@@ -28,33 +28,37 @@ const STARTING_MONEY        = 1_000_000;
 const STARTING_YEAR         = 2024;
 const STARTING_WEEK_OF_YEAR = 27; // week 27 = first week of Q3
 
-const WEATHER_EMOJIS = ['☀️', '🌤️', '⛅', '🌦️', '🌧️', '⛈️', '🌨️', '🌫️', '🥵'];
+const WEATHER_EMOJIS = ['🥵', '☀️', '🌤️', '⛅', '🌦️', '⛈️', '🌧️', '🌫️', '🌨️', '🥶'];
 const WEATHER_DEMAND_REDUCTION = Object.freeze({
-  '⛈️': 0.25,
-  '🌨️': 0.10,
+  '⛈️': 0.50,
+  '🌨️': 0.25,
   '🌧️': 0.10,
+  '🥵': 0.10,
+  '🥶': 0.50,
 });
 const WEATHER_WEAR_MULTIPLIER = 1.2;
 const WEATHER_WET_EMOJIS = Object.freeze(['🌧️', '🌨️', '⛈️']);
 const WEATHER_MERCHANDISE_MULTIPLIERS = Object.freeze({
-  '☀️':  { sunscreen:   2 },
+  '☀️':  { sunscreen:   3 },
   '🌦️': { umbrella:    2 },
   '🌧️': { umbrella:    2 },
-  '⛈️': { umbrella:    2 },
+  '⛈️': { umbrella:    3 },
   '🌨️': { hoodie:      2 },
-  '🐰':  { plush_bunny: 2 },
-  '🎄':  { snow_globe:  2 },
+  '🥶': { hoodie:      3 },
+  '🐰':  { plush_bunny: 4 },
+  '🎄':  { snow_globe:  4 },
 });
 const HOLIDAY_FORECAST = Object.freeze({
   15: '🐰',  // second week of April
   51: '🎄',  // next-to-last week of year
 });
-function randomWeatherEmoji() {
-  return WEATHER_EMOJIS[Math.floor(Math.random() * WEATHER_EMOJIS.length)];
+function randomWeatherEmoji(weekInYear) {
+  const offset = Math.round(2 * Math.abs(26 - weekInYear) / 26); //offset for time of year-appropriate weather
+  return WEATHER_EMOJIS[Math.floor(Math.random() * 8) + offset];
 }
 function forecastForRound(r) {
   const weekInYear = ((r + 25) % 52) + 1;
-  return HOLIDAY_FORECAST[weekInYear] ?? randomWeatherEmoji();
+  return HOLIDAY_FORECAST[weekInYear] ?? randomWeatherEmoji(weekInYear);
 }
 
 // ── Stage Constants ────────────────────────────────────────────────────────
