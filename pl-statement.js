@@ -32,6 +32,7 @@ const PLStatement = {
     { key: 'locInterest',    label: 'Line of Credit Interest',   correct: 'expense', histKey: 'locInterestExpense' },
     { key: 'loanInterest',   label: 'Loan Interest',            correct: 'expense', histKey: 'loanInterestExpense' },
     { key: 'tax',            label: 'Income Tax',               correct: 'expense', histKey: 'taxExpense' },
+    { key: 'donations',      label: 'Charitable Donations',     correct: 'expense', histKey: 'donationExpense' },
     { key: 'savingsInterest', label: 'Savings Interest',        correct: 'revenue', histKey: 'savingsInterestIncome' },
     { key: 'mmInterest',      label: 'Money Market Interest',   correct: 'revenue', histKey: 'mmInterestIncome' },
   ],

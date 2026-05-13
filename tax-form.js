@@ -118,11 +118,8 @@ const TaxForm = {
     const memberBenefitExpense = sum('memberBenefitExpense');
     const loanInterestExpense  = sum('loanInterestExpense');
     const locInterestExpense   = sum('locInterestExpense');
-    const depreciation         = this._calcDepreciation();
-
-    // Charitable contributions: placeholder — always $0 until the giving UI is added.
-    // Rendered as a locked pre-placed card to introduce the concept.
-    const charitable = 0;
+    const depreciation            = this._calcDepreciation();
+    const charitableContributions = sum('donationExpense');
 
     // Build items; filter to non-zero values so only active line items appear.
     const allItems = [
@@ -140,6 +137,7 @@ const TaxForm = {
       { key: 'loanInt',     label: 'Loan Interest',             correct: 'deduction', value: loanInterestExpense },
       { key: 'locInt',      label: 'Line of Credit Interest',   correct: 'deduction', value: locInterestExpense },
       { key: 'depreciation',label: 'Ride Depreciation',         correct: 'deduction', value: depreciation },
+      { key: 'charitable',  label: 'Charitable Contributions',  correct: 'deduction', value: charitableContributions },
     ];
     this._activeItems = allItems.filter(i => i.value > 0);
 
@@ -155,14 +153,12 @@ const TaxForm = {
       [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
     }
     for (const item of shuffled) {
-      bank.appendChild(this._makeCard(item.key, item.label, item.value, true));
+      bank.appendChild(this._makeCard(item.key, item.label, item.value));
     }
 
-    // ── Clear drop zones; pre-place the charitable-contributions placeholder ──
-    document.getElementById('tf-zone-income-items').innerHTML = '';
-    const dedZone = document.getElementById('tf-zone-deduction-items');
-    dedZone.innerHTML = '';
-    dedZone.appendChild(this._makeCard('charitable', 'Charitable Contributions', charitable, false));
+    // ── Clear drop zones ─────────────────────────────────────────────────────
+    document.getElementById('tf-zone-income-items').innerHTML    = '';
+    document.getElementById('tf-zone-deduction-items').innerHTML = '';
 
     // ── Reset UI state ────────────────────────────────────────────────────────
     this._correctKeys = new Set();
@@ -175,25 +171,23 @@ const TaxForm = {
     document.getElementById('tf-modal').classList.remove('hidden');
   },
 
-  // Create a draggable card (draggable=true) or a locked placeholder (draggable=false).
-  _makeCard(key, label, amount, draggable) {
+  // Create a draggable item card.
+  _makeCard(key, label, amount) {
     const card     = document.createElement('div');
-    card.className = draggable ? 'tf-card-item' : 'tf-card-item tf-card-locked';
-    card.draggable = draggable;
+    card.className = 'tf-card-item';
+    card.draggable = true;
     card.dataset.key    = key;
     card.dataset.amount = amount;
     card.innerHTML = `
       <span class="tf-card-label">${label}</span>
       <span class="tf-card-amount">$${amount.toLocaleString()}</span>
-      <span class="tf-card-status">${draggable ? '' : '(future)'}</span>
+      <span class="tf-card-status"></span>
     `;
-    if (draggable) {
-      card.addEventListener('dragstart', e => {
-        e.dataTransfer.setData('text/plain', key);
-        card.classList.add('tf-dragging');
-      });
-      card.addEventListener('dragend', () => card.classList.remove('tf-dragging'));
-    }
+    card.addEventListener('dragstart', e => {
+      e.dataTransfer.setData('text/plain', key);
+      card.classList.add('tf-dragging');
+    });
+    card.addEventListener('dragend', () => card.classList.remove('tf-dragging'));
     return card;
   },
 
