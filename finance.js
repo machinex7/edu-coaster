@@ -111,6 +111,18 @@ const Finance = {
     const securityFactor     = Unlock.SECURITY ? Math.max(0, 1 - Math.sqrt(Security.opinion) / 100) : 1;
     const messFactor         = Unlock.MESSES   ? this.calcMessFactor() : 1;
     this.parkExcitement      = Math.max(0, (weeklyAttendance * effectiveRideOpinion * securityFactor * this.mealSatisfaction) / messFactor);
+    console.log(
+      '[excitement]',
+      'attendance:', weeklyAttendance.toFixed(2),
+      '| rideOpinion:', this.rideOpinion.toFixed(4),
+      '| appealBonus:', appealBonus.toFixed(4),
+      '| rideIncidentMult:', rideIncidentMult.toFixed(4),
+      '| effectiveRideOpinion:', effectiveRideOpinion.toFixed(4),
+      '| securityFactor:', securityFactor.toFixed(4),
+      '| mealSatisfaction:', this.mealSatisfaction.toFixed(4),
+      '| messFactor:', messFactor.toFixed(4),
+      '| parkExcitement:', this.parkExcitement.toFixed(2)
+    );
   },
 
   // How many people can actually enter: booth attendants are the bottleneck.
