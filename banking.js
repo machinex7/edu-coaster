@@ -691,7 +691,9 @@ const Banking = {
     // Refinance discount — restructuring existing debt is lower-risk for the bank
     const refinanceDiscount = this.loanApplication.purpose === 'refinance' ? 0.75 : 0;
 
-    return Math.round((baseRate + ltvPremium + coveragePremium + termPremium + favorPremium - covenantDiscount - refinanceDiscount + missedPenalty) * 100) / 100;
+    // Incident stimulus windows (e.g. Olympics) can temporarily reduce offered rates.
+    const incidentDiscount = (typeof Incidents !== 'undefined') ? (Incidents.loanRateDiscount ?? 0) : 0;
+    return Math.round((baseRate + ltvPremium + coveragePremium + termPremium + favorPremium - covenantDiscount - refinanceDiscount + missedPenalty - incidentDiscount) * 100) / 100;
   },
 
   // ── Round processing ─────────────────────────────────────────────────────────
