@@ -510,8 +510,9 @@ function startDemolition(row, col) {
   if (record.status === STATUS.DEMOLISHING) return;
 
   // In setup stage demolition is instant and refunds the full build cost.
+  // Trees are pre-placed obstacles, not player purchases, so no refund.
   if (gameStage === STAGE.SETUP) {
-    money += record.buildCost ?? 0;
+    if (record.facilityId !== FACILITY_ID.TREE) money += record.buildCost ?? 0;
     completeDemolition(record);
     return;
   }
