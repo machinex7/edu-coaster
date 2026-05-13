@@ -64,7 +64,10 @@ const Finance = {
     this.rideOpinion = Math.min(1, ridesPerPerson / Population.DESIRED_RIDES);
     console.log(
       '[rides]',
-      'staffRatio:', staffRatio.toFixed(4),
+      'weeklyAttendance (param):', weeklyAttendance,
+      '| runningRides:', runningRides.length,
+      '| totalWeeklyRiders:', totalWeeklyRiders.toFixed(1),
+      '| staffRatio:', staffRatio.toFixed(4),
       '| operators:', actual + '/' + needed,
       '| ridesPerPerson:', ridesPerPerson.toFixed(4),
       '| rideOpinion:', this.rideOpinion.toFixed(4)
