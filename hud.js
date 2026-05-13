@@ -236,7 +236,9 @@ function initHUD() {
   PLStatement.init();
   BalanceSheet.init();
   CashFlow.init();
-  Budget.init();  Concessions.init();
+  Budget.init();
+  TaxForm.init();
+  Concessions.init();
   Incidents.init();
   Staff.initPanel();
   initInventoryPanel();
@@ -275,6 +277,9 @@ function openPark() {
 
 function advanceRound() {
   round++;
+  // Reset per-round tax tracker before any finance processing so History always
+  // sees a fresh value even on rounds where no payment is made.
+  TaxForm._taxPaidThisRound = 0;
   Concessions.onRoundAdvance();
   // Tick incidents before processRound so computed properties (demandMultiplier,
   // inflationOverride, etc.) are current when this round's revenue is calculated.
@@ -282,6 +287,18 @@ function advanceRound() {
   const report     = Finance.processRound();
   const loanResult = Banking.processPendingLoan();
   Banking.processPendingLoc();
+  // Collect tax payment on the due round so History captures it alongside this
+  // round's other cash movements.
+  if (TaxForm.taxDueRound > 0 && round === TaxForm.taxDueRound) {
+    money -= TaxForm.taxOwed;
+    TaxForm._taxPaidThisRound = TaxForm.taxOwed;
+    const msg = money >= 0
+      ? `Income tax payment of $${TaxForm.taxOwed.toLocaleString()} processed.`
+      : `Income tax of $${TaxForm.taxOwed.toLocaleString()} paid — account overdrawn.`;
+    Notifications.push({ label: 'Taxes', message: msg, action: () => openPanel('forms') });
+    TaxForm.taxOwed     = 0;
+    TaxForm.taxDueRound = 0;
+  }
   Survey.processPendingSend();
   History.record(report);
   refreshDirtOverlay();
@@ -298,6 +315,8 @@ function advanceRound() {
   // Schedule the annual balance sheet and cash flow statement to chain after the P&L at year-end.
   if (round % 52 === 0) BalanceSheet.pending = true;
   if (round % 52 === 0) CashFlow.pending = true;
+  // Tax return opens on week 4 of each year starting year 2; covers the prior full year.
+  if (round % 52 === 4 && round > 52) TaxForm.pending = true;
   updateLockedPanels();
   updateHUD();
   refreshRidesPanel();
@@ -387,11 +406,12 @@ function hideRoundSummary() {
   document.getElementById('round-modal').classList.add('hidden');
   // Budget (tentative) → P&L → Balance Sheet → Cash Flow → Budget (revised).
   // P&L chains to Balance Sheet; Balance Sheet chains to Cash Flow at year-end.
-  if (Budget.pendingTentative)   Budget.show('tentative');
-  else if (PLStatement.pending)  PLStatement.show();
-  else if (BalanceSheet.pending) BalanceSheet.show();
-  else if (CashFlow.pending)     CashFlow.show();
+  if (Budget.pendingTentative)    Budget.show('tentative');
+  else if (PLStatement.pending)   PLStatement.show();
+  else if (BalanceSheet.pending)  BalanceSheet.show();
+  else if (CashFlow.pending)      CashFlow.show();
   else if (Budget.pendingRevised) Budget.show('revised');
+  else if (TaxForm.pending)       TaxForm.show();
 }
 
 // Converts the current round into "Week W, QN, YYYY".
@@ -441,6 +461,12 @@ function updateAchievementIndicators() {
     const wks = loan.reviewWeeksRemaining;
     const wksLabel = `${wks} wk${wks !== 1 ? 's' : ''}`;
     pills.push({ icon: '💰', text: `Loan ($${loan.amount.toLocaleString()}): ${wksLabel}`, panel: 'banking' });
+  }
+
+  // Show a tax due countdown pill once the return is filed until payment is collected.
+  if (TaxForm.taxOwed > 0 && TaxForm.taxDueRound > round) {
+    const wks = TaxForm.taxDueRound - round;
+    pills.push({ icon: '🧾', text: `$${TaxForm.taxOwed.toLocaleString()} taxes due: ${wks} wk${wks !== 1 ? 's' : ''}`, panel: 'forms' });
   }
 
   container.innerHTML = pills

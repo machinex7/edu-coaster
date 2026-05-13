@@ -3011,3 +3011,331 @@
 .incident-log-name   { flex: 1; color: #d1d5db; }
 .incident-log-phase  { flex: 1; color: #6b7280; font-style: italic; }
 .incident-log-rounds { color: #4b5563; white-space: nowrap; }
+
+/* ── Tax return exercise modal ────────────────────────────────────────────── */
+
+/* Modal card — wider than P&L to fit zones + tax preview side by side. */
+.tf-modal-card {
+  min-width: 720px;
+  max-width: 960px;
+  gap: 12px;
+}
+
+/* ── IRS-style form header ── */
+.tf-form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  background: #1a3660;
+  border: 1px solid #2d5090;
+  border-radius: 6px;
+  padding: 12px 16px;
+}
+
+.tf-form-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+/* "Department of the Treasury…" line */
+.tf-dept-label {
+  font-size: 0.6rem;
+  color: #93c5fd;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.tf-form-title-row {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+
+/* Large form number — BTR-1040 */
+.tf-form-number {
+  font-size: 1.35rem;
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: -0.02em;
+}
+
+/* "U.S. Business Income Tax Return" */
+.tf-form-name {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #dbeafe;
+}
+
+/* "For the calendar year…" */
+.tf-form-period {
+  font-size: 0.68rem;
+  color: #93c5fd;
+  margin-top: 2px;
+}
+
+/* OMB number block — top-right of header */
+.tf-omb-block {
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.tf-omb-label {
+  font-size: 0.58rem;
+  color: #6b7280;
+  letter-spacing: 0.04em;
+}
+
+.tf-omb-year {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: #93c5fd;
+  margin-top: 2px;
+}
+
+/* ── Instructions ── */
+.tf-instructions {
+  font-size: 0.82rem;
+  color: #9ca3af;
+  margin: 0;
+}
+
+/* ── Bank: unsorted cards sit here before being dragged ── */
+.tf-bank {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-height: 52px;
+  padding: 10px;
+  background: #111827;
+  border: 2px dashed #374151;
+  border-radius: 8px;
+  transition: border-color 0.15s;
+}
+
+.tf-bank.tf-zone-over { border-color: #6b7280; }
+
+/* ── Body: zones on left, live tax panel on right ── */
+.tf-body {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.tf-zones {
+  flex: 1;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+/* Each drop-target column */
+.tf-zone {
+  flex: 1;
+  padding: 10px;
+  background: #111827;
+  border: 2px dashed #374151;
+  border-radius: 8px;
+  min-height: 140px;
+  transition: border-color 0.15s;
+}
+
+#tf-zone-income.tf-zone-over    { border-color: #4ade80; }
+#tf-zone-deduction.tf-zone-over { border-color: #fb923c; }
+
+/* Zone column headers */
+.tf-zone-header {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #374151;
+}
+
+.tf-income-header    { color: #4ade80; }
+.tf-deduction-header { color: #fb923c; }
+
+.tf-zone-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* ── Card items ── */
+.tf-card-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 6px;
+  padding: 8px 10px;
+  cursor: grab;
+  user-select: none;
+  transition: border-color 0.15s, opacity 0.15s;
+}
+
+.tf-card-item:active { cursor: grabbing; }
+.tf-card-item.tf-dragging { opacity: 0.35; }
+
+/* Correct / locked states after submission */
+.tf-card-item.tf-correct { border-color: #4ade80; }
+
+.tf-card-item.tf-locked {
+  cursor: default;
+  opacity: 0.8;
+}
+
+/* Pre-placed charitable contributions placeholder */
+.tf-card-item.tf-card-locked {
+  cursor: default;
+  opacity: 0.45;
+  border-style: dashed;
+}
+
+.tf-card-label {
+  flex: 1;
+  font-size: 0.82rem;
+  color: #e5e7eb;
+}
+
+.tf-card-amount {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #9ca3af;
+  white-space: nowrap;
+}
+
+.tf-card-status {
+  width: 2.5rem;
+  text-align: right;
+  font-size: 0.75rem;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.tf-card-item.tf-correct .tf-card-status { color: #4ade80; font-size: 0.9rem; }
+
+/* Disabled submit button */
+#tf-submit-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* ── Live tax calculation panel ── */
+.tf-tax-preview {
+  width: 240px;
+  flex-shrink: 0;
+  background: #0f172a;
+  border: 1px solid #1e3a5c;
+  border-radius: 8px;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.78rem;
+  color: #d1d5db;
+}
+
+.tf-preview-heading {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #93c5fd;
+  margin-bottom: 4px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #1e3a5c;
+}
+
+/* Standard row: label on left, amount on right */
+.tf-preview-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Taxable income row — colour-coded by sign */
+.tf-preview-taxable {
+  font-weight: 700;
+  font-size: 0.82rem;
+  padding-top: 2px;
+}
+
+.tf-preview-pos { color: #f87171; } /* positive taxable income = you owe */
+.tf-preview-neg { color: #4ade80; } /* negative = no tax              */
+
+/* Horizontal rule inside the preview panel */
+.tf-preview-divider {
+  border: none;
+  border-top: 1px solid #1e3a5c;
+  margin: 2px 0;
+}
+
+/* Progressive bracket rows */
+.tf-preview-brackets {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 0;
+}
+
+.tf-preview-bracket {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.72rem;
+  color: #9ca3af;
+}
+
+.tf-pb-label { flex: 1; }
+.tf-pb-amount { color: #f87171; font-weight: 600; white-space: nowrap; }
+
+/* Final tax-owed row */
+.tf-preview-owed {
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: #f87171;
+  padding-top: 2px;
+}
+
+.tf-preview-none { color: #4ade80; }
+
+/* ── Result area ── */
+.tf-result {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px;
+  background: #111827;
+  border-radius: 8px;
+}
+
+.tf-score {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #f3f4f6;
+}
+
+.tf-owed {
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.tf-owed-pos  { color: #f87171; }
+.tf-owed-zero { color: #4ade80; }
+
+.tf-owed-note {
+  font-size: 0.78rem;
+  color: #6b7280;
+}
+
+/* ── Tax form section headers used in the Forms review panel ── */
+.fp-tax-income    { color: #4ade80; }
+.fp-tax-deduction { color: #fb923c; }
+.fp-tax-taxable   { color: #93c5fd; }
+.fp-tax-bracket-label { color: #9ca3af; font-style: italic; }

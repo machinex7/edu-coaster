@@ -435,6 +435,53 @@
     </div>
   </div>
 
+  <!-- Annual Tax Return exercise modal -->
+  <div id="tf-modal" class="modal-overlay hidden">
+    <div class="modal-card tf-modal-card">
+
+      <!-- IRS-style form header -->
+      <div class="tf-form-header">
+        <div class="tf-form-header-left">
+          <div class="tf-dept-label">Department of the Treasury — Internal Revenue Service</div>
+          <div class="tf-form-title-row">
+            <span class="tf-form-number">Form BTR-1040</span>
+            <span class="tf-form-name">U.S. Business Income Tax Return</span>
+          </div>
+          <div class="tf-form-period">For the calendar year ending December 31, <span id="tf-year-label"></span></div>
+        </div>
+        <div class="tf-omb-block">
+          <div class="tf-omb-label">OMB No. 1545-0123</div>
+          <div class="tf-omb-year">20XX</div>
+        </div>
+      </div>
+
+      <p class="tf-instructions">Drag each item into the correct column — <strong>Income</strong> or <strong>Deductions</strong>. The tax calculation updates live as you place items.</p>
+
+      <!-- Card bank -->
+      <div id="tf-bank" class="tf-bank"></div>
+
+      <!-- Two classification zones + live tax panel -->
+      <div class="tf-body">
+        <div class="tf-zones">
+          <div class="tf-zone" id="tf-zone-income">
+            <div class="tf-zone-header tf-income-header">Part I — Income</div>
+            <div class="tf-zone-items" id="tf-zone-income-items"></div>
+          </div>
+          <div class="tf-zone" id="tf-zone-deduction">
+            <div class="tf-zone-header tf-deduction-header">Part II — Deductions</div>
+            <div class="tf-zone-items" id="tf-zone-deduction-items"></div>
+          </div>
+        </div>
+        <!-- Live progressive-bracket tax calculation -->
+        <div id="tf-tax-preview" class="tf-tax-preview"></div>
+      </div>
+
+      <div id="tf-result" class="tf-result hidden"></div>
+      <button id="tf-submit-btn" class="modal-close-btn" disabled>Check My Answer</button>
+      <button id="tf-close-btn" class="modal-close-btn hidden">Continue &rsaquo;</button>
+    </div>
+  </div>
+
   <div id="notification-stack">
     <div id="incident-slot" class="hidden"></div>
     <div id="notif-chips"></div>
@@ -466,6 +513,7 @@
   <script src="cash-flow.js"></script>
   <script src="budget.js"></script>
   <script src="forms-panel.js"></script>
+  <script src="tax-form.js"></script>
   <script src="concessions.js"></script>
   <script src="incidents.js"></script>
   <script src="membership.js"></script>

@@ -52,6 +52,7 @@ const History = {
       locInterestExpense:    report.locInterestExpense,
       locBalance:            Banking.locBalance,
       loanBalance:         Banking.activeLoans.reduce((s, l) => s + l.balance, 0),
+      loanInterestExpense: Banking.loanInterestThisRound,
       loanInterestPaid:    Banking.activeLoans.reduce((s, l) => s + l.totalInterestPaid, 0),
       loanPrincipalPaid:   Banking.activeLoans.reduce((s, l) => s + l.totalPrincipalPaid, 0),
       parkAppeal:          Finance.calcParkAppeal(),
@@ -73,6 +74,7 @@ const History = {
       parkingSpendingMult:    report.parkingSpendingMultiplier,
       loanRepayment:       report.loanRepayments,
       loanDisbursement:    Banking.roundDisbursement,
+      taxExpense:          TaxForm._taxPaidThisRound,
       surveys:             Survey.drainPending(),
     });
     Banking.roundDisbursement = 0;
