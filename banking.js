@@ -158,6 +158,11 @@ const Banking = {
   // Loan amount disbursed this round; reset by History.record() after each round.
   roundDisbursement: 0,
 
+  // Loan interest paid this round (interest portion of all payments); reset each round.
+  // Tracked separately because totalInterestPaid on activeLoans is cumulative and drops
+  // when a loan is fully repaid, making per-year summation from history unreliable.
+  loanInterestThisRound: 0,
+
   // ── Savings account ──────────────────────────────────────────────────────────
 
   // Current balance held in the savings account (separate from cash).
@@ -823,15 +828,18 @@ const Banking = {
   // Returns total cash deducted this round across all loans.
   processLoanRepayments() {
     let paid = 0;
+    this.loanInterestThisRound = 0;
     for (let i = this.activeLoans.length - 1; i >= 0; i--) {
       const loan = this.activeLoans[i];
       const { total, principal } = this.calcLoanPayment(loan.balance, loan.rate, loan.weeksRemaining);
       if (money >= total) {
         money -= total;
         paid  += total;
+        const interestPortion = total - principal;
+        this.loanInterestThisRound += interestPortion;
         loan.balance           = Math.max(0, loan.balance - principal);
         loan.weeksRemaining--;
-        loan.totalInterestPaid  += total - principal;
+        loan.totalInterestPaid  += interestPortion;
         loan.totalPrincipalPaid += principal;
         if (loan.weeksRemaining <= 0 || loan.balance <= 0) {
           this.activeLoans.splice(i, 1);

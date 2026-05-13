@@ -15,6 +15,10 @@ const FormsPanel = {
       { key: 'revenue', label: 'Revenue',  cls: 'fp-revenue' },
       { key: 'expense', label: 'Expenses', cls: 'fp-expense' },
     ],
+    tax: [
+      { key: 'income',    label: 'Income',     cls: 'fp-tax-income'    },
+      { key: 'deduction', label: 'Deductions', cls: 'fp-tax-deduction' },
+    ],
     'bs-d1': [
       { key: 'asset',     label: 'Assets',      cls: 'fp-asset'     },
       { key: 'liability', label: 'Liabilities', cls: 'fp-liability' },
@@ -50,6 +54,7 @@ const FormsPanel = {
       this._renderPLCard(),
       this._renderBSCard(),
       this._renderCFCard(),
+      this._renderTaxCard(),
     ].join('');
   },
 
@@ -194,6 +199,48 @@ const FormsPanel = {
           <span>${totalSign}$${Math.abs(Math.round(total)).toLocaleString()}</span>
         </div>
       </div>`;
+  },
+
+  // Render the tax return review card, or a placeholder if not yet completed.
+  _renderTaxCard() {
+    const r   = this._records.tax;
+    const hdr = '<div class="fp-form-title">Tax Return (BTR-1040)</div>';
+    if (!r) {
+      return `<div class="fp-card">${hdr}<p class="fp-empty">Not yet completed.</p></div>`;
+    }
+
+    // Render Income and Deductions sections using shared _renderSection helper.
+    const sections = this._SECTIONS.tax.map(s => this._renderSection(s, r.items)).join('');
+
+    // Taxable income and bracket breakdown rows.
+    const bracketRows = (r.breakdown || []).map(b => `
+      <div class="fp-item-row">
+        <span class="fp-item-label fp-tax-bracket-label">${b.label}</span>
+        <span class="fp-item-amount">$${Math.round(b.tax).toLocaleString()}</span>
+      </div>`).join('');
+
+    const taxableSign  = r.taxableIncome >= 0 ? '' : '−';
+    const taxableClass = r.taxableIncome >= 0 ? '' : 'fp-net-pos';
+    const taxableRow   = `
+      <div class="fp-section">
+        <div class="fp-section-header fp-tax-taxable">Part III — Tax Computation</div>
+        <div class="fp-item-row">
+          <span class="fp-item-label">Taxable Income</span>
+          <span class="fp-item-amount ${taxableClass}">${taxableSign}$${Math.abs(Math.round(r.taxableIncome)).toLocaleString()}</span>
+        </div>
+        ${bracketRows}
+      </div>`;
+
+    const taxSign  = r.tax > 0 ? '' : '';
+    const taxClass = r.tax > 0 ? 'fp-neg' : 'fp-net-pos';
+    const taxLabel = r.tax > 0 ? 'Tax Owed' : 'No Tax Owed';
+    const footer   = `
+      <div class="fp-result-row ${taxClass}">
+        <span>${taxLabel}</span>
+        <span>$${Math.round(r.tax).toLocaleString()}</span>
+      </div>`;
+
+    return `<div class="fp-card">${hdr}<div class="fp-period">${r.label}</div>${sections}${taxableRow}${footer}</div>`;
   },
 
   // Render one section (e.g. Revenue, Assets) with its line items and a subtotal.

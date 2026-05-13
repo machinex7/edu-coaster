@@ -236,7 +236,9 @@ function initHUD() {
   PLStatement.init();
   BalanceSheet.init();
   CashFlow.init();
-  Budget.init();  Concessions.init();
+  Budget.init();
+  TaxForm.init();
+  Concessions.init();
   Incidents.init();
   Staff.initPanel();
   initInventoryPanel();
@@ -298,6 +300,8 @@ function advanceRound() {
   // Schedule the annual balance sheet and cash flow statement to chain after the P&L at year-end.
   if (round % 52 === 0) BalanceSheet.pending = true;
   if (round % 52 === 0) CashFlow.pending = true;
+  // Tax return opens on week 4 of each year starting year 2; covers the prior full year.
+  if (round % 52 === 4 && round > 52) TaxForm.pending = true;
   updateLockedPanels();
   updateHUD();
   refreshRidesPanel();
@@ -387,11 +391,12 @@ function hideRoundSummary() {
   document.getElementById('round-modal').classList.add('hidden');
   // Budget (tentative) → P&L → Balance Sheet → Cash Flow → Budget (revised).
   // P&L chains to Balance Sheet; Balance Sheet chains to Cash Flow at year-end.
-  if (Budget.pendingTentative)   Budget.show('tentative');
-  else if (PLStatement.pending)  PLStatement.show();
-  else if (BalanceSheet.pending) BalanceSheet.show();
-  else if (CashFlow.pending)     CashFlow.show();
+  if (Budget.pendingTentative)    Budget.show('tentative');
+  else if (PLStatement.pending)   PLStatement.show();
+  else if (BalanceSheet.pending)  BalanceSheet.show();
+  else if (CashFlow.pending)      CashFlow.show();
   else if (Budget.pendingRevised) Budget.show('revised');
+  else if (TaxForm.pending)       TaxForm.show();
 }
 
 // Converts the current round into "Week W, QN, YYYY".
