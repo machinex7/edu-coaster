@@ -235,7 +235,7 @@ const Concessions = {
 
   // Returns true when the order inputs should be disabled (week 3 through delivery).
   get isLocked() {
-    return stage === STAGE.PLAY && round >= this.lockRound;
+    return gameStage === STAGE.PLAY && round >= this.lockRound;
   },
 
   // Called each round from advanceRound() in hud.js.
