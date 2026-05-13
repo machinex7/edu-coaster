@@ -269,8 +269,8 @@ const Incidents = {
         money += effect.amount;
         updateHUD();
         Notifications.push({
-          label:   '🎬',
-          message: `Filming fee received: +$${effect.amount.toLocaleString()}.`,
+          label:   '💰',
+          message: `Cash grant received: +$${effect.amount.toLocaleString()}.`,
         });
         break;
       }
