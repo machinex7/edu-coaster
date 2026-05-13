@@ -134,6 +134,8 @@ const Shopping = {
 
     // Step 2 — per-item: affordability × desire → attempts → sell from stock.
     const weatherItemMults = WEATHER_MERCHANDISE_MULTIPLIERS[nextWeekForecast] ?? {};
+    console.log('[Shopping.calcRevenue] desire by category:', JSON.stringify(desire));
+    console.log('[Shopping.calcRevenue] weeklyAttendance:', weeklyAttendance, '| BUYER_RATE:', Population.BUYER_RATE, '| staffRatio:', staffRatio, '| forecast:', nextWeekForecast);
     let totalRevenue = 0;
     let totalSold    = 0;
     for (let i = 0; i < this.merchandise.length; i++) {
@@ -159,8 +161,10 @@ const Shopping = {
       const weatherMult  = weatherItemMults[item.id] ?? 1;
       // parkingSpendingMultiplier reduces purchasing propensity when parking fees eat into visitor budgets.
       const parkingMult  = Finance.parkingSpendingMultiplier ?? 1;
-      const attempts = Math.round(
-        desire[item.category] * afford * weeklyAttendance * Population.BUYER_RATE * staffRatio * weatherMult * parkingMult
+      const rawAttempts  = desire[item.category] * afford * weeklyAttendance * Population.BUYER_RATE * staffRatio * weatherMult * parkingMult;
+      const attempts = Math.round(rawAttempts);
+      console.log(
+        `[Shopping.calcRevenue] ${item.id} (${item.category}): desire=${desire[item.category].toFixed(4)}, afford=${afford.toFixed(4)}, attendance=${weeklyAttendance}, BUYER_RATE=${Population.BUYER_RATE}, staffRatio=${staffRatio.toFixed(4)}, weatherMult=${weatherMult}, parkingMult=${parkingMult.toFixed(4)} → raw=${rawAttempts.toFixed(2)}, attempts=${attempts}, stock=${inv.count}`
       );
       const sold    = Math.min(attempts, inv.count);
       inv.count    -= sold;
