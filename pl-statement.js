@@ -30,6 +30,8 @@ const PLStatement = {
     { key: 'parkingAmenity', label: 'Parking Amenities',  correct: 'expense', histKey: 'parkingAmenitySpend' },
     { key: 'memberBenefit',  label: 'Membership Benefits',       correct: 'expense', histKey: 'memberBenefitExpense' },
     { key: 'locInterest',    label: 'Line of Credit Interest',   correct: 'expense', histKey: 'locInterestExpense' },
+    { key: 'loanInterest',   label: 'Loan Interest',            correct: 'expense', histKey: 'loanInterestExpense' },
+    { key: 'tax',            label: 'Income Tax',               correct: 'expense', histKey: 'taxExpense' },
     { key: 'savingsInterest', label: 'Savings Interest',        correct: 'revenue', histKey: 'savingsInterestIncome' },
     { key: 'mmInterest',      label: 'Money Market Interest',   correct: 'revenue', histKey: 'mmInterestIncome' },
   ],

@@ -34,6 +34,7 @@ const CashFlow = {
     { key: 'bus',            label: 'Bus Service',              correct: 'operating',  histKey: 'parkingBusCost',       flow: 'out' },
     { key: 'memberBenefit',  label: 'Membership Benefits',      correct: 'operating',  histKey: 'memberBenefitExpense', flow: 'out' },
     { key: 'locInterest',    label: 'Line of Credit Interest',  correct: 'operating',  histKey: 'locInterestExpense',   flow: 'out' },
+    { key: 'tax',            label: 'Income Tax Paid',          correct: 'operating',  histKey: 'taxExpense',           flow: 'out' },
     // Investing activities — capital expenditures (these appear on the P&L too — the key lesson)
     { key: 'construction',   label: 'Construction Payments',    correct: 'investing',  histKey: 'constructionExpense',  flow: 'out' },
     { key: 'parkingAmenity', label: 'Parking Lot Improvements', correct: 'investing',  histKey: 'parkingAmenitySpend',  flow: 'out' },

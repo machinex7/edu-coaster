@@ -74,6 +74,7 @@ const History = {
       parkingSpendingMult:    report.parkingSpendingMultiplier,
       loanRepayment:       report.loanRepayments,
       loanDisbursement:    Banking.roundDisbursement,
+      taxExpense:          TaxForm._taxPaidThisRound,
       surveys:             Survey.drainPending(),
     });
     Banking.roundDisbursement = 0;

@@ -17,8 +17,15 @@ const TaxForm = {
   // Set to true by hud.js at round % 52 === 4 && round > 52; cleared in show().
   pending: false,
 
-  // Final tax owed after student submits; available for the future payment mechanic.
+  // Final tax owed after student submits; deducted from cash on taxDueRound.
   taxOwed: 0,
+
+  // Round on which the tax payment is deducted (week 15 of the filing year).
+  // Set in _submit(); cleared after the payment is taken.
+  taxDueRound: 0,
+
+  // Tax deducted this round; read by History.record() before being reset next round.
+  _taxPaidThisRound: 0,
 
   // Tax year (1-based) whose data is currently displayed.
   _taxYear: 0,
@@ -316,7 +323,9 @@ const TaxForm = {
       }
       const taxableIncome      = totalIncome - totalDeductions;
       const { tax, breakdown } = this._calcTax(taxableIncome);
-      this.taxOwed = tax;
+      this.taxOwed     = tax;
+      // Due on week 15 of the current game year — 11 rounds after the filing date.
+      this.taxDueRound = tax > 0 ? round + 11 : 0;
 
       // Persist snapshot for the Forms review panel.
       FormsPanel.save({
@@ -335,13 +344,14 @@ const TaxForm = {
       });
 
       const taxClass = tax > 0 ? 'tf-owed-pos' : 'tf-owed-zero';
-      const taxLine  = tax > 0
-        ? `Tax Owed: $${tax.toLocaleString()}`
-        : 'No Tax Owed';
+      const taxLine  = tax > 0 ? `Tax Owed: $${tax.toLocaleString()}` : 'No Tax Owed';
+      const taxNote  = tax > 0
+        ? `$${tax.toLocaleString()} will be deducted on Week 15 of Year ${this._taxYear + 1}.`
+        : 'No payment due — taxable income is zero or negative.';
       resultEl.innerHTML = `
         <div class="tf-score">All ${total} correct!</div>
         <div class="tf-owed ${taxClass}">${taxLine}</div>
-        <div class="tf-owed-note">This amount will be due on Week 15 of Year ${this._taxYear + 1}.</div>
+        <div class="tf-owed-note">${taxNote}</div>
       `;
       document.getElementById('tf-submit-btn').classList.add('hidden');
       document.getElementById('tf-close-btn').classList.remove('hidden');

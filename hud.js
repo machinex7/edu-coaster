@@ -277,6 +277,9 @@ function openPark() {
 
 function advanceRound() {
   round++;
+  // Reset per-round tax tracker before any finance processing so History always
+  // sees a fresh value even on rounds where no payment is made.
+  TaxForm._taxPaidThisRound = 0;
   Concessions.onRoundAdvance();
   // Tick incidents before processRound so computed properties (demandMultiplier,
   // inflationOverride, etc.) are current when this round's revenue is calculated.
@@ -284,6 +287,18 @@ function advanceRound() {
   const report     = Finance.processRound();
   const loanResult = Banking.processPendingLoan();
   Banking.processPendingLoc();
+  // Collect tax payment on the due round so History captures it alongside this
+  // round's other cash movements.
+  if (TaxForm.taxDueRound > 0 && round === TaxForm.taxDueRound) {
+    money -= TaxForm.taxOwed;
+    TaxForm._taxPaidThisRound = TaxForm.taxOwed;
+    const msg = money >= 0
+      ? `Income tax payment of $${TaxForm.taxOwed.toLocaleString()} processed.`
+      : `Income tax of $${TaxForm.taxOwed.toLocaleString()} paid — account overdrawn.`;
+    Notifications.push({ label: 'Taxes', message: msg, action: () => openPanel('forms') });
+    TaxForm.taxOwed     = 0;
+    TaxForm.taxDueRound = 0;
+  }
   Survey.processPendingSend();
   History.record(report);
   refreshDirtOverlay();
@@ -446,6 +461,12 @@ function updateAchievementIndicators() {
     const wks = loan.reviewWeeksRemaining;
     const wksLabel = `${wks} wk${wks !== 1 ? 's' : ''}`;
     pills.push({ icon: '💰', text: `Loan ($${loan.amount.toLocaleString()}): ${wksLabel}`, panel: 'banking' });
+  }
+
+  // Show a tax due countdown pill once the return is filed until payment is collected.
+  if (TaxForm.taxOwed > 0 && TaxForm.taxDueRound > round) {
+    const wks = TaxForm.taxDueRound - round;
+    pills.push({ icon: '🧾', text: `$${TaxForm.taxOwed.toLocaleString()} taxes due: ${wks} wk${wks !== 1 ? 's' : ''}`, panel: 'forms' });
   }
 
   container.innerHTML = pills
