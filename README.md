@@ -38,6 +38,7 @@ python3 -m http.server
 | `pl-statement.js` | Quarterly P&L statement exercise — drag-and-drop sorting modal (`PLStatement` object) |
 | `balance-sheet.js` | Annual balance sheet exercise — drag-and-drop sorting modal (`BalanceSheet` object) |
 | `budget.js` | Two-phase quarterly budget projection exercise — tentative forecast + post-P&L revision (`Budget` object) |
+| `tax-form.js` | Annual business income tax return exercise — drag-and-drop sorting modal with live progressive-bracket calculation (`TaxForm` object) |
 | `concessions.js` | Concessions panel: ingredient ordering, menu pricing, combo meals, food revenue calculation (`Concessions` object) |
 | `membership.js` | Membership plan definitions, sales simulation, member attendance contribution, Admission-panel UI (`Membership` object) |
 | `animations.js` | Visual-only visitor animation system — path caching, sprite movement, trash and coin particles (`Animations` object) |
@@ -54,7 +55,7 @@ python3 -m http.server
 
 **Script load order:**
 ```
-constants.js → unlock.js → population.js → game.js → grid.js → pathfinding.js → shopping.js → banking.js → finance.js → staff.js → staff-panel.js → security.js → history.js → notifications.js → charts.js → survey.js → research.js → awards.js → discounts.js → marketing.js → visitor-profile.js → pl-statement.js → balance-sheet.js → cash-flow.js → budget.js → forms-panel.js → concessions.js → incidents.js → membership.js → animations.js → hud.js
+constants.js → unlock.js → population.js → game.js → grid.js → pathfinding.js → shopping.js → banking.js → finance.js → staff.js → staff-panel.js → security.js → history.js → notifications.js → charts.js → survey.js → research.js → awards.js → discounts.js → marketing.js → visitor-profile.js → pl-statement.js → balance-sheet.js → cash-flow.js → budget.js → forms-panel.js → tax-form.js → concessions.js → incidents.js → membership.js → animations.js → hud.js
 ```
 
 All cross-file calls happen at runtime (not parse time), so forward references inside method bodies are safe.
@@ -86,6 +87,7 @@ const Foo = {
 | `PLStatement` | `pl-statement.js` | Quarterly P&L drag-and-drop exercise |
 | `BalanceSheet` | `balance-sheet.js` | Annual balance sheet drag-and-drop exercise |
 | `Budget` | `budget.js` | Two-phase quarterly budget projection exercise |
+| `TaxForm` | `tax-form.js` | Annual business income tax return exercise |
 | `FormsPanel` | `forms-panel.js` | Review panel — stores and renders the latest completed submission for each form type |
 | `Incidents` | `incidents.js` | Random multi-phase incident system — spawn logic, phase management, computed property outputs, panel rendering |
 
@@ -958,9 +960,9 @@ The form's `.pending` flag is set by the trigger condition in `advanceRound()` a
 
 **Chain order in `hideRoundSummary()`:**
 ```
-Budget (tentative) → P&L → Balance Sheet → Budget (revised)
+Budget (tentative) → P&L → Balance Sheet → Budget (revised) → Tax Return
 ```
-The budget tentative fires two rounds before quarter end. P&L fires at quarter end and chains to the balance sheet at year-end. The budget revised fires one round into the new quarter, after the player has seen the P&L.
+The budget tentative fires two rounds before quarter end. P&L fires at quarter end and chains to the balance sheet at year-end. The budget revised fires one round into the new quarter, after the player has seen the P&L. The tax return fires independently on week 4 of each year (starting year 2) and does not chain to any other form.
 
 ### Adding a new form
 
@@ -1046,6 +1048,51 @@ Saving either phase calls `FormsPanel.save({ type: 'budget-tentative' | 'budget-
 **CSS classes:** `.budget-modal-card`, `.budget-table`, `.budget-th`, `.budget-td`, `.budget-input`, `.budget-total-row`, `.budget-net-bar`, `.budget-var-favorable`, `.budget-var-unfavorable` — all in `style.css`.
 
 **`Budget.ITEMS`** — array of `{ key, label, section, histKey }`. `section` is `'revenue'` or `'expense'`; `histKey` matches a field in `History.rounds`. Edit here to add, remove, or rename line items.
+
+### Tax return (`tax-form.js` — `TaxForm`)
+
+Triggers on week 4 of each game year starting in year 2 (`round % 52 === 4 && round > 52`). Covers the prior full year's data — at round 56, for example, it reads `History.rounds.slice(0, 52)`. Unlike the P&L and balance sheet, this form is not triggered at the end of a P&L chain; it fires independently and does not chain to any other form.
+
+Students classify prior-year financial totals into **Income** (gate, parking, food, merchandise, membership, interest) or **Deductions** (wages, utilities, inventory, marketing, membership benefits, loan interest, LOC interest, ride depreciation). A **Charitable Contributions** placeholder is pre-placed in Deductions at $0 and locked, teaching the concept before the donation UI is implemented.
+
+As items are dragged, a live **Tax Calculation** panel on the right updates in real time, showing:
+
+| Row | Description |
+|---|---|
+| Total Income | Sum of items currently placed in Income |
+| Total Deductions | Sum of items currently placed in Deductions |
+| Taxable Income | Income − Deductions |
+| Bracket rows | Progressive breakdown (15% / 25% / 34%) |
+| Tax Owed | Final bill under the bracket schedule |
+
+**Tax brackets:**
+
+| Taxable Income | Rate |
+|---|---|
+| First $50,000 | 15% |
+| $50,001 – $100,000 | 25% |
+| Over $100,000 | 34% |
+
+On successful submission, `TaxForm.taxOwed` and `TaxForm.taxDueRound` are set. `taxDueRound` is `round + 11` (week 15 of the same game year). A `🧾` countdown pill appears in the achievement bar showing the amount and weeks remaining; clicking it opens the Forms review panel. On the due round, `hud.js` deducts the tax from `money` (allowing overdraft if insufficient funds), fires a notification, and clears both fields.
+
+**Depreciation** uses the same threshold and rate as `rideAgeFactor` in `game.js`: rides older than 5 years contribute `buildCost × 0.02` annual depreciation. Rides ≤ 5 years contribute nothing — the same point at which guest excitement begins to decay.
+
+**Integration with other financial statement forms:**
+- **P&L Statement** — `PLStatement.ITEMS` includes `{ key: 'tax', label: 'Income Tax', correct: 'expense', histKey: 'taxExpense' }`. The item appears in Q2 of each filing year (the quarter containing week 15) when non-zero.
+- **Cash Flow Statement** — `CashFlow.ITEMS` includes `{ key: 'tax', label: 'Income Tax Paid', correct: 'operating', histKey: 'taxExpense', flow: 'out' }`. Income tax is an operating activity under both direct and indirect methods.
+- **History** — `History.rounds` records `taxExpense` each round (zero on non-payment rounds); set from `TaxForm._taxPaidThisRound`, which is reset at the start of `advanceRound()` and written between `Finance.processRound()` and `History.record()`.
+
+**`TaxForm._calcDepreciation()`** — reads `installedRides` global, computes depreciation at the age each ride had at the end of the prior tax year (`round - 4`).
+
+**`TaxForm._calcTax(taxableIncome)`** — returns `{ tax, breakdown[] }` where each breakdown entry is `{ label, inBracket, rate, tax }`. Used for both the live preview and the final submission result.
+
+**CSS classes:** `.tf-modal-card`, `.tf-form-header`, `.tf-bank`, `.tf-zone`, `.tf-card-item`, `.tf-card-locked`, `.tf-tax-preview`, `.tf-preview-bracket`, `.tf-owed` — all in `panels.css`.
+
+**`TaxForm` properties used externally:**
+- `TaxForm.pending` — set by `hud.js`; cleared in `show()`
+- `TaxForm.taxOwed` — final computed tax; deducted by `hud.js` on `taxDueRound`
+- `TaxForm.taxDueRound` — absolute round number when payment is collected
+- `TaxForm._taxPaidThisRound` — per-round value read by `History.record()`
 
 ---
 
