@@ -214,7 +214,10 @@ const Security = {
 
       // Determine post assignment label for display.
       let assignmentHtml = '';
-      if (!out && s.focus !== SECURITY_FOCUS.PARKING_OBS) {
+      if (!out && s.instanceId === Finance.boothFallbackGuardId) {
+        // Guard is covering the ticket booth while all booth attendants are out.
+        assignmentHtml = `<span class="sec-assignment sec-admissions">Admissions</span>`;
+      } else if (!out && s.focus !== SECURITY_FOCUS.PARKING_OBS) {
         if (postIdx < posts.length) {
           const post     = posts[postIdx++];
           const postName = post.facilityId === FACILITY_ID.PARK_ENTRANCE ? 'Gate' : `Station (${post.row},${post.col})`;
