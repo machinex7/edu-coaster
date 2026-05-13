@@ -849,6 +849,21 @@
 .charity-name  { font-size: 0.85rem; font-weight: 700; color: #f3f4f6; }
 .charity-blurb { font-size: 0.72rem; color: #9ca3af; line-height: 1.35; }
 
+.charity-tier-badge {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+}
+.charity-tier-bronze  { background: #431407; color: #fb923c; }
+.charity-tier-silver  { background: #1f2937; color: #d1d5db; }
+.charity-tier-gold    { background: #451a03; color: #fcd34d; }
+.charity-tier-platinum{ background: #1e3a5f; color: #93c5fd; }
+.charity-tier-diamond { background: #2e1065; color: #c4b5fd; }
+
 /* ── Financial panel ─────────────────────────────────────────────────────── */
 .financial-section {
   margin-bottom: 1.5rem;

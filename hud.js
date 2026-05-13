@@ -1505,8 +1505,12 @@ function buildBankingPanel() {
     </div>`;
 
   const givingHtml = CHARITIES.map(c => {
-    const ytd     = (Banking.charityDonationsYTD[c.id]     ?? 0).toLocaleString();
-    const allTime = (Banking.charityDonationsAllTime[c.id] ?? 0).toLocaleString();
+    const ytd       = (Banking.charityDonationsYTD[c.id]     ?? 0).toLocaleString();
+    const allTimeAmt =  Banking.charityDonationsAllTime[c.id] ?? 0;
+    const tier      = getSponsorshipTier(allTimeAmt);
+    const tierBadge = tier
+      ? `<span class="charity-tier-badge charity-tier-${tier.id}">${tier.emoji} ${tier.label}</span>`
+      : '';
     return `
       <div class="charity-card">
         <div class="charity-card-header">
@@ -1516,8 +1520,9 @@ function buildBankingPanel() {
             <div class="charity-blurb">${c.blurb}</div>
           </div>
         </div>
+        ${tierBadge}
         <div class="loan-offer-row"><span>This Year</span><span>$${ytd}</span></div>
-        <div class="loan-offer-row"><span>All-Time</span><span>$${allTime}</span></div>
+        <div class="loan-offer-row"><span>All-Time</span><span>$${allTimeAmt.toLocaleString()}</span></div>
         <div class="form-field">
           <label for="donate-${c.id}">Amount ($100 increments)</label>
           <input id="donate-${c.id}" type="number" min="100" step="100" placeholder="$0"

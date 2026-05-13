@@ -129,6 +129,16 @@ const AWARD_ID = Object.freeze({
   MOST_BATHROOMS: 'most_bathrooms',
 });
 
+// Per-charity sponsorship tiers based on cumulative all-time donations.
+// Ordered highest to lowest so Array.find() returns the best qualifying tier.
+const SPONSORSHIP_TIERS = Object.freeze([
+  { id: 'diamond',  label: 'Diamond Sponsor',  emoji: '💎', threshold: 1_000_000 },
+  { id: 'platinum', label: 'Platinum Sponsor',  emoji: '🌟', threshold: 100_000  },
+  { id: 'gold',     label: 'Gold Sponsor',      emoji: '🥇', threshold: 10_000   },
+  { id: 'silver',   label: 'Silver Sponsor',    emoji: '🥈', threshold: 1_000    },
+  { id: 'bronze',   label: 'Bronze Sponsor',    emoji: '🥉', threshold: 100      },
+]);
+
 // Annual interest rate for the savings account, compounded weekly.
 const SAVINGS_ANNUAL_RATE = 0.004;
 

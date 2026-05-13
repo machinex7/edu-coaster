@@ -145,6 +145,12 @@ const CHARITIES = Object.freeze([
   { id: 'veterans',     name: 'Veterans United',       emoji: '🎖️', blurb: 'Resources and advocacy for returning service members.' },
 ]);
 
+// Returns the highest SPONSORSHIP_TIERS entry the given all-time donation total qualifies for,
+// or null if below the Bronze threshold.
+function getSponsorshipTier(allTimeAmount) {
+  return SPONSORSHIP_TIERS.find(t => allTimeAmount >= t.threshold) ?? null;
+}
+
 const Banking = {
 
   // ── State ────────────────────────────────────────────────────────────────────
