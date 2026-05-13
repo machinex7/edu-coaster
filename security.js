@@ -20,14 +20,17 @@ const Security = {
   // excluded — they are off-grid and assigned to license-plate monitoring.
   // Remaining active guards fill posts one-per-post in roster order; excess
   // guards contribute capacity in calcIncidents but no additional coverage.
-  calcCoverage() {
+  // excludeGuardId: optional instanceId to omit (used when a guard is filling the booth attendant role).
+  calcCoverage(excludeGuardId = null) {
     const posts = installedFacilities.filter(
       f => (f.facilityId === FACILITY_ID.GUARD_STATION || f.facilityId === FACILITY_ID.PARK_ENTRANCE)
         && f.status === STATUS.ACTIVE
     );
 
     const patrolGuards = Staff.roster.filter(
-      s => s.jobId === JOB.SECURITY && s.weeksOut === 0 && s.focus !== SECURITY_FOCUS.PARKING_OBS
+      s => s.jobId === JOB.SECURITY && s.weeksOut === 0
+        && s.focus !== SECURITY_FOCUS.PARKING_OBS
+        && s.instanceId !== excludeGuardId
     );
     const staffedCount = Math.min(patrolGuards.length, posts.length);
     const staffedPosts = posts.slice(0, staffedCount);
@@ -85,7 +88,9 @@ const Security = {
 
     const total = fromOverflow + fromUnridden + fromRandom + fromShop;
 
-    const { totalPath, coveredPath, uncoveredPath, staffedPosts, totalPosts, staffedPostsList } = this.calcCoverage();
+    // Exclude any guard drafted as booth attendant — they're not on patrol this round.
+    const fallbackId = Finance.boothFallbackGuardId;
+    const { totalPath, coveredPath, uncoveredPath, staffedPosts, totalPosts, staffedPostsList } = this.calcCoverage(fallbackId);
     const coveredFraction    = totalPath > 0 ? coveredPath / totalPath : 0;
     const coveredIncidents   = Math.round(total * coveredFraction);
     const uncoveredIncidents = total - coveredIncidents;
@@ -93,7 +98,7 @@ const Security = {
     // Weekly capacity: (3 + experienceTier) × 7 per active guard.
     // Excess patrol guards (more guards than posts) and parking-obs guards
     // contribute half capacity — they help but aren't on a dedicated post.
-    const guards       = Staff.roster.filter(s => s.jobId === JOB.SECURITY && s.weeksOut === 0);
+    const guards       = Staff.roster.filter(s => s.jobId === JOB.SECURITY && s.weeksOut === 0 && s.instanceId !== fallbackId);
     const patrolGuards = guards.filter(s => s.focus !== SECURITY_FOCUS.PARKING_OBS);
     const excessSet    = new Set(patrolGuards.slice(staffedPosts).map(s => s.instanceId));
     const capacity = guards.reduce((sum, s) => {
@@ -209,7 +214,10 @@ const Security = {
 
       // Determine post assignment label for display.
       let assignmentHtml = '';
-      if (!out && s.focus !== SECURITY_FOCUS.PARKING_OBS) {
+      if (!out && s.instanceId === Finance.boothFallbackGuardId) {
+        // Guard is covering the ticket booth while all booth attendants are out.
+        assignmentHtml = `<span class="sec-assignment sec-admissions">Admissions</span>`;
+      } else if (!out && s.focus !== SECURITY_FOCUS.PARKING_OBS) {
         if (postIdx < posts.length) {
           const post     = posts[postIdx++];
           const postName = post.facilityId === FACILITY_ID.PARK_ENTRANCE ? 'Gate' : `Station (${post.row},${post.col})`;
