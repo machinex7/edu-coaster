@@ -200,9 +200,17 @@ const Staff = {
       } else {
         const roll              = Math.random();
         const moodPenalty       = (100 - s.mood) / 2000; // low mood raises injury/sickness chance
-        const injuryRate        = this.INJURY_RATE   + moodPenalty;
+        // Workplace Safety Protocols research halves the base injury rate.
+        const injuryBase        = Research.completed.has(RESEARCH_ID.WORKPLACE_SAFETY_PROTOCOLS)
+                                  ? this.INJURY_RATE * 0.5
+                                  : this.INJURY_RATE;
+        const injuryRate        = injuryBase + moodPenalty;
+        // Wash Hands Policy research halves the base sickness rate.
         // Incident multiplier scales illness probability only (not injuries or vacation).
-        const sicknessRate      = this.SICKNESS_RATE * Incidents.staffSickMultiplier + moodPenalty;
+        const sicknessBase      = Research.completed.has(RESEARCH_ID.WASH_HANDS_POLICY)
+                                  ? this.SICKNESS_RATE * 0.5
+                                  : this.SICKNESS_RATE;
+        const sicknessRate      = sicknessBase * Incidents.staffSickMultiplier + moodPenalty;
         const vacationChance    = this.VACATION_RATE * this.VACATION_WEEKS;
         const parentalThreshold = injuryRate + sicknessRate + vacationChance + this.PARENTAL_LEAVE_RATE;
         if (roll < injuryRate) {
@@ -211,7 +219,7 @@ const Staff = {
         } else if (roll < injuryRate + sicknessRate) {
           s.weeksOut = 1;
           s.events.push({ moodModifier: -10 - this._insuranceMoodReduction(1), comment: 'I feel sick...' });
-        } else if (roll < this.INJURY_RATE + this.SICKNESS_RATE + vacationChance) {
+        } else if (roll < injuryBase + sicknessBase + vacationChance) {
           s.weeksOut = this.VACATION_WEEKS;
           s.events.push({ moodModifier: 10, comment: 'Taking a vacation!' });
         } else if (roll < parentalThreshold) {
