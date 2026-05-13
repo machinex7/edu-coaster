@@ -644,7 +644,7 @@
 
 /* Input cell is slightly wider to give the number field room. */
 .budget-td-input {
-  width: 140px;
+  width: 160px;
 }
 
 .budget-input-wrap {
@@ -663,6 +663,14 @@
   font-size: 0.78rem;
   color: #6b7280;
   flex-shrink: 0;
+}
+
+/* Thousands suffix displayed after the input to clarify inputs are in $000s. */
+.budget-thousands {
+  font-size: 0.78rem;
+  color: #6b7280;
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
 }
 
 .budget-input {
