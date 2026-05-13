@@ -51,9 +51,12 @@ const Incidents = {
   utilityCostMultiplier:    1,     // multiplied into per-ride utility cost in processRound()
 
   // ── Init ───────────────────────────────────────────────────────────────────
-  // Loads incident definitions from incidents.json. Called from initHUD().
+  // Loads incident definitions from incidents.json and wires the modal close
+  // button. Called from initHUD().
   async init() {
     this._defs = await fetch('incidents.json').then(r => r.json());
+    document.getElementById('incident-modal-close-btn')
+      ?.addEventListener('click', () => this.closeModal());
   },
 
   // ── Main tick ──────────────────────────────────────────────────────────────
@@ -117,10 +120,11 @@ const Incidents = {
       startRound:         round,
     };
     this._applyPhaseStart(def.phases[0]);
+    this._renderBanner();
     Notifications.push({
-      label:  def.emoji + ' Incident',
-      message: `${def.name}: ${def.phases[0].name} — tap for details.`,
-      action: () => openPanel('incidents'),
+      label:   def.emoji + ' Incident',
+      message: `${def.name}: ${def.phases[0].name} — click for details.`,
+      action:  () => this.openModal(),
     });
     console.log(`[Incidents] Started: ${def.name} (phase 0: ${def.phases[0].name})`);
   },
@@ -166,11 +170,12 @@ const Incidents = {
     this.active.phaseIndex          = nextIndex;
     this.active.phaseWeeksRemaining = def.phases[nextIndex].durationWeeks;
     this._applyPhaseStart(def.phases[nextIndex]);
+    this._renderBanner();
     const phase = def.phases[nextIndex];
     Notifications.push({
-      label:  def.emoji,
+      label:   def.emoji,
       message: `${def.name} — ${phase.name}`,
-      action: () => openPanel('incidents'),
+      action:  () => this.openModal(),
     });
     console.log(`[Incidents] Advanced to phase ${nextIndex}: ${phase.name}`);
   },
@@ -197,6 +202,7 @@ const Incidents = {
     this._lastRoundById[def.id] = round;
     this._globalCooldown        = this.GLOBAL_COOLDOWN_ROUNDS;
     this.active                 = null;
+    this._renderBanner();
     Notifications.push({
       label:   '✅',
       message: `${def.name} has ended.`,
@@ -498,35 +504,46 @@ const Incidents = {
     return flavor[idx] ?? null;
   },
 
-  // ── HUD pill ───────────────────────────────────────────────────────────────
-  // Returns a pill descriptor for updateAchievementIndicators(), or null.
-  hudPill() {
-    if (!this.active) return null;
+  // ── Persistent banner ──────────────────────────────────────────────────────
+  // Updates the #incident-slot element. Shown while an incident is active;
+  // hidden otherwise. Clicking the banner opens the incident modal.
+  _renderBanner() {
+    const slot = document.getElementById('incident-slot');
+    if (!slot) return;
+    if (!this.active) {
+      slot.classList.add('hidden');
+      return;
+    }
     const { def, phaseIndex, phaseWeeksRemaining } = this.active;
     const phase = def.phases[phaseIndex];
-    const label = phase.challenge
-      ? `${def.emoji} ${def.name}: ${phaseWeeksRemaining} wk${phaseWeeksRemaining !== 1 ? 's' : ''}`
-      : `${def.emoji} ${def.name}: ${phase.name}`;
-    return { icon: def.emoji, text: label, panel: 'incidents' };
+    slot.classList.remove('hidden');
+    slot.innerHTML = `
+      <div class="inc-slot-label">Incident</div>
+      <div class="inc-slot-title">
+        <span>${def.emoji}</span>
+        <span>${def.name}</span>
+      </div>
+      <div class="inc-slot-subtitle">${phase.name} &bull; ${phaseWeeksRemaining} wk${phaseWeeksRemaining !== 1 ? 's' : ''} left</div>
+    `;
+    slot.onclick = () => this.openModal();
   },
 
-  // ── Panel ──────────────────────────────────────────────────────────────────
-  // Rebuilds the incidents panel content. Called from openPanel() and each
-  // round when the panel is open.
-  buildPanel() {
-    const inner = document.querySelector('#panel-incidents .side-panel-inner');
-    if (!inner) return;
-    inner.innerHTML = '<div class="panel-header">Incidents</div>';
+  // ── Incident modal ─────────────────────────────────────────────────────────
+  // Builds and shows the incident detail modal with flavor text, effects, and
+  // challenge info for the currently active incident.
+  openModal() {
+    const modal = document.getElementById('incident-modal');
+    const body  = document.getElementById('incident-modal-body');
+    if (!modal || !body) return;
+    body.innerHTML = '';
 
-    // ── Active incident section ──
-    const activeSection = document.createElement('div');
-    activeSection.className = 'incidents-section';
-
-    if (this.active) {
+    if (!this.active) {
+      body.innerHTML = '<p class="empty-note">No active incident.</p>';
+    } else {
       const { def, phaseIndex, phaseWeeksRemaining } = this.active;
       const phase = def.phases[phaseIndex];
 
-      // Header with emoji, name, phase name.
+      // Header — emoji, name, phase, and countdown.
       const hdr = document.createElement('div');
       hdr.className = 'incident-active-header';
       hdr.innerHTML = `
@@ -537,9 +554,9 @@ const Incidents = {
         </div>
         <span class="incident-weeks">${phaseWeeksRemaining} wk${phaseWeeksRemaining !== 1 ? 's' : ''} left</span>
       `;
-      activeSection.appendChild(hdr);
+      body.appendChild(hdr);
 
-      // Current flavor text — rendered as a newspaper article clipping.
+      // Flavor text as a newspaper clipping.
       const flavor = this.currentFlavor();
       if (flavor) {
         const article = document.createElement('div');
@@ -554,33 +571,31 @@ const Incidents = {
 
         const headline = document.createElement('div');
         headline.className = 'incident-newspaper-headline';
-        // Phase name as headline; incident name as kicker above it.
         headline.innerHTML = `<span class="incident-newspaper-kicker">${def.name}</span>${phase.name}`;
 
         const dateline = document.createElement('div');
         dateline.className = 'incident-newspaper-dateline';
         dateline.textContent = `${getDateLabel()} — SPECIAL REPORT`;
 
-        const body = document.createElement('p');
-        body.className = 'incident-newspaper-body';
-        // Strip leading emoji cluster for cleaner body copy.
-        body.textContent = flavor.replace(/^[\p{Emoji_Presentation}\p{Extended_Pictographic}\s]+/u, '').trim();
+        const bodyText = document.createElement('p');
+        bodyText.className = 'incident-newspaper-body';
+        bodyText.textContent = flavor.replace(/^[\p{Emoji_Presentation}\p{Extended_Pictographic}\s]+/u, '').trim();
 
         article.appendChild(masthead);
         article.appendChild(rule);
         article.appendChild(headline);
         article.appendChild(dateline);
-        article.appendChild(body);
-        activeSection.appendChild(article);
+        article.appendChild(bodyText);
+        body.appendChild(article);
       }
 
-      // Effects summary.
+      // Active effects summary.
       const recurring = (phase.effects ?? []).filter(e => e.timing !== 'on_start');
       if (recurring.length > 0) {
         const effectsHdr = document.createElement('div');
         effectsHdr.className = 'incident-effects-label';
         effectsHdr.textContent = 'Active effects:';
-        activeSection.appendChild(effectsHdr);
+        body.appendChild(effectsHdr);
         const ul = document.createElement('ul');
         ul.className = 'incident-effects-list';
         recurring.forEach(e => {
@@ -588,7 +603,7 @@ const Incidents = {
           li.textContent = this._describeEffect(e);
           ul.appendChild(li);
         });
-        activeSection.appendChild(ul);
+        body.appendChild(ul);
       }
 
       // Challenge box.
@@ -602,58 +617,16 @@ const Incidents = {
             ${phase.challenge.failImmediately ? 'Any failure ends the challenge immediately.' : 'Evaluated at end of phase.'}
           </div>
         `;
-        activeSection.appendChild(box);
+        body.appendChild(box);
       }
-
-      inner.appendChild(activeSection);
-    } else {
-      activeSection.innerHTML = '<p class="empty-note">No active incident this week.</p>';
-      inner.appendChild(activeSection);
     }
 
-    // ── Permanent modifications ──
-    if (this._permanentMods.length > 0) {
-      const permSection = document.createElement('div');
-      permSection.className = 'incidents-section';
-      const permHdr = document.createElement('div');
-      permHdr.className = 'incidents-section-header';
-      permHdr.textContent = 'Permanent changes';
-      permSection.appendChild(permHdr);
-      this._permanentMods.forEach(mod => {
-        const p = document.createElement('p');
-        p.className = 'incident-perm-mod';
-        p.textContent = mod.label;
-        permSection.appendChild(p);
-      });
-      inner.appendChild(permSection);
-    }
-
-    // ── History log ──
-    if (this._log.length > 0) {
-      const histSection = document.createElement('div');
-      histSection.className = 'incidents-section';
-      const histHdr = document.createElement('div');
-      histHdr.className = 'incidents-section-header';
-      histHdr.textContent = 'Recent incidents';
-      histSection.appendChild(histHdr);
-      this._log.slice(0, 8).forEach(entry => {
-        const row = document.createElement('div');
-        row.className = 'incident-log-row';
-        row.innerHTML = `
-          <span class="incident-log-emoji">${entry.emoji}</span>
-          <span class="incident-log-name">${entry.name}</span>
-          <span class="incident-log-phase">${entry.phaseName}</span>
-          <span class="incident-log-rounds">Rnd ${entry.startRound}–${entry.endRound}</span>
-        `;
-        histSection.appendChild(row);
-      });
-      inner.appendChild(histSection);
-    }
+    modal.classList.remove('hidden');
   },
 
-  // Rebuilds the panel if it is currently open.
-  refreshPanel() {
-    if (activePanel === 'incidents') this.buildPanel();
+  // Closes the incident detail modal.
+  closeModal() {
+    document.getElementById('incident-modal')?.classList.add('hidden');
   },
 
   // ── Effect description helpers ─────────────────────────────────────────────

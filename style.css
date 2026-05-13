@@ -1359,10 +1359,72 @@ header h1 {
   right: 1.5rem;
   z-index: 49;
   display: flex;
-  flex-direction: column-reverse; /* newest chip sits closest to the button */
+  flex-direction: column-reverse; /* incident-slot first in DOM → bottom; notif-chips → above */
+  align-items: flex-end;
+  gap: 8px;
+  pointer-events: none;
+}
+
+/* Wrapper for transient notification chips — newest chip sits at bottom of the stack. */
+#notif-chips {
+  display: flex;
+  flex-direction: column-reverse;
   align-items: flex-end;
   gap: 6px;
   pointer-events: none;
+}
+
+/* Persistent incident banner — larger than a regular chip, visible while an incident is active. */
+#incident-slot {
+  pointer-events: all;
+  background: #3b1a06;
+  border: 1px solid #92400e;
+  border-left: 3px solid #f59e0b;
+  border-radius: 8px;
+  padding: 10px 14px;
+  min-width: 180px;
+  max-width: 260px;
+  cursor: pointer;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.55);
+  transition: background 0.12s;
+  user-select: none;
+}
+
+#incident-slot:hover { background: #4d2208; }
+
+/* "INCIDENT" eyebrow label above the incident name. */
+.inc-slot-label {
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #d97706;
+  margin-bottom: 4px;
+}
+
+/* Emoji + name row. */
+.inc-slot-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #fde68a;
+  margin-bottom: 3px;
+}
+
+/* Phase name + countdown row. */
+.inc-slot-subtitle {
+  font-size: 0.72rem;
+  color: #d97706;
+}
+
+/* Incident detail modal card — wider and scrollable. */
+.incident-modal-card {
+  max-width: 520px;
+  width: 90vw;
+  max-height: 80vh;
+  overflow-y: auto;
 }
 
 .notif-chip {
