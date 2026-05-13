@@ -28,6 +28,11 @@ const Finance = {
   // Starts at 1.0 (perfect); degrades when operators can't keep up with demand.
   rideOpinion: 1.0,
 
+  // instanceId of the security guard drafted as a booth attendant this round, or null.
+  // Set by calcGateThroughput() when all booth attendants are out; cleared when they return.
+  // Security.calcIncidents() and calcCoverage() skip this guard to avoid double-counting.
+  boothFallbackGuardId: null,
+
   // Security.opinion is in security.js — read here by calcDailyDemand().
 
   // Guest ride satisfaction: did people get as many rides as they wanted?
@@ -61,7 +66,8 @@ const Finance = {
     });
 
     const ridesPerPerson = weeklyAttendance > 0 ? totalWeeklyRiders / weeklyAttendance : 0;
-    this.rideOpinion = Math.min(1, ridesPerPerson / Population.DESIRED_RIDES);
+    // No visitors this round means no bad experiences — keep opinion at perfect.
+    this.rideOpinion = weeklyAttendance === 0 ? 1 : Math.min(1, ridesPerPerson / Population.DESIRED_RIDES);
     console.log(
       '[rides]',
       'weeklyAttendance (param):', weeklyAttendance,
@@ -113,7 +119,9 @@ const Finance = {
     const effectiveRideOpinion = Math.min(1, (this.rideOpinion + appealBonus) * rideIncidentMult);
     const securityFactor     = Unlock.SECURITY ? Math.max(0, 1 - Math.sqrt(Security.opinion) / 100) : 1;
     const messFactor         = Unlock.MESSES   ? this.calcMessFactor() : 1;
-    this.parkExcitement      = Math.max(0, (weeklyAttendance * effectiveRideOpinion * securityFactor * this.mealSatisfaction) / messFactor);
+    const rawExcitement      = Math.max(0, (weeklyAttendance * effectiveRideOpinion * securityFactor * this.mealSatisfaction) / messFactor);
+    // Smooth excitement changes by averaging with the prior week's value.
+    this.parkExcitement      = (this.parkExcitement + rawExcitement) / 2;
     console.log(
       '[excitement]',
       'attendance:', weeklyAttendance.toFixed(2),
@@ -124,21 +132,36 @@ const Finance = {
       '| securityFactor:', securityFactor.toFixed(4),
       '| mealSatisfaction:', this.mealSatisfaction.toFixed(4),
       '| messFactor:', messFactor.toFixed(4),
-      '| parkExcitement:', this.parkExcitement.toFixed(2)
+      '| rawExcitement:', rawExcitement.toFixed(2),
+      '| parkExcitement (smoothed):', this.parkExcitement.toFixed(2)
     );
   },
 
   // How many people can actually enter: booth attendants are the bottleneck.
   // Per attendant: base 500 × mood multiplier (0.8–1.2) × experience multiplier × skill modifier.
+  // If all booth attendants are out, the first available security guard steps in at half efficiency;
+  // that guard is excluded from security capacity for the round (boothFallbackGuardId tracks them).
   calcGateThroughput() {
     if (!Unlock.STAFFING) return Infinity;
     const attendants = Staff.roster.filter(s => s.jobId === JOB.BOOTH_ATTENDANT && s.weeksOut === 0);
-    if (attendants.length === 0) return 0;
-    return attendants.reduce((sum, s) => {
-      const moodMult = 0.8 + (s.mood / 100) * 0.4;
-      const { multiplier: expMult } = Staff.getExperienceTier(s.weeksEmployed);
-      return sum + 500 * moodMult * expMult * s.skillModifier;
-    }, 0);
+    if (attendants.length > 0) {
+      this.boothFallbackGuardId = null;
+      return attendants.reduce((sum, s) => {
+        const moodMult = 0.8 + (s.mood / 100) * 0.4;
+        const { multiplier: expMult } = Staff.getExperienceTier(s.weeksEmployed);
+        return sum + 500 * moodMult * expMult * s.skillModifier;
+      }, 0);
+    }
+    // Draft one security guard as a half-efficiency booth attendant.
+    const fallback = Staff.roster.find(s => s.jobId === JOB.SECURITY && s.weeksOut === 0);
+    if (!fallback) {
+      this.boothFallbackGuardId = null;
+      return 0;
+    }
+    this.boothFallbackGuardId = fallback.instanceId;
+    const moodMult = 0.8 + (fallback.mood / 100) * 0.4;
+    const { multiplier: expMult } = Staff.getExperienceTier(fallback.weeksEmployed);
+    return 500 * 0.5 * moodMult * expMult * fallback.skillModifier;
   },
 
   // Actual daily attendance is whichever is smaller: demand or gate capacity.
