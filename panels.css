@@ -830,6 +830,25 @@
 .bank-view { display: flex; flex-direction: column; overflow-y: auto; }
 .bank-view.hidden { display: none; }
 
+/* Charity card inside the Giving tab */
+.charity-card {
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 10px 12px 0;
+}
+.charity-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.charity-emoji { font-size: 1.6rem; line-height: 1; flex-shrink: 0; }
+.charity-info  { display: flex; flex-direction: column; gap: 3px; }
+.charity-name  { font-size: 0.85rem; font-weight: 700; color: #f3f4f6; }
+.charity-blurb { font-size: 0.72rem; color: #9ca3af; line-height: 1.35; }
+
 /* ── Financial panel ─────────────────────────────────────────────────────── */
 .financial-section {
   margin-bottom: 1.5rem;

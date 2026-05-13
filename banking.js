@@ -137,6 +137,14 @@ const LOAN_COVENANT_TEMPLATES = [
   },
 ];
 
+// Charitable causes players can donate cash to from the Giving tab.
+const CHARITIES = Object.freeze([
+  { id: 'kids_hunger',  name: 'Kids Against Hunger',  emoji: '🍱', blurb: 'Providing meals to food-insecure children in the community.' },
+  { id: 'save_trees',   name: 'Save the Trees',        emoji: '🌳', blurb: 'Reforestation and protection of local forests.' },
+  { id: 'homelessness', name: 'Shelter First',         emoji: '🏠', blurb: 'Emergency housing and support services for the unhoused.' },
+  { id: 'veterans',     name: 'Veterans United',       emoji: '🎖️', blurb: 'Resources and advocacy for returning service members.' },
+]);
+
 const Banking = {
 
   // ── State ────────────────────────────────────────────────────────────────────
@@ -699,6 +707,35 @@ const Banking = {
     // Incident stimulus windows (e.g. Olympics) can temporarily reduce offered rates.
     const incidentDiscount = (typeof Incidents !== 'undefined') ? (Incidents.loanRateDiscount ?? 0) : 0;
     return Math.round((baseRate + ltvPremium + coveragePremium + termPremium + favorPremium - covenantDiscount - refinanceDiscount + missedPenalty - incidentDiscount) * 100) / 100;
+  },
+
+  // ── Charitable giving ────────────────────────────────────────────────────────
+
+  // Per-charity totals since the start of the current in-game year.
+  charityDonationsYTD:     { kids_hunger: 0, save_trees: 0, homelessness: 0, veterans: 0 },
+
+  // Per-charity totals accumulated across the entire game.
+  charityDonationsAllTime: { kids_hunger: 0, save_trees: 0, homelessness: 0, veterans: 0 },
+
+  // Donations made this round; captured by History.record() then reset to 0.
+  donationsThisRound: 0,
+
+  // Deduct amount from cash and record it against the given charity.
+  // Amount must be a positive multiple of 100. Returns false if invalid or insufficient funds.
+  donate(charityId, amount) {
+    if (!CHARITIES.find(c => c.id === charityId)) return false;
+    if (amount <= 0 || amount % 100 !== 0) return false;
+    if (money < amount) return false;
+    money -= amount;
+    this.charityDonationsYTD[charityId]     = (this.charityDonationsYTD[charityId]     ?? 0) + amount;
+    this.charityDonationsAllTime[charityId] = (this.charityDonationsAllTime[charityId] ?? 0) + amount;
+    this.donationsThisRound += amount;
+    return true;
+  },
+
+  // Reset the YTD counters at the start of each new in-game year.
+  resetDonationYTD() {
+    for (const c of CHARITIES) this.charityDonationsYTD[c.id] = 0;
   },
 
   // ── Round processing ─────────────────────────────────────────────────────────
