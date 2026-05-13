@@ -1,0 +1,600 @@
+/* ── Marketing panel ── */
+#panel-marketing,
+#panel-marketing .side-panel-inner {
+  width: 1000px;
+}
+
+#marketing-panel-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.mkt-layout {
+  display: flex;
+  gap: 0;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding: 12px;
+}
+
+.mkt-settings-col {
+  width: 210px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-right: 14px;
+  border-right: 1px solid #374151;
+}
+
+.mkt-cloud-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-left: 14px;
+  min-width: 0;
+}
+
+.mkt-axis-pickers {
+  display: flex;
+  gap: 8px;
+}
+
+.mkt-axis-pickers .form-field { flex: 1; }
+
+/* Point cloud grid — column count set inline per render */
+.mkt-cloud-grid {
+  display: grid;
+  gap: 3px;
+  align-items: center;
+  justify-items: center;
+}
+
+.mkt-cloud-corner { /* empty grid corner cell */ }
+
+.mkt-cloud-xlabel {
+  font-size: 0.58rem;
+  color: #6b7280;
+  text-align: center;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mkt-cloud-ylabel {
+  font-size: 0.58rem;
+  color: #6b7280;
+  text-align: right;
+  padding-right: 5px;
+  white-space: nowrap;
+  justify-self: end;
+}
+
+.mkt-cloud-cell {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  max-height: 56px;
+  position: relative;
+  overflow: hidden;
+}
+
+.mkt-crowd-dot {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #4b5563;
+  transition: background 0.15s;
+}
+
+.mkt-crowd-dot.selected {
+  background: #f59e0b;
+}
+
+/* Vertical Y-range selector strip embedded in the cloud grid column. */
+.mkt-cell-vert {
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  background: #374151;
+  border: 1px solid #4b5563;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.mkt-cell-vert:hover:not(.selected) { background: #4b5563; }
+
+.mkt-cell-vert.selected {
+  background: #78350f;
+  border-color: #d97706;
+}
+
+/* Only the X range bar remains below the chart; Y range is in the grid. */
+.mkt-range-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mkt-launch-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-top: 1px solid #374151;
+  flex-shrink: 0;
+}
+
+.mkt-option-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.mkt-option-btn {
+  padding: 6px 12px;
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 4px;
+  color: #9ca3af;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color 0.1s, color 0.1s, background 0.1s;
+}
+
+.mkt-option-btn:hover {
+  border-color: #6b7280;
+  color: #d1d5db;
+}
+
+.mkt-option-btn.active {
+  border-color: #fbbf24;
+  color: #fde68a;
+  background: #1c1508;
+}
+
+/* Locked options are dimmed and non-interactive — research required to enable. */
+.mkt-option-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.mkt-option-group--col {
+  flex-direction: column;
+}
+
+.mkt-option-btn--wide {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  text-align: left;
+}
+
+.mkt-option-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.mkt-option-sub {
+  font-size: 0.68rem;
+  font-weight: 400;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.mkt-option-btn--wide.active .mkt-option-sub {
+  color: #ca8a04;
+}
+
+.mkt-award-row {
+  border-top: 1px solid #374151;
+  padding-top: 10px;
+  margin-top: 4px;
+}
+
+.mkt-ride-row {
+  border-top: 1px solid #374151;
+  padding-top: 10px;
+  margin-top: 4px;
+}
+
+/* Discount day link row — same visual treatment as award/ride rows. */
+.mkt-discount-row {
+  border-top: 1px solid #374151;
+  padding-top: 10px;
+  margin-top: 4px;
+}
+
+/* Highlights a discount button when its demographic overlaps with the campaign selection. */
+.mkt-option-btn--award.mkt-discount-match {
+  border-color: #16a34a;
+  color: #bbf7d0;
+}
+
+.mkt-award-hint {
+  font-size: 0.68rem;
+  color: #6b7280;
+  font-weight: 400;
+}
+
+.mkt-award-group {
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.mkt-option-btn--award {
+  font-size: 0.72rem;
+  white-space: normal;
+  text-align: left;
+  line-height: 1.3;
+}
+
+.mkt-launch-btn {
+  flex: 1;
+  padding: 8px;
+  background: #1d4ed8;
+  color: #eff6ff;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.mkt-launch-btn:hover:not(:disabled) { background: #2563eb; }
+
+.mkt-launch-btn:disabled {
+  background: #374151;
+  color: #6b7280;
+  cursor: default;
+}
+
+.mkt-estimate {
+  font-size: 0.72rem;
+  color: #9ca3af;
+  margin-top: 4px;
+}
+
+.mkt-cost-line {
+  font-size: 0.78rem;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex: 1;
+}
+
+.mkt-cost-line span {
+  color: #fde68a;
+  font-weight: 700;
+}
+
+.mkt-demo-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.mkt-demo-row {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.mkt-demo-cat {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #6b7280;
+}
+
+.mkt-demo-cells {
+  display: flex;
+}
+
+.mkt-cell {
+  flex: 1;
+  padding: 5px 2px;
+  background: #1f2937;
+  border: 1px solid #374151;
+  margin-left: -1px;
+  color: #9ca3af;
+  font-size: 0.62rem;
+  font-weight: 600;
+  line-height: 1.15;
+  cursor: pointer;
+  text-align: center;
+  white-space: normal;
+  transition: background 0.1s, color 0.1s, border-color 0.1s;
+}
+
+.mkt-cell:first-child { margin-left: 0; border-radius: 3px 0 0 3px; }
+.mkt-cell:last-child  { border-radius: 0 3px 3px 0; }
+
+.mkt-cell:hover:not(.selected) {
+  background: #374151;
+  color: #d1d5db;
+}
+
+.mkt-cell.selected {
+  background: #78350f;
+  border-color: #d97706;
+  color: #fde68a;
+  position: relative;
+  z-index: 1;
+}
+
+/* ── Marketing panel: tab bar + sub-views ── */
+#marketing-panel-body {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.mkt-tab-bar {
+  display: flex;
+  border-bottom: 2px solid #374151;
+  flex-shrink: 0;
+}
+
+.mkt-tab-btn {
+  padding: 8px 18px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  color: #6b7280;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.mkt-tab-btn.active {
+  color: #f3f4f6;
+  border-bottom-color: #fbbf24;
+}
+
+#mkt-design-view {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+#mkt-design-view.hidden,
+#mkt-campaigns-view.hidden {
+  display: none;
+}
+
+#mkt-campaigns-view {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Campaign list sidebar */
+.mkt-clist {
+  width: 220px;
+  flex-shrink: 0;
+  border-right: 1px solid #374151;
+  overflow-y: auto;
+  padding: 8px 0;
+}
+
+.mkt-clist-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 14px;
+  cursor: pointer;
+  border-left: 3px solid transparent;
+}
+
+.mkt-clist-item:hover:not(.selected) {
+  background: #1f2937;
+}
+
+.mkt-clist-item.selected {
+  background: #1f2937;
+  border-left-color: #fbbf24;
+}
+
+.mkt-clist-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.mkt-clist-dot.active    { background: #3b82f6; }
+.mkt-clist-dot.completed { background: #4b5563; }
+
+.mkt-clist-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #e5e7eb;
+}
+
+.mkt-clist-status {
+  font-size: 11px;
+  color: #9ca3af;
+  margin-top: 2px;
+}
+
+.mkt-clist-empty {
+  padding: 16px 14px;
+  font-size: 12px;
+  color: #6b7280;
+}
+
+/* Campaign detail pane */
+.mkt-cdetail {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 16px;
+}
+
+.mkt-cdetail-empty {
+  font-size: 12px;
+  color: #6b7280;
+  padding: 8px 0;
+}
+
+.mkt-summary-field {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 7px 0;
+  border-bottom: 1px solid #374151;
+  font-size: 12px;
+  gap: 12px;
+}
+
+.mkt-summary-field > span:first-child {
+  color: #9ca3af;
+  flex-shrink: 0;
+}
+
+.mkt-summary-field > span:last-child {
+  color: #e5e7eb;
+  text-align: right;
+}
+
+.mkt-summary-chart-label {
+  font-size: 11px;
+  color: #9ca3af;
+  margin: 14px 0 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Bar chart */
+.mkt-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 72px;
+}
+
+.mkt-chart-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 1;
+  height: 100%;
+}
+
+.mkt-chart-bar {
+  width: 100%;
+  background: #3b82f6;
+  border-radius: 2px 2px 0 0;
+  min-height: 2px;
+}
+
+.mkt-chart-wlabel {
+  margin-top: 3px;
+  font-size: 9px;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.mkt-chart-mode-bar {
+  display: flex;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.mkt-chart-mode-btn {
+  flex: 1;
+  padding: 4px 0;
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 4px;
+  color: #6b7280;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.mkt-chart-mode-btn.active {
+  background: #1d4ed8;
+  border-color: #3b82f6;
+  color: #eff6ff;
+}
+
+/* Campaign mode toggle (Full Campaign / Trial Run) */
+.mkt-mode-toggle {
+  display: flex;
+  margin: 8px 14px 4px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid #374151;
+  flex-shrink: 0;
+}
+
+.mkt-mode-btn {
+  flex: 1;
+  padding: 7px 0;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: #1f2937;
+  color: #6b7280;
+  border: none;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.mkt-mode-btn.active {
+  background: #1d4ed8;
+  color: #eff6ff;
+}
+
+.mkt-mode-btn:hover:not(.active) {
+  background: #374151;
+  color: #d1d5db;
+}
+
+/* Description line shown below the toggle in trial mode */
+.mkt-trial-desc {
+  margin: 4px 14px 8px;
+  font-size: 11px;
+  color: #60a5fa;
+  flex-shrink: 0;
+}
+
+/* Badge shown inline in campaign list labels and summary type field */
+.mkt-trial-badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 700;
+  color: #93c5fd;
+  background: #1e3a5f;
+  border-radius: 3px;
+  padding: 1px 5px;
+  margin-left: 5px;
+  vertical-align: middle;
+}
+
+/* Projected bars rendered lighter to distinguish from observed data */
+.mkt-chart-bar--projected {
+  background: #93c5fd;
+}

@@ -26,12 +26,15 @@ constants.js → unlock.js → population.js → game.js → grid.js → pathfin
 
 ## CSS structure
 
-Two stylesheet files, both linked in `index.html` (in order):
+Five stylesheet files, all linked in `index.html` (in order):
 
-- **`style.css`** — Base layout only: reset, body/app, header, HUD, stage badges, action buttons, grid cells, main layout, tool button bar, left nav, `.side-panel`/`.side-panel-inner`/`.panel-header` base styles, park view (`#park-view`, `#park-scroll`, `#grid-wrapper`), view mode bar (`#view-mode-bar`, `.view-mode-btn`, `#view-mode-legend`, `.vml-item/.vml-dot`), security SVG overlay (`#security-overlay`), modals, notification stack. The rule `.side-panel.closed { width: 0 !important; }` here must use `!important` because panel-specific ID rules (e.g. `#panel-research { width: 660px }`) have higher specificity.
-- **`panels.css`** — All panel-specific content styles: construction bottom bar (`#construction-bar`, `#cbar-tabs`, `.cbar-tab-btn`, `.cbar-panel`), item cards (`.item-card`), rides, inventory, staff, pricing, survey, security, research nodes/tree. Panel width overrides (`#panel-staffing { width: 320px }`, `#panel-research { width: 660px }`) live here.
+- **`style.css`** (~758 lines) — Core skeleton: reset, body/app, header, HUD, stage badges, action buttons, grid cells, main layout, tool button bar, left nav, `.side-panel`/`.side-panel-inner`/`.panel-header` base styles, park view (`#park-view`, `#park-scroll`, `#grid-wrapper`), view mode bar (`#view-mode-bar`, `.view-mode-btn`, `#view-mode-legend`, `.vml-item/.vml-dot`), security SVG overlay (`#security-overlay`), round summary modal, notification stack, achievement pills. The rule `.side-panel.closed { width: 0 !important; }` here must use `!important` because panel-specific ID rules (e.g. `#panel-research { width: 660px }`) have higher specificity.
+- **`exercises.css`** (~1086 lines) — All educational exercise modals: P&L statement (`.pl-*`), balance sheet (`.bs-*`), cash flow statement (`.cf-*`), budget projection (`.budget-*`), tax return (`.tf-*`). Also contains the `.fp-tax-*` classes used in the Forms review panel.
+- **`panels.css`** (~2026 lines) — Panel-specific content styles for: construction bottom bar (`#construction-bar`, `#cbar-tabs`, `.cbar-tab-btn`, `.cbar-panel`), item cards (`.item-card`), rides, inventory, pricing, survey, security, research nodes/tree, financial/banking, awards, visitor profile, discount days, membership plans, concessions, forms review, parking, incidents.
+- **`panel-staffing.css`** (~386 lines) — Staffing panel only: `#panel-staffing`, postings form, candidate cards, staff table, staff detail view, mood bar, experience badges, event bubbles.
+- **`panel-marketing.css`** (~600 lines) — Marketing panel only: `#panel-marketing`, point cloud grid, demographic cells, campaign list, campaign detail, bar charts, trial badge, mode toggle.
 
-When adding a new side panel, put its content styles in `panels.css`.
+When adding a new side panel, put its content styles in `panels.css` (or a dedicated `panel-{name}.css` if the panel is large, like staffing or marketing).
 
 ---
 
