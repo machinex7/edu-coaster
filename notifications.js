@@ -36,17 +36,18 @@ const Notifications = {
     this._render();
   },
 
-  // Rebuilds the notification stack DOM from the current queue. Chips are
-  // ordered newest-at-bottom via flex-direction:column-reverse in CSS.
+  // Rebuilds the transient chip list from the current queue. Chips are ordered
+  // newest-at-bottom via flex-direction:column-reverse on #notif-chips. The
+  // persistent #incident-slot sibling is managed separately by Incidents.
   _render() {
-    const stack = document.getElementById('notification-stack');
-    if (!stack) return;
-    stack.innerHTML = this._queue.map(n => `
+    const chips = document.getElementById('notif-chips');
+    if (!chips) return;
+    chips.innerHTML = this._queue.map(n => `
       <div class="notif-chip" data-id="${n.id}" data-message="${n.message.replace(/"/g, '&quot;')}">
         ${n.label}
       </div>
     `).join('');
-    stack.querySelectorAll('.notif-chip').forEach(chip => {
+    chips.querySelectorAll('.notif-chip').forEach(chip => {
       const id = Number(chip.dataset.id);
       chip.addEventListener('click', () => this.dismiss(id));
       chip.addEventListener('contextmenu', e => { e.preventDefault(); this.discard(id); });

@@ -66,7 +66,6 @@
           <button class="tool-btn hidden" data-panel="awards">Awards</button>
           <button class="tool-btn" data-panel="concessions">Concessions</button>
           <button class="tool-btn hidden" data-panel="parking">Parking</button>
-          <button class="tool-btn" data-panel="incidents">Incidents</button>
           <button class="tool-btn" data-panel="forms">Forms</button>
         </nav>
 
@@ -199,12 +198,6 @@
           </div>
         </div>
 
-        <!-- Incidents slide panel -->
-        <div id="panel-incidents" class="side-panel closed">
-          <div class="side-panel-inner">
-          </div>
-        </div>
-
         <!-- Visitor Profile full-screen panel -->
         <div id="panel-visitor-profile" class="side-panel closed">
           <div class="side-panel-inner">
@@ -305,6 +298,15 @@
       <div class="modal-title" id="chart-modal-title"></div>
       <div id="chart-modal-body"></div>
       <button class="modal-close-btn" id="chart-modal-close">Close</button>
+    </div>
+  </div>
+
+  <!-- Active incident detail modal -->
+  <div id="incident-modal" class="modal-overlay hidden">
+    <div class="modal-card incident-modal-card">
+      <div class="modal-title">Incident Report</div>
+      <div id="incident-modal-body"></div>
+      <button id="incident-modal-close-btn" class="modal-close-btn">Close</button>
     </div>
   </div>
 
@@ -433,7 +435,10 @@
     </div>
   </div>
 
-  <div id="notification-stack"></div>
+  <div id="notification-stack">
+    <div id="incident-slot" class="hidden"></div>
+    <div id="notif-chips"></div>
+  </div>
 
   <script src="constants.js"></script>
   <script src="unlock.js"></script>

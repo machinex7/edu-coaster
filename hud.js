@@ -309,7 +309,6 @@ function advanceRound() {
   if (activePanel === 'survey')          Survey.buildPanel();
   if (activePanel === 'visitor-profile') VisitorProfile.buildPanel();
   if (activePanel === 'concessions')     Concessions.buildPanel();
-  if (activePanel === 'incidents')       Incidents.refreshPanel();
   showRoundSummary(report);
   nextWeekForecast   = futurecastForecast;
   futurecastForecast = forecastForRound(round + 2);
@@ -411,10 +410,6 @@ function getDateLabel() {
 function updateAchievementIndicators() {
   const container = document.getElementById('achievement-indicators');
   const pills = [];
-
-  // Active incident pill — always shown first when an incident is running.
-  const incidentPill = Incidents.hudPill();
-  if (incidentPill) pills.push(incidentPill);
 
   if (Research.activeId) {
     const item = Research.items.find(i => i.id === Research.activeId);
@@ -581,7 +576,6 @@ function openPanel(panelId) {
   if (panelId === 'marketing')       Marketing.buildPanel();
   if (panelId === 'visitor-profile') VisitorProfile.buildPanel();
   if (panelId === 'concessions')     Concessions.buildPanel();
-  if (panelId === 'incidents')       Incidents.buildPanel();
   if (panelId === 'forms')           FormsPanel.buildPanel();
   if (panelId === 'parking')         buildParkingPanel();
   if (panelId === 'banking')         buildBankingPanel();
