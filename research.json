@@ -109,6 +109,22 @@
     "feature": "STAFFING",
     "requires": ["401k"]
   },
+  {
+    "id": "wash_hands_policy",
+    "name": "Wash Hands Policy",
+    "description": "Mandate handwashing procedures and post hygiene reminders throughout staff areas. Cuts the staff sickness rate in half.",
+    "cost": 6,
+    "feature": "STAFFING",
+    "requires": ["employee_benefits"]
+  },
+  {
+    "id": "workplace_safety_protocols",
+    "name": "Workplace Safety Protocols",
+    "description": "Introduce formal safety training, equipment checks, and incident reporting procedures. Cuts the staff injury rate in half.",
+    "cost": 8,
+    "feature": "STAFFING",
+    "requires": ["employee_benefits"]
+  },
 
   {
     "id": "bulk_ordering",
