@@ -774,6 +774,9 @@ const PRICE_ITEMS = [
 
 let _activeInvTab = 'stock';
 
+/* Active banking sub-tab: 'investment' (savings + money market) or 'debt' (LoC + loans). */
+let _activeBankingTab = 'investment';
+
 // Human-readable labels for each merchandise category, used across inventory panel functions.
 const MERCH_CATEGORY_LABELS = { toy: 'Toys', practical: 'Practical', apparel: 'Apparel', souvenir: 'Souvenirs' };
 
@@ -1500,23 +1503,41 @@ function buildBankingPanel() {
     </div>`;
 
   body.innerHTML = `
-    <div class="financial-section">
-      <div class="financial-section-header">Savings Account</div>
-      ${savingsHtml}
+    <div class="bank-sub-tabs">
+      <button class="bank-tab-btn${_activeBankingTab === 'investment' ? ' active' : ''}" data-bank-tab="investment">Investment</button>
+      <button class="bank-tab-btn${_activeBankingTab === 'debt' ? ' active' : ''}" data-bank-tab="debt">Debt</button>
     </div>
-    <div class="financial-section">
-      <div class="financial-section-header">Money Market Account</div>
-      ${mmHtml}
+    <div id="bank-investment-view" class="bank-view${_activeBankingTab !== 'investment' ? ' hidden' : ''}">
+      <div class="financial-section">
+        <div class="financial-section-header">Savings Account</div>
+        ${savingsHtml}
+      </div>
+      <div class="financial-section">
+        <div class="financial-section-header">Money Market Account</div>
+        ${mmHtml}
+      </div>
     </div>
-    <div class="financial-section">
-      <div class="financial-section-header">Line of Credit</div>
-      ${locHtml}
-    </div>
-    ${activeLoansHtml}
-    <div class="financial-section">
-      <div class="financial-section-header">Loan</div>
-      ${loanSectionHtml}
+    <div id="bank-debt-view" class="bank-view${_activeBankingTab !== 'debt' ? ' hidden' : ''}">
+      <div class="financial-section">
+        <div class="financial-section-header">Line of Credit</div>
+        ${locHtml}
+      </div>
+      ${activeLoansHtml}
+      <div class="financial-section">
+        <div class="financial-section-header">Loan</div>
+        ${loanSectionHtml}
+      </div>
     </div>`;
+
+  // Tab switching — no full rebuild needed, just toggle visibility.
+  document.querySelectorAll('.bank-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      _activeBankingTab = btn.dataset.bankTab;
+      document.querySelectorAll('.bank-tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+      document.getElementById('bank-investment-view').classList.toggle('hidden', _activeBankingTab !== 'investment');
+      document.getElementById('bank-debt-view').classList.toggle('hidden', _activeBankingTab !== 'debt');
+    });
+  });
 
   // Extra loan payment buttons.
   document.querySelectorAll('.extra-payment-btn').forEach(btn => {

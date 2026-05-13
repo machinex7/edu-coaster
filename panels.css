@@ -820,6 +820,16 @@
 .rn-badge.completed   { background: #14532d; color: #86efac; }
 .rn-badge.in-progress { background: #1e3a5f; color: #93c5fd; }
 
+/* ── Banking sub-tabs ────────────────────────────────────────────────────── */
+.bank-sub-tabs { display: flex; border-bottom: 2px solid #374151; flex-shrink: 0; }
+.bank-tab-btn  { flex: 1; padding: 9px 6px; background: none; border: none;
+  border-bottom: 2px solid transparent; margin-bottom: -2px; color: #6b7280;
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em;
+  text-transform: uppercase; cursor: pointer; }
+.bank-tab-btn.active { color: #f3f4f6; border-bottom-color: #fbbf24; }
+.bank-view { display: flex; flex-direction: column; overflow-y: auto; }
+.bank-view.hidden { display: none; }
+
 /* ── Financial panel ─────────────────────────────────────────────────────── */
 .financial-section {
   margin-bottom: 1.5rem;
