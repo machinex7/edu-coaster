@@ -30,7 +30,7 @@ const Incidents = {
   _permanentMods: [],
 
   // ── Cooldown tracking ──────────────────────────────────────────────────────
-  _globalCooldown: 0,         // rounds before next spawn attempt
+  _globalCooldown: 14,         // rounds before next spawn attempt
   _lastRoundById:  {},        // incidentId → round on which it last ended
   _startRounds:    [],        // round number recorded each time any incident begins
 
