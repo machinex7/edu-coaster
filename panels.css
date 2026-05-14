@@ -263,7 +263,9 @@
   cursor: pointer;
   transition: background 0.12s;
 }
-.ride-action-btn:hover    { background: #374151; }
+.ride-action-btn:hover             { background: #374151; }
+.ride-action-btn:disabled          { opacity: 0.4; cursor: default; }
+.ride-action-btn:disabled:hover    { background: none; }
 .ride-action-resume       { border-color: #14532d; color: #86efac; }
 .ride-action-resume:hover { background: rgba(20,83,45,0.3); }
 .ride-action-danger       { border-color: #7f1d1d; color: #fca5a5; }
