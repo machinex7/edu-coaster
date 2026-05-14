@@ -13,9 +13,10 @@ const MAX_SHOP_MESS_RADIUS = 5;
 const Finance = {
 
   // ── Park metrics ────────────────────────────────────────────────────────────
-  parkExcitement:   500,  // satisfied-visitor count from last round; drives next round's demand
-  weeklyNetMess:    0,    // unhandled mess from last round; subtracted from excitement
-  mealSatisfaction: 1,    // 0.5–1; penalises excitement when food supply < demand
+  parkExcitement:        500,  // satisfied-visitor count from last round; drives next round's demand
+  cumulativeAttendance:  0,    // total visitors ever; sqrt of this adds a renown bonus to daily demand
+  weeklyNetMess:         0,    // unhandled mess from last round; subtracted from excitement
+  mealSatisfaction:      1,    // 0.5–1; penalises excitement when food supply < demand
 
   // Accumulates campaign launch costs paid between round advances; reset each round.
   roundMarketingCosts: 0,
@@ -93,10 +94,16 @@ const Finance = {
     const weatherFactor     = 1 - (WEATHER_DEMAND_REDUCTION[nextWeekForecast] ?? 0);
     const demandMultiplier  = Population.calcDemandMultiplier();
     const incidentFactor    = Incidents.demandMultiplier;
-    const result            = this.parkExcitement * exhaustionFactor * eventFactor * demandMultiplier * weatherFactor * incidentFactor;
+    // Renown bonus: word-of-mouth from everyone who has ever visited grows the potential
+    // audience over time. Grows as sqrt so early visits matter most and the bonus tapers off.
+    const renownBonus       = Math.sqrt(this.cumulativeAttendance);
+    const base              = this.parkExcitement + renownBonus;
+    const result            = base * exhaustionFactor * eventFactor * demandMultiplier * weatherFactor * incidentFactor;
     console.log(
       '[demand]',
       'excitement:', this.parkExcitement.toFixed(2),
+      '| renownBonus:', renownBonus.toFixed(2),
+      '| base:', base.toFixed(2),
       '| exhaustion:', exhaustionFactor.toFixed(4),
       '| event:', eventFactor.toFixed(4),
       '| demandMult:', demandMultiplier.toFixed(4),
@@ -672,6 +679,7 @@ const Finance = {
     // full park population this round.
     const { attendance: memberAttendance } = Membership.calcMemberAttendance();
     const totalAttendance   = weeklyAttendance + memberAttendance;
+    this.cumulativeAttendance += totalAttendance;
 
     const gateRevenue       = this.calcGateRevenue(daily);
     // Non-free-parking members drive in and pay the standard rate; they're
