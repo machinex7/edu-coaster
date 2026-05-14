@@ -271,9 +271,10 @@ const Survey = {
     el.querySelector('#survey-results-btn')?.addEventListener('click', () => {
       const result = Survey._lastSurveyResult();
       if (!result) return;
+      const moe = Math.round(result.noiseRange);
       Charts.showModal({
         title:         'Survey Results',
-        subtitle:      `${result.completed} of ${result.batchSize.toLocaleString()} responded · Round ${result.round}`,
+        subtitle:      `${result.completed} of ${result.batchSize.toLocaleString()} responded · Round ${result.round} · ±${moe} pt margin of error`,
         items:         Object.entries(result.reportedScores).map(([cat, score]) => ({
           label: Survey.CATEGORY_LABELS[cat] ?? cat,
           value: Math.round(score),
@@ -294,10 +295,12 @@ const Survey = {
         (cat !== 'food'        || Unlock.FOOD) &&
         (cat !== 'shopping'    || Unlock.MERCHANDISE)
       );
+      const totalCompleted = allSurveys.reduce((s, r) => s + r.completed, 0);
+      const qMoe           = totalCompleted > 0 ? Math.round(Survey.NOISE_K / Math.sqrt(totalCompleted)) : null;
       Charts.showModal({
         title:        `Quarterly Survey Results — ${Survey._quarterLabel(completedQ)}`,
         subtitle:     allSurveys.length > 0
-          ? `${allSurveys.reduce((s, r) => s + r.completed, 0).toLocaleString()} total responses from ${allSurveys.length} survey${allSurveys.length !== 1 ? 's' : ''}`
+          ? `${totalCompleted.toLocaleString()} total responses from ${allSurveys.length} survey${allSurveys.length !== 1 ? 's' : ''} · ±${qMoe} pt margin of error`
           : null,
         items:        allSurveys.length > 0
           ? categories.map(cat => ({
