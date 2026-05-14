@@ -34,7 +34,7 @@ const Shopping = {
   // Maximum price each income bracket will pay, positionally aligned to
   // Population.INCOME_BRACKETS (Low Income → High Income).
   // Raised by ~$10 to keep behaviour neutral at the default $20 gate price;
-  // at runtime half the gate charge is subtracted (gate exhaustion effect).
+  // at runtime half the gate charge is subtracted (visitors spent on entry, so less for merch).
   INCOME_LIMITS: [16, 20, 30, 50, Infinity],
 
   // Total active tiles across all placed merchandise shops.

@@ -115,12 +115,12 @@ const Membership = {
     if (this.plans.length === 0 || weeklyAttendance <= 0) return 0;
 
     // ── Per-visitor satisfaction score ──────────────────────────────────────
-    // Finance.parkExcitement = weeklyAttendance × rideOpinion × securityFactor
+    // Finance.parkSatisfaction = weeklyAttendance × rideOpinion × securityFactor
     //                         × mealSatisfaction / messFactor
     // Dividing by weeklyAttendance cancels attendance out, leaving a pure
     // quality-per-visitor ratio.  A well-run park ≈ 0.6–0.9; excellent ≈ 1.0+.
     // The happier each visitor was, the more likely they are to buy a pass.
-    const satisfactionPerVisitor = Finance.parkExcitement / weeklyAttendance;
+    const satisfactionPerVisitor = Finance.parkSatisfaction / weeklyAttendance;
 
     // ── Attendance-composition weights (chance × favor) ─────────────────────
     // The demand model weights each bracket by chance × favor, not chance alone.
