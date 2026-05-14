@@ -6,15 +6,20 @@
 const VisitorProfile = {
 
   // Category definitions in display order.
-  CATEGORIES: [
-    { label: 'Age',            brackets: Population.AGE_BRACKETS,      key: 'AGE'        },
-    { label: 'Household Size', brackets: Population.HOUSEHOLD_SIZES,   key: 'HOUSEHOLD'  },
-    { label: 'Income',         brackets: Population.INCOME_BRACKETS,   key: 'INCOME'     },
-    { label: 'Distance',       brackets: Population.DISTANCE_BRACKETS, key: 'DISTANCE'   },
-    { label: 'Area Type',      brackets: Population.AREA_TYPES,        key: 'AREA'       },
-    { label: 'Employment',     brackets: Population.EMPLOYMENT_STATUS, key: 'EMPLOYMENT' },
-    { label: 'Visitor Status', brackets: Population.VISITOR_STATUS,    key: 'STATUS'     },
-  ],
+  // Defined as a getter so it reads the live Population arrays at render time rather than
+  // capturing the empty placeholder arrays that exist when this script first loads.
+  // (game.js replaces Population.AGE_BRACKETS etc. via Object.assign after all scripts load.)
+  get CATEGORIES() {
+    return [
+      { label: 'Age',            brackets: Population.AGE_BRACKETS,      key: 'AGE'        },
+      { label: 'Household Size', brackets: Population.HOUSEHOLD_SIZES,   key: 'HOUSEHOLD'  },
+      { label: 'Income',         brackets: Population.INCOME_BRACKETS,   key: 'INCOME'     },
+      { label: 'Distance',       brackets: Population.DISTANCE_BRACKETS, key: 'DISTANCE'   },
+      { label: 'Area Type',      brackets: Population.AREA_TYPES,        key: 'AREA'       },
+      { label: 'Employment',     brackets: Population.EMPLOYMENT_STATUS, key: 'EMPLOYMENT' },
+      { label: 'Visitor Status', brackets: Population.VISITOR_STATUS,    key: 'STATUS'     },
+    ];
+  },
 
   // Maximum icons shown for the largest bracket in a category.
   // All others scale proportionally so relative sizes are visible.
