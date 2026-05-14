@@ -1504,7 +1504,7 @@ function buildBankingPanel() {
       }).join('')}
     </div>`;
 
-  const givingHtml = CHARITIES.map(c => {
+  const givingHtml = CHARITIES.filter(c => Banking.unlockedCharityIds.has(c.id)).map(c => {
     const ytd       = (Banking.charityDonationsYTD[c.id]     ?? 0).toLocaleString();
     const allTimeAmt =  Banking.charityDonationsAllTime[c.id] ?? 0;
     const tier      = getSponsorshipTier(allTimeAmt);

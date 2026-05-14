@@ -717,6 +717,22 @@ const Banking = {
 
   // ── Charitable giving ────────────────────────────────────────────────────────
 
+  // Charity IDs the player has unlocked access to. Shelter First is available from the start.
+  unlockedCharityIds: new Set(['homelessness']),
+
+  // Unlock a charity by id and fire a notification. No-op if already unlocked or unknown.
+  unlockCharity(id) {
+    if (this.unlockedCharityIds.has(id)) return;
+    if (!CHARITIES.find(c => c.id === id)) return;
+    this.unlockedCharityIds.add(id);
+    const charity = CHARITIES.find(c => c.id === id);
+    Notifications.push({
+      label:   'Giving',
+      message: `${charity.name} is now available as a donation recipient.`,
+      action:  () => { _activeBankingTab = 'giving'; openPanel('banking'); },
+    });
+  },
+
   // Per-charity totals since the start of the current in-game year.
   charityDonationsYTD:     { kids_hunger: 0, save_trees: 0, homelessness: 0, veterans: 0 },
 
