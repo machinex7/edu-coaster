@@ -755,6 +755,17 @@ const Banking = {
     return true;
   },
 
+  // Record an in-kind (non-cash) donation — e.g. food stock donated to a hunger charity.
+  // Updates tier and display totals only; does not deduct cash or flow through History,
+  // because the donated goods were already expensed at purchase time.
+  donateInKind(charityId, amount) {
+    if (!CHARITIES.find(c => c.id === charityId)) return false;
+    if (amount <= 0) return false;
+    this.charityDonationsYTD[charityId]     = (this.charityDonationsYTD[charityId]     ?? 0) + amount;
+    this.charityDonationsAllTime[charityId] = (this.charityDonationsAllTime[charityId] ?? 0) + amount;
+    return true;
+  },
+
   // Reset the YTD counters at the start of each new in-game year.
   resetDonationYTD() {
     for (const c of CHARITIES) this.charityDonationsYTD[c.id] = 0;

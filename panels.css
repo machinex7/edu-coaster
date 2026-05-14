@@ -1595,6 +1595,15 @@
 .con-summary-total { font-size: 0.85rem; font-weight: 700; color: #f3f4f6;
   border-top: 1px solid #374151; margin-top: 4px; padding-top: 7px; }
 
+.con-donate-info { display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px 10px; border-bottom: 1px solid #1f2937; flex-shrink: 0; }
+.con-donate-charity-emoji { font-size: 1.5rem; line-height: 1; }
+.con-donate-charity-name  { font-size: 0.85rem; font-weight: 700; color: #f3f4f6; margin-bottom: 4px; }
+.con-donate-btn { width: calc(100% - 24px); margin: 10px 12px 14px;
+  padding: 9px; background: #14532d; color: #86efac; border: none; border-radius: 6px;
+  font-size: 0.8rem; font-weight: 700; cursor: pointer; flex-shrink: 0; }
+.con-donate-btn:disabled { opacity: 0.4; cursor: default; }
+
 .con-order-mode  { display: flex; gap: 20px; padding: 10px 12px 12px;
   border-top: 1px solid #374151; flex-shrink: 0; }
 .con-mode-label  { display: flex; align-items: center; gap: 6px;
