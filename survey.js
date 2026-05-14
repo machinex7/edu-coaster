@@ -207,14 +207,13 @@ const Survey = {
 
     const lastResult        = this._lastSurveyResult();
     const completedQuarters = Math.floor(History.rounds.length / 13);
-    const hasQuarterlyResearch = Research.completed.has(RESEARCH_ID.QUARTERLY_SURVEY_RESULTS);
     const resultsSection = lastResult
       ? `<div class="survey-results-wrap">
            <button class="ride-action-btn" id="survey-results-btn">Show Survey Results</button>
-           ${hasQuarterlyResearch ? `<button class="ride-action-btn" id="survey-quarterly-btn"
+           <button class="ride-action-btn" id="survey-quarterly-btn"
                    ${completedQuarters < 1 ? 'disabled title="Available after your first full quarter"' : ''}>
              Quarterly Survey Results
-           </button>` : ''}
+           </button>
          </div>`
       : '';
 
