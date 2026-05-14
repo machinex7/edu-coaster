@@ -299,6 +299,8 @@ function advanceRound() {
     TaxForm.taxOwed     = 0;
     TaxForm.taxDueRound = 0;
   }
+  // Auto-send survey if active and no survey already pending this round.
+  if (Survey.autoActive && !Survey.pendingSend) Survey.run(_surveyBatchSize, _surveyIncentive);
   Survey.processPendingSend();
   History.record(report);
   refreshDirtOverlay();
