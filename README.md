@@ -77,7 +77,7 @@ const Foo = {
 |---|---|---|
 | `Population` | `population.js` | Visitor behavior rates, labor constants, economic multipliers |
 | `Finance` | `finance.js` | Pricing state, attendance model, income/cost calculations, round processing |
-| `Banking` | `banking.js` | Loan applications, covenants, repayments, negotiation |
+| `Banking` | `banking.js` | Loan applications, covenants, repayments, negotiation, charitable giving |
 | `Shopping` | `shopping.js` | Shop catalog, installed shops, merchandise revenue/theft math, staffing ratios |
 | `Concessions` | `concessions.js` | Menu items, freezer stock, 4-week delivery orders, combo meals, food revenue calculation |
 | `Membership` | `membership.js` | Annual membership plan definitions, weekly sales simulation, member attendance and parking, food/merch discount tracking |
@@ -108,6 +108,13 @@ SECURITY_FOCUS = { PATROL, GATE, SHOP }
 ENGINEER_FOCUS = { MAINTENANCE, CONSTRUCTION }
 LOAN_STATUS    = { APPROACHING, OPEN, APPLYING, OFFERED, REVIEW }
 MENU_ITEM      = { WATER_CUP, SODA, HOT_DOG, FRIES, TATER_TOTS, BURGER, CHICKEN_TENDERS }
+SPONSORSHIP_TIERS = [
+  { id: 'diamond',  label: 'Diamond Sponsor',  emoji: '💎', threshold: 1_000_000, boost: 5 },
+  { id: 'platinum', label: 'Platinum Sponsor',  emoji: '🌟', threshold: 100_000,  boost: 4 },
+  { id: 'gold',     label: 'Gold Sponsor',      emoji: '🥇', threshold: 10_000,   boost: 3 },
+  { id: 'silver',   label: 'Silver Sponsor',    emoji: '🥈', threshold: 1_000,    boost: 2 },
+  { id: 'bronze',   label: 'Bronze Sponsor',    emoji: '🥉', threshold: 100,      boost: 1 },
+]   // ordered highest→lowest; Array.find() returns the best qualifying tier
 MAX_EFFECTIVE_WEAR = 1000   // breakdown probability reaches 100% at this cumulative wear
 WEEKS_PER_YEAR     = 52
 COVENANT_RATE_DISCOUNT      = 0.4    // interest rate reduction per covenant accepted
@@ -280,14 +287,14 @@ Demolishing structures are excluded from all game calculations. Demolition takes
 
 | Property | Description |
 |---|---|
-| `Finance.parkExcitement` | Drives daily demand. Computed end-of-round from attendance, ride satisfaction, security opinion, and meal satisfaction. |
+| `Finance.parkSatisfaction` | Drives daily demand. Computed end-of-round from attendance, ride satisfaction, security opinion, and meal satisfaction. Smoothed by averaging with the prior week's value, then boosted by charity sponsorship tiers. |
 | `Finance.rideOpinion` | Smoothed 0–1 score of ride capacity vs. crowd size. Degrades when operators can't serve all visitors. |
-| `Finance.mealSatisfaction` | Food capacity vs. visitor demand. Penalises `parkExcitement` when food is undersupplied. |
+| `Finance.mealSatisfaction` | Food capacity vs. visitor demand. Penalises `parkSatisfaction` when food is undersupplied. |
 | `Security.opinion` | Suppresses demand each round. Rises with unhandled incidents, decays by a fraction each round. |
 
 ### Attendance model
 
-`Finance.calcDailyDemand()` — key signals: `parkExcitement`, price exhaustion, population events, demographic favor, weather forecast (`WEATHER_DEMAND_REDUCTION`).
+`Finance.calcDailyDemand()` — key signals: `parkSatisfaction`, price exhaustion, population events, demographic favor, weather forecast (`WEATHER_DEMAND_REDUCTION`).
 
 `Finance.calcGateThroughput()` — key signals: working booth attendant count, mood, experience tier, skill modifier.
 
@@ -403,6 +410,66 @@ Standard amortization: `PMT = P × r(1+r)^n / ((1+r)^n − 1)` where `r = annual
 Missed payments increment `loan.missedPayments` and `Banking.totalMissedPayments`, which permanently penalise future loan rates and LTV caps.
 
 **History:** Each round's `History` entry records `loanBalance`, `loanInterestPaid`, and `loanPrincipalPaid` across all active loans.
+
+### Charitable giving (`Banking` — Giving tab)
+
+The Banking panel's **Giving** tab lets players donate to up to four charities. Each charity is defined in the `CHARITIES` frozen array in `banking.js`:
+
+| ID | Name | Default state |
+|---|---|---|
+| `homelessness` | Shelter First | Unlocked at game start |
+| `kids_hunger` | Kids Against Hunger | Locked (call `Banking.unlockCharity('kids_hunger')`) |
+| `save_trees` | Save the Trees | Locked |
+| `veterans` | Veterans United | Locked |
+
+Locked charities are hidden from the panel entirely. `Banking.unlockCharity(id)` adds the id to `Banking.unlockedCharityIds` (a `Set`) and fires a notification.
+
+#### State
+
+| Property | Type | Purpose |
+|---|---|---|
+| `unlockedCharityIds` | `Set<string>` | Charity ids currently visible in the panel |
+| `charityDonationsYTD` | `{ [id]: number }` | Cash donated to each charity since the last year reset |
+| `charityDonationsAllTime` | `{ [id]: number }` | Cumulative all-time cash donations per charity |
+| `donationsThisRound` | `number` | Total cash donated this round; added to `History.donationExpense` and reset after recording |
+
+#### Methods
+
+- **`Banking.donate(charityId, amount)`** — Cash donation. `amount` must be a positive multiple of $100 and ≤ `money`. Deducts from cash, adds to `donationsThisRound` (flows into `History`/P&L/Tax as `donationExpense`), and updates both YTD and all-time totals.
+- **`Banking.donateInKind(charityId, amount)`** — Non-cash donation (e.g. food). Updates YTD and all-time totals only; does not touch `money` or `donationsThisRound`. Used by `Concessions.donateFoodToHunger()`.
+- **`Banking.resetDonationYTD()`** — Zeroes all YTD totals. Called from `advanceRound()` when `round % 52 === 1 && round > 1` (start of each new game year).
+
+#### Sponsorship tiers and excitement boost
+
+`getSponsorshipTier(allTimeAmount)` (standalone helper in `banking.js`) looks up the best qualifying tier from `SPONSORSHIP_TIERS` in `constants.js` using `Array.find()`. Tier thresholds are based on cumulative **all-time** donations (YTD + prior years combined), so a charity's tier never drops even after the YTD resets.
+
+Each charity's sponsorship tier contributes a `boost` percentage to `Finance.parkSatisfaction` at the end of `calcExcitement()`. The boost is applied to the already-smoothed value:
+
+```js
+const charityBoostPct = CHARITIES.reduce((sum, c) => {
+  const tier = getSponsorshipTier(Banking.charityDonationsAllTime[c.id] ?? 0);
+  return sum + (tier?.boost ?? 0);
+}, 0);
+this.parkSatisfaction = smoothed * (1 + charityBoostPct / 100);
+```
+
+Maximum boost is 20% (all four charities at Diamond tier: 5% × 4).
+
+| Tier | Threshold | Boost |
+|---|---|---|
+| Bronze | $100 | +1% |
+| Silver | $1,000 | +2% |
+| Gold | $10,000 | +3% |
+| Platinum | $100,000 | +4% |
+| Diamond | $1,000,000 | +5% |
+
+#### Donation expense in educational forms
+
+`donationExpense` flows through all four educational forms:
+- **P&L Statement** — listed as *Charitable Donations* (Expenses)
+- **Cash Flow Statement** — listed as *Charitable Donations* (Operating outflow)
+- **Tax Return** — listed as *Charitable Contributions* (Deductions); the value is real, sourced from `sum('donationExpense')` over the filing year
+- **Budget** — listed as *Charitable Donations* (Expense row); appears in both tentative and revised phases
 
 ---
 
@@ -676,7 +743,7 @@ If `repeatOrder` is true the order carries over; otherwise it clears. The delive
 
 4. **Cascade fulfillment** — options are served from highest to lowest `mealValue`. Stock shortages roll unmet demand to the next option; worker capacity exhaustion is terminal.
 
-Returns `{ revenue, mealsSold, mealsWanted, mealsServed, itemSales[], mealSales[] }`. Revenue is credited to `money` in `Finance.processRound`. `mealsSold` and `mealsServed` feed `Finance.mealSatisfaction`, which multiplies `parkExcitement`.
+Returns `{ revenue, mealsSold, mealsWanted, mealsServed, itemSales[], mealSales[] }`. Revenue is credited to `money` in `Finance.processRound`. `mealsSold` and `mealsServed` feed `Finance.mealSatisfaction`, which multiplies `parkSatisfaction`.
 
 ### Combo meals
 
@@ -688,6 +755,7 @@ Players create combos via the **Menu** tab. The builder lets them set ingredient
 |---|---|
 | **Menu** | One row per item: name, "X sold" badge (Play only), editable sale price. Combo meals section below with cards and "+ Add Meal" button. |
 | **Orders** | 4-week delivery cycle tracker; order table (Item / Cost per Unit / In Freezer / Order Qty / Line Cost); subtotal + delivery fee + total summary; Repeat Order / Clear Order radio. |
+| **Donate** | Visible only when the Kids Against Hunger charity is unlocked (`Banking.unlockedCharityIds.has('kids_hunger')`). Shows each non-`alwaysAvailable` ingredient with its base cost per unit and an editable quantity input. The live total reflects current freezer stock limits. Clicking Donate calls `Concessions.donateFoodToHunger(amounts)` — stock is deducted from the freezer and the dollar value is credited to Kids Against Hunger's all-time donation total via `Banking.donateInKind()`. No cash is deducted and no `donationExpense` is recorded (the food was already expensed at delivery). |
 
 ---
 
@@ -830,6 +898,8 @@ Key signals: salary vs. cost-of-living ratio, active staff events (decay each ro
 ## History tracking (`history.js`)
 
 `History.record(report)` appends one entry per round. `History.rounds` is append-only.
+
+Each entry includes a `donationExpense` field sourced from `Banking.donationsThisRound` (reset to 0 after recording). Only cash donations via `Banking.donate()` increment this field — in-kind food donations do not, since the food cost was already recorded as a concessions delivery expense.
 
 ---
 
@@ -1053,7 +1123,7 @@ Saving either phase calls `FormsPanel.save({ type: 'budget-tentative' | 'budget-
 
 Triggers on week 4 of each game year starting in year 2 (`round % 52 === 4 && round > 52`). Covers the prior full year's data — at round 56, for example, it reads `History.rounds.slice(0, 52)`. Unlike the P&L and balance sheet, this form is not triggered at the end of a P&L chain; it fires independently and does not chain to any other form.
 
-Students classify prior-year financial totals into **Income** (gate, parking, food, merchandise, membership, interest) or **Deductions** (wages, utilities, inventory, marketing, membership benefits, loan interest, LOC interest, ride depreciation). A **Charitable Contributions** placeholder is pre-placed in Deductions at $0 and locked, teaching the concept before the donation UI is implemented.
+Students classify prior-year financial totals into **Income** (gate, parking, food, merchandise, membership, interest) or **Deductions** (wages, utilities, inventory, marketing, membership benefits, loan interest, LOC interest, ride depreciation, charitable contributions). A **Charitable Contributions** item is included when the prior year contains non-zero `donationExpense` records; it is a fully draggable deduction card like all other items.
 
 As items are dragged, a live **Tax Calculation** panel on the right updates in real time, showing:
 
@@ -1116,7 +1186,7 @@ On successful submission, `TaxForm.taxOwed` and `TaxForm.taxDueRound` are set. `
 - Admission panel: gate price control; price exhaustion suppresses demand
 - Banking panel: loan application flow
 - Merchandise upcharge control in Inventory → Stock tab
-- Park metrics: `parkExcitement`, `rideOpinion`, `mealSatisfaction`
+- Park metrics: `parkSatisfaction`, `rideOpinion`, `mealSatisfaction`
 - Security system: incident tracking, two-phase handling, guard focus assignment, opinion decay
 - Shop theft: scales with tiles and understaffing; unhandled incidents lose money
 - Staff absence system: per-round rolls for sickness, critical injury, and vacation; absent staff excluded from all capacity calculations
@@ -1144,6 +1214,11 @@ On successful submission, `TaxForm.taxOwed` and `TaxForm.taxDueRound` are set. `
 - Annual balance sheet exercise: drag-and-drop modal every 52 rounds (chained after the year-end P&L); point-in-time snapshot of assets (cash, merchandise inventory, food stock, park equipment, construction in progress) and liabilities (outstanding loans); Owner's Equity revealed on completion
 - Two-phase quarterly budget exercise: Phase 1 (tentative, round 11 of each quarter) fires before the P&L — player forecasts blind with prior quarter's revised budget as a reference, inputs start at $0; Phase 2 (revised, round 1 of the next quarter) fires after the P&L — shows tentative budget and last quarter's actuals side by side, inputs pre-populated from Phase 1; live-updating section subtotals and projected net bar; both phases saved as separate cards in the Forms review panel
 - Visitor animation system: white-dot sprites spawn at the gate every 5 s (capped at 10), walk A* routes between rides and shops, hide at each stop for 5 s, then return home after 6 visits; brown shrinking trash particles drop every 8 tile crossings (interval scales with mess factor); green rising `$` coin particles appear on spawn and on leaving food/merch shops; all rendered on a canvas overlay with no simulation impact
+- Banking panel split into three sub-tabs: **Investment** (savings account, money market), **Debt** (line of credit, loans), **Giving** (charitable donations)
+- Charitable giving system: four charities (Shelter First, Kids Against Hunger, Save the Trees, Veterans United) with YTD and all-time donation tracking; cash donations in $100 increments via the Banking Giving tab; sponsorship tiers (Bronze/Silver/Gold/Platinum/Diamond at $100/$1k/$10k/$100k/$1M all-time) displayed as badges on each charity card; charities unlocked progressively via `Banking.unlockCharity(id)` (Shelter First unlocked at start, others hidden until unlocked)
+- Charity sponsorship excitement boost: each unlocked charity's tier contributes 1–5% to `parkSatisfaction` (max 20% at all four charities at Diamond); boost is applied to the smoothed satisfaction value in `Finance.calcExcitement()`
+- Food donations to Kids Against Hunger: Concessions panel **Donate** tab (visible when `kids_hunger` is unlocked) lets players donate freezer stock — deducts from freezer, credits charity's all-time total as in-kind value, no cash deduction or P&L expense (food was already expensed at delivery)
+- Charitable donations wired into all four educational forms: P&L (Charitable Donations expense), Cash Flow (operating outflow), Tax Return (Charitable Contributions deduction — real value, not a placeholder), Budget (expense row in both tentative and revised phases)
 
 ## What's not yet implemented (see `reqs.md`)
 
