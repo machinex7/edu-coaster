@@ -767,8 +767,6 @@ const PRICE_ITEMS = [
     unit:      '$/visitor',
     getValue:  () => Finance.gatePrice,
     setValue:  v => {
-      const delta = v - Finance.gatePrice;
-      if (delta > 0) Finance.priceExhaustion += 2 * delta;
       Finance.gatePrice = v;
     },
   },
@@ -1135,8 +1133,6 @@ function buildParkingPanel() {
   document.getElementById('parking-apply-btn').addEventListener('click', () => {
     const v = parseFloat(document.getElementById('parking-price-input').value);
     if (!isNaN(v) && v >= 0) {
-      const delta = v - Finance.parkingPrice;
-      if (delta > 0) Finance.priceExhaustion += 1 * delta;
       Finance.parkingPrice = v;
       buildParkingPanel();
     }
@@ -1599,31 +1595,32 @@ function buildBankingPanel() {
   // Savings deposit / withdraw buttons.
   document.getElementById('savings-deposit-btn').addEventListener('click', () => {
     const amount = Math.round(parseInt(document.getElementById('savings-amount').value) || 0);
-    if (Banking.deposit(amount)) buildBankingPanel();
+    if (Banking.deposit(amount)) { buildBankingPanel(); updateHUD(); }
   });
   document.getElementById('savings-withdraw-btn').addEventListener('click', () => {
     const amount = Math.round(parseInt(document.getElementById('savings-amount').value) || 0);
-    if (Banking.withdraw(amount)) buildBankingPanel();
+    if (Banking.withdraw(amount)) { buildBankingPanel(); updateHUD(); }
   });
 
   // Money market buttons — wired conditionally based on which state is rendered.
   document.getElementById('mm-open-btn')?.addEventListener('click', () => {
     const amount = Math.round(parseInt(document.getElementById('mm-open-amount').value) || 0);
-    if (Banking.mmDeposit(amount)) buildBankingPanel();
+    if (Banking.mmDeposit(amount)) { buildBankingPanel(); updateHUD(); }
   });
   document.getElementById('mm-deposit-btn')?.addEventListener('click', () => {
     const amount = Math.round(parseInt(document.getElementById('mm-amount').value) || 0);
-    if (Banking.mmDeposit(amount)) buildBankingPanel();
+    if (Banking.mmDeposit(amount)) { buildBankingPanel(); updateHUD(); }
   });
   document.getElementById('mm-withdraw-btn')?.addEventListener('click', () => {
     const amount = Math.round(parseInt(document.getElementById('mm-amount').value) || 0);
     const result = Banking.mmWithdraw(amount);
     // 'confirm' means the withdrawal would close the account — rebuild to show the prompt.
-    if (result === true || result === 'confirm') buildBankingPanel();
+    if (result === true || result === 'confirm') { buildBankingPanel(); updateHUD(); }
   });
   document.getElementById('mm-confirm-btn')?.addEventListener('click', () => {
     Banking.mmConfirmClose();
     buildBankingPanel();
+    updateHUD();
   });
   document.getElementById('mm-cancel-btn')?.addEventListener('click', () => {
     Banking.mmCancelClose();

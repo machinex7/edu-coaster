@@ -401,13 +401,13 @@ const Marketing = {
       }
 
       // Sum the estimated attendance delta across all targeted brackets for this week.
-      // Formula: parkExcitement × chance × favorDelta × count / baselineFavorablePopulation.
+      // Formula: parkSatisfaction × chance × favorDelta × count / baselineFavorablePopulation.
       const weekDelta = c.trackedBrackets.reduce((sum, tb) => {
         const b = this.DEMO_CATS.find(d => d.key === tb.key).brackets[tb.idx];
         return sum + b.chance * b.count;
       }, 0);
       c.weeklyDeltas.push(Math.round(
-        Finance.parkExcitement * weekDelta * delta / Population.baselineFavorablePopulation
+        Finance.parkSatisfaction * weekDelta * delta / Population.baselineFavorablePopulation
       ));
 
       if (c.weeksRemaining <= 0) {
@@ -458,7 +458,7 @@ const Marketing = {
                             + c.awardBoost;
             const projDelta = projInt * c.focusMultiplier;
             c.projectedDeltas.push(Math.round(
-              Finance.parkExcitement * (projPop * (projDelta + projSynergyDelta) + rideBonusPop) / Population.baselineFavorablePopulation
+              Finance.parkSatisfaction * (projPop * (projDelta + projSynergyDelta) + rideBonusPop) / Population.baselineFavorablePopulation
             ));
           }
         }

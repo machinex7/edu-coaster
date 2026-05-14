@@ -93,7 +93,7 @@
   {
     "id": "tree",
     "name": "Tree",
-    "color": "#15803d",
+    "color": "#14532d",
     "footprint": [[1]],
     "buildCost": 5000,
     "buildWeeks": 0,

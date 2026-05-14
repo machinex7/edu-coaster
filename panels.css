@@ -543,6 +543,10 @@
   color: #f59e0b;
 }
 
+.sec-assignment.sec-admissions {
+  color: #3b82f6;
+}
+
 .security-guard-list {
   display: flex;
   flex-direction: column;

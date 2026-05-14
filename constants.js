@@ -83,6 +83,8 @@ const RESEARCH_ID = Object.freeze({
   PARKING_FEES:             'parking_fees',
   PARKING_LOT_AMENITIES:    'parking_lot_amenities',
   BUS_SERVICE:              'bus_service',
+  WASH_HANDS_POLICY:        'wash_hands_policy',
+  WORKPLACE_SAFETY_PROTOCOLS: 'workplace_safety_protocols',
 });
 
 // IDs that match the concessions menu items in Concessions.menuItems.

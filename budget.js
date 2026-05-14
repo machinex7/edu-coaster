@@ -183,8 +183,9 @@ const Budget = {
         return `<td class="budget-td budget-td-num">$${Math.round(val).toLocaleString()}</td>`;
       }).join('');
 
-      // Revised phase starts from tentative values; tentative starts blank (0).
-      const defaultVal = inputDefaults ? Math.round(inputDefaults[item.key] || 0) : 0;
+      // Revised phase starts from tentative values (stored in full dollars, displayed in thousands).
+      // Tentative starts blank (0). Divide by 1000 since inputs represent thousands.
+      const defaultVal = inputDefaults ? Math.round((inputDefaults[item.key] || 0) / 1000) : 0;
 
       return `
         <tr class="budget-row">
@@ -194,6 +195,7 @@ const Budget = {
             <div class="budget-input-wrap">
               <span class="budget-dollar">$</span>
               <input type="number" class="budget-input" data-key="${item.key}" min="0" step="1" value="${defaultVal}" />
+              <span class="budget-thousands">000</span>
             </div>
           </td>
         </tr>`;
@@ -240,10 +242,11 @@ const Budget = {
   },
 
   // Recompute section subtotals and the net bar from current input values.
+  // Inputs are in thousands of dollars, so multiply by 1000 for display totals.
   _updateTotals() {
     let revenueTotal = 0, expenseTotal = 0;
     document.querySelectorAll('#budget-table-wrapper .budget-input').forEach(input => {
-      const val  = parseFloat(input.value) || 0;
+      const val  = (parseFloat(input.value) || 0) * 1000;
       const item = this.ITEMS.find(i => i.key === input.dataset.key);
       if (item.section === 'revenue') revenueTotal += val;
       else                            expenseTotal += val;
@@ -266,12 +269,13 @@ const Budget = {
   },
 
   // Collect input values, store to the correct phase dict, save to FormsPanel, and close.
+  // Inputs are in thousands; multiply by 1000 to store in full dollars.
   _save() {
     const phase      = this._currentPhase;
     const qNum       = this._currentTargetQNum;
     const projection = {};
     document.querySelectorAll('#budget-table-wrapper .budget-input').forEach(input => {
-      projection[input.dataset.key] = parseFloat(input.value) || 0;
+      projection[input.dataset.key] = (parseFloat(input.value) || 0) * 1000;
     });
 
     if (phase === 'tentative') this._tentative[qNum] = projection;

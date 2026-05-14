@@ -13,9 +13,10 @@ const MAX_SHOP_MESS_RADIUS = 5;
 const Finance = {
 
   // ── Park metrics ────────────────────────────────────────────────────────────
-  parkExcitement:   500,  // satisfied-visitor count from last round; drives next round's demand
-  weeklyNetMess:    0,    // unhandled mess from last round; subtracted from excitement
-  mealSatisfaction: 1,    // 0.5–1; penalises excitement when food supply < demand
+  parkSatisfaction:        500,  // satisfied-visitor count from last round; drives next round's demand
+  cumulativeAttendance:  0,    // total visitors ever; sqrt of this adds a renown bonus to daily demand
+  weeklyNetMess:         0,    // unhandled mess from last round; subtracted from excitement
+  mealSatisfaction:      1,    // 0.5–1; penalises excitement when food supply < demand
 
   // Accumulates campaign launch costs paid between round advances; reset each round.
   roundMarketingCosts: 0,
@@ -27,6 +28,11 @@ const Finance = {
   // Smoothed 0–1 score of how well rides are serving current crowds.
   // Starts at 1.0 (perfect); degrades when operators can't keep up with demand.
   rideOpinion: 1.0,
+
+  // instanceId of the security guard drafted as a booth attendant this round, or null.
+  // Set by calcGateThroughput() when all booth attendants are out; cleared when they return.
+  // Security.calcIncidents() and calcCoverage() skip this guard to avoid double-counting.
+  boothFallbackGuardId: null,
 
   // Security.opinion is in security.js — read here by calcDailyDemand().
 
@@ -61,10 +67,14 @@ const Finance = {
     });
 
     const ridesPerPerson = weeklyAttendance > 0 ? totalWeeklyRiders / weeklyAttendance : 0;
-    this.rideOpinion = Math.min(1, ridesPerPerson / Population.DESIRED_RIDES);
+    // No visitors this round means no bad experiences — keep opinion at perfect.
+    this.rideOpinion = weeklyAttendance === 0 ? 1 : Math.min(1, ridesPerPerson / Population.DESIRED_RIDES);
     console.log(
       '[rides]',
-      'staffRatio:', staffRatio.toFixed(4),
+      'weeklyAttendance (param):', weeklyAttendance,
+      '| runningRides:', runningRides.length,
+      '| totalWeeklyRiders:', totalWeeklyRiders.toFixed(1),
+      '| staffRatio:', staffRatio.toFixed(4),
       '| operators:', actual + '/' + needed,
       '| ridesPerPerson:', ridesPerPerson.toFixed(4),
       '| rideOpinion:', this.rideOpinion.toFixed(4)
@@ -74,21 +84,24 @@ const Finance = {
   // ── Attendance ──────────────────────────────────────────────────────────────
 
   // Returns how many people want to visit based on last round's excitement.
-  // priceExhaustion cuts demand by 1% per point (10 exhaustion = −10%).
   // Population.calcDemandMultiplier() scales demand by the ratio of current
   // favorable population (chance × favor × count) to the neutral baseline.
   // Security and mess penalties are applied to excitement at end-of-round instead.
   calcDailyDemand() {
-    const exhaustionFactor  = Math.max(0, 1 - this.priceExhaustion / 100);
     const eventFactor       = Population.populationEvents.reduce((f, e) => f * (1 + e.modifier / 100), 1);
     const weatherFactor     = 1 - (WEATHER_DEMAND_REDUCTION[nextWeekForecast] ?? 0);
     const demandMultiplier  = Population.calcDemandMultiplier();
     const incidentFactor    = Incidents.demandMultiplier;
-    const result            = this.parkExcitement * exhaustionFactor * eventFactor * demandMultiplier * weatherFactor * incidentFactor;
+    // Renown bonus: word-of-mouth from everyone who has ever visited grows the potential
+    // audience over time. Grows as sqrt so early visits matter most and the bonus tapers off.
+    const renownBonus       = Math.sqrt(this.cumulativeAttendance);
+    const base              = this.parkSatisfaction + renownBonus;
+    const result            = base * eventFactor * demandMultiplier * weatherFactor * incidentFactor;
     console.log(
       '[demand]',
-      'excitement:', this.parkExcitement.toFixed(2),
-      '| exhaustion:', exhaustionFactor.toFixed(4),
+      'excitement:', this.parkSatisfaction.toFixed(2),
+      '| renownBonus:', renownBonus.toFixed(2),
+      '| base:', base.toFixed(2),
       '| event:', eventFactor.toFixed(4),
       '| demandMult:', demandMultiplier.toFixed(4),
       '| weather:', weatherFactor.toFixed(4),
@@ -98,7 +111,7 @@ const Finance = {
     return result;
   },
 
-  // Recomputes parkExcitement at end of round for use next round.
+  // Recomputes parkSatisfaction at end of round for use next round.
   // Uses rideOpinion (set by computeRideOpinion this round) as the ride satisfaction factor.
   // Park appeal supplements rideOpinion: 100 appeal points = 1/DESIRED_RIDES bonus, capped at 1.
   // Security opinion and mess density degrade the result.
@@ -111,25 +124,55 @@ const Finance = {
     const securityFactor       = Unlock.SECURITY ? Math.max(0, 1 - Math.sqrt(Security.opinion) / 100) : 1;
     const messFactor           = Unlock.MESSES   ? this.calcMessFactor() : 1;
     const rawExcitement        = Math.max(0, (weeklyAttendance * effectiveRideOpinion * securityFactor * this.mealSatisfaction) / messFactor);
+    // Smooth excitement changes by averaging with the prior week's value.
+    const smoothed             = (this.parkSatisfaction + rawExcitement) / 2;
     // Each charity's sponsorship tier contributes 1–5% excitement; charities promote the park to their audience.
     const charityBoostPct      = CHARITIES.reduce((sum, c) => {
       const tier = getSponsorshipTier(Banking.charityDonationsAllTime[c.id] ?? 0);
       return sum + (tier?.boost ?? 0);
     }, 0);
-    this.parkExcitement        = rawExcitement * (1 + charityBoostPct / 100);
+    this.parkSatisfaction      = smoothed * (1 + charityBoostPct / 100);
+    console.log(
+      '[excitement]',
+      'attendance:', weeklyAttendance.toFixed(2),
+      '| rideOpinion:', this.rideOpinion.toFixed(4),
+      '| appealBonus:', appealBonus.toFixed(4),
+      '| rideIncidentMult:', rideIncidentMult.toFixed(4),
+      '| effectiveRideOpinion:', effectiveRideOpinion.toFixed(4),
+      '| securityFactor:', securityFactor.toFixed(4),
+      '| mealSatisfaction:', this.mealSatisfaction.toFixed(4),
+      '| messFactor:', messFactor.toFixed(4),
+      '| rawExcitement:', rawExcitement.toFixed(2),
+      '| charityBoost:', charityBoostPct.toFixed(1) + '%',
+      '| parkSatisfaction (smoothed):', this.parkSatisfaction.toFixed(2)
+    );
   },
 
   // How many people can actually enter: booth attendants are the bottleneck.
   // Per attendant: base 500 × mood multiplier (0.8–1.2) × experience multiplier × skill modifier.
+  // If all booth attendants are out, the first available security guard steps in at half efficiency;
+  // that guard is excluded from security capacity for the round (boothFallbackGuardId tracks them).
   calcGateThroughput() {
     if (!Unlock.STAFFING) return Infinity;
     const attendants = Staff.roster.filter(s => s.jobId === JOB.BOOTH_ATTENDANT && s.weeksOut === 0);
-    if (attendants.length === 0) return 0;
-    return attendants.reduce((sum, s) => {
-      const moodMult = 0.8 + (s.mood / 100) * 0.4;
-      const { multiplier: expMult } = Staff.getExperienceTier(s.weeksEmployed);
-      return sum + 500 * moodMult * expMult * s.skillModifier;
-    }, 0);
+    if (attendants.length > 0) {
+      this.boothFallbackGuardId = null;
+      return attendants.reduce((sum, s) => {
+        const moodMult = 0.8 + (s.mood / 100) * 0.4;
+        const { multiplier: expMult } = Staff.getExperienceTier(s.weeksEmployed);
+        return sum + 500 * moodMult * expMult * s.skillModifier;
+      }, 0);
+    }
+    // Draft one security guard as a half-efficiency booth attendant.
+    const fallback = Staff.roster.find(s => s.jobId === JOB.SECURITY && s.weeksOut === 0);
+    if (!fallback) {
+      this.boothFallbackGuardId = null;
+      return 0;
+    }
+    this.boothFallbackGuardId = fallback.instanceId;
+    const moodMult = 0.8 + (fallback.mood / 100) * 0.4;
+    const { multiplier: expMult } = Staff.getExperienceTier(fallback.weeksEmployed);
+    return 500 * 0.5 * moodMult * expMult * fallback.skillModifier;
   },
 
   // Actual daily attendance is whichever is smaller: demand or gate capacity.
@@ -140,9 +183,6 @@ const Finance = {
   // ── Pricing ─────────────────────────────────────────────────────────────────
   gatePrice:    20,  // $ per visitor
   parkingPrice: 10,  // $ per vehicle (only active after PARKING_FEES research)
-
-  // Cumulative visitor price fatigue. Rises when prices increase, decays 1/round.
-  priceExhaustion: 0,
 
   // Multiplier (0–1) applied to food and merchandise spending this round.
   // Drops below 1 when parking fees exceed the inflation-adjusted free threshold.
@@ -187,10 +227,6 @@ const Finance = {
     this.purchasedAmenities.add(id);
     this.parkingAmenityBonus += amenity.bonus;
     return true;
-  },
-
-  advancePriceExhaustion() {
-    this.priceExhaustion = Math.max(0, this.priceExhaustion - 1);
   },
 
   // ── Income sources ───────────────────────────────────────────────────────────
@@ -640,6 +676,7 @@ const Finance = {
     // full park population this round.
     const { attendance: memberAttendance } = Membership.calcMemberAttendance();
     const totalAttendance   = weeklyAttendance + memberAttendance;
+    this.cumulativeAttendance += totalAttendance;
 
     const gateRevenue       = this.calcGateRevenue(daily);
     // Non-free-parking members drive in and pay the standard rate; they're
@@ -720,7 +757,7 @@ const Finance = {
       : 0.5;
     this.calcExcitement(totalAttendance); // uses this round's mess, security, and meal satisfaction
 
-    // Membership sales: must run after calcExcitement() so Finance.parkExcitement
+    // Membership sales: must run after calcExcitement() so Finance.parkSatisfaction
     // already reflects this round's visitor experience (not last round's).
     // Uses paying attendance only — existing members can't rebuy their own plan.
     const membershipRevenue = Membership.calcSales(weeklyAttendance);
@@ -730,7 +767,6 @@ const Finance = {
     const savingsInterestIncome = Banking.processSavingsInterest();
     const mmInterestIncome      = Banking.processMmInterest();
 
-    this.advancePriceExhaustion();    // decay price fatigue by 1
     if (Unlock.SECURITY) Security.advanceOpinion(security.unhandled); // decay then add unhandled incidents
     const populationEvents = Population.populationEvents.map(e => ({ ...e }));
     Population.tickEvents();          // tick population event modifiers toward 0
