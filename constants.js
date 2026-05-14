@@ -135,11 +135,11 @@ const AWARD_ID = Object.freeze({
 // Ordered highest to lowest so Array.find() returns the best qualifying tier.
 // boost: percentage points added to rawExcitement per charity at this tier.
 const SPONSORSHIP_TIERS = Object.freeze([
-  { id: 'diamond',  label: 'Diamond Sponsor',  emoji: '💎', threshold: 1_000_000, boost: 5 },
-  { id: 'platinum', label: 'Platinum Sponsor',  emoji: '🌟', threshold: 100_000,  boost: 4 },
-  { id: 'gold',     label: 'Gold Sponsor',      emoji: '🥇', threshold: 10_000,   boost: 3 },
-  { id: 'silver',   label: 'Silver Sponsor',    emoji: '🥈', threshold: 1_000,    boost: 2 },
-  { id: 'bronze',   label: 'Bronze Sponsor',    emoji: '🥉', threshold: 100,      boost: 1 },
+  { id: 'diamond',  label: 'Diamond Sponsor',  emoji: '💎', threshold: 10_000_000, boost: 5 },
+  { id: 'platinum', label: 'Platinum Sponsor',  emoji: '🌟', threshold: 1_000_000,  boost: 4 },
+  { id: 'gold',     label: 'Gold Sponsor',      emoji: '🥇', threshold: 100_000,   boost: 3 },
+  { id: 'silver',   label: 'Silver Sponsor',    emoji: '🥈', threshold: 10_000,    boost: 2 },
+  { id: 'bronze',   label: 'Bronze Sponsor',    emoji: '🥉', threshold: 1000,      boost: 1 },
 ]);
 
 // Annual interest rate for the savings account, compounded weekly.
