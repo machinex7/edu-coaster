@@ -75,9 +75,11 @@ const History = {
       loanRepayment:       report.loanRepayments,
       loanDisbursement:    Banking.roundDisbursement,
       taxExpense:          TaxForm._taxPaidThisRound,
+      donationExpense:     Banking.donationsThisRound,
       surveys:             Survey.drainPending(),
     });
-    Banking.roundDisbursement = 0;
+    Banking.roundDisbursement  = 0;
+    Banking.donationsThisRound = 0;
   },
 
 };

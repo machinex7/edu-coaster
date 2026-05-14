@@ -117,15 +117,21 @@ const Finance = {
   // Security opinion and mess density degrade the result.
   // Mess penalty: unhandled mess spread across path tiles; 1.25^(mess per path) as divisor.
   calcExcitement(weeklyAttendance) {
-    const appealBonus        = this.calcParkAppeal() / (100 * Population.DESIRED_RIDES);
+    const appealBonus          = this.calcParkAppeal() / (100 * Population.DESIRED_RIDES);
     // Incident ride multiplier suppresses ride interest (e.g. nausea plague); clamped to [0, 1].
-    const rideIncidentMult   = Math.min(1, Math.max(0, Incidents.rideExcitementMultiplier));
+    const rideIncidentMult     = Math.min(1, Math.max(0, Incidents.rideExcitementMultiplier));
     const effectiveRideOpinion = Math.min(1, (this.rideOpinion + appealBonus) * rideIncidentMult);
-    const securityFactor     = Unlock.SECURITY ? Math.max(0, 1 - Math.sqrt(Security.opinion) / 100) : 1;
-    const messFactor         = Unlock.MESSES   ? this.calcMessFactor() : 1;
-    const rawExcitement      = Math.max(0, (weeklyAttendance * effectiveRideOpinion * securityFactor * this.mealSatisfaction) / messFactor);
+    const securityFactor       = Unlock.SECURITY ? Math.max(0, 1 - Math.sqrt(Security.opinion) / 100) : 1;
+    const messFactor           = Unlock.MESSES   ? this.calcMessFactor() : 1;
+    const rawExcitement        = Math.max(0, (weeklyAttendance * effectiveRideOpinion * securityFactor * this.mealSatisfaction) / messFactor);
     // Smooth excitement changes by averaging with the prior week's value.
-    this.parkSatisfaction      = (this.parkSatisfaction + rawExcitement) / 2;
+    const smoothed             = (this.parkSatisfaction + rawExcitement) / 2;
+    // Each charity's sponsorship tier contributes 1–5% excitement; charities promote the park to their audience.
+    const charityBoostPct      = CHARITIES.reduce((sum, c) => {
+      const tier = getSponsorshipTier(Banking.charityDonationsAllTime[c.id] ?? 0);
+      return sum + (tier?.boost ?? 0);
+    }, 0);
+    this.parkSatisfaction      = smoothed * (1 + charityBoostPct / 100);
     console.log(
       '[excitement]',
       'attendance:', weeklyAttendance.toFixed(2),
@@ -137,6 +143,7 @@ const Finance = {
       '| mealSatisfaction:', this.mealSatisfaction.toFixed(4),
       '| messFactor:', messFactor.toFixed(4),
       '| rawExcitement:', rawExcitement.toFixed(2),
+      '| charityBoost:', charityBoostPct.toFixed(1) + '%',
       '| parkSatisfaction (smoothed):', this.parkSatisfaction.toFixed(2)
     );
   },

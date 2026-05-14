@@ -42,6 +42,7 @@ const Budget = {
     { key: 'parkingAmenity', label: 'Parking Amenities',       section: 'expense', histKey: 'parkingAmenitySpend' },
     { key: 'memberBenefit',  label: 'Membership Benefits',     section: 'expense', histKey: 'memberBenefitExpense' },
     { key: 'locInterest',    label: 'Line of Credit Interest', section: 'expense', histKey: 'locInterestExpense' },
+    { key: 'donations',      label: 'Charitable Donations',    section: 'expense', histKey: 'donationExpense' },
   ],
 
   // Wire up the Save button. Called once from initHUD after the DOM is ready.

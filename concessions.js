@@ -46,6 +46,9 @@ const Concessions = {
   // Units sold in the most recent round, one entry per menuItem (parallel array).
   soldLastRound: [],
 
+  // Active sub-tab; persists across round-advance rebuilds.
+  _activeConTab: 'menu',
+
   // Set up initial state; called once from initHUD().
   init() {
     this.prices        = this.menuItems.map(item => Math.max(item.cost * 2, item.cost + 2));
@@ -280,42 +283,74 @@ const Concessions = {
     }
   },
 
+  // Deduct amounts (parallel to menuItems) from freezer stock and donate the
+  // base-cost value to Kids Against Hunger. Returns the total donated value in dollars.
+  donateFoodToHunger(amounts) {
+    let totalValue = 0;
+    amounts.forEach((qty, i) => {
+      const item = this.menuItems[i];
+      if (!item || item.alwaysAvailable) return;
+      const actual = Math.min(Math.max(0, Math.floor(qty)), this.stock[i]);
+      if (actual <= 0) return;
+      this.stock[i] -= actual;
+      totalValue    += actual * item.cost;
+    });
+    if (totalValue > 0) Banking.donateInKind('kids_hunger', Math.round(totalValue));
+    return Math.round(totalValue);
+  },
+
   // Build or rebuild the concessions panel content.
   buildPanel() {
-    const body = document.getElementById('concessions-panel-body');
+    const body        = document.getElementById('concessions-panel-body');
+    const showDonate  = Banking.unlockedCharityIds.has('kids_hunger');
+    // If the donate tab was active but the charity just became unavailable, fall back.
+    if (this._activeConTab === 'donate' && !showDonate) this._activeConTab = 'menu';
+
     body.innerHTML = '';
 
     // Tab bar
     const tabs = document.createElement('div');
     tabs.className = 'con-sub-tabs';
     tabs.innerHTML = `
-      <button class="con-tab-btn active" data-con-tab="menu">Menu</button>
-      <button class="con-tab-btn" data-con-tab="orders">Orders</button>
+      <button class="con-tab-btn${this._activeConTab === 'menu'   ? ' active' : ''}" data-con-tab="menu">Menu</button>
+      <button class="con-tab-btn${this._activeConTab === 'orders' ? ' active' : ''}" data-con-tab="orders">Orders</button>
+      ${showDonate ? `<button class="con-tab-btn${this._activeConTab === 'donate' ? ' active' : ''}" data-con-tab="donate">Donate</button>` : ''}
     `;
     body.appendChild(tabs);
 
     // Menu view
     const menuView = document.createElement('div');
-    menuView.id = 'con-menu-view';
-    menuView.className = 'con-view';
+    menuView.id        = 'con-menu-view';
+    menuView.className = `con-view${this._activeConTab !== 'menu' ? ' hidden' : ''}`;
     this._buildMenuView(menuView);
     body.appendChild(menuView);
 
     // Orders view
     const ordersView = document.createElement('div');
-    ordersView.id = 'con-orders-view';
-    ordersView.className = 'con-view hidden';
+    ordersView.id        = 'con-orders-view';
+    ordersView.className = `con-view${this._activeConTab !== 'orders' ? ' hidden' : ''}`;
     this._buildOrdersView(ordersView);
     body.appendChild(ordersView);
 
-    // Wire tab switching.
+    // Donate view (conditional)
+    let donateView = null;
+    if (showDonate) {
+      donateView           = document.createElement('div');
+      donateView.id        = 'con-donate-view';
+      donateView.className = `con-view${this._activeConTab !== 'donate' ? ' hidden' : ''}`;
+      this._buildDonateView(donateView);
+      body.appendChild(donateView);
+    }
+
+    // Wire tab switching — updates active tab state so rebuilds land on the right tab.
     tabs.querySelectorAll('.con-tab-btn').forEach(btn => {
       btn.addEventListener('click', () => {
+        this._activeConTab = btn.dataset.conTab;
         tabs.querySelectorAll('.con-tab-btn').forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        const tab = btn.dataset.conTab;
-        menuView.classList.toggle('hidden', tab !== 'menu');
-        ordersView.classList.toggle('hidden', tab !== 'orders');
+        menuView.classList.toggle('hidden',   this._activeConTab !== 'menu');
+        ordersView.classList.toggle('hidden', this._activeConTab !== 'orders');
+        if (donateView) donateView.classList.toggle('hidden', this._activeConTab !== 'donate');
       });
     });
   },
@@ -787,5 +822,120 @@ const Concessions = {
     builder.appendChild(footer);
 
     section.appendChild(builder);
+  },
+
+  // Render the food donation view — ingredient rows, running total, and Donate button.
+  _buildDonateView(container) {
+    const charity = CHARITIES.find(c => c.id === 'kids_hunger');
+    const tier    = getSponsorshipTier(Banking.charityDonationsAllTime['kids_hunger'] ?? 0);
+
+    // Charity info header.
+    const info = document.createElement('div');
+    info.className = 'con-donate-info';
+    info.innerHTML = `
+      <span class="con-donate-charity-emoji">${charity.emoji}</span>
+      <div>
+        <div class="con-donate-charity-name">${charity.name}</div>
+        ${tier ? `<span class="charity-tier-badge charity-tier-${tier.id}">${tier.emoji} ${tier.label}</span>` : ''}
+      </div>`;
+    container.appendChild(info);
+
+    // Column header.
+    const header = document.createElement('div');
+    header.className = 'con-order-header';
+    header.innerHTML = `
+      <span>Ingredient</span>
+      <span>Value/Unit</span>
+      <span>In Freezer</span>
+      <span>Donate Qty</span>
+      <span class="con-col-right">Total</span>`;
+    container.appendChild(header);
+
+    const list = document.createElement('div');
+    list.className = 'con-order-list';
+
+    // Total and Donate button — defined before rows so input handlers can reference them.
+    const totalEl   = document.createElement('div');
+    totalEl.className = 'con-summary-row con-summary-total';
+    totalEl.innerHTML = `<span>Donation Value</span><span>$0.00</span>`;
+
+    const donateBtn = document.createElement('button');
+    donateBtn.className   = 'con-donate-btn';
+    donateBtn.textContent = 'Donate Food';
+    donateBtn.disabled    = true;
+
+    // Track qty inputs parallel to menuItems for total computation.
+    const qtyInputs = [];
+
+    const refreshTotal = () => {
+      const total = qtyInputs.reduce((sum, { input, index }) => {
+        return sum + (parseInt(input.value) || 0) * this.menuItems[index].cost;
+      }, 0);
+      totalEl.innerHTML   = `<span>Donation Value</span><span>$${total.toFixed(2)}</span>`;
+      donateBtn.disabled  = total <= 0;
+    };
+
+    this.menuItems.forEach((item, i) => {
+      if (item.alwaysAvailable) return;
+
+      const row = document.createElement('div');
+      row.className = 'con-order-row';
+
+      const nameEl = document.createElement('span');
+      nameEl.className   = 'con-order-name';
+      nameEl.textContent = item.name;
+
+      const costEl = document.createElement('span');
+      costEl.className   = 'con-order-cost';
+      costEl.textContent = `$${item.cost.toFixed(2)}`;
+
+      const stockEl = document.createElement('span');
+      stockEl.className   = 'con-order-stock';
+      stockEl.textContent = this.stock[i].toLocaleString();
+
+      const qtyInput = document.createElement('input');
+      qtyInput.type      = 'number';
+      qtyInput.className = 'con-order-input';
+      qtyInput.min       = '0';
+      qtyInput.max       = String(this.stock[i]);
+      qtyInput.step      = '1';
+      qtyInput.value     = '0';
+      qtyInput.disabled  = this.stock[i] === 0;
+      qtyInputs.push({ input: qtyInput, index: i });
+
+      const lineEl = document.createElement('span');
+      lineEl.className   = 'con-order-line';
+      lineEl.textContent = '$0.00';
+
+      qtyInput.addEventListener('input', () => {
+        const qty = Math.min(Math.max(0, parseInt(qtyInput.value) || 0), this.stock[i]);
+        qtyInput.value     = qty;
+        lineEl.textContent = `$${(qty * item.cost).toFixed(2)}`;
+        refreshTotal();
+      });
+
+      row.appendChild(nameEl);
+      row.appendChild(costEl);
+      row.appendChild(stockEl);
+      row.appendChild(qtyInput);
+      row.appendChild(lineEl);
+      list.appendChild(row);
+    });
+
+    container.appendChild(list);
+
+    const summary = document.createElement('div');
+    summary.className = 'con-order-summary';
+    summary.appendChild(totalEl);
+    container.appendChild(summary);
+
+    donateBtn.addEventListener('click', () => {
+      const amounts = this.menuItems.map((_, i) => {
+        const entry = qtyInputs.find(q => q.index === i);
+        return entry ? (parseInt(entry.input.value) || 0) : 0;
+      });
+      if (this.donateFoodToHunger(amounts) > 0) this.buildPanel();
+    });
+    container.appendChild(donateBtn);
   },
 };

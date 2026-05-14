@@ -317,6 +317,8 @@ function advanceRound() {
   if (round % 52 === 0) CashFlow.pending = true;
   // Tax return opens on week 4 of each year starting year 2; covers the prior full year.
   if (round % 52 === 4 && round > 52) TaxForm.pending = true;
+  // Reset charity donation YTD counters at the start of each new year.
+  if (round % 52 === 1 && round > 1) Banking.resetDonationYTD();
   updateLockedPanels();
   updateHUD();
   refreshRidesPanel();
@@ -771,6 +773,9 @@ const PRICE_ITEMS = [
 ];
 
 let _activeInvTab = 'stock';
+
+/* Active banking sub-tab: 'investment' (savings + money market) or 'debt' (LoC + loans). */
+let _activeBankingTab = 'investment';
 
 // Human-readable labels for each merchandise category, used across inventory panel functions.
 const MERCH_CATEGORY_LABELS = { toy: 'Toys', practical: 'Practical', apparel: 'Apparel', souvenir: 'Souvenirs' };
@@ -1495,24 +1500,87 @@ function buildBankingPanel() {
       }).join('')}
     </div>`;
 
+  const givingHtml = CHARITIES.filter(c => Banking.unlockedCharityIds.has(c.id)).map(c => {
+    const ytd       = (Banking.charityDonationsYTD[c.id]     ?? 0).toLocaleString();
+    const allTimeAmt =  Banking.charityDonationsAllTime[c.id] ?? 0;
+    const tier      = getSponsorshipTier(allTimeAmt);
+    const tierBadge = tier
+      ? `<span class="charity-tier-badge charity-tier-${tier.id}">${tier.emoji} ${tier.label}</span>`
+      : '';
+    return `
+      <div class="charity-card">
+        <div class="charity-card-header">
+          <span class="charity-emoji">${c.emoji}</span>
+          <div class="charity-info">
+            <div class="charity-name">${c.name}</div>
+            <div class="charity-blurb">${c.blurb}</div>
+          </div>
+        </div>
+        ${tierBadge}
+        <div class="loan-offer-row"><span>This Year</span><span>$${ytd}</span></div>
+        <div class="loan-offer-row"><span>All-Time</span><span>$${allTimeAmt.toLocaleString()}</span></div>
+        <div class="form-field">
+          <label for="donate-${c.id}">Amount ($100 increments)</label>
+          <input id="donate-${c.id}" type="number" min="100" step="100" placeholder="$0"
+                 data-charity="${c.id}">
+        </div>
+        <div class="form-actions">
+          <button class="donate-btn" data-charity="${c.id}" ${money < 100 ? 'disabled' : ''}>Donate</button>
+        </div>
+      </div>`;
+  }).join('');
+
   body.innerHTML = `
-    <div class="financial-section">
-      <div class="financial-section-header">Savings Account</div>
-      ${savingsHtml}
+    <div class="bank-sub-tabs">
+      <button class="bank-tab-btn${_activeBankingTab === 'investment' ? ' active' : ''}" data-bank-tab="investment">Investment</button>
+      <button class="bank-tab-btn${_activeBankingTab === 'debt' ? ' active' : ''}" data-bank-tab="debt">Debt</button>
+      <button class="bank-tab-btn${_activeBankingTab === 'giving' ? ' active' : ''}" data-bank-tab="giving">Giving</button>
     </div>
-    <div class="financial-section">
-      <div class="financial-section-header">Money Market Account</div>
-      ${mmHtml}
+    <div id="bank-investment-view" class="bank-view${_activeBankingTab !== 'investment' ? ' hidden' : ''}">
+      <div class="financial-section">
+        <div class="financial-section-header">Savings Account</div>
+        ${savingsHtml}
+      </div>
+      <div class="financial-section">
+        <div class="financial-section-header">Money Market Account</div>
+        ${mmHtml}
+      </div>
     </div>
-    <div class="financial-section">
-      <div class="financial-section-header">Line of Credit</div>
-      ${locHtml}
+    <div id="bank-debt-view" class="bank-view${_activeBankingTab !== 'debt' ? ' hidden' : ''}">
+      <div class="financial-section">
+        <div class="financial-section-header">Line of Credit</div>
+        ${locHtml}
+      </div>
+      ${activeLoansHtml}
+      <div class="financial-section">
+        <div class="financial-section-header">Loan</div>
+        ${loanSectionHtml}
+      </div>
     </div>
-    ${activeLoansHtml}
-    <div class="financial-section">
-      <div class="financial-section-header">Loan</div>
-      ${loanSectionHtml}
+    <div id="bank-giving-view" class="bank-view${_activeBankingTab !== 'giving' ? ' hidden' : ''}">
+      ${givingHtml}
     </div>`;
+
+  // Tab switching — no full rebuild needed, just toggle visibility.
+  document.querySelectorAll('.bank-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      _activeBankingTab = btn.dataset.bankTab;
+      document.querySelectorAll('.bank-tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+      document.getElementById('bank-investment-view').classList.toggle('hidden', _activeBankingTab !== 'investment');
+      document.getElementById('bank-debt-view').classList.toggle('hidden', _activeBankingTab !== 'debt');
+      document.getElementById('bank-giving-view').classList.toggle('hidden', _activeBankingTab !== 'giving');
+    });
+  });
+
+  // Donate buttons — one per charity card.
+  document.querySelectorAll('.donate-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id     = btn.dataset.charity;
+      const input  = document.querySelector(`input[data-charity="${id}"]`);
+      const amount = Math.round(parseInt(input?.value) || 0);
+      if (Banking.donate(id, amount)) buildBankingPanel();
+    });
+  });
 
   // Extra loan payment buttons.
   document.querySelectorAll('.extra-payment-btn').forEach(btn => {

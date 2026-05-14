@@ -824,6 +824,50 @@
 .rn-badge.completed   { background: #14532d; color: #86efac; }
 .rn-badge.in-progress { background: #1e3a5f; color: #93c5fd; }
 
+/* ── Banking sub-tabs ────────────────────────────────────────────────────── */
+.bank-sub-tabs { display: flex; border-bottom: 2px solid #374151; flex-shrink: 0; }
+.bank-tab-btn  { flex: 1; padding: 9px 6px; background: none; border: none;
+  border-bottom: 2px solid transparent; margin-bottom: -2px; color: #6b7280;
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em;
+  text-transform: uppercase; cursor: pointer; }
+.bank-tab-btn.active { color: #f3f4f6; border-bottom-color: #fbbf24; }
+.bank-view { display: flex; flex-direction: column; overflow-y: auto; }
+.bank-view.hidden { display: none; }
+
+/* Charity card inside the Giving tab */
+.charity-card {
+  background: #111827;
+  border: 1px solid #1f2937;
+  border-radius: 8px;
+  padding: 12px 14px;
+  margin: 10px 12px 0;
+}
+.charity-card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.charity-emoji { font-size: 1.6rem; line-height: 1; flex-shrink: 0; }
+.charity-info  { display: flex; flex-direction: column; gap: 3px; }
+.charity-name  { font-size: 0.85rem; font-weight: 700; color: #f3f4f6; }
+.charity-blurb { font-size: 0.72rem; color: #9ca3af; line-height: 1.35; }
+
+.charity-tier-badge {
+  display: inline-block;
+  padding: 3px 9px;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  margin-bottom: 8px;
+}
+.charity-tier-bronze  { background: #431407; color: #fb923c; }
+.charity-tier-silver  { background: #1f2937; color: #d1d5db; }
+.charity-tier-gold    { background: #451a03; color: #fcd34d; }
+.charity-tier-platinum{ background: #1e3a5f; color: #93c5fd; }
+.charity-tier-diamond { background: #2e1065; color: #c4b5fd; }
+
 /* ── Financial panel ─────────────────────────────────────────────────────── */
 .financial-section {
   margin-bottom: 1.5rem;
@@ -1554,6 +1598,15 @@
   font-size: 0.78rem; color: #9ca3af; padding: 3px 0; }
 .con-summary-total { font-size: 0.85rem; font-weight: 700; color: #f3f4f6;
   border-top: 1px solid #374151; margin-top: 4px; padding-top: 7px; }
+
+.con-donate-info { display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px 10px; border-bottom: 1px solid #1f2937; flex-shrink: 0; }
+.con-donate-charity-emoji { font-size: 1.5rem; line-height: 1; }
+.con-donate-charity-name  { font-size: 0.85rem; font-weight: 700; color: #f3f4f6; margin-bottom: 4px; }
+.con-donate-btn { width: calc(100% - 24px); margin: 10px 12px 14px;
+  padding: 9px; background: #14532d; color: #86efac; border: none; border-radius: 6px;
+  font-size: 0.8rem; font-weight: 700; cursor: pointer; flex-shrink: 0; }
+.con-donate-btn:disabled { opacity: 0.4; cursor: default; }
 
 .con-order-mode  { display: flex; gap: 20px; padding: 10px 12px 12px;
   border-top: 1px solid #374151; flex-shrink: 0; }
