@@ -13,7 +13,7 @@ const MAX_SHOP_MESS_RADIUS = 5;
 const Finance = {
 
   // ── Park metrics ────────────────────────────────────────────────────────────
-  parkExcitement:        500,  // satisfied-visitor count from last round; drives next round's demand
+  parkSatisfaction:        500,  // satisfied-visitor count from last round; drives next round's demand
   cumulativeAttendance:  0,    // total visitors ever; sqrt of this adds a renown bonus to daily demand
   weeklyNetMess:         0,    // unhandled mess from last round; subtracted from excitement
   mealSatisfaction:      1,    // 0.5–1; penalises excitement when food supply < demand
@@ -95,11 +95,11 @@ const Finance = {
     // Renown bonus: word-of-mouth from everyone who has ever visited grows the potential
     // audience over time. Grows as sqrt so early visits matter most and the bonus tapers off.
     const renownBonus       = Math.sqrt(this.cumulativeAttendance);
-    const base              = this.parkExcitement + renownBonus;
+    const base              = this.parkSatisfaction + renownBonus;
     const result            = base * eventFactor * demandMultiplier * weatherFactor * incidentFactor;
     console.log(
       '[demand]',
-      'excitement:', this.parkExcitement.toFixed(2),
+      'excitement:', this.parkSatisfaction.toFixed(2),
       '| renownBonus:', renownBonus.toFixed(2),
       '| base:', base.toFixed(2),
       '| event:', eventFactor.toFixed(4),
@@ -111,7 +111,7 @@ const Finance = {
     return result;
   },
 
-  // Recomputes parkExcitement at end of round for use next round.
+  // Recomputes parkSatisfaction at end of round for use next round.
   // Uses rideOpinion (set by computeRideOpinion this round) as the ride satisfaction factor.
   // Park appeal supplements rideOpinion: 100 appeal points = 1/DESIRED_RIDES bonus, capped at 1.
   // Security opinion and mess density degrade the result.
@@ -125,7 +125,7 @@ const Finance = {
     const messFactor         = Unlock.MESSES   ? this.calcMessFactor() : 1;
     const rawExcitement      = Math.max(0, (weeklyAttendance * effectiveRideOpinion * securityFactor * this.mealSatisfaction) / messFactor);
     // Smooth excitement changes by averaging with the prior week's value.
-    this.parkExcitement      = (this.parkExcitement + rawExcitement) / 2;
+    this.parkSatisfaction      = (this.parkSatisfaction + rawExcitement) / 2;
     console.log(
       '[excitement]',
       'attendance:', weeklyAttendance.toFixed(2),
@@ -137,7 +137,7 @@ const Finance = {
       '| mealSatisfaction:', this.mealSatisfaction.toFixed(4),
       '| messFactor:', messFactor.toFixed(4),
       '| rawExcitement:', rawExcitement.toFixed(2),
-      '| parkExcitement (smoothed):', this.parkExcitement.toFixed(2)
+      '| parkSatisfaction (smoothed):', this.parkSatisfaction.toFixed(2)
     );
   },
 
@@ -750,7 +750,7 @@ const Finance = {
       : 0.5;
     this.calcExcitement(totalAttendance); // uses this round's mess, security, and meal satisfaction
 
-    // Membership sales: must run after calcExcitement() so Finance.parkExcitement
+    // Membership sales: must run after calcExcitement() so Finance.parkSatisfaction
     // already reflects this round's visitor experience (not last round's).
     // Uses paying attendance only — existing members can't rebuy their own plan.
     const membershipRevenue = Membership.calcSales(weeklyAttendance);
