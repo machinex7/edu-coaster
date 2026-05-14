@@ -903,6 +903,49 @@ Each entry includes a `donationExpense` field sourced from `Banking.donationsThi
 
 ---
 
+## Customer Surveys system (`survey.js`)
+
+Players configure a batch size and incentive type, then toggle surveys **Active** or **Inactive**. When active, `hud.js` calls `Survey.run()` automatically at the start of each `advanceRound()`, before `processPendingSend()` resolves it.
+
+### Incentives
+
+| ID | Label | Completion rate | Cost/survey |
+|---|---|---|---|
+| `NONE` | No Incentive | 10% | $1 |
+| `DISCOUNT` | Discount Coupon | 25% | $2 |
+| `PRIZE` | Prize Entry | 35% | $3 |
+
+`DISCOUNT` and `PRIZE` are locked behind `SURVEY_COUPON_INCENTIVE` and `SURVEY_PRIZE_INCENTIVE` research nodes respectively.
+
+### Response-rate learning curve
+
+`Survey.surveysSent` counts every resolved survey. The completion rate shown on each incentive row is gated on this count:
+
+- **< 4 surveys**: rate hidden entirely.
+- **4–13 surveys**: approximate rate shown with a `~` prefix, computed as `actualRate + actualRate × ((n − 4) / 10) × ((n % 3) − 1)`. The `(n % 3) − 1` factor cycles through −1 / 0 / +1 each three surveys, creating a wobble that converges toward the true value.
+- **≥ 14 surveys**: exact rate shown, no tilde.
+
+An **estimated responses** line (`~N estimated responses` or `N estimated responses`) appears below the batch size input using the same displayed rate multiplied by the batch size. It follows the same 4 / 14 reveal thresholds.
+
+### Round processing
+
+```
+Survey.run()          → sets pendingSend (deducts cost immediately)
+processPendingSend()  → resolves pendingSend; applies completion-rate jitter;
+                        applies per-score noise (NOISE_K / √completed);
+                        pushes result to pendingResults; increments surveysSent
+History.record()      → calls Survey.drainPending(); stores results in round.surveys[]
+```
+
+`NOISE_K = 35`: at 10 responses noise is ≈ ±11 pts; at 100 responses ≈ ±3.5 pts. The stored `noiseRange` is the per-result margin of error displayed in the results modal subtitle as `±N pt margin of error`.
+
+### Results modals
+
+- **Show Survey Results** — most recent result; always available once any survey has been sent.
+- **Quarterly Survey Results** — averages all `round.surveys[]` entries from the last completed quarter (`History.rounds.slice((completedQ − 1) × 13, completedQ × 13)`); gated behind `QUARTERLY_SURVEY_RESULTS` research; disabled until one full quarter (13 rounds) has elapsed. Combined margin of error is `NOISE_K / √totalCompleted` across all surveys in the quarter.
+
+---
+
 ## Visitor animation system (`animations.js`)
 
 Visual-only; has no effect on simulation mechanics or saved state.
@@ -1180,7 +1223,7 @@ On successful submission, `TaxForm.taxOwed` and `TaxForm.taxDueRound` are set. `
 - Security overlay: SVG drawn over the grid in Security mode showing patrol-radius circles (blue = staffed, amber = unstaffed); redraws live on hire, fire, or focus change
 - Ride detail panel: pause/resume, close/reopen, ridership bar, utility cost
 - Engineer system: repair broken rides and reduce wear; focus on construction or maintenance
-- Side panels: Rides, Staffing, Security, Admission, Banking, Inventory, Survey, Research, Marketing, Visitor Profile, Awards
+- Side panels: Rides, Staffing, Security, Admission, Banking, Inventory, Customer Surveys, Research, Marketing, Visitor Profile, Awards
 - HUD: budget, date (Week W, QN, YYYY), stage badge
 - Finance: gate/parking/shop revenue; staff/utility/construction/theft costs; round summary modal
 - Admission panel: gate price control; price exhaustion suppresses demand

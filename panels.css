@@ -263,7 +263,9 @@
   cursor: pointer;
   transition: background 0.12s;
 }
-.ride-action-btn:hover    { background: #374151; }
+.ride-action-btn:hover             { background: #374151; }
+.ride-action-btn:disabled          { opacity: 0.4; cursor: default; }
+.ride-action-btn:disabled:hover    { background: none; }
 .ride-action-resume       { border-color: #14532d; color: #86efac; }
 .ride-action-resume:hover { background: rgba(20,83,45,0.3); }
 .ride-action-danger       { border-color: #7f1d1d; color: #fca5a5; }
@@ -442,9 +444,28 @@
   font-size: 0.82rem;
 }
 .survey-batch-meta { font-size: 0.76rem; color: #9ca3af; }
+.survey-est-responses { padding: 0 12px 8px; }
 
-.survey-send-wrap { padding: 4px 12px 10px; }
-.survey-send-wrap .ride-action-btn { width: 100%; }
+.survey-toggle-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px 8px;
+  border-bottom: 1px solid #1f2937;
+}
+.survey-toggle-btn {
+  min-width: 80px;
+  background: #374151;
+  color: #9ca3af;
+  border: 1px solid #4b5563;
+}
+.survey-toggle-btn.survey-toggle-on {
+  background: #14532d;
+  color: #86efac;
+  border-color: #16a34a;
+}
+.survey-status-active   { font-size: 0.78rem; color: #86efac; }
+.survey-status-inactive { font-size: 0.78rem; color: #6b7280; }
 
 .survey-last-response {
   padding: 7px 12px 5px;
