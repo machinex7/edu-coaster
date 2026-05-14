@@ -116,7 +116,7 @@ const Shopping = {
     const { staffRatio } = this.calcStaffingState();
 
     // Step 1 — category desire: flat 1 baseline + demographic contributions.
-    const desire = { toy: 1, practical: 1, apparel: 1, souvenir: 1 };
+    const desire = { toy: 0, practical: 0, apparel: 0, souvenir: 0 };
     const bracketArrays = [
       Population.AGE_BRACKETS,
       Population.INCOME_BRACKETS,
@@ -131,6 +131,10 @@ const Shopping = {
         desire[bracket.preferredCategory] += bracket.chance * (bracket.favor ?? 1);
       }
     }
+    desire.toy = 1 + desire.toy / bracketArrays.length; //normalize
+    desire.practical = 1 + desire.toy / bracketArrays.length; //normalize
+    desire.apparel = 1 + desire.toy / bracketArrays.length; //normalize
+    desire.souvenir = 1 + desire.toy / bracketArrays.length; //normalize
 
     // Step 2 — per-item: affordability × desire → attempts → sell from stock.
     const weatherItemMults = WEATHER_MERCHANDISE_MULTIPLIERS[nextWeekForecast] ?? {};
