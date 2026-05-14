@@ -29,6 +29,9 @@ const Survey = {
   // Whether surveys auto-send each round.
   autoActive: false,
 
+  // Total surveys dispatched (counts up in processPendingSend); gates response-rate display.
+  surveysSent: 0,
+
   // Survey queued this round but not yet processed (locked until round end).
   pendingSend: null,
 
@@ -90,7 +93,20 @@ const Survey = {
       reportedScores[cat] = Math.max(0, Math.min(100, trueVal + jitter));
     }
 
+    this.surveysSent++;
     this.pendingResults.push({ round, batchSize, completed, incentiveId, cost, noiseRange, reportedScores });
+  },
+
+  // Returns the response-rate label string for an incentive based on how many
+  // surveys have been sent so far. Hidden below 4, noisy estimate 4–13, exact at 14+.
+  _displayCompletionRate(inc) {
+    const n = this.surveysSent;
+    if (n < 4) return null;
+    if (n >= 14) return `${inc.completionRate * 100}% respond`;
+    const r       = inc.completionRate;
+    const wobble  = r * ((n - 4) / 10) * ((n % 3) - 1);
+    const display = Math.round((r + wobble) * 100);
+    return `~${display}% respond`;
   },
 
   // Returns last round's attendance, or null if no rounds have completed yet.
@@ -158,15 +174,21 @@ const Survey = {
     const costPerRound = Math.round(_surveyBatchSize * incentive.costPerSurvey);
     const canAfford   = money >= costPerRound;
 
-    const incentiveRows = available.map(inc => `
+    const incentiveRows = available.map(inc => {
+      const rateLabel = this._displayCompletionRate(inc);
+      const meta      = rateLabel
+        ? `$${inc.costPerSurvey}/survey &middot; ${rateLabel}`
+        : `$${inc.costPerSurvey}/survey`;
+      return `
       <label class="survey-incentive-row">
         <input type="radio" name="survey-incentive" value="${inc.id}"
                ${inc.id === _surveyIncentive ? 'checked' : ''}>
         <div class="survey-incentive-info">
           <span class="survey-incentive-label">${inc.label}</span>
-          <span class="survey-incentive-meta">$${inc.costPerSurvey}/survey &middot; ${inc.completionRate * 100}% respond</span>
+          <span class="survey-incentive-meta">${meta}</span>
         </div>
-      </label>`).join('');
+      </label>`;
+    }).join('');
 
     const inProgressSection = isSurveyPending
       ? `<div class="survey-in-progress">
