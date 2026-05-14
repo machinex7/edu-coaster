@@ -1,16 +1,32 @@
 // finance-menu.js — Full-screen Finance Menu panel.
 //
-// Three tabs: Budget (full tabular view), Graphs (placeholder), Forms (placeholder).
-// The Budget tab shows every revenue and expense line item with the current
-// quarter's budgeted amount alongside the last 13 rounds of weekly actuals.
+// Three tabs: Budget (tabular actuals vs. budget), Graphs (placeholder), Forms (placeholder).
+//
+// Budget storage: FinanceMenu._budgets[qNum] is the canonical store for quarterly
+// budgets, independent of budget.js. On each open, _syncBudgetData() copies any
+// newly submitted budget.js entries so data isn't lost during the transition period.
+// When budget.js is eventually removed, _budgets will be populated by a new mechanism.
 
 const FinanceMenu = {
 
   // Currently active tab key.
   _activeTab: 'budget',
 
+  // Which quarter is displayed in the Budget tab. Null until first open.
+  _selectedQNum: null,
+
+  // Per-quarter budget data keyed by qNum — independent of budget.js.
+  // Each entry is a flat object mapping Budget.ITEMS keys to dollar amounts.
+  _budgets: {},
+
   // Entry point called by openPanel() in hud.js.
   buildPanel() {
+    // Default to the current quarter on first open.
+    if (this._selectedQNum === null) this._selectedQNum = this._currentQNum();
+
+    // Pull in any budget.js submissions we haven't seen yet.
+    this._syncBudgetData();
+
     const body = document.getElementById('finance-menu-body');
     body.innerHTML = this._tabBarHTML() + this._viewsHTML();
 
@@ -23,6 +39,23 @@ const FinanceMenu = {
     });
 
     if (this._activeTab === 'budget') this._buildBudgetTab();
+  },
+
+  // Current game quarter number (1-based).
+  _currentQNum() {
+    return Math.ceil(round / 13);
+  },
+
+  // Copy budget.js data into _budgets for any quarter we don't have yet.
+  // Revised takes precedence over tentative; existing _budgets entries are never overwritten.
+  _syncBudgetData() {
+    const maxQ = this._currentQNum();
+    for (let q = 1; q <= maxQ; q++) {
+      if (!this._budgets[q]) {
+        const src = Budget._revised[q] || Budget._tentative[q] || null;
+        if (src) this._budgets[q] = Object.assign({}, src);
+      }
+    }
   },
 
   // Renders the three-tab bar.
@@ -51,34 +84,57 @@ const FinanceMenu = {
       </div>`;
   },
 
-  // Builds the Budget tab: a scrollable table of actuals vs. budget.
+  // Builds the Budget tab: quarter selector + scrollable actuals table.
   _buildBudgetTab() {
-    const container = document.getElementById('fm-budget-view');
+    const container  = document.getElementById('fm-budget-view');
+    const currentQ   = this._currentQNum();
+    const qNum       = this._selectedQNum;
 
-    // Last 13 rounds of history (or fewer if the game just started).
-    const rounds = History.rounds.slice(-13);
+    // Rounds that belong to this quarter (past quarters have all 13; current quarter
+    // has only the rounds that have actually been played so far).
+    const startRound = (qNum - 1) * 13 + 1;
+    const endRound   = qNum === currentQ ? round : qNum * 13;
+    const rounds     = History.rounds.filter(r => r.round >= startRound && r.round <= endRound);
 
-    // Current quarter's budget: prefer revised, fall back to tentative.
-    const qNum       = Budget._gameQuarterNum();
-    const budgetData = Budget._revised[qNum] || Budget._tentative[qNum] || null;
-
+    const budgetData   = this._budgets[qNum] || null;
     const revenueItems = Budget.ITEMS.filter(i => i.section === 'revenue');
     const expenseItems = Budget.ITEMS.filter(i => i.section === 'expense');
 
-    let html = '<div class="fm-table-scroll"><table class="fm-table">';
+    let html = this._quarterSelectorHTML(currentQ);
+    html += '<div class="fm-table-scroll"><table class="fm-table">';
     html += this._tableHead(rounds, budgetData, qNum);
     html += '<tbody>';
-    html += this._sectionRows('REVENUE', revenueItems, rounds, budgetData);
-    html += this._totalRow('Total Revenue',  revenueItems, rounds, budgetData, 'revenue');
+    html += this._sectionRows('REVENUE',  revenueItems, rounds, budgetData);
+    html += this._totalRow('Total Revenue',  revenueItems, rounds, budgetData);
     html += this._sectionRows('EXPENSES', expenseItems, rounds, budgetData);
-    html += this._totalRow('Total Expenses', expenseItems, rounds, budgetData, 'expense');
+    html += this._totalRow('Total Expenses', expenseItems, rounds, budgetData);
     html += this._netRow(revenueItems, expenseItems, rounds, budgetData);
     html += '</tbody></table></div>';
 
     container.innerHTML = html;
+
+    // Wire quarter navigation buttons.
+    container.querySelector('.fm-q-prev').addEventListener('click', () => {
+      if (this._selectedQNum > 1) { this._selectedQNum--; this._buildBudgetTab(); }
+    });
+    container.querySelector('.fm-q-next').addEventListener('click', () => {
+      if (this._selectedQNum < currentQ) { this._selectedQNum++; this._buildBudgetTab(); }
+    });
   },
 
-  // Builds the <thead> row: Category | Budgeted (Q label) | Wk N … | Total headers.
+  // Quarter selector bar: << label >>.
+  _quarterSelectorHTML(currentQ) {
+    const qNum  = this._selectedQNum;
+    const label = Budget._calendarLabel(qNum);
+    return `
+      <div class="fm-q-selector">
+        <button class="fm-q-btn fm-q-prev"${qNum <= 1 ? ' disabled' : ''}>&laquo;</button>
+        <span class="fm-q-label">${label}</span>
+        <button class="fm-q-btn fm-q-next"${qNum >= currentQ ? ' disabled' : ''}>&raquo;</button>
+      </div>`;
+  },
+
+  // Builds the <thead> row: Category | Budget | Wk N … | Total.
   _tableHead(rounds, budgetData, qNum) {
     const budgetLabel = budgetData
       ? `Budget<br><span class="fm-th-sub">${Budget._calendarLabel(qNum)}</span>`
@@ -113,7 +169,7 @@ const FinanceMenu = {
         const val = r[item.histKey] || 0;
         html += `<td class="fm-td-num">${val ? this._fmt(val) : '<span class="fm-zero">—</span>'}</td>`;
       });
-      // Totals column.
+      // Row total.
       html += `<td class="fm-td-num fm-td-rowtotal">${rowTotal ? this._fmt(rowTotal) : '<span class="fm-zero">—</span>'}</td>`;
       html += '</tr>';
     });
@@ -121,7 +177,7 @@ const FinanceMenu = {
   },
 
   // Subtotal row for a section.
-  _totalRow(label, items, rounds, budgetData, _section) {
+  _totalRow(label, items, rounds, budgetData) {
     const grandTotal = rounds.reduce((s, r) =>
       s + items.reduce((si, i) => si + (r[i.histKey] || 0), 0), 0);
     let html = '<tr class="fm-total-row">';
@@ -141,7 +197,7 @@ const FinanceMenu = {
     return html;
   },
 
-  // Net income row (revenue - expenses) at the bottom of the table.
+  // Net income row (revenue − expenses).
   _netRow(revenueItems, expenseItems, rounds, budgetData) {
     const netTotal = rounds.reduce((s, r) => {
       const rev = revenueItems.reduce((sr, i) => sr + (r[i.histKey] || 0), 0);
@@ -169,8 +225,7 @@ const FinanceMenu = {
     return html;
   },
 
-  // Builds a compact two-line header string for a history column.
-  // e.g. "Wk 3\nQ2 '24"
+  // Compact two-line column header from a history record's round number.
   _shortDate(r) {
     const weekOfYear   = STARTING_WEEK_OF_YEAR + r.round - 1;
     const yearsElapsed = Math.floor((weekOfYear - 1) / 52);
@@ -186,7 +241,7 @@ const FinanceMenu = {
     return `$${Math.round(val).toLocaleString()}`;
   },
 
-  // Formats a net value with a leading − for negatives.
+  // Formats a net value; uses − prefix for negatives.
   _fmtNet(val) {
     const abs = Math.abs(Math.round(val));
     return val < 0 ? `−$${abs.toLocaleString()}` : `$${abs.toLocaleString()}`;
