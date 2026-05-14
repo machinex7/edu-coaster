@@ -97,16 +97,24 @@ const Survey = {
     this.pendingResults.push({ round, batchSize, completed, incentiveId, cost, noiseRange, reportedScores });
   },
 
-  // Returns the response-rate label string for an incentive based on how many
-  // surveys have been sent so far. Hidden below 4, noisy estimate 4–13, exact at 14+.
-  _displayCompletionRate(inc) {
+  // Returns { rate: float, approximate: bool } for the displayed completion rate,
+  // or null if fewer than 4 surveys have been sent (rate still unknown).
+  _displayRateValue(inc) {
     const n = this.surveysSent;
     if (n < 4) return null;
-    if (n >= 14) return `${inc.completionRate * 100}% respond`;
-    const r       = inc.completionRate;
-    const wobble  = r * ((n - 4) / 10) * ((n % 3) - 1);
-    const display = Math.round((r + wobble) * 100);
-    return `~${display}% respond`;
+    if (n >= 14) return { rate: inc.completionRate, approximate: false };
+    const r      = inc.completionRate;
+    const wobble = r * ((n - 4) / 10) * ((n % 3) - 1);
+    return { rate: r + wobble, approximate: true };
+  },
+
+  // Returns the response-rate label string for an incentive. Hidden below 4
+  // surveys sent, noisy estimate 4–13, exact at 14+.
+  _displayCompletionRate(inc) {
+    const v = this._displayRateValue(inc);
+    if (!v) return null;
+    const pct = Math.round(v.rate * 100);
+    return v.approximate ? `~${pct}% respond` : `${pct}% respond`;
   },
 
   // Returns last round's attendance, or null if no rounds have completed yet.
@@ -231,6 +239,13 @@ const Survey = {
                ${lastAttendance !== null ? `max="${lastAttendance}"` : ''}>
         ${lastAttendance !== null ? `<span class="survey-batch-meta">max ${lastAttendance.toLocaleString()} (last week's visitors)</span>` : ''}
       </div>
+      ${(() => {
+        const v = this._displayRateValue(incentive);
+        if (!v) return '';
+        const est = Math.round(v.rate * _surveyBatchSize);
+        const prefix = v.approximate ? '~' : '';
+        return `<div class="survey-batch-meta survey-est-responses">${prefix}${est.toLocaleString()} estimated responses</div>`;
+      })()}
       ${inProgressSection}
       ${resultsSection}`;
 

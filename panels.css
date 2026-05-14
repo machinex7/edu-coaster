@@ -442,6 +442,7 @@
   font-size: 0.82rem;
 }
 .survey-batch-meta { font-size: 0.76rem; color: #9ca3af; }
+.survey-est-responses { padding: 0 12px 8px; }
 
 .survey-toggle-wrap {
   display: flex;
