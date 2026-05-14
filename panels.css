@@ -2102,3 +2102,194 @@
 .incident-log-phase  { flex: 1; color: #6b7280; font-style: italic; }
 .incident-log-rounds { color: #4b5563; white-space: nowrap; }
 
+/* ── Finance Menu panel — full-screen fixed overlay ── */
+#panel-finance-menu {
+  position: fixed;
+  top: var(--header-h, 52px);
+  left: 0;
+  width: 100vw;
+  height: calc(100vh - var(--header-h, 52px));
+  z-index: 100;
+  transition: none;
+}
+
+#panel-finance-menu.closed {
+  display: none;
+}
+
+#panel-finance-menu .side-panel-inner {
+  width: 100%;
+  border-right: none;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Body fills remaining height below the panel header */
+.fm-body {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Tab bar */
+.fm-tab-bar {
+  display: flex;
+  gap: 4px;
+  padding: 8px 14px 0;
+  border-bottom: 1px solid #374151;
+  flex-shrink: 0;
+}
+
+.fm-tab-btn {
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: #9ca3af;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 6px 14px 7px;
+  cursor: pointer;
+  margin-bottom: -1px;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.fm-tab-btn:hover  { color: #e5e7eb; }
+.fm-tab-btn.active { color: #fff; border-bottom-color: #3b82f6; }
+
+/* Tab view containers */
+.fm-view {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.fm-view.hidden { display: none; }
+
+/* Placeholder text for unimplemented tabs */
+.fm-placeholder {
+  padding: 40px 24px;
+  color: #4b5563;
+  font-style: italic;
+  font-size: 0.85rem;
+}
+
+/* ── Budget tab table ── */
+
+/* Outer scroll wrapper: fills the view, scrolls horizontally */
+.fm-table-scroll {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+  padding: 12px 14px 24px;
+}
+
+/* Dense financial table */
+.fm-table {
+  border-collapse: collapse;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+/* Category (first) column: sticky so it stays visible while scrolling right */
+.fm-th-cat,
+.fm-td-cat {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: #111827;
+  width: 180px;
+  min-width: 180px;
+  max-width: 180px;
+  text-align: left;
+  padding: 5px 12px 5px 8px;
+}
+
+/* Budget (second) column: sticky alongside the category column */
+.fm-th-budget,
+.fm-td-budget {
+  position: sticky;
+  left: 180px;
+  z-index: 2;
+  background: #111827;
+}
+
+/* Numeric columns */
+.fm-th-num,
+.fm-td-num {
+  text-align: right;
+  padding: 5px 10px;
+  min-width: 84px;
+}
+
+/* Sub-label inside header cells (quarter label, year) */
+.fm-th-sub {
+  font-size: 0.68rem;
+  font-weight: 400;
+  color: #6b7280;
+}
+
+/* Column headers */
+thead tr th {
+  border-bottom: 1px solid #374151;
+  color: #9ca3af;
+  font-weight: 600;
+  vertical-align: bottom;
+  line-height: 1.3;
+  padding-bottom: 7px;
+}
+
+/* Section header rows (REVENUE / EXPENSES) */
+.fm-section-hdr td {
+  padding: 10px 8px 3px;
+  color: #6b7280;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: #111827;
+}
+
+/* Ordinary data rows */
+.fm-row td {
+  border-bottom: 1px solid #1f2937;
+  color: #d1d5db;
+}
+.fm-row:hover td { background: #1a2436 !important; }
+
+/* Budget column cells get a subtle left border to visually separate them */
+.fm-td-budget {
+  border-left: 1px solid #374151;
+  color: #93c5fd;
+}
+
+/* Zero / no-data cells */
+.fm-td-empty,
+.fm-zero {
+  color: #374151;
+}
+
+/* Subtotal rows */
+.fm-total-row td {
+  border-top: 1px solid #374151;
+  border-bottom: 1px solid #374151;
+  font-weight: 700;
+  color: #e5e7eb;
+  background: #0f1723;
+}
+
+/* Net income row */
+.fm-net-row td {
+  border-top: 2px solid #374151;
+  font-weight: 700;
+  font-size: 0.82rem;
+  background: #0d141f;
+}
+
+.fm-td-net { font-weight: 700; }
+
+/* Positive / negative colouring for net income */
+.fm-pos { color: #4ade80; }
+.fm-neg { color: #f87171; }
+

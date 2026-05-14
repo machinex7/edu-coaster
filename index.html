@@ -70,6 +70,7 @@
           <button class="tool-btn" data-panel="concessions">Concessions</button>
           <button class="tool-btn hidden" data-panel="parking">Parking</button>
           <button class="tool-btn" data-panel="forms">Forms</button>
+          <button class="tool-btn" data-panel="finance-menu">Finance</button>
         </nav>
 
         <!-- Rides overview slide panel -->
@@ -198,6 +199,17 @@
           <div class="side-panel-inner">
             <div class="panel-header">Parking</div>
             <div id="parking-panel-body"></div>
+          </div>
+        </div>
+
+        <!-- Finance Menu full-screen panel -->
+        <div id="panel-finance-menu" class="side-panel closed">
+          <div class="side-panel-inner">
+            <div class="panel-header">
+              Finance
+              <button class="panel-close-btn" onclick="closePanels()">✕</button>
+            </div>
+            <div id="finance-menu-body" class="fm-body"></div>
           </div>
         </div>
 
@@ -521,6 +533,7 @@
   <script src="incidents.js"></script>
   <script src="membership.js"></script>
   <script src="animations.js"></script>
+  <script src="finance-menu.js"></script>
   <script src="hud.js"></script>
 </body>
 </html>

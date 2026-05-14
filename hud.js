@@ -609,6 +609,7 @@ function openPanel(panelId) {
   if (panelId === 'forms')           FormsPanel.buildPanel();
   if (panelId === 'parking')         buildParkingPanel();
   if (panelId === 'banking')         buildBankingPanel();
+  if (panelId === 'finance-menu')    FinanceMenu.buildPanel();
 }
 
 function closePanels() {
