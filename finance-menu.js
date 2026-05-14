@@ -78,7 +78,7 @@ const FinanceMenu = {
     container.innerHTML = html;
   },
 
-  // Builds the <thead> row: Category | Budgeted (Q label) | Wk N … headers.
+  // Builds the <thead> row: Category | Budgeted (Q label) | Wk N … | Total headers.
   _tableHead(rounds, budgetData, qNum) {
     const budgetLabel = budgetData
       ? `Budget<br><span class="fm-th-sub">${Budget._calendarLabel(qNum)}</span>`
@@ -89,15 +89,17 @@ const FinanceMenu = {
     rounds.forEach(r => {
       html += `<th class="fm-th-num">${this._shortDate(r)}</th>`;
     });
+    html += '<th class="fm-th-num fm-th-total">Total</th>';
     html += '</tr></thead>';
     return html;
   },
 
   // One section-header row then one data row per item.
   _sectionRows(label, items, rounds, budgetData) {
-    const colspan = 2 + rounds.length;
+    const colspan = 3 + rounds.length;
     let html = `<tr class="fm-section-hdr"><td colspan="${colspan}">${label}</td></tr>`;
     items.forEach(item => {
+      const rowTotal = rounds.reduce((s, r) => s + (r[item.histKey] || 0), 0);
       html += '<tr class="fm-row">';
       html += `<td class="fm-td-cat">${item.label}</td>`;
       // Budget cell.
@@ -111,6 +113,8 @@ const FinanceMenu = {
         const val = r[item.histKey] || 0;
         html += `<td class="fm-td-num">${val ? this._fmt(val) : '<span class="fm-zero">—</span>'}</td>`;
       });
+      // Totals column.
+      html += `<td class="fm-td-num fm-td-rowtotal">${rowTotal ? this._fmt(rowTotal) : '<span class="fm-zero">—</span>'}</td>`;
       html += '</tr>';
     });
     return html;
@@ -118,6 +122,8 @@ const FinanceMenu = {
 
   // Subtotal row for a section.
   _totalRow(label, items, rounds, budgetData, _section) {
+    const grandTotal = rounds.reduce((s, r) =>
+      s + items.reduce((si, i) => si + (r[i.histKey] || 0), 0), 0);
     let html = '<tr class="fm-total-row">';
     html += `<td class="fm-td-cat">${label}</td>`;
     if (budgetData) {
@@ -130,12 +136,18 @@ const FinanceMenu = {
       const tot = items.reduce((s, i) => s + (r[i.histKey] || 0), 0);
       html += `<td class="fm-td-num fm-td-total">${this._fmt(tot)}</td>`;
     });
+    html += `<td class="fm-td-num fm-td-total fm-td-rowtotal">${this._fmt(grandTotal)}</td>`;
     html += '</tr>';
     return html;
   },
 
   // Net income row (revenue - expenses) at the bottom of the table.
   _netRow(revenueItems, expenseItems, rounds, budgetData) {
+    const netTotal = rounds.reduce((s, r) => {
+      const rev = revenueItems.reduce((sr, i) => sr + (r[i.histKey] || 0), 0);
+      const exp = expenseItems.reduce((se, i) => se + (r[i.histKey] || 0), 0);
+      return s + (rev - exp);
+    }, 0);
     let html = '<tr class="fm-net-row">';
     html += '<td class="fm-td-cat">Net Income</td>';
     if (budgetData) {
@@ -152,6 +164,7 @@ const FinanceMenu = {
       const net = rev - exp;
       html += `<td class="fm-td-num fm-td-net ${net >= 0 ? 'fm-pos' : 'fm-neg'}">${this._fmtNet(net)}</td>`;
     });
+    html += `<td class="fm-td-num fm-td-net fm-td-rowtotal ${netTotal >= 0 ? 'fm-pos' : 'fm-neg'}">${this._fmtNet(netTotal)}</td>`;
     html += '</tr>';
     return html;
   },
