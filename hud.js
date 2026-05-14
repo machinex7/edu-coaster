@@ -765,8 +765,6 @@ const PRICE_ITEMS = [
     unit:      '$/visitor',
     getValue:  () => Finance.gatePrice,
     setValue:  v => {
-      const delta = v - Finance.gatePrice;
-      if (delta > 0) Finance.priceExhaustion += 2 * delta;
       Finance.gatePrice = v;
     },
   },
@@ -1130,8 +1128,6 @@ function buildParkingPanel() {
   document.getElementById('parking-apply-btn').addEventListener('click', () => {
     const v = parseFloat(document.getElementById('parking-price-input').value);
     if (!isNaN(v) && v >= 0) {
-      const delta = v - Finance.parkingPrice;
-      if (delta > 0) Finance.priceExhaustion += 1 * delta;
       Finance.parkingPrice = v;
       buildParkingPanel();
     }

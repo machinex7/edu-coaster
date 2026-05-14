@@ -84,12 +84,10 @@ const Finance = {
   // ── Attendance ──────────────────────────────────────────────────────────────
 
   // Returns how many people want to visit based on last round's excitement.
-  // priceExhaustion cuts demand by 1% per point (10 exhaustion = −10%).
   // Population.calcDemandMultiplier() scales demand by the ratio of current
   // favorable population (chance × favor × count) to the neutral baseline.
   // Security and mess penalties are applied to excitement at end-of-round instead.
   calcDailyDemand() {
-    const exhaustionFactor  = Math.max(0, 1 - this.priceExhaustion / 100);
     const eventFactor       = Population.populationEvents.reduce((f, e) => f * (1 + e.modifier / 100), 1);
     const weatherFactor     = 1 - (WEATHER_DEMAND_REDUCTION[nextWeekForecast] ?? 0);
     const demandMultiplier  = Population.calcDemandMultiplier();
@@ -98,13 +96,12 @@ const Finance = {
     // audience over time. Grows as sqrt so early visits matter most and the bonus tapers off.
     const renownBonus       = Math.sqrt(this.cumulativeAttendance);
     const base              = this.parkExcitement + renownBonus;
-    const result            = base * exhaustionFactor * eventFactor * demandMultiplier * weatherFactor * incidentFactor;
+    const result            = base * eventFactor * demandMultiplier * weatherFactor * incidentFactor;
     console.log(
       '[demand]',
       'excitement:', this.parkExcitement.toFixed(2),
       '| renownBonus:', renownBonus.toFixed(2),
       '| base:', base.toFixed(2),
-      '| exhaustion:', exhaustionFactor.toFixed(4),
       '| event:', eventFactor.toFixed(4),
       '| demandMult:', demandMultiplier.toFixed(4),
       '| weather:', weatherFactor.toFixed(4),
@@ -180,9 +177,6 @@ const Finance = {
   gatePrice:    20,  // $ per visitor
   parkingPrice: 10,  // $ per vehicle (only active after PARKING_FEES research)
 
-  // Cumulative visitor price fatigue. Rises when prices increase, decays 1/round.
-  priceExhaustion: 0,
-
   // Multiplier (0–1) applied to food and merchandise spending this round.
   // Drops below 1 when parking fees exceed the inflation-adjusted free threshold.
   parkingSpendingMultiplier: 1,
@@ -226,10 +220,6 @@ const Finance = {
     this.purchasedAmenities.add(id);
     this.parkingAmenityBonus += amenity.bonus;
     return true;
-  },
-
-  advancePriceExhaustion() {
-    this.priceExhaustion = Math.max(0, this.priceExhaustion - 1);
   },
 
   // ── Income sources ───────────────────────────────────────────────────────────
@@ -770,7 +760,6 @@ const Finance = {
     const savingsInterestIncome = Banking.processSavingsInterest();
     const mmInterestIncome      = Banking.processMmInterest();
 
-    this.advancePriceExhaustion();    // decay price fatigue by 1
     if (Unlock.SECURITY) Security.advanceOpinion(security.unhandled); // decay then add unhandled incidents
     const populationEvents = Population.populationEvents.map(e => ({ ...e }));
     Population.tickEvents();          // tick population event modifiers toward 0
