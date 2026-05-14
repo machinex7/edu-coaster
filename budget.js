@@ -1,8 +1,8 @@
 // budget.js — Two-phase quarterly budget projection exercise.
 //
 // Phase 1 — Tentative: fires at round % 13 === 11 (two rounds before quarter
-// end). Shows the prior quarter's revised budget as a planning reference;
-// student enters a blind forecast for the upcoming quarter before the P&L.
+// end). Shows the last fully completed quarter's actuals as a planning reference;
+// student forecasts the upcoming quarter before seeing the P&L.
 //
 // Phase 2 — Revised: fires at round % 13 === 1 (one week after the P&L,
 // round > 1). Shows the tentative budget and last quarter's actuals side by
@@ -91,7 +91,7 @@ const Budget = {
     let instructions;
     if (phase === 'tentative') {
       instructions = hasComp
-        ? `Review last quarter's budget, then enter your tentative ${targetLabel} projections before seeing the final P&L.`
+        ? `Review last quarter's actuals, then enter your tentative ${targetLabel} projections before seeing the final P&L.`
         : `Enter your tentative revenue and expense projections for ${targetLabel}.`;
     } else {
       instructions = hasComp
@@ -129,13 +129,24 @@ const Budget = {
     const cols = [];
 
     if (phase === 'tentative') {
-      // Show the previous quarter's revised budget so the student has a scale reference.
-      const priorRevised = this._revised[targetQNum - 1];
-      if (priorRevised) {
-        cols.push({
-          header: `${this._calendarLabel(targetQNum - 1)} Budget`,
-          values: priorRevised,
-        });
+      // Show the last fully completed quarter's actuals so the student has a concrete
+      // scale reference when forecasting. targetQNum - 2 is the last completed quarter
+      // because targetQNum - 1 is still two rounds from ending when the tentative fires.
+      const priorQNum = targetQNum - 2;
+      if (priorQNum >= 1) {
+        const startIdx = (priorQNum - 1) * 13;
+        const endIdx   = priorQNum * 13;
+        const slice    = History.rounds.slice(startIdx, endIdx);
+        if (slice.length === 13) {
+          const actuals = {};
+          for (const item of this.ITEMS) {
+            actuals[item.key] = this._sumSlice(slice, item.histKey);
+          }
+          cols.push({
+            header: `${this._calendarLabel(priorQNum)} Actual`,
+            values: actuals,
+          });
+        }
       }
     } else {
       // Revised: show the tentative budget they submitted before the P&L.
