@@ -1882,6 +1882,7 @@
 
 .parking-bracket-name  { color: #d1d5db; }
 .parking-bracket-limit { color: #9ca3af; font-size: 0.75rem; }
+.parking-limit-unknown { color: #6b7280; font-style: italic; }
 
 /* Status badges. */
 .parking-pays       { color: #4ade80; }

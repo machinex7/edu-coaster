@@ -1039,18 +1039,31 @@ function buildParkingPanel() {
     ? Math.min(100, ((price - threshold) / 4)).toFixed(1)
     : 0;
 
+  // Returns the displayed max-price string for one income bracket.
+  // Below 20% confidence: unknown (?). Above: stable wobble that shrinks toward
+  // the true value as confidence approaches 100. sin() gives a consistent per-bracket
+  // direction so the displayed value doesn't jump around on each render.
+  function limitDisplay(trueLimit, i, confidence) {
+    if (confidence < 20) return { text: '?', unknown: true };
+    const dir    = Math.sin(i * 17 + 3);
+    const wobble = dir * trueLimit * ((100 - confidence) / 100) * 0.5;
+    return { text: `$${Math.max(1, Math.round(trueLimit + wobble))}`, unknown: false };
+  }
+
   // Per-bracket status rows.
   const bracketRows = brackets.map((b, i) => {
     const limit      = Population.PARKING_PRICE_LIMITS[i] * inflation;
+    const confidence = Population.confidence?.INCOME?.[i] ?? 0;
     const altRatio   = Population.PARKING_ALT_TRANSPORT_RATIO[i];
     const pricedOut  = price > limit;
     const status     = pricedOut
-      ? `<span class="parking-priced-out">Priced out — ${Math.round(altRatio * 100)}% alt transport, ${Math.round((1 - altRatio) * 100)}% no-show</span>`
+      ? `<span class="parking-priced-out">Priced out — ${Math.round(altRatio * 100)}% find a ride, ${Math.round((1 - altRatio) * 100)}% won't come</span>`
       : `<span class="parking-pays">Pays normally</span>`;
+    const lim = limitDisplay(limit, i, confidence);
     return `
       <div class="parking-bracket-row">
         <span class="parking-bracket-name">${b.name}</span>
-        <span class="parking-bracket-limit">Max $${limit.toFixed(0)}</span>
+        <span class="parking-bracket-limit${lim.unknown ? ' parking-limit-unknown' : ''}">Max ${lim.text}</span>
         ${status}
       </div>`;
   }).join('');
@@ -1121,7 +1134,7 @@ function buildParkingPanel() {
       </div>
     </div>
     <div class="parking-section">
-      <div class="parking-section-title">Income Bracket Affordability</div>
+      <div class="parking-section-title">Visitor Affordability</div>
       ${bracketRows}
     </div>
     ${amenitySection}
