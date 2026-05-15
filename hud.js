@@ -236,7 +236,6 @@ function initHUD() {
   PLStatement.init();
   BalanceSheet.init();
   CashFlow.init();
-  Budget.init();
   TaxForm.init();
   Concessions.init();
   Incidents.init();
@@ -320,7 +319,7 @@ function advanceRound() {
     if (!FinanceMenu._budgets[nextQ]) {
       Notifications.push({
         label:   'Budget Due',
-        message: `Submit the ${Budget._calendarLabel(nextQ)} budget in the Finance menu before advancing.`,
+        message: `Submit the ${FinanceMenu._calendarLabel(nextQ)} budget in the Finance menu before advancing.`,
         action:  () => openPanel('finance-menu'),
       });
     }

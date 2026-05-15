@@ -3,10 +3,8 @@
 // Three tabs: Budget (tabular actuals vs. budget), Graphs (placeholder), Forms (placeholder).
 //
 // Budget storage: FinanceMenu._budgets[qNum] is the canonical store for quarterly
-// budgets, independent of budget.js. On each open, _syncBudgetData() copies any
-// newly submitted budget.js entries so data isn't lost during the transition period.
-// When budget.js is eventually removed, _budgets will be populated solely by the
-// inline editing column in the Budget tab.
+// budgets. Players enter the upcoming quarter's budget via the inline input column
+// while viewing the current quarter.
 //
 // Budget gate: when the current round is the last of a quarter (round % 13 === 0)
 // and the next quarter's budget has not been saved, the Next Round button is
@@ -14,23 +12,41 @@
 
 const FinanceMenu = {
 
+  // All revenue and expense line items, matching P&L statement categories.
+  ITEMS: [
+    { key: 'gate',           label: 'Gate Admissions',         section: 'revenue', histKey: 'gateIncome'          },
+    { key: 'parking',        label: 'Parking',                 section: 'revenue', histKey: 'parkingIncome'       },
+    { key: 'shop',           label: 'Merchandise Sales',       section: 'revenue', histKey: 'shopIncome'          },
+    { key: 'food',           label: 'Food & Beverage',         section: 'revenue', histKey: 'foodIncome'          },
+    { key: 'membership',     label: 'Memberships',             section: 'revenue', histKey: 'membershipIncome'    },
+    { key: 'savingsInterest',label: 'Savings Interest',        section: 'revenue', histKey: 'savingsInterestIncome'},
+    { key: 'mmInterest',     label: 'Money Market Interest',   section: 'revenue', histKey: 'mmInterestIncome'    },
+    { key: 'staff',          label: 'Staff Wages',             section: 'expense', histKey: 'staffExpense'        },
+    { key: 'utilities',      label: 'Ride Utilities',          section: 'expense', histKey: 'utilityExpense'      },
+    { key: 'construction',   label: 'Construction',            section: 'expense', histKey: 'constructionExpense' },
+    { key: 'marketing',      label: 'Marketing',               section: 'expense', histKey: 'marketingExpense'    },
+    { key: 'merchandise',    label: 'Merchandise Orders',      section: 'expense', histKey: 'merchandiseExpense'  },
+    { key: 'bus',            label: 'Bus Service',             section: 'expense', histKey: 'parkingBusCost'      },
+    { key: 'parkingAmenity', label: 'Parking Amenities',       section: 'expense', histKey: 'parkingAmenitySpend' },
+    { key: 'memberBenefit',  label: 'Membership Benefits',     section: 'expense', histKey: 'memberBenefitExpense'},
+    { key: 'locInterest',    label: 'Line of Credit Interest', section: 'expense', histKey: 'locInterestExpense'  },
+    { key: 'donations',      label: 'Charitable Donations',    section: 'expense', histKey: 'donationExpense'     },
+  ],
+
   // Currently active tab key.
   _activeTab: 'budget',
 
   // Which quarter is displayed in the Budget tab. Null until first open.
   _selectedQNum: null,
 
-  // Per-quarter budget data keyed by qNum — independent of budget.js.
-  // Each entry is a flat object mapping Budget.ITEMS keys to whole-dollar amounts.
+  // Per-quarter budget data keyed by qNum.
+  // Each entry is a flat object mapping ITEMS keys to whole-dollar amounts.
   _budgets: {},
 
   // Entry point called by openPanel() in hud.js.
   buildPanel() {
     // Default to the current quarter on first open.
     if (this._selectedQNum === null) this._selectedQNum = this._currentQNum();
-
-    // Pull in any budget.js submissions we haven't seen yet.
-    this._syncBudgetData();
 
     const body = document.getElementById('finance-menu-body');
     body.innerHTML = this._tabBarHTML() + this._viewsHTML();
@@ -51,16 +67,14 @@ const FinanceMenu = {
     return Math.ceil(round / 13);
   },
 
-  // Copy budget.js data into _budgets for any quarter we don't have yet.
-  // Revised takes precedence over tentative; existing _budgets entries are never overwritten.
-  _syncBudgetData() {
-    const maxQ = this._currentQNum();
-    for (let q = 1; q <= maxQ; q++) {
-      if (!this._budgets[q]) {
-        const src = Budget._revised[q] || Budget._tentative[q] || null;
-        if (src) this._budgets[q] = Object.assign({}, src);
-      }
-    }
+  // Returns a "Q3 2024" style label for the calendar period of the given game quarter.
+  _calendarLabel(gameQNum) {
+    const lastRound    = gameQNum * 13;
+    const weekOfYear   = STARTING_WEEK_OF_YEAR + lastRound - 1;
+    const yearsElapsed = Math.floor((weekOfYear - 1) / 52);
+    const weekInYear   = ((weekOfYear - 1) % 52) + 1;
+    const q            = Math.ceil(weekInYear / 13);
+    return `Q${q} ${STARTING_YEAR + yearsElapsed}`;
   },
 
   // Enable or disable the Next Round button based on whether the budget gate is active.
@@ -123,8 +137,8 @@ const FinanceMenu = {
     const inputQNum = (qNum === currentQ) ? currentQ + 1 : null;
 
     const budgetData   = this._budgets[qNum] || null;
-    const revenueItems = Budget.ITEMS.filter(i => i.section === 'revenue');
-    const expenseItems = Budget.ITEMS.filter(i => i.section === 'expense');
+    const revenueItems = this.ITEMS.filter(i => i.section === 'revenue');
+    const expenseItems = this.ITEMS.filter(i => i.section === 'expense');
 
     let html = this._quarterSelectorHTML(currentQ);
     html += '<div class="fm-table-scroll"><table class="fm-table">';
@@ -170,8 +184,8 @@ const FinanceMenu = {
   // Updates the three total cells in the input column without a full re-render.
   _updateInputTotals(qNum, container) {
     const data         = this._budgets[qNum] || {};
-    const revenueItems = Budget.ITEMS.filter(i => i.section === 'revenue');
-    const expenseItems = Budget.ITEMS.filter(i => i.section === 'expense');
+    const revenueItems = this.ITEMS.filter(i => i.section === 'revenue');
+    const expenseItems = this.ITEMS.filter(i => i.section === 'expense');
     const rev = revenueItems.reduce((s, i) => s + (data[i.key] || 0), 0);
     const exp = expenseItems.reduce((s, i) => s + (data[i.key] || 0), 0);
     const net = rev - exp;
@@ -189,7 +203,7 @@ const FinanceMenu = {
   // Quarter selector bar: « label ».
   _quarterSelectorHTML(currentQ) {
     const qNum  = this._selectedQNum;
-    const label = Budget._calendarLabel(qNum);
+    const label = this._calendarLabel(qNum);
     return `
       <div class="fm-q-selector">
         <button class="fm-q-btn fm-q-prev"${qNum <= 1 ? ' disabled' : ''}>&laquo;</button>
@@ -201,7 +215,7 @@ const FinanceMenu = {
   // Builds the <thead> row: Category | Budget | Wk N … | Total | [Next Q Budget].
   _tableHead(rounds, budgetData, qNum, inputQNum) {
     const budgetLabel = budgetData
-      ? `Budget<br><span class="fm-th-sub">${Budget._calendarLabel(qNum)}</span>`
+      ? `Budget<br><span class="fm-th-sub">${this._calendarLabel(qNum)}</span>`
       : 'Budget';
     let html = '<thead><tr>';
     html += '<th class="fm-th-cat">Category</th>';
@@ -211,7 +225,7 @@ const FinanceMenu = {
     });
     html += '<th class="fm-th-num fm-th-total">Total</th>';
     if (inputQNum) {
-      html += `<th class="fm-th-num fm-th-input">Budget<br><span class="fm-th-sub">${Budget._calendarLabel(inputQNum)}</span></th>`;
+      html += `<th class="fm-th-num fm-th-input">Budget<br><span class="fm-th-sub">${this._calendarLabel(inputQNum)}</span></th>`;
     }
     html += '</tr></thead>';
     return html;
@@ -333,3 +347,4 @@ const FinanceMenu = {
   },
 
 };
+
