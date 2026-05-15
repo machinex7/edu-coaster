@@ -12,6 +12,19 @@ const Survey = {
   // At 10 responses noise is ~±11 pts; at 100 responses ~±3.5 pts.
   NOISE_K: 35,
 
+  // Demographic categories available as optional survey questions.
+  // Each checked category reduces response count by 1.25× and increases
+  // Population.confidence for that category by completed / 1000.
+  DEMO_CATEGORIES: Object.freeze([
+    { key: 'AGE',        label: 'Age' },
+    { key: 'INCOME',     label: 'Income Level' },
+    { key: 'DISTANCE',   label: 'Distance' },
+    { key: 'HOUSEHOLD',  label: 'Household Size' },
+    { key: 'AREA',       label: 'Area Type' },
+    { key: 'EMPLOYMENT', label: 'Employment' },
+    { key: 'STATUS',     label: 'Visitor Status' },
+  ]),
+
   INCENTIVES: Object.freeze([
     { id: SURVEY_INCENTIVE.NONE,     label: 'No Incentive',   completionRate: 0.10, costPerSurvey: 1 },
     { id: SURVEY_INCENTIVE.DISCOUNT, label: 'Discount Coupon', completionRate: 0.25, costPerSurvey: 2 },
@@ -68,7 +81,7 @@ const Survey = {
     money -= clampedCost;
     updateHUD();
 
-    this.pendingSend = { batchSize: clampedSize, incentiveId, cost: clampedCost };
+    this.pendingSend = { batchSize: clampedSize, incentiveId, cost: clampedCost, demoChecked: { ..._surveyDemoChecked } };
 
     if (document.getElementById('survey-panel-body')) Survey.buildPanel();
     return true;
@@ -76,14 +89,21 @@ const Survey = {
 
   // Called by advanceRound() before History.record(). Resolves any queued survey
   // into a noisy result and pushes it to pendingResults for History to drain.
+  // If demographic questions were included, responses are divided by 1.25 per checked
+  // category and confidence is boosted by completed / 1000 per checked category.
   processPendingSend() {
     if (!this.pendingSend) return;
-    const { batchSize, incentiveId, cost } = this.pendingSend;
+    const { batchSize, incentiveId, cost, demoChecked } = this.pendingSend;
     this.pendingSend = null;
 
-    const incentive  = this.INCENTIVES.find(i => i.id === incentiveId) ?? this.INCENTIVES[0];
-    const rateJitter = (Math.random() - 0.5) * 2 * (incentive.costPerSurvey / 100);
-    const completed  = Math.round(batchSize * Math.max(0, incentive.completionRate + rateJitter));
+    const incentive      = this.INCENTIVES.find(i => i.id === incentiveId) ?? this.INCENTIVES[0];
+    const rateJitter     = (Math.random() - 0.5) * 2 * (incentive.costPerSurvey / 100);
+    const baseCompleted  = Math.round(batchSize * Math.max(0, incentive.completionRate + rateJitter));
+
+    // Each checked demographic reduces responses by 1.25×.
+    const numChecked = demoChecked ? Object.values(demoChecked).filter(Boolean).length : 0;
+    const completed  = Math.round(baseCompleted / Math.pow(1.25, numChecked));
+
     const noiseRange = completed > 0 ? this.NOISE_K / Math.sqrt(completed) : 50;
     const trueScores = this.trueSatisfaction();
 
@@ -93,8 +113,19 @@ const Survey = {
       reportedScores[cat] = Math.max(0, Math.min(100, trueVal + jitter));
     }
 
+    // Boost confidence for each checked demographic by completed / 1000.
+    if (demoChecked && completed > 0) {
+      const boost = completed / 1000;
+      for (const { key } of this.DEMO_CATEGORIES) {
+        if (!demoChecked[key]) continue;
+        const conf = Population.confidence[key];
+        if (!conf) continue;
+        for (let i = 0; i < conf.length; i++) conf[i] = Math.min(100, conf[i] + boost);
+      }
+    }
+
     this.surveysSent++;
-    this.pendingResults.push({ round, batchSize, completed, incentiveId, cost, noiseRange, reportedScores });
+    this.pendingResults.push({ round, batchSize, completed, incentiveId, cost, noiseRange, reportedScores, demoChecked });
   },
 
   // Returns { rate: float, approximate: bool } for the displayed completion rate,
@@ -153,6 +184,23 @@ const Survey = {
     const results = [...this.pendingResults];
     this.pendingResults = [];
     return results;
+  },
+
+  // Builds the HTML for the demographic questions section shown when demographic_survey is researched.
+  _buildDemoSection() {
+    const numChecked = Object.values(_surveyDemoChecked).filter(Boolean).length;
+    const penalty    = Math.pow(1.25, numChecked);
+    const penaltyStr = numChecked > 0 ? `÷${penalty.toFixed(2)} responses` : 'No penalty yet';
+    const rows = this.DEMO_CATEGORIES.map(({ key, label }) => `
+      <label class="survey-demo-row">
+        <input type="checkbox" class="survey-demo-cb" data-key="${key}"${_surveyDemoChecked[key] ? ' checked' : ''}>
+        <span class="survey-demo-label">${label}</span>
+      </label>`).join('');
+    return `
+      <div class="panel-section-header">Demographic Questions</div>
+      <p class="survey-demo-note">Each question you add reveals more about a visitor segment but reduces responses (÷1.25 per question). Responses boost confidence for that group.</p>
+      <div class="survey-demo-group">${rows}</div>
+      ${numChecked > 0 ? `<div class="survey-demo-impact">${numChecked} question${numChecked !== 1 ? 's' : ''} selected &mdash; ${penaltyStr}</div>` : ''}`;
   },
 
   buildPanel() {
@@ -242,10 +290,12 @@ const Survey = {
       ${(() => {
         const v = this._displayRateValue(incentive);
         if (!v) return '';
-        const est = Math.round(v.rate * _surveyBatchSize);
+        const numChecked = Object.values(_surveyDemoChecked).filter(Boolean).length;
+        const est = Math.round((v.rate * _surveyBatchSize) / Math.pow(1.25, numChecked));
         const prefix = v.approximate ? '~' : '';
         return `<div class="survey-batch-meta survey-est-responses">${prefix}${est.toLocaleString()} estimated responses</div>`;
       })()}
+      ${Research.completed.has(RESEARCH_ID.DEMOGRAPHIC_SURVEY) ? this._buildDemoSection() : ''}
       ${inProgressSection}
       ${resultsSection}`;
 
@@ -266,6 +316,13 @@ const Survey = {
     el.querySelector('#survey-toggle-btn').addEventListener('click', () => {
       Survey.autoActive = !Survey.autoActive;
       Survey.buildPanel();
+    });
+
+    el.querySelectorAll('.survey-demo-cb').forEach(cb => {
+      cb.addEventListener('change', () => {
+        _surveyDemoChecked[cb.dataset.key] = cb.checked;
+        Survey.buildPanel();
+      });
     });
 
     el.querySelector('#survey-results-btn')?.addEventListener('click', () => {
@@ -322,3 +379,5 @@ const Survey = {
 
 let _surveyBatchSize = 100;
 let _surveyIncentive = SURVEY_INCENTIVE.NONE;
+// Which demographic categories are included in the current survey batch (keyed by category key).
+const _surveyDemoChecked = { AGE: false, INCOME: false, DISTANCE: false, HOUSEHOLD: false, AREA: false, EMPLOYMENT: false, STATUS: false };

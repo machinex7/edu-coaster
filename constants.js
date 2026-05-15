@@ -66,7 +66,7 @@ const SURVEY_INCENTIVE = Object.freeze({
 });
 
 const RESEARCH_ID = Object.freeze({
-  SURVEYS:                  'surveys',
+  DEMOGRAPHIC_SURVEY:       'demographic_survey',
   LICENSE_PLATE_MONITORING: 'license_plate_monitoring',
   QUARTERLY_SURVEY_RESULTS: 'quarterly_survey_results',
   SURVEY_COUPON_INCENTIVE:  'survey_coupon_incentive',
