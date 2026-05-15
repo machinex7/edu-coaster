@@ -1030,14 +1030,8 @@ function buildParkingPanel() {
   if (!body) return;
 
   const inflation  = Population.cumulativeInflation;
-  const threshold  = (10 + Finance.parkingAmenityBonus) * inflation;
   const price      = Finance.parkingPrice;
   const brackets   = Population.INCOME_BRACKETS;
-
-  // Spending reduction above the free threshold.
-  const reductionPct = price > threshold
-    ? Math.min(100, ((price - threshold) / 4)).toFixed(1)
-    : 0;
 
   // Returns the displayed max-price string for one income bracket.
   // Below 20% confidence: unknown (?). Above: stable wobble that shrinks toward
@@ -1127,10 +1121,9 @@ function buildParkingPanel() {
         </div>
       </div>
       <div class="parking-threshold-note">
-        Free zone: $${threshold.toFixed(0)} or under — no effect on in-park spending.
-        ${price > threshold
-          ? `<br>Current overage: <strong>${reductionPct}%</strong> reduction in food &amp; merchandise spending.`
-          : ''}
+        ${Finance.knownFreeZone === null
+          ? `Free zone: <span class="parking-limit-unknown">?</span> — charge a low price to find out.`
+          : `Free zone: at least <strong>$${Finance.knownFreeZone}</strong> — last confirmed safe price.`}
       </div>
     </div>
     <div class="parking-section">
