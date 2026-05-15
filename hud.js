@@ -1067,7 +1067,7 @@ function buildParkingPanel() {
   const amenitySection = amenitiesUnlocked ? `
     <div class="parking-section">
       <div class="parking-section-title">Lot Amenities</div>
-      <div class="parking-amenity-note">One-time purchases that raise the free-zone threshold, letting you charge more without affecting in-park spending.</div>
+      <div class="parking-amenity-note">Each purchased amenity increases how much guests are willing to spend on parking.</div>
       ${Finance.PARKING_AMENITIES.map(a => {
         const owned = Finance.purchasedAmenities.has(a.id);
         const canAfford = money >= a.cost;
@@ -1075,7 +1075,6 @@ function buildParkingPanel() {
           <div class="parking-amenity-row${owned ? ' parking-amenity-owned' : ''}">
             <div class="parking-amenity-info">
               <span class="parking-amenity-label">${a.label}</span>
-              <span class="parking-amenity-bonus">+$${a.bonus} threshold</span>
             </div>
             ${owned
               ? `<span class="parking-amenity-status">Installed</span>`

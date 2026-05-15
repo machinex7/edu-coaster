@@ -1925,7 +1925,6 @@
   gap: 2px;
 }
 .parking-amenity-label { font-size: 0.82rem; color: #d1d5db; }
-.parking-amenity-bonus { font-size: 0.72rem; color: #34d399; }
 
 /* Purchase button — reuses price-apply-btn shape but distinct color. */
 .parking-amenity-btn {
