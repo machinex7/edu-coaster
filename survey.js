@@ -188,9 +188,6 @@ const Survey = {
 
   // Builds the HTML for the demographic questions section shown when demographic_survey is researched.
   _buildDemoSection() {
-    const numChecked = Object.values(_surveyDemoChecked).filter(Boolean).length;
-    const penalty    = Math.pow(1.25, numChecked);
-    const penaltyStr = numChecked > 0 ? `÷${penalty.toFixed(2)} responses` : 'No penalty yet';
     const rows = this.DEMO_CATEGORIES.map(({ key, label }) => `
       <label class="survey-demo-row">
         <input type="checkbox" class="survey-demo-cb" data-key="${key}"${_surveyDemoChecked[key] ? ' checked' : ''}>
@@ -198,9 +195,8 @@ const Survey = {
       </label>`).join('');
     return `
       <div class="panel-section-header">Demographic Questions</div>
-      <p class="survey-demo-note">Each question you add reveals more about a visitor segment but reduces responses (÷1.25 per question). Responses boost confidence for that group.</p>
-      <div class="survey-demo-group">${rows}</div>
-      ${numChecked > 0 ? `<div class="survey-demo-impact">${numChecked} question${numChecked !== 1 ? 's' : ''} selected &mdash; ${penaltyStr}</div>` : ''}`;
+      <p class="survey-demo-note">Each additional question may reduce total responses. Responses boost confidence for that group.</p>
+      <div class="survey-demo-group">${rows}</div>`;
   },
 
   buildPanel() {
