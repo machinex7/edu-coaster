@@ -51,14 +51,38 @@ const Research = {
     if (this.progress[this.activeId] >= item.cost) {
       this.completed.add(this.activeId);
       delete this.progress[this.activeId];
-      const name = item.name;
       this.activeId = null;
       Notifications.push({
         label: 'Research',
-        message: `Research complete: ${name}`,
+        message: `Research complete: ${item.name}`,
         action: () => openPanel('research'),
       });
+      this._showCompleteModal(item);
     }
+  },
+
+  // Shows the science-themed research breakthrough modal for a completed item.
+  _showCompleteModal(item) {
+    const modal  = document.getElementById('research-complete-modal');
+    const nameEl = document.getElementById('rc-modal-name');
+    const flavEl = document.getElementById('rc-modal-flavor');
+    const btn    = document.getElementById('rc-modal-close');
+    if (!modal || !nameEl || !flavEl || !btn) return;
+
+    nameEl.textContent = item.name;
+    flavEl.textContent = item.flavor || item.description;
+
+    modal.classList.remove('hidden');
+
+    const close = () => {
+      modal.classList.add('hidden');
+      btn.removeEventListener('click', close);
+      modal.removeEventListener('click', onOverlay);
+    };
+    const onOverlay = e => { if (e.target === modal) close(); };
+
+    btn.addEventListener('click', close);
+    modal.addEventListener('click', onOverlay);
   },
 
   // Called after each round if panel is open.
