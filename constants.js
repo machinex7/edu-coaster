@@ -45,6 +45,7 @@ const FACILITY_ID = Object.freeze({
   GUARD_STATION:      'guard_station',
   STORAGE_WAREHOUSE:  'storage_warehouse',
   TREE:               'tree',
+  BRIDGE:             'bridge',
 });
 
 // IDs that match the "id" field in the LOTS array in game.js.

@@ -16,6 +16,13 @@ const LOTS = [
 
 // The set of lot IDs the player currently owns. Populated in initGame().
 let ownedLotIds = new Set();
+
+// Blue fill used for river / water tiles.
+const WATER_COLOR = '#1e6db5';
+
+// Set of "row,col" keys for every tile occupied by the river. Populated by
+// generateRiver() and never mutated afterwards; bridges read it to validate placement.
+let riverTiles = new Set();
 // Euclidean tile radius covered by each staffed guard post.
 const GUARD_RADIUS = 5;
 // Divisor for converting observed ride tiles × surplus capacity into an intensity-observation delta.
@@ -156,6 +163,8 @@ async function init() {
 
   buildGrid();
   refreshLotOverlay();
+  generateRiver();
+  placeWaterTiles();
   scatterTrees();
   buildRideCatalog();
   buildFacilityList();
@@ -191,6 +200,7 @@ function scatterTrees() {
   if (!treeDef) return;
   for (let r = 0; r < GRID_ROWS; r++) {
     for (let c = 0; c < GRID_COLS; c++) {
+      if (gridState[r][c] !== null) continue;
       if (Math.random() < 1 / 9) {
         _commitPlace(treeDef, CATEGORY.FACILITY, r, c, STATUS.ACTIVE);
       }
@@ -208,6 +218,37 @@ function growTrees() {
         _commitPlace(treeDef, CATEGORY.FACILITY, r, c, STATUS.ACTIVE);
       }
     }
+  }
+}
+
+// Computes a meandering river path from a random column on row 0 to row 19.
+// The river drifts left/right with equal probability each step, clamped to
+// cols 3–16 so it always stays within the playable lot area.
+function generateRiver() {
+  riverTiles = new Set();
+  let col = 4 + Math.floor(Math.random() * 12); // start anywhere in cols 4–15
+  for (let row = 0; row < GRID_ROWS; row++) {
+    riverTiles.add(`${row},${col}`);
+    if (row < GRID_ROWS - 1) {
+      const roll = Math.random();
+      if      (roll < 0.3 && col > 3)  col--;
+      else if (roll < 0.6 && col < 16) col++;
+      // else flow straight down
+    }
+  }
+}
+
+// Paints every river tile onto the grid as a non-destructible water tile.
+// Water tiles occupy gridState but are NOT stored in installedFacilities, so
+// startDemolition finds no matching record and returns early (with a hint).
+function placeWaterTiles() {
+  for (const key of riverTiles) {
+    const [r, c] = key.split(',').map(Number);
+    gridState[r][c] = `water_${r}_${c}`;
+    const cell = gridCells[r][c];
+    cell.style.backgroundColor = WATER_COLOR;
+    cell.classList.add('occupied');
+    cell.title = 'River';
   }
 }
 
@@ -344,6 +385,22 @@ function canPlaceRide(ride, startRow, startCol) {
 }
 
 function canPlaceFacility(facility, startRow, startCol) {
+  // Bridges go on water tiles, not empty land tiles — skip the normal footprint check.
+  if (facility.onWaterOnly) {
+    for (let r = 0; r < facility.footprint.length; r++) {
+      for (let c = 0; c < facility.footprint[r].length; c++) {
+        if (facility.footprint[r][c] !== 1) continue;
+        const gr = startRow + r;
+        const gc = startCol + c;
+        if (gr < 0 || gr >= GRID_ROWS || gc < 0 || gc >= GRID_COLS) return false;
+        if (!isTileOwned(gr, gc)) return false;
+        if (!riverTiles.has(`${gr},${gc}`)) return false;
+        if (facilityTypeAtCell[`${gr},${gc}`] === FACILITY_ID.BRIDGE) return false;
+      }
+    }
+    return true;
+  }
+
   if (!canPlaceFootprint(facility.footprint, startRow, startCol)) return false;
 
   if (facility.limit != null) {
@@ -558,7 +615,12 @@ function startDemolition(row, col) {
     installedFacilities.find(f => f.instanceId === instanceId) ||
     Shopping.installed.find(s => s.instanceId === instanceId);
 
-  if (!record) return;
+  if (!record) {
+    if (riverTiles.has(`${row},${col}`)) {
+      Notifications.push({ label: 'River', message: 'River tiles cannot be demolished. Build a Bridge over the water instead.' });
+    }
+    return;
+  }
 
   if (!isTileOwned(row, col)) {
     Notifications.push({ label: 'Demolish', message: 'This tile is outside your park boundary.' });
@@ -588,8 +650,10 @@ function startDemolition(row, col) {
   }
   money -= demolishCost;
 
-  // Paths and trees are removed immediately; everything else takes at least 1 round.
-  const isInstant = record.facilityId === FACILITY_ID.PATH || record.facilityId === FACILITY_ID.TREE;
+  // Paths, trees, and bridges are removed immediately; everything else takes at least 1 round.
+  const isInstant = record.facilityId === FACILITY_ID.PATH ||
+                    record.facilityId === FACILITY_ID.TREE ||
+                    record.facilityId === FACILITY_ID.BRIDGE;
   const demolishWeeks = isInstant ? 0 : Math.max(1, Math.ceil((record.weeksTotal || 0) / 2));
   if (demolishWeeks === 0) {
     completeDemolition(record);
@@ -659,9 +723,25 @@ function completeDemolition(record) {
           delete facilityTypeAtCell[`${record.row + r},${record.col + c}`];
       }
     }
-    // A demolished path tile breaks every stored A* route; discard them so
-    // they are recomputed the next time the player enters Play view mode.
-    if (record.facilityId === FACILITY_ID.PATH) Animations.paths = [];
+    // Demolished path or bridge tiles break every stored A* route.
+    if (record.facilityId === FACILITY_ID.PATH || record.facilityId === FACILITY_ID.BRIDGE) Animations.paths = [];
+  }
+
+  // A demolished bridge exposes the water tile that was underneath it.
+  if (record.facilityId === FACILITY_ID.BRIDGE) {
+    for (let r = 0; r < record.footprint.length; r++) {
+      for (let c = 0; c < record.footprint[r].length; c++) {
+        if (record.footprint[r][c] !== 1) continue;
+        const gr = record.row + r;
+        const gc = record.col + c;
+        gridState[gr][gc] = `water_${gr}_${gc}`;
+        const cell = gridCells[gr][gc];
+        cell.style.backgroundColor = WATER_COLOR;
+        cell.classList.add('occupied');
+        cell.title = 'River';
+        cell.classList.toggle('out-of-bounds', !isTileOwned(gr, gc));
+      }
+    }
   }
 
   updateHUD();
