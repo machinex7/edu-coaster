@@ -177,6 +177,19 @@ function scatterTrees() {
   }
 }
 
+// Each round during play, every empty tile has a 1-in-2000 chance to naturally grow a tree.
+function growTrees() {
+  const treeDef = facilities.find(f => f.id === FACILITY_ID.TREE);
+  if (!treeDef) return;
+  for (let r = 0; r < GRID_ROWS; r++) {
+    for (let c = 0; c < GRID_COLS; c++) {
+      if (gridState[r][c] === null && Math.random() < 1 / 2000) {
+        _commitPlace(treeDef, CATEGORY.FACILITY, r, c, STATUS.ACTIVE);
+      }
+    }
+  }
+}
+
 function createItemCard(item, category) {
   const card = document.createElement('div');
   card.className = 'item-card';
