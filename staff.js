@@ -284,7 +284,7 @@ const Staff = {
   // ── Staffing requirements ──────────────────────────────────────────────────
   operatorsNeededForRide(record) {
     const tiles = record.footprint.flat().filter(v => v === 1).length;
-    return tiles >= 10 ? 4 : tiles >= 5 ? 3 : 2;
+    return tiles >= 10 ? 3 : tiles >= 5 ? 2 : 1;
   },
 
   rideOperatorsNeeded() {
