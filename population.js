@@ -28,7 +28,7 @@ const Population = {
   // ── Demographic confidence ────────────────────────────────────────────────
   // Total visitor-observations needed for a category to reach 100% confidence.
   // Scales naturally with attendance: more visitors per week → faster learning.
-  CONFIDENCE_VISIT_CAPACITY: 5000,
+  CONFIDENCE_VISIT_CAPACITY: 100_000,
 
   // ── Favor decay ───────────────────────────────────────────────────────────
   // Exponential decay of the deviation from baseline (1.0) each round.
