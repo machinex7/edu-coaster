@@ -47,6 +47,15 @@ const FACILITY_ID = Object.freeze({
   TREE:               'tree',
 });
 
+// IDs that match the "id" field in the LOTS array in game.js.
+const LOT_ID = Object.freeze({
+  CENTER: 'center',
+  NORTH:  'north',
+  SOUTH:  'south',
+  WEST:   'west',
+  EAST:   'east',
+});
+
 const SECURITY_FOCUS = Object.freeze({
   PATROL:      'patrol',
   GATE:        'gate',

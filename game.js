@@ -1,6 +1,21 @@
 // ── Constants ──────────────────────────────────────────────────────────────
 const GRID_COLS = 20;
 const GRID_ROWS = 20;
+
+// Lot geometry: five axis-aligned rectangles that tile most of the 20×20 grid.
+// r1/c1 are inclusive upper-left; r2/c2 are inclusive lower-right.
+// Side lots deliberately overlap at the four corners; the small gaps between
+// the center lot and the side lots are permanently outside all lots.
+const LOTS = [
+  { id: LOT_ID.CENTER, r1:  7, c1:  7, r2: 12, c2: 12 }, // 6×6 center
+  { id: LOT_ID.NORTH,  r1:  0, c1:  3, r2:  5, c2: 16 }, // 6×14 top strip
+  { id: LOT_ID.SOUTH,  r1: 14, c1:  3, r2: 19, c2: 16 }, // 6×14 bottom strip
+  { id: LOT_ID.WEST,   r1:  3, c1:  0, r2: 16, c2:  5 }, // 14×6 left strip
+  { id: LOT_ID.EAST,   r1:  3, c1: 14, r2: 16, c2: 19 }, // 14×6 right strip
+];
+
+// The set of lot IDs the player currently owns. Populated in initGame().
+let ownedLotIds = new Set();
 // Euclidean tile radius covered by each staffed guard post.
 const GUARD_RADIUS = 5;
 // Divisor for converting observed ride tiles × surplus capacity into an intensity-observation delta.
@@ -134,7 +149,13 @@ async function init() {
 
   gridState = Array.from({ length: GRID_ROWS }, () => Array(GRID_COLS).fill(null));
 
+  // Grant the center lot and one random side lot at game start.
+  const sideLotIds = [LOT_ID.NORTH, LOT_ID.SOUTH, LOT_ID.WEST, LOT_ID.EAST];
+  const randomSide = sideLotIds[Math.floor(Math.random() * sideLotIds.length)];
+  ownedLotIds = new Set([LOT_ID.CENTER, randomSide]);
+
   buildGrid();
+  refreshLotOverlay();
   scatterTrees();
   buildRideCatalog();
   buildFacilityList();
@@ -186,6 +207,29 @@ function growTrees() {
       if (gridState[r][c] === null && Math.random() < 1 / 2000) {
         _commitPlace(treeDef, CATEGORY.FACILITY, r, c, STATUS.ACTIVE);
       }
+    }
+  }
+}
+
+// Returns true if tile (r, c) falls within at least one owned lot's rectangle.
+function isTileOwned(r, c) {
+  return LOTS.some(lot => ownedLotIds.has(lot.id) &&
+    r >= lot.r1 && r <= lot.r2 && c >= lot.c1 && c <= lot.c2);
+}
+
+// Adds a lot to the owned set and refreshes the grid overlay.
+// Call this whenever the player earns a new lot.
+function unlockLot(id) {
+  ownedLotIds.add(id);
+  refreshLotOverlay();
+}
+
+// Stamps or removes the .out-of-bounds CSS class on every grid cell to match
+// the current owned-lot set. Safe to call any time after buildGrid().
+function refreshLotOverlay() {
+  for (let r = 0; r < GRID_ROWS; r++) {
+    for (let c = 0; c < GRID_COLS; c++) {
+      gridCells[r][c].classList.toggle('out-of-bounds', !isTileOwned(r, c));
     }
   }
 }
@@ -288,6 +332,7 @@ function canPlaceFootprint(footprint, startRow, startCol) {
       const gr = startRow + r;
       const gc = startCol + c;
       if (gr < 0 || gr >= GRID_ROWS || gc < 0 || gc >= GRID_COLS) return false;
+      if (!isTileOwned(gr, gc)) return false;
       if (gridState[gr][gc] !== null) return false;
     }
   }
@@ -515,6 +560,11 @@ function startDemolition(row, col) {
 
   if (!record) return;
 
+  if (!isTileOwned(row, col)) {
+    Notifications.push({ label: 'Demolish', message: 'This tile is outside your park boundary.' });
+    return;
+  }
+
   if (record.facilityId === FACILITY_ID.PARK_ENTRANCE) {
     Notifications.push({ label: 'Demolish', message: 'The Park Entrance cannot be demolished.' });
     return;
@@ -597,6 +647,7 @@ function completeDemolition(record) {
         cell.style.backgroundColor = '';
         cell.classList.remove('occupied', 'under-construction', 'demolishing');
         cell.title = '';
+        cell.classList.toggle('out-of-bounds', !isTileOwned(gr, gc));
       }
     }
   }
