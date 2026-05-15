@@ -403,6 +403,18 @@ header h1 {
   background: #15803d;
 }
 
+.grid-cell.out-of-bounds {
+  background-color: #0d3320;
+  background-image: repeating-linear-gradient(
+    45deg,
+    rgba(0, 0, 0, 0.35) 0px,
+    rgba(0, 0, 0, 0.35) 2px,
+    transparent        2px,
+    transparent        7px
+  );
+  cursor: default;
+}
+
 .grid-cell.highlight-valid {
   background: #86efac !important;
 }

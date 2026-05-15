@@ -19,7 +19,8 @@ function shortestPathToTile(rideRecord, destRow, destCol) {
       for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
         const nr = gr + dr, nc = gc + dc;
         if (nr < 0 || nr >= GRID_ROWS || nc < 0 || nc >= GRID_COLS) continue;
-        if (facilityTypeAtCell[`${nr},${nc}`] === FACILITY_ID.PATH) {
+        const nType = facilityTypeAtCell[`${nr},${nc}`];
+        if (nType === FACILITY_ID.PATH || nType === FACILITY_ID.BRIDGE) {
           startKeys.add(`${nr},${nc}`);
         }
       }
@@ -32,7 +33,8 @@ function shortestPathToTile(rideRecord, destRow, destCol) {
 
   function walkable(r, c) {
     const k = `${r},${c}`;
-    return k === destKey || facilityTypeAtCell[k] === FACILITY_ID.PATH;
+    const t = facilityTypeAtCell[k];
+    return k === destKey || t === FACILITY_ID.PATH || t === FACILITY_ID.BRIDGE;
   }
 
   // A* with Manhattan distance heuristic.

@@ -286,6 +286,7 @@ function advanceRound() {
   // Tick incidents before processRound so computed properties (demandMultiplier,
   // inflationOverride, etc.) are current when this round's revenue is calculated.
   if (gameStage === STAGE.PLAY) Incidents.tick();
+  if (gameStage === STAGE.PLAY) growTrees();
   const report     = Finance.processRound();
   const loanResult = Banking.processPendingLoan();
   Banking.processPendingLoc();

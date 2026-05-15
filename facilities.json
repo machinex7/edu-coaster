@@ -17,7 +17,17 @@
     "buildCost": 100,
     "buildWeeks": 0,
     "limit": null,
-    "mustBeAdjacentTo": ["path", "park_entrance"]
+    "mustBeAdjacentTo": ["path", "park_entrance", "bridge"]
+  },
+  {
+    "id": "bridge",
+    "name": "Bridge",
+    "color": "#a07640",
+    "footprint": [[1]],
+    "buildCost": 500,
+    "buildWeeks": 0,
+    "limit": null,
+    "onWaterOnly": true
   },
   {
     "id": "bathroom",
