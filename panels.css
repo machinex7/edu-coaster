@@ -2342,6 +2342,22 @@ thead tr th {
   background: #0f1723;
 }
 
+/* Forecast column — extrapolated 13-week projection, shown mid-quarter only */
+.fm-th-forecast {
+  border-left: 1px solid #374151;
+  color: #d97706;
+  font-weight: 700;
+  font-style: italic;
+}
+.fm-td-forecast {
+  border-left: 1px solid #292929;
+  color: #92400e;
+  font-style: italic;
+}
+.fm-td-forecast.fm-pos { color: #78924a; }
+.fm-td-forecast.fm-neg { color: #92402e; }
+.fm-td-forecast.fm-td-total { color: #b45309; }
+
 /* Input (next-quarter budget) column */
 .fm-th-input {
   border-left: 2px solid #2563eb;

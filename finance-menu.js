@@ -136,19 +136,23 @@ const FinanceMenu = {
     // enter the budget for the upcoming quarter.
     const inputQNum = (qNum === currentQ) ? currentQ + 1 : null;
 
+    // Show a forecast column when the quarter is in progress (1–12 weeks played).
+    // Forecast = (average of played weeks) × 13.
+    const showForecast = rounds.length >= 1 && rounds.length < 13;
+
     const budgetData   = this._budgets[qNum] || null;
     const revenueItems = this.ITEMS.filter(i => i.section === 'revenue');
     const expenseItems = this.ITEMS.filter(i => i.section === 'expense');
 
     let html = this._quarterSelectorHTML(currentQ);
     html += '<div class="fm-table-scroll"><table class="fm-table">';
-    html += this._tableHead(rounds, budgetData, qNum, inputQNum);
+    html += this._tableHead(rounds, budgetData, qNum, inputQNum, showForecast);
     html += '<tbody>';
-    html += this._sectionRows('REVENUE',  revenueItems, rounds, budgetData, inputQNum);
-    html += this._totalRow('Total Revenue',  revenueItems, rounds, budgetData, inputQNum, 'fm-input-rev-total');
-    html += this._sectionRows('EXPENSES', expenseItems, rounds, budgetData, inputQNum);
-    html += this._totalRow('Total Expenses', expenseItems, rounds, budgetData, inputQNum, 'fm-input-exp-total');
-    html += this._netRow(revenueItems, expenseItems, rounds, budgetData, inputQNum);
+    html += this._sectionRows('REVENUE',  revenueItems, rounds, budgetData, inputQNum, showForecast);
+    html += this._totalRow('Total Revenue',  revenueItems, rounds, budgetData, inputQNum, 'fm-input-rev-total', showForecast);
+    html += this._sectionRows('EXPENSES', expenseItems, rounds, budgetData, inputQNum, showForecast);
+    html += this._totalRow('Total Expenses', expenseItems, rounds, budgetData, inputQNum, 'fm-input-exp-total', showForecast);
+    html += this._netRow(revenueItems, expenseItems, rounds, budgetData, inputQNum, showForecast);
     html += '</tbody></table></div>';
 
     container.innerHTML = html;
@@ -212,8 +216,8 @@ const FinanceMenu = {
       </div>`;
   },
 
-  // Builds the <thead> row: Category | Budget | Wk N … | Total | [Next Q Budget].
-  _tableHead(rounds, budgetData, qNum, inputQNum) {
+  // Builds the <thead> row: Category | Budget | Wk N … | Total | [Forecast] | [Next Q Budget].
+  _tableHead(rounds, budgetData, qNum, inputQNum, showForecast) {
     const budgetLabel = budgetData
       ? `Budget<br><span class="fm-th-sub">${this._calendarLabel(qNum)}</span>`
       : 'Budget';
@@ -224,6 +228,9 @@ const FinanceMenu = {
       html += `<th class="fm-th-num">${this._shortDate(r)}</th>`;
     });
     html += '<th class="fm-th-num fm-th-total">Total</th>';
+    if (showForecast) {
+      html += '<th class="fm-th-num fm-th-forecast">Forecast<br><span class="fm-th-sub">13-wk</span></th>';
+    }
     if (inputQNum) {
       html += `<th class="fm-th-num fm-th-input">Budget<br><span class="fm-th-sub">${this._calendarLabel(inputQNum)}</span></th>`;
     }
@@ -232,8 +239,8 @@ const FinanceMenu = {
   },
 
   // One section-header row then one data row per item.
-  _sectionRows(label, items, rounds, budgetData, inputQNum) {
-    const colspan = 3 + rounds.length + (inputQNum ? 1 : 0);
+  _sectionRows(label, items, rounds, budgetData, inputQNum, showForecast) {
+    const colspan = 3 + rounds.length + (showForecast ? 1 : 0) + (inputQNum ? 1 : 0);
     let html = `<tr class="fm-section-hdr"><td colspan="${colspan}">${label}</td></tr>`;
     const inputData = inputQNum ? (this._budgets[inputQNum] || {}) : null;
     items.forEach(item => {
@@ -253,6 +260,11 @@ const FinanceMenu = {
       });
       // Row total.
       html += `<td class="fm-td-num fm-td-rowtotal">${rowTotal ? this._fmt(rowTotal) : '<span class="fm-zero">—</span>'}</td>`;
+      // Forecast: extrapolate the weekly average to a full 13-week quarter.
+      if (showForecast) {
+        const forecast = Math.round(rowTotal / rounds.length * 13);
+        html += `<td class="fm-td-num fm-td-forecast">${forecast ? this._fmt(forecast) : '<span class="fm-zero">—</span>'}</td>`;
+      }
       // Editable input cell for the upcoming quarter.
       if (inputQNum) {
         const inputVal = inputData[item.key] != null ? inputData[item.key] : 0;
@@ -264,7 +276,7 @@ const FinanceMenu = {
   },
 
   // Subtotal row for a section.
-  _totalRow(label, items, rounds, budgetData, inputQNum, inputCellId) {
+  _totalRow(label, items, rounds, budgetData, inputQNum, inputCellId, showForecast) {
     const grandTotal = rounds.reduce((s, r) =>
       s + items.reduce((si, i) => si + (r[i.histKey] || 0), 0), 0);
     let html = '<tr class="fm-total-row">';
@@ -280,6 +292,10 @@ const FinanceMenu = {
       html += `<td class="fm-td-num fm-td-total">${this._fmt(tot)}</td>`;
     });
     html += `<td class="fm-td-num fm-td-total fm-td-rowtotal">${this._fmt(grandTotal)}</td>`;
+    if (showForecast) {
+      const forecast = Math.round(grandTotal / rounds.length * 13);
+      html += `<td class="fm-td-num fm-td-forecast fm-td-total">${this._fmt(forecast)}</td>`;
+    }
     if (inputQNum) {
       const inputData = this._budgets[inputQNum] || {};
       const tot = items.reduce((s, i) => s + (inputData[i.key] || 0), 0);
@@ -290,7 +306,7 @@ const FinanceMenu = {
   },
 
   // Net income row (revenue − expenses).
-  _netRow(revenueItems, expenseItems, rounds, budgetData, inputQNum) {
+  _netRow(revenueItems, expenseItems, rounds, budgetData, inputQNum, showForecast) {
     const netTotal = rounds.reduce((s, r) => {
       const rev = revenueItems.reduce((sr, i) => sr + (r[i.histKey] || 0), 0);
       const exp = expenseItems.reduce((se, i) => se + (r[i.histKey] || 0), 0);
@@ -313,6 +329,10 @@ const FinanceMenu = {
       html += `<td class="fm-td-num fm-td-net ${net >= 0 ? 'fm-pos' : 'fm-neg'}">${this._fmtNet(net)}</td>`;
     });
     html += `<td class="fm-td-num fm-td-net fm-td-rowtotal ${netTotal >= 0 ? 'fm-pos' : 'fm-neg'}">${this._fmtNet(netTotal)}</td>`;
+    if (showForecast) {
+      const netForecast = Math.round(netTotal / rounds.length * 13);
+      html += `<td class="fm-td-num fm-td-forecast fm-td-net ${netForecast >= 0 ? 'fm-pos' : 'fm-neg'}">${this._fmtNet(netForecast)}</td>`;
+    }
     if (inputQNum) {
       const inputData = this._budgets[inputQNum] || {};
       const rev = revenueItems.reduce((s, i) => s + (inputData[i.key] || 0), 0);
