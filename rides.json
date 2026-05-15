@@ -2,6 +2,7 @@
   {
     "id": "carousel",
     "name": "Carousel",
+    "flavor": "Round and round, riders young and old reach for brass rings and stolen glances at the horizon. The carousel has a way of making everyone feel five again.",
     "footprint": [
       [1, 1],
       [1, 1]
@@ -17,6 +18,7 @@
   {
     "id": "ferris_wheel",
     "name": "Ferris Wheel",
+    "flavor": "From the top you can see the whole park — and the whole park can see you. Couples linger at the peak; kids press their faces against the gondola glass.",
     "footprint": [
       [0, 1, 0],
       [1, 1, 1],
@@ -33,6 +35,7 @@
   {
     "id": "tea_cups",
     "name": "Tea Cups",
+    "flavor": "Spin it harder, they say, and then immediately regret it. The Tea Cups turn what should be a gentle ride into a dizzying contest of nerve and stomach fortitude.",
     "footprint": [
       [1, 1, 1],
       [1, 1, 1],
@@ -49,6 +52,7 @@
   {
     "id": "tower_swings",
     "name": "Tower Swings",
+    "flavor": "At full height the ground is a distant rumor and the wind doesn't care about your white knuckles. Riders scream on the way up and laugh on the way down.",
     "footprint": [
       [0, 1, 1, 0],
       [1, 1, 1, 1],
@@ -66,6 +70,7 @@
   {
     "id": "tilt_a_whirl",
     "name": "Tilt-A-Whirl",
+    "flavor": "Unpredictable, chaotic, and entirely at the mercy of physics. The Tilt-A-Whirl has no mercy. Riders negotiate with centrifugal force and usually lose.",
     "footprint": [
       [1, 1, 1],
       [1, 1, 1],
@@ -82,6 +87,7 @@
   {
     "id": "bumper_cars",
     "name": "Bumper Cars",
+    "flavor": "All the rules of the road suspended for three glorious minutes. Collisions are encouraged, traffic laws are decorative, and everyone is simultaneously predator and prey.",
     "footprint": [
       [1, 1, 1, 1],
       [1, 1, 1, 1],
@@ -98,6 +104,7 @@
   {
     "id": "drop_tower",
     "name": "Drop Tower",
+    "flavor": "There's a long, slow climb where riders have plenty of time to reconsider every decision that led to this moment. Then the floor disappears.",
     "footprint": [
       [1, 1],
       [1, 1]
@@ -113,6 +120,7 @@
   {
     "id": "haunted_house",
     "name": "Haunted House",
+    "flavor": "The scares are theatrical but the shrieking is entirely genuine. Guests enter in confident groups and emerge individually, blinking, noticeably closer together than before.",
     "footprint": [
       [1, 1, 1, 1],
       [1, 1, 1, 1],
@@ -129,6 +137,7 @@
   {
     "id": "log_flume",
     "name": "Log Flume",
+    "flavor": "A leisurely river cruise followed by a plunge riders absolutely knew was coming and somehow still weren't ready for. The splash is non-negotiable. The second queue is always shorter.",
     "footprint": [
       [1, 1, 0, 0],
       [1, 1, 0, 0],
@@ -147,6 +156,7 @@
   {
     "id": "boomerang_coaster",
     "name": "Boomerang Coaster",
+    "flavor": "Six inversions, two directions, one continuous scream. The Boomerang runs its circuit forward, then — before riders have a moment to recover — runs it straight back.",
     "footprint": [
       [1, 1, 1, 1],
       [1, 0, 0, 1],
@@ -164,6 +174,7 @@
   {
     "id": "mega_coaster",
     "name": "Mega Coaster",
+    "flavor": "Visible from the highway and audible from the car park, the Mega Coaster doesn't just attract visitors — it becomes the reason they came. The park's skyline will never look the same.",
     "footprint": [
       [0, 1, 1, 1, 1, 0],
       [1, 1, 0, 0, 1, 1],

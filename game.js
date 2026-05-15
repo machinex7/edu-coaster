@@ -574,13 +574,54 @@ function processConstruction() {
 
 function completeConstruction(record) {
   record.status = STATUS.ACTIVE;
-  if (record.rideId !== undefined) record.installedRound = round;
+  if (record.rideId !== undefined) {
+    record.installedRound = round;
+    if (gameStage === STAGE.PLAY) {
+      const rideDef = rides.find(r => r.id === record.rideId);
+      const buzz = { low: 12, medium: 16, high: 20, extreme: 28 }[rideDef?.intensity] ?? 12;
+      Population.populationEvents.push({
+        modifier: buzz,
+        comment: `Visitors are buzzing about the new ${record.name}!`,
+      });
+      showRideCompleteModal(record.name, rideDef);
+    }
+  }
   for (let r = 0; r < record.footprint.length; r++) {
     for (let c = 0; c < record.footprint[r].length; c++) {
       if (record.footprint[r][c] === 1)
         gridCells[record.row + r][record.col + c].classList.remove('under-construction');
     }
   }
+}
+
+// Shows the grand-opening modal when a ride finishes construction during play.
+function showRideCompleteModal(rideName, rideDef) {
+  const modal  = document.getElementById('ride-complete-modal');
+  const nameEl = document.getElementById('rco-modal-name');
+  const flavEl = document.getElementById('rco-modal-flavor');
+  const intEl  = document.getElementById('rco-modal-intensity');
+  const btn    = document.getElementById('rco-modal-close');
+  if (!modal || !nameEl || !flavEl || !btn) return;
+
+  nameEl.textContent = rideName;
+  flavEl.textContent = rideDef?.flavor || '';
+  if (intEl) {
+    const intensity = rideDef?.intensity ?? 'low';
+    intEl.textContent = intensity.charAt(0).toUpperCase() + intensity.slice(1) + ' intensity';
+    intEl.className = `rco-intensity rco-intensity-${intensity}`;
+  }
+
+  modal.classList.remove('hidden');
+
+  const close = () => {
+    modal.classList.add('hidden');
+    btn.removeEventListener('click', close);
+    modal.removeEventListener('click', onOverlay);
+  };
+  const onOverlay = e => { if (e.target === modal) close(); };
+
+  btn.addEventListener('click', close);
+  modal.addEventListener('click', onOverlay);
 }
 
 function pauseRideConstruction(instanceId) {
