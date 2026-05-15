@@ -530,9 +530,6 @@ function initPanelBtns() {
 }
 
 function updateLockedPanels() {
-  const surveyBtn = document.querySelector('.tool-btn[data-panel="survey"]');
-  if (surveyBtn) surveyBtn.disabled = !Research.completed.has(RESEARCH_ID.SURVEYS);
-
   const benefitsUnlocked = Research.completed.has(RESEARCH_ID.EMPLOYEE_BENEFITS);
   const benefitsBtn = document.querySelector('.staff-action-btn[data-view="benefits"]');
   if (benefitsBtn) {
@@ -1033,27 +1030,34 @@ function buildParkingPanel() {
   if (!body) return;
 
   const inflation  = Population.cumulativeInflation;
-  const threshold  = (10 + Finance.parkingAmenityBonus) * inflation;
   const price      = Finance.parkingPrice;
   const brackets   = Population.INCOME_BRACKETS;
 
-  // Spending reduction above the free threshold.
-  const reductionPct = price > threshold
-    ? Math.min(100, ((price - threshold) / 4)).toFixed(1)
-    : 0;
+  // Returns the displayed max-price string for one income bracket.
+  // Below 20% confidence: unknown (?). Above: stable wobble that shrinks toward
+  // the true value as confidence approaches 100. sin() gives a consistent per-bracket
+  // direction so the displayed value doesn't jump around on each render.
+  function limitDisplay(trueLimit, i, confidence) {
+    if (confidence < 20) return { text: '?', unknown: true };
+    const dir    = Math.sin(i * 17 + 3);
+    const wobble = dir * trueLimit * ((100 - confidence) / 100) * 0.5;
+    return { text: `$${Math.max(1, Math.round(trueLimit + wobble))}`, unknown: false };
+  }
 
   // Per-bracket status rows.
   const bracketRows = brackets.map((b, i) => {
     const limit      = Population.PARKING_PRICE_LIMITS[i] * inflation;
+    const confidence = Population.confidence?.INCOME?.[i] ?? 0;
     const altRatio   = Population.PARKING_ALT_TRANSPORT_RATIO[i];
     const pricedOut  = price > limit;
     const status     = pricedOut
-      ? `<span class="parking-priced-out">Priced out — ${Math.round(altRatio * 100)}% alt transport, ${Math.round((1 - altRatio) * 100)}% no-show</span>`
+      ? `<span class="parking-priced-out">Priced out — ${Math.round(altRatio * 100)}% find a ride, ${Math.round((1 - altRatio) * 100)}% won't come</span>`
       : `<span class="parking-pays">Pays normally</span>`;
+    const lim = limitDisplay(limit, i, confidence);
     return `
       <div class="parking-bracket-row">
         <span class="parking-bracket-name">${b.name}</span>
-        <span class="parking-bracket-limit">Max $${limit.toFixed(0)}</span>
+        <span class="parking-bracket-limit${lim.unknown ? ' parking-limit-unknown' : ''}">Max ${lim.text}</span>
         ${status}
       </div>`;
   }).join('');
@@ -1063,7 +1067,7 @@ function buildParkingPanel() {
   const amenitySection = amenitiesUnlocked ? `
     <div class="parking-section">
       <div class="parking-section-title">Lot Amenities</div>
-      <div class="parking-amenity-note">One-time purchases that raise the free-zone threshold, letting you charge more without affecting in-park spending.</div>
+      <div class="parking-amenity-note">Each purchased amenity increases how much guests are willing to spend on parking.</div>
       ${Finance.PARKING_AMENITIES.map(a => {
         const owned = Finance.purchasedAmenities.has(a.id);
         const canAfford = money >= a.cost;
@@ -1071,7 +1075,6 @@ function buildParkingPanel() {
           <div class="parking-amenity-row${owned ? ' parking-amenity-owned' : ''}">
             <div class="parking-amenity-info">
               <span class="parking-amenity-label">${a.label}</span>
-              <span class="parking-amenity-bonus">+$${a.bonus} threshold</span>
             </div>
             ${owned
               ? `<span class="parking-amenity-status">Installed</span>`
@@ -1117,14 +1120,13 @@ function buildParkingPanel() {
         </div>
       </div>
       <div class="parking-threshold-note">
-        Free zone: $${threshold.toFixed(0)} or under — no effect on in-park spending.
-        ${price > threshold
-          ? `<br>Current overage: <strong>${reductionPct}%</strong> reduction in food &amp; merchandise spending.`
-          : ''}
+        ${Finance.knownFreeZone === null
+          ? `Free zone: <span class="parking-limit-unknown">?</span> — charge a low price to find out.`
+          : `Free zone: at least <strong>$${Finance.knownFreeZone}</strong> — last confirmed safe price.`}
       </div>
     </div>
     <div class="parking-section">
-      <div class="parking-section-title">Income Bracket Affordability</div>
+      <div class="parking-section-title">Visitor Affordability</div>
       ${bracketRows}
     </div>
     ${amenitySection}

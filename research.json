@@ -1,17 +1,17 @@
 [
   {
-    "id": "surveys",
-    "name": "Surveys",
-    "description": "Run structured visitor surveys to gather satisfaction data and identify pain points.",
-    "cost": 4,
-    "requires": []
-  },
-  {
     "id": "quarterly_survey_results",
     "name": "Quarterly Survey Results",
     "description": "Compile survey responses into trend-focused quarterly reports with demographic breakdowns.",
     "cost": 6,
-    "requires": ["surveys"]
+    "requires": []
+  },
+  {
+    "id": "demographic_survey",
+    "name": "Demographic Surveys",
+    "description": "Add optional demographic questions to your surveys. Each question you include reveals more about a visitor segment but lowers the response rate — respondents are less likely to complete a longer survey.",
+    "cost": 6,
+    "requires": []
   },
   {
     "id": "survey_coupon_incentive",
@@ -46,7 +46,7 @@
     "name": "Population Census Data",
     "description": "Commission a regional demographic study to reveal the true population size of each visitor segment. Unlocks population counts in the Visitor Profile.",
     "cost": 6,
-    "requires": ["surveys"]
+    "requires": []
   },
   {
     "id": "demographic_segmentation_display",

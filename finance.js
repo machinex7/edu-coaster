@@ -184,6 +184,11 @@ const Finance = {
   gatePrice:    20,  // $ per visitor
   parkingPrice: 10,  // $ per vehicle (only active after PARKING_FEES research)
 
+  // Highest parking price the player has charged that was confirmed to be within the
+  // free zone (≤ inflation-adjusted threshold). null = never confirmed. Updated each
+  // round when the current price doesn't exceed the threshold.
+  knownFreeZone: null,
+
   // Multiplier (0–1) applied to food and merchandise spending this round.
   // Drops below 1 when parking fees exceed the inflation-adjusted free threshold.
   parkingSpendingMultiplier: 1,
@@ -664,6 +669,13 @@ const Finance = {
     this.parkingSpendingMultiplier = parking.spendingMultiplier;
     this.altTransportVisitors      = parking.altTransportVisitors;
     this.busRiders                 = parking.busRiders;
+
+    // Track the highest price confirmed to be within the free zone so the panel
+    // can reveal it progressively. Only advance when the current price didn't
+    // trigger a spending penalty (i.e. it was ≤ the real threshold).
+    if (Research.completed.has(RESEARCH_ID.PARKING_FEES) && parking.spendingMultiplier >= 1) {
+      this.knownFreeZone = Math.max(this.knownFreeZone ?? 0, this.parkingPrice);
+    }
 
     // Always at least 35 visitors per week — a few souls wander in regardless.
     // Subtract net no-shows (0 if bus is running) before downstream calculations.
