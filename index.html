@@ -70,6 +70,7 @@
           <button class="tool-btn" data-panel="concessions">Concessions</button>
           <button class="tool-btn hidden" data-panel="parking">Parking</button>
           <button class="tool-btn" data-panel="forms">Forms</button>
+          <button class="tool-btn" data-panel="finance-menu">Finance</button>
         </nav>
 
         <!-- Rides overview slide panel -->
@@ -201,6 +202,17 @@
           </div>
         </div>
 
+        <!-- Finance Menu full-screen panel -->
+        <div id="panel-finance-menu" class="side-panel closed">
+          <div class="side-panel-inner">
+            <div class="panel-header">
+              Finance
+              <button class="panel-close-btn" onclick="closePanels()">✕</button>
+            </div>
+            <div id="finance-menu-body" class="fm-body"></div>
+          </div>
+        </div>
+
         <!-- Visitor Profile full-screen panel -->
         <div id="panel-visitor-profile" class="side-panel closed">
           <div class="side-panel-inner">
@@ -314,16 +326,6 @@
   </div>
 
   <!-- Quarterly budget projection exercise modal -->
-  <div id="budget-modal" class="modal-overlay hidden">
-    <div class="modal-card budget-modal-card">
-      <div class="modal-date">Quarterly Budget</div>
-      <div class="modal-title" id="budget-quarter-label"></div>
-      <p id="budget-instructions" class="budget-instructions"></p>
-      <div id="budget-table-wrapper" class="budget-table-wrapper"></div>
-      <button id="budget-save-btn" class="modal-close-btn">Save Budget &rsaquo;</button>
-    </div>
-  </div>
-
   <!-- Quarterly P&L statement exercise modal -->
   <div id="pl-modal" class="modal-overlay hidden">
     <div class="modal-card pl-modal-card">
@@ -514,13 +516,13 @@
   <script src="pl-statement.js"></script>
   <script src="balance-sheet.js"></script>
   <script src="cash-flow.js"></script>
-  <script src="budget.js"></script>
   <script src="forms-panel.js"></script>
   <script src="tax-form.js"></script>
   <script src="concessions.js"></script>
   <script src="incidents.js"></script>
   <script src="membership.js"></script>
   <script src="animations.js"></script>
+  <script src="finance-menu.js"></script>
   <script src="hud.js"></script>
 </body>
 </html>

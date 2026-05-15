@@ -236,7 +236,6 @@ function initHUD() {
   PLStatement.init();
   BalanceSheet.init();
   CashFlow.init();
-  Budget.init();
   TaxForm.init();
   Concessions.init();
   Incidents.init();
@@ -276,6 +275,9 @@ function openPark() {
 }
 
 function advanceRound() {
+  // Budget gate: block advance on the last round of a quarter until the next
+  // quarter's budget has been submitted in the Finance menu.
+  if (FinanceMenu._isGateActive()) return;
   round++;
   // Reset per-round tax tracker before any finance processing so History always
   // sees a fresh value even on rounds where no payment is made.
@@ -308,12 +310,20 @@ function advanceRound() {
   Unlock.tick();
   _tickDemographicConfidence(report.weeklyAttendance);
   if (round % 13 === 1 && round > 1) Awards.checkQuarterly();
-  // Tentative budget fires 2 rounds before quarter end (time to forecast before P&L).
-  if (round % 13 === 11) Budget.pendingTentative = true;
-  // Revised budget fires 1 week into the new quarter, after the P&L has been seen.
-  if (round % 13 === 1 && round > 1) Budget.pendingRevised = true;
   // Schedule the P&L exercise to appear after this round's summary closes.
   if (round % 13 === 0) PLStatement.pending = true;
+  // On the last round of a quarter, push a budget reminder if the next quarter's
+  // budget hasn't been submitted yet, and lock the Next Round button.
+  if (round % 13 === 0) {
+    const nextQ = Math.ceil(round / 13) + 1;
+    if (!FinanceMenu._budgets[nextQ]) {
+      Notifications.push({
+        label:   'Budget Due',
+        message: `Submit the ${FinanceMenu._calendarLabel(nextQ)} budget in the Finance menu before advancing.`,
+        action:  () => openPanel('finance-menu'),
+      });
+    }
+  }
   // Schedule the annual balance sheet and cash flow statement to chain after the P&L at year-end.
   if (round % 52 === 0) BalanceSheet.pending = true;
   if (round % 52 === 0) CashFlow.pending = true;
@@ -332,6 +342,7 @@ function advanceRound() {
   if (activePanel === 'survey')          Survey.buildPanel();
   if (activePanel === 'visitor-profile') VisitorProfile.buildPanel();
   if (activePanel === 'concessions')     Concessions.buildPanel();
+  FinanceMenu.refreshBudgetGate();
   showRoundSummary(report);
   nextWeekForecast   = futurecastForecast;
   futurecastForecast = forecastForRound(round + 2);
@@ -408,13 +419,11 @@ function showRoundSummary(report) {
 
 function hideRoundSummary() {
   document.getElementById('round-modal').classList.add('hidden');
-  // Budget (tentative) → P&L → Balance Sheet → Cash Flow → Budget (revised).
+  // P&L → Balance Sheet → Cash Flow → Tax Return.
   // P&L chains to Balance Sheet; Balance Sheet chains to Cash Flow at year-end.
-  if (Budget.pendingTentative)    Budget.show('tentative');
-  else if (PLStatement.pending)   PLStatement.show();
+  if (PLStatement.pending)      PLStatement.show();
   else if (BalanceSheet.pending)  BalanceSheet.show();
   else if (CashFlow.pending)      CashFlow.show();
-  else if (Budget.pendingRevised) Budget.show('revised');
   else if (TaxForm.pending)       TaxForm.show();
 }
 
@@ -609,6 +618,7 @@ function openPanel(panelId) {
   if (panelId === 'forms')           FormsPanel.buildPanel();
   if (panelId === 'parking')         buildParkingPanel();
   if (panelId === 'banking')         buildBankingPanel();
+  if (panelId === 'finance-menu')    FinanceMenu.buildPanel();
 }
 
 function closePanels() {
