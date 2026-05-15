@@ -38,22 +38,25 @@ const FormsPanel = {
   },
 
   // Save or replace the latest completion record for a form type.
-  // Rebuilds the panel immediately if it is currently open.
+  // Rebuilds the tab immediately if the Finance menu is open on the Forms tab.
   save(record) {
     this._records[record.type] = record;
-    if (typeof activePanel !== 'undefined' && activePanel === 'forms') {
+    if (typeof activePanel !== 'undefined' && activePanel === 'finance-menu' &&
+        typeof FinanceMenu !== 'undefined' && FinanceMenu._activeTab === 'forms') {
       this.buildPanel();
     }
   },
 
-  // Render all form cards into the panel body.
+  // Render all form cards into the Finance menu's Forms tab view.
   buildPanel() {
-    document.getElementById('forms-panel-body').innerHTML = [
+    const view = document.getElementById('fm-forms-view');
+    if (!view) return;
+    view.innerHTML = `<div class="fp-body">${[
       this._renderPLCard(),
       this._renderBSCard(),
       this._renderCFCard(),
       this._renderTaxCard(),
-    ].join('');
+    ].join('')}</div>`;
   },
 
   // Render the P&L review card, or a placeholder if not yet completed.
