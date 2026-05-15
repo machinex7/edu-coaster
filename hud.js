@@ -452,7 +452,8 @@ function updateAchievementIndicators() {
       const wksLabel = wks === Infinity
         ? 'No researchers'
         : `${wks} wk${wks !== 1 ? 's' : ''}`;
-      pills.push({ icon: '🔬', text: `${item.name}: ${wksLabel}`, panel: 'research' });
+      const spent = Research.progress[item.id] || 0;
+      pills.push({ icon: '🔬', text: `${item.name}: ${wksLabel}`, panel: 'research', pct: item.cost > 0 ? spent / item.cost : 0 });
     }
   }
 
@@ -466,7 +467,8 @@ function updateAchievementIndicators() {
   if (building) {
     const wks = building.weeksLeft;
     const wksLabel = `${wks} wk${wks !== 1 ? 's' : ''}`;
-    pills.push({ icon: '🏗️', text: `${building.record.name}: ${wksLabel}`, panel: 'rides' });
+    const pct = building.record.weeksTotal > 0 ? building.record.weeksCompleted / building.record.weeksTotal : 0;
+    pills.push({ icon: '🏗️', text: `${building.record.name}: ${wksLabel}`, panel: 'rides', pct });
   }
 
   // Show a pill when a loan is in the final review stage (cash incoming).
@@ -484,7 +486,21 @@ function updateAchievementIndicators() {
   }
 
   container.innerHTML = pills
-    .map(p => `<button class="achievement-pill" data-panel="${p.panel}">${p.icon} ${p.text}</button>`)
+    .map(p => {
+      let ringHtml = '';
+      if (p.pct != null) {
+        const r   = 6;
+        const circ = 2 * Math.PI * r;
+        const offset = circ * (1 - Math.min(1, Math.max(0, p.pct)));
+        ringHtml = `<svg class="pill-ring" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+          <circle cx="9" cy="9" r="${r}" fill="none" stroke="rgba(59,130,246,0.25)" stroke-width="2.5"/>
+          <circle cx="9" cy="9" r="${r}" fill="none" stroke="#60a5fa" stroke-width="2.5"
+            stroke-dasharray="${circ.toFixed(2)}" stroke-dashoffset="${offset.toFixed(2)}"
+            transform="rotate(-90 9 9)" stroke-linecap="round"/>
+        </svg>`;
+      }
+      return `<button class="achievement-pill" data-panel="${p.panel}">${ringHtml}${p.icon} ${p.text}</button>`;
+    })
     .join('');
 
   container.querySelectorAll('.achievement-pill').forEach(btn => {

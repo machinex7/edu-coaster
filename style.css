@@ -968,3 +968,9 @@ header h1 {
   background: #2563eb;
   color: #fff;
 }
+
+/* Radial progress ring inside achievement pills. */
+.pill-ring {
+  flex-shrink: 0;
+  display: block;
+}
