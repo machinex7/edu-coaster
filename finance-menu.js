@@ -60,6 +60,7 @@ const FinanceMenu = {
     });
 
     if (this._activeTab === 'budget') this._buildBudgetTab();
+    if (this._activeTab === 'forms')  FormsPanel.buildPanel();
   },
 
   // Current game quarter number (1-based).
@@ -116,9 +117,7 @@ const FinanceMenu = {
       <div id="fm-graphs-view" class="fm-view${hidden('graphs')}">
         <p class="fm-placeholder">Graphs — coming soon.</p>
       </div>
-      <div id="fm-forms-view"  class="fm-view${hidden('forms')}">
-        <p class="fm-placeholder">Forms — coming soon.</p>
-      </div>`;
+      <div id="fm-forms-view"  class="fm-view${hidden('forms')}"></div>`;
   },
 
   // Builds the Budget tab: quarter selector + scrollable actuals table.

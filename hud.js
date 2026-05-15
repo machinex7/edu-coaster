@@ -297,7 +297,7 @@ function advanceRound() {
     const msg = money >= 0
       ? `Income tax payment of $${TaxForm.taxOwed.toLocaleString()} processed.`
       : `Income tax of $${TaxForm.taxOwed.toLocaleString()} paid — account overdrawn.`;
-    Notifications.push({ label: 'Taxes', message: msg, action: () => openPanel('forms') });
+    Notifications.push({ label: 'Taxes', message: msg, action: () => openPanel('finance-menu') });
     TaxForm.taxOwed     = 0;
     TaxForm.taxDueRound = 0;
   }
@@ -479,7 +479,7 @@ function updateAchievementIndicators() {
   // Show a tax due countdown pill once the return is filed until payment is collected.
   if (TaxForm.taxOwed > 0 && TaxForm.taxDueRound > round) {
     const wks = TaxForm.taxDueRound - round;
-    pills.push({ icon: '🧾', text: `$${TaxForm.taxOwed.toLocaleString()} taxes due: ${wks} wk${wks !== 1 ? 's' : ''}`, panel: 'forms' });
+    pills.push({ icon: '🧾', text: `$${TaxForm.taxOwed.toLocaleString()} taxes due: ${wks} wk${wks !== 1 ? 's' : ''}`, panel: 'finance-menu' });
   }
 
   container.innerHTML = pills
@@ -615,7 +615,6 @@ function openPanel(panelId) {
   if (panelId === 'marketing')       Marketing.buildPanel();
   if (panelId === 'visitor-profile') VisitorProfile.buildPanel();
   if (panelId === 'concessions')     Concessions.buildPanel();
-  if (panelId === 'forms')           FormsPanel.buildPanel();
   if (panelId === 'parking')         buildParkingPanel();
   if (panelId === 'banking')         buildBankingPanel();
   if (panelId === 'finance-menu')    FinanceMenu.buildPanel();
