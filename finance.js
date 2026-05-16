@@ -819,6 +819,10 @@ const Finance = {
       : food.mealsWanted > 0
       ? Math.min(1, 0.5 + 0.5 * food.mealsServed / food.mealsWanted)
       : 0.5;
+    if (Unlock.FOOD && this.mealSatisfaction < 1) {
+      const guestCount = Math.round((1 - this.mealSatisfaction) * totalAttendance);
+      this.feedback.push({ guestCount, comment: "We were starving by the time we left — couldn't find enough food." });
+    }
     this.calcExcitement(totalAttendance); // uses this round's mess, security, and meal satisfaction
 
     // Membership sales: must run after calcExcitement() so Finance.parkSatisfaction
