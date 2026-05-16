@@ -43,6 +43,70 @@ const FinanceMenu = {
   // Each entry is a flat object mapping ITEMS keys to whole-dollar amounts.
   _budgets: {},
 
+  // Key of the currently graphed metric in the Graphs tab.
+  _selectedMetric: 'attendance',
+
+  // Metric groups shown as a pill cloud in the Graphs tab.
+  GRAPH_METRICS: [
+    { group: 'Revenue', items: [
+      { key: 'gateIncome',            label: 'Gate Admissions',       fmt: '$'   },
+      { key: 'parkingIncome',         label: 'Parking Revenue',       fmt: '$'   },
+      { key: 'shopIncome',            label: 'Merchandise Sales',     fmt: '$'   },
+      { key: 'foodIncome',            label: 'Food & Beverage',       fmt: '$'   },
+      { key: 'membershipIncome',      label: 'Memberships',           fmt: '$'   },
+      { key: 'savingsInterestIncome', label: 'Savings Interest',      fmt: '$'   },
+      { key: 'mmInterestIncome',      label: 'Money Market Interest', fmt: '$'   },
+    ]},
+    { group: 'Expenses', items: [
+      { key: 'staffExpense',          label: 'Staff Wages',           fmt: '$'   },
+      { key: 'utilityExpense',        label: 'Ride Utilities',        fmt: '$'   },
+      { key: 'constructionExpense',   label: 'Construction',          fmt: '$'   },
+      { key: 'marketingExpense',      label: 'Marketing',             fmt: '$'   },
+      { key: 'merchandiseExpense',    label: 'Merchandise Orders',    fmt: '$'   },
+      { key: 'parkingBusCost',        label: 'Bus Service',           fmt: '$'   },
+      { key: 'parkingAmenitySpend',   label: 'Parking Amenities',     fmt: '$'   },
+      { key: 'memberBenefitExpense',  label: 'Membership Benefits',   fmt: '$'   },
+      { key: 'locInterestExpense',    label: 'LoC Interest',          fmt: '$'   },
+      { key: 'donationExpense',       label: 'Donations',             fmt: '$'   },
+      { key: 'taxExpense',            label: 'Tax',                   fmt: '$'   },
+      { key: 'discountLoss',          label: 'Discount Losses',       fmt: '$'   },
+    ]},
+    { group: 'Attendance & Park', items: [
+      { key: 'attendance',            label: 'Weekly Attendance',     fmt: 'num' },
+      { key: 'parkAppeal',            label: 'Park Appeal',           fmt: 'num' },
+      { key: 'weeklyNetMess',         label: 'Net Mess',              fmt: 'num' },
+      { key: 'rideEfficiency',        label: 'Ride Efficiency',       fmt: 'pct' },
+    ]},
+    { group: 'Staff & Rides', items: [
+      { key: 'staffCount',            label: 'Staff Count',           fmt: 'num' },
+      { key: 'staffMood',             label: 'Staff Mood',            fmt: 'num' },
+      { key: 'runningRides',          label: 'Running Rides',         fmt: 'num' },
+      { key: 'brokenRides',           label: 'Broken Rides',          fmt: 'num' },
+    ]},
+    { group: 'Security', items: [
+      { key: 'securityIncidents',     label: 'Total Incidents',       fmt: 'num' },
+      { key: 'securityHandled',       label: 'Handled',               fmt: 'num' },
+      { key: 'securityUnhandled',     label: 'Unhandled',             fmt: 'num' },
+      { key: 'securityOpinion',       label: 'Opinion Score',         fmt: 'num' },
+      { key: 'theftItemsStolen',      label: 'Items Stolen',          fmt: 'num' },
+    ]},
+    { group: 'Food', items: [
+      { key: 'mealsWanted',           label: 'Meals Wanted',          fmt: 'num' },
+      { key: 'mealsServed',           label: 'Meals Served',          fmt: 'num' },
+      { key: 'mealSatisfaction',      label: 'Meal Satisfaction',     fmt: 'pct' },
+    ]},
+    { group: 'Banking', items: [
+      { key: 'savingsBalance',        label: 'Savings Balance',       fmt: '$'   },
+      { key: 'mmBalance',             label: 'Money Market Balance',  fmt: '$'   },
+      { key: 'loanBalance',           label: 'Loan Balance',          fmt: '$'   },
+      { key: 'locBalance',            label: 'LoC Balance',           fmt: '$'   },
+    ]},
+    { group: 'Inventory', items: [
+      { key: 'shopItemsSold',         label: 'Items Sold',            fmt: 'num' },
+      { key: 'totalInventory',        label: 'Total Inventory',       fmt: 'num' },
+    ]},
+  ],
+
   // Entry point called by openPanel() in hud.js.
   buildPanel() {
     // Default to the current quarter on first open.
@@ -60,6 +124,7 @@ const FinanceMenu = {
     });
 
     if (this._activeTab === 'budget') this._buildBudgetTab();
+    if (this._activeTab === 'graphs') this._buildGraphsTab();
     if (this._activeTab === 'forms')  FormsPanel.buildPanel();
   },
 
@@ -114,9 +179,7 @@ const FinanceMenu = {
     const hidden = key => this._activeTab !== key ? ' hidden' : '';
     return `
       <div id="fm-budget-view" class="fm-view${hidden('budget')}"></div>
-      <div id="fm-graphs-view" class="fm-view${hidden('graphs')}">
-        <p class="fm-placeholder">Graphs — coming soon.</p>
-      </div>
+      <div id="fm-graphs-view" class="fm-view${hidden('graphs')}"></div>
       <div id="fm-forms-view"  class="fm-view${hidden('forms')}"></div>`;
   },
 
@@ -363,6 +426,221 @@ const FinanceMenu = {
   _fmtNet(val) {
     const abs = Math.abs(Math.round(val));
     return val < 0 ? `−$${abs.toLocaleString()}` : `$${abs.toLocaleString()}`;
+  },
+
+  // Builds the Graphs tab: line chart + pill cloud selector.
+  _buildGraphsTab() {
+    const container = document.getElementById('fm-graphs-view');
+    const metricKey = this._selectedMetric || 'attendance';
+    const metric    = this._findMetric(metricKey);
+    const data      = History.rounds.slice(-13);
+
+    const graphHTML = data.length < 2
+      ? `<div class="fg-graph-empty">Not enough data yet — play more rounds to see a graph.</div>`
+      : `<div class="fg-canvas-wrap"><canvas id="fg-chart"></canvas><div id="fg-tooltip" class="fg-tooltip hidden"></div></div>`;
+
+    container.innerHTML = `
+      <div class="fg-graph-area">
+        <div class="fg-graph-title">${metric.label} — Last ${data.length} Week${data.length !== 1 ? 's' : ''}</div>
+        ${graphHTML}
+      </div>
+      <div class="fg-pill-cloud">${this._pillCloudHTML(metricKey)}</div>`;
+
+    container.querySelectorAll('.fg-pill').forEach(pill => {
+      pill.addEventListener('click', () => {
+        this._selectedMetric = pill.dataset.metric;
+        this._buildGraphsTab();
+      });
+    });
+
+    if (data.length >= 2) this._drawChart(data, metric);
+  },
+
+  // Draws the line chart onto the canvas element.
+  _drawChart(data, metric) {
+    const canvas = document.getElementById('fg-chart');
+    if (!canvas) return;
+    const wrap = canvas.parentElement;
+    const W    = wrap.clientWidth || 660;
+    const H    = 220;
+    canvas.width  = W;
+    canvas.height = H;
+    const ctx = canvas.getContext('2d');
+
+    const LP = 66, RP = 16, TP = 18, BP = 42;
+    const cW = W - LP - RP;
+    const cH = H - TP - BP;
+
+    const vals  = data.map(r => typeof r[metric.key] === 'number' ? r[metric.key] : 0);
+    const { yMin, yMax } = this._niceScale(vals, metric.fmt);
+    const range = yMax - yMin || 1;
+
+    // Maps data index → canvas X coordinate.
+    const xOf = i => LP + (data.length < 2 ? cW / 2 : i / (data.length - 1) * cW);
+    // Maps value → canvas Y coordinate.
+    const yOf = v => TP + (1 - (v - yMin) / range) * cH;
+
+    // Background fill.
+    ctx.fillStyle = '#111827';
+    ctx.fillRect(0, 0, W, H);
+
+    // Horizontal grid lines + Y-axis labels.
+    ctx.font = '11px system-ui, -apple-system, sans-serif';
+    const gridCount = 5;
+    for (let t = 0; t <= gridCount; t++) {
+      const v = yMin + (yMax - yMin) * t / gridCount;
+      const y = yOf(v);
+      ctx.strokeStyle = '#1f2937';
+      ctx.lineWidth   = 1;
+      ctx.beginPath(); ctx.moveTo(LP, y); ctx.lineTo(LP + cW, y); ctx.stroke();
+      ctx.fillStyle  = '#6b7280';
+      ctx.textAlign  = 'right';
+      ctx.fillText(this._fmtMetricLabel(v, metric.fmt), LP - 6, y + 4);
+    }
+
+    // X-axis week labels — skip alternate labels when dense.
+    ctx.fillStyle = '#6b7280';
+    ctx.textAlign = 'center';
+    data.forEach((r, i) => {
+      if (data.length <= 8 || i % 2 === 0 || i === data.length - 1)
+        ctx.fillText(this._xLabel(r), xOf(i), H - BP + 16);
+    });
+
+    // Shaded area under the line.
+    ctx.beginPath();
+    ctx.moveTo(xOf(0), yOf(vals[0]));
+    vals.forEach((v, i) => ctx.lineTo(xOf(i), yOf(v)));
+    ctx.lineTo(xOf(vals.length - 1), TP + cH);
+    ctx.lineTo(xOf(0), TP + cH);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(59, 130, 246, 0.10)';
+    ctx.fill();
+
+    // Line.
+    ctx.beginPath();
+    ctx.moveTo(xOf(0), yOf(vals[0]));
+    vals.forEach((v, i) => ctx.lineTo(xOf(i), yOf(v)));
+    ctx.strokeStyle = '#3b82f6';
+    ctx.lineWidth   = 2;
+    ctx.lineJoin    = 'round';
+    ctx.stroke();
+
+    // Axis borders.
+    ctx.strokeStyle = '#374151';
+    ctx.lineWidth   = 1;
+    ctx.beginPath();
+    ctx.moveTo(LP, TP); ctx.lineTo(LP, TP + cH + 1);
+    ctx.moveTo(LP, TP + cH); ctx.lineTo(LP + cW, TP + cH);
+    ctx.stroke();
+
+    // Data point dots.
+    vals.forEach((v, i) => {
+      ctx.beginPath();
+      ctx.arc(xOf(i), yOf(v), 4, 0, Math.PI * 2);
+      ctx.fillStyle   = '#3b82f6';
+      ctx.fill();
+      ctx.strokeStyle = '#0f172a';
+      ctx.lineWidth   = 1.5;
+      ctx.stroke();
+    });
+
+    // Hover tooltip.
+    const tooltip = document.getElementById('fg-tooltip');
+    if (!tooltip) return;
+    const stepW = data.length > 1 ? cW / (data.length - 1) : cW;
+
+    canvas.addEventListener('mousemove', e => {
+      const rect   = canvas.getBoundingClientRect();
+      const scaleX = W / rect.width;
+      const mx     = (e.clientX - rect.left) * scaleX;
+      const idx    = Math.round((mx - LP) / stepW);
+      if (idx >= 0 && idx < data.length) {
+        const v = vals[idx];
+        tooltip.innerHTML =
+          `<span class="fg-tt-date">${data[idx].date}</span>` +
+          `<span class="fg-tt-val">${this._fmtMetricVal(v, metric.fmt)}</span>`;
+        const tipX = xOf(idx) / scaleX;
+        const tipY = yOf(v) / (H / rect.height);
+        tooltip.style.left = Math.min(tipX + 10, rect.width - 130) + 'px';
+        tooltip.style.top  = Math.max(tipY - 44, 0) + 'px';
+        tooltip.classList.remove('hidden');
+      } else {
+        tooltip.classList.add('hidden');
+      }
+    });
+    canvas.addEventListener('mouseleave', () => tooltip.classList.add('hidden'));
+  },
+
+  // Returns the pill cloud HTML for the Graphs tab, grouped by metric category.
+  _pillCloudHTML(selectedKey) {
+    return this.GRAPH_METRICS.map(group => {
+      const pills = group.items.map(m =>
+        `<button class="fg-pill${m.key === selectedKey ? ' active' : ''}" data-metric="${m.key}">${m.label}</button>`
+      ).join('');
+      return `<div class="fg-pill-group">
+        <div class="fg-pill-group-label">${group.group}</div>
+        <div class="fg-pills">${pills}</div>
+      </div>`;
+    }).join('');
+  },
+
+  // Finds a metric descriptor by its histKey, falling back to the first metric.
+  _findMetric(key) {
+    for (const group of this.GRAPH_METRICS) {
+      const found = group.items.find(m => m.key === key);
+      if (found) return found;
+    }
+    return this.GRAPH_METRICS[0].items[0];
+  },
+
+  // Computes a nice Y-axis scale for the given array of values.
+  _niceScale(vals, fmt) {
+    if (fmt === 'pct') return { yMin: 0, yMax: 1 };
+    const rawMin = Math.min(...vals);
+    const rawMax = Math.max(...vals);
+    if (rawMin === rawMax) {
+      if (rawMax === 0) return { yMin: 0, yMax: 10 };
+      const half = Math.abs(rawMax) * 0.5;
+      return this._roundedBounds(Math.max(0, rawMax - half), rawMax + half);
+    }
+    return this._roundedBounds(Math.min(0, rawMin), rawMax * 1.08);
+  },
+
+  // Snaps min/max to a round step size suitable for a 5-gridline axis.
+  _roundedBounds(min, max) {
+    const range = max - min || 1;
+    const rough = range / 5;
+    const mag   = Math.pow(10, Math.floor(Math.log10(rough)));
+    const norm  = rough / mag;
+    const step  = norm < 1.5 ? mag : norm < 3 ? 2 * mag : norm < 7 ? 5 * mag : 10 * mag;
+    return { yMin: Math.floor(min / step) * step, yMax: Math.ceil(max / step) * step };
+  },
+
+  // Abbreviated value label for the Y-axis (e.g. "$12K", "34%").
+  _fmtMetricLabel(val, fmt) {
+    if (fmt === 'pct') return (val * 100).toFixed(0) + '%';
+    const abs    = Math.abs(val);
+    const prefix = fmt === '$' ? '$' : '';
+    const sign   = val < 0 ? '−' : '';
+    if (abs >= 1e6)  return sign + prefix + (abs / 1e6).toFixed(1) + 'M';
+    if (abs >= 1000) return sign + prefix + (abs / 1000).toFixed(0) + 'K';
+    return sign + prefix + abs.toFixed(0);
+  },
+
+  // Full value format for the hover tooltip.
+  _fmtMetricVal(val, fmt) {
+    if (fmt === 'pct') return (val * 100).toFixed(1) + '%';
+    if (fmt === '$')   return '$' + Math.round(val).toLocaleString();
+    return Math.round(val).toLocaleString();
+  },
+
+  // Short week-in-quarter label for the X-axis (e.g. "W3").
+  _xLabel(r) {
+    const weekOfYear = STARTING_WEEK_OF_YEAR + r.round - 1;
+    const weekInYear = ((weekOfYear - 1) % 52) + 1;
+    const quarter    = Math.ceil(weekInYear / 13);
+    const weekInQ    = weekInYear - (quarter - 1) * 13;
+    return 'W' + weekInQ;
   },
 
 };
