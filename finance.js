@@ -147,6 +147,16 @@ const Finance = {
     const securityFactor       = Unlock.SECURITY ? Math.max(0, 1 - Math.sqrt(Security.opinion) / 100) : 1;
     const messFactor           = Unlock.MESSES   ? this.calcMessFactor() : 1;
     const rawExcitement        = Math.max(0, (weeklyAttendance * effectiveRideOpinion * securityFactor * this.mealSatisfaction) / messFactor);
+
+    if (Unlock.SECURITY && securityFactor < 1) {
+      const guestCount = Math.round((1 - securityFactor) * weeklyAttendance);
+      this.feedback.push({ guestCount, comment: "Didn't feel very safe here today." });
+    }
+    if (Unlock.MESSES && messFactor > 1) {
+      const guestCount = Math.round((1 - 1 / messFactor) * weeklyAttendance);
+      this.feedback.push({ guestCount, comment: "Could use a good cleaning around here." });
+    }
+
     // Smooth excitement changes by averaging with the prior week's value.
     const smoothed             = (this.parkSatisfaction + rawExcitement) / 2;
     // Each charity's sponsorship tier contributes 1–5% excitement; charities promote the park to their audience.
