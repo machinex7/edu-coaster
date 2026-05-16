@@ -210,7 +210,13 @@ const Finance = {
 
   // Actual daily attendance is whichever is smaller: demand or gate capacity.
   calcDailyAttendance() {
-    return Math.min(this.calcDailyDemand(), this.calcGateThroughput());
+    const demand     = this.calcDailyDemand();
+    const throughput = this.calcGateThroughput();
+    const turnedAway = Math.round(Math.max(0, demand - throughput) * 7);
+    if (turnedAway > 0) {
+      this.feedback.push({ guestCount: turnedAway, comment: "The line to get in was so long, we almost didn't bother." });
+    }
+    return Math.min(demand, throughput);
   },
 
   // ── Pricing ─────────────────────────────────────────────────────────────────
@@ -705,7 +711,7 @@ const Finance = {
 
     const dailyDemand     = this.calcDailyDemand();
     const dailyThroughput = this.calcGateThroughput();
-    const daily           = Math.min(dailyDemand, dailyThroughput);
+    const daily           = this.calcDailyAttendance(); // pushes gate-line feedback as side effect
 
     this.computeRideOpinion(daily * 7); // updates rideOpinion for next round; sets lastRoundRiders
     this.processWear();               // accumulate wear then roll for breakdown
