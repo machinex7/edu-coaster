@@ -10,24 +10,12 @@ const DISCOUNT_TYPES = [
   { value: 'free',  label: 'Free Admission', costFraction: 1.00, favorBoost: 0.50 },
 ];
 
-// Each frequency entry carries its display label and how many rounds elapse between
-// applications (period: 1 = every round, 4 = roughly once a month, etc.).
-const DISCOUNT_FREQS = [
-  { value: 'weekly',   label: 'Every week',      period: 1  },
-  { value: 'biweekly', label: 'Every 2 weeks',   period: 2  },
-  { value: 'monthly',  label: 'Once a month',    period: 4  },
-  { value: 'seasonal', label: 'Once per season', period: 13 },
-];
-
-// Ordered Sun–Sat entries for the day-of-week checkbox row.
-const DISCOUNT_DAYS = [
-  { value: 'sun', short: 'Sun' },
-  { value: 'mon', short: 'Mon' },
-  { value: 'tue', short: 'Tue' },
-  { value: 'wed', short: 'Wed' },
-  { value: 'thu', short: 'Thu' },
-  { value: 'fri', short: 'Fri' },
-  { value: 'sat', short: 'Sat' },
+// Schedule options combine day coverage and frequency into one choice.
+// dayMult is the fraction of the week the discount covers; period is rounds between activations.
+const DISCOUNT_SCHEDULES = [
+  { value: 'weekends', label: 'Weekends',        period: 1, dayMult: 2 / 7 },
+  { value: 'weekdays', label: 'Weekdays',        period: 1, dayMult: 5 / 7 },
+  { value: 'monthly',  label: 'One Day a Month', period: 4, dayMult: 1 / 7 },
 ];
 
 const Discounts = {
@@ -67,12 +55,12 @@ const Discounts = {
     return boost;
   },
 
-  // Returns true if rule should apply this round based on its frequency.
+  // Returns true if rule should apply this round based on its schedule's period.
   // Uses (round - roundCreated) % period so the rule fires on the round it was
   // created and then repeats at the correct cadence from that anchor point.
   isActiveThisRound(rule) {
-    const period = DISCOUNT_FREQS.find(f => f.value === rule.freq)?.period ?? 1;
-    return (round - rule.roundCreated) % period === 0;
+    const sched = DISCOUNT_SCHEDULES.find(s => s.value === rule.schedule) ?? DISCOUNT_SCHEDULES[0];
+    return (round - rule.roundCreated) % sched.period === 0;
   },
 
   // Calculates the total gate revenue lost this round across all discount rules.
@@ -95,11 +83,11 @@ const Discounts = {
       const bracket = brackets.find(b => b.name === rule.bracketName);
       if (!bracket) continue;
 
-      const dayMultiplier = rule.days.length / 7;
-      const fraction      = (bracket.chance * bracket.favor) / totalWeight;
-      const affected      = weeklyAttendance * fraction;
-      const costFraction  = DISCOUNT_TYPES.find(t => t.value === rule.discountType)?.costFraction ?? 0;
-      const cost          = Math.round(affected * gatePrice * costFraction * dayMultiplier);
+      const sched        = DISCOUNT_SCHEDULES.find(s => s.value === rule.schedule) ?? DISCOUNT_SCHEDULES[0];
+      const fraction     = (bracket.chance * bracket.favor) / totalWeight;
+      const affected     = weeklyAttendance * fraction;
+      const costFraction = DISCOUNT_TYPES.find(t => t.value === rule.discountType)?.costFraction ?? 0;
+      const cost         = Math.round(affected * gatePrice * costFraction * sched.dayMult);
 
       rule.moneyLost += cost;
       totalCost      += cost;
@@ -162,15 +150,8 @@ const Discounts = {
     const firstCat = this.DEMO_CATEGORIES[0];
     const brackets = this._bracketsFor(firstCat);
 
-    const dayChips = DISCOUNT_DAYS.map(d =>
-      `<label class="day-chip">
-        <input type="checkbox" name="df-day" value="${d.value}">
-        <span>${d.short}</span>
-      </label>`
-    ).join('');
-
-    const freqOpts = DISCOUNT_FREQS.map(f =>
-      `<option value="${f.value}">${f.label}</option>`
+    const schedOpts = DISCOUNT_SCHEDULES.map(s =>
+      `<option value="${s.value}">${s.label}</option>`
     ).join('');
 
     const typeOpts = DISCOUNT_TYPES.map(t =>
@@ -187,14 +168,10 @@ const Discounts = {
 
     return `
       <div class="posting-form discount-form" id="discount-form">
-        <div class="form-field">
-          <label>Days</label>
-          <div class="discount-day-picker">${dayChips}</div>
-        </div>
         <div class="discount-form-row">
           <div class="form-field">
-            <label>Frequency</label>
-            <select id="df-freq">${freqOpts}</select>
+            <label>Schedule</label>
+            <select id="df-schedule">${schedOpts}</select>
           </div>
           <div class="form-field">
             <label>Discount Type</label>
@@ -245,20 +222,10 @@ const Discounts = {
     });
 
     document.getElementById('df-save-btn').addEventListener('click', () => {
-      const days = Array.from(
-        document.querySelectorAll('input[name="df-day"]:checked')
-      ).map(cb => cb.value);
-
-      const freq        = document.getElementById('df-freq').value;
+      const schedule    = document.getElementById('df-schedule').value;
       const typeVal     = document.getElementById('df-type').value;
       const catKey      = document.getElementById('df-category').value;
       const bracketName = document.getElementById('df-bracket').value;
-
-      if (days.length === 0) {
-        errorEl.textContent = 'Select at least one day.';
-        errorEl.classList.remove('hidden');
-        return;
-      }
 
       const cat          = this.DEMO_CATEGORIES.find(c => c.key === catKey);
       const bracket      = cat ? (Population[cat.arrayKey] || []).find(b => b.name === bracketName) : null;
@@ -268,8 +235,7 @@ const Discounts = {
 
       this.rules.push({
         id:            this._nextId++,
-        days,
-        freq,
+        schedule,
         discountType:  discountType.value,
         discountLabel: discountType.label,
         demoKey:       catKey,
@@ -284,15 +250,9 @@ const Discounts = {
     });
   },
 
-  // Returns a short human-readable summary of which days are active.
-  _daysLabel(days) {
-    if (days.length === 7) return 'Every day';
-    return days.map(v => DISCOUNT_DAYS.find(d => d.value === v)?.short || v).join(', ');
-  },
-
   // Returns the HTML string for a single discount rule card.
   _ruleCardHtml(rule) {
-    const freqLabel = DISCOUNT_FREQS.find(f => f.value === rule.freq)?.label || rule.freq;
+    const schedLabel = DISCOUNT_SCHEDULES.find(s => s.value === rule.schedule)?.label || rule.schedule;
 
     return `
       <div class="discount-card">
@@ -305,12 +265,8 @@ const Discounts = {
             <span class="discount-detail-val">${rule.demoLabel}: ${rule.bracketName}</span>
           </div>
           <div class="discount-detail-row">
-            <span class="discount-detail-key">Days</span>
-            <span class="discount-detail-val">${this._daysLabel(rule.days)}</span>
-          </div>
-          <div class="discount-detail-row">
-            <span class="discount-detail-key">Freq</span>
-            <span class="discount-detail-val">${freqLabel}</span>
+            <span class="discount-detail-key">Schedule</span>
+            <span class="discount-detail-val">${schedLabel}</span>
           </div>
           <div class="discount-detail-row">
             <span class="discount-detail-key">Since</span>
