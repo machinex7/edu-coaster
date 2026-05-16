@@ -574,13 +574,97 @@ function processConstruction() {
 
 function completeConstruction(record) {
   record.status = STATUS.ACTIVE;
-  if (record.rideId !== undefined) record.installedRound = round;
+  if (record.rideId !== undefined) {
+    record.installedRound = round;
+    if (gameStage === STAGE.PLAY) {
+      const rideDef = rides.find(r => r.id === record.rideId);
+      const buzz = { low: 12, medium: 16, high: 20, extreme: 28 }[rideDef?.intensity] ?? 12;
+      Population.populationEvents.push({
+        modifier: buzz,
+        comment: `Visitors are buzzing about the new ${record.name}!`,
+      });
+      showRideCompleteModal(record.name, rideDef);
+    }
+  }
   for (let r = 0; r < record.footprint.length; r++) {
     for (let c = 0; c < record.footprint[r].length; c++) {
       if (record.footprint[r][c] === 1)
         gridCells[record.row + r][record.col + c].classList.remove('under-construction');
     }
   }
+}
+
+// Shows the grand-opening modal when a ride finishes construction during play.
+function showRideCompleteModal(rideName, rideDef) {
+  const modal  = document.getElementById('ride-complete-modal');
+  const nameEl = document.getElementById('rco-modal-name');
+  const flavEl = document.getElementById('rco-modal-flavor');
+  const intEl  = document.getElementById('rco-modal-intensity');
+  const btn    = document.getElementById('rco-modal-close');
+  if (!modal || !nameEl || !flavEl || !btn) return;
+
+  nameEl.textContent = rideName;
+  flavEl.textContent = rideDef?.flavor || '';
+  if (intEl) {
+    const intensity = rideDef?.intensity ?? 'low';
+    intEl.textContent = intensity.charAt(0).toUpperCase() + intensity.slice(1) + ' intensity';
+    intEl.className = `rco-intensity rco-intensity-${intensity}`;
+  }
+
+  modal.classList.remove('hidden');
+
+  const close = () => {
+    modal.classList.add('hidden');
+    btn.removeEventListener('click', close);
+    modal.removeEventListener('click', onOverlay);
+  };
+  const onOverlay = e => { if (e.target === modal) close(); };
+
+  btn.addEventListener('click', close);
+  modal.addEventListener('click', onOverlay);
+}
+
+// Extra mess per adjacent path/bridge tile generated during the Foundation construction phase.
+const FOUNDATION_MESS_PER_PATH = 2;
+
+// Returns the current construction phase descriptor for a ride record.
+// Phases are evenly divided across the build duration:
+//   foundation (0–25%), framework (25–50%), completion (50–75%), test_runs (75–100%)
+function getConstructionPhase(record) {
+  const pct = record.weeksTotal > 0 ? record.weeksCompleted / record.weeksTotal : 0;
+  if (pct < 0.25) return { phase: 'foundation', label: 'Foundation', pct };
+  if (pct < 0.50) return { phase: 'framework',  label: 'Framework',  pct };
+  if (pct < 0.75) return { phase: 'completion', label: 'Completion', pct };
+  return               { phase: 'test_runs',  label: 'Test Runs',  pct };
+}
+
+// Counts unique path/bridge tiles adjacent (4-directional) to a ride's footprint.
+// Used during Foundation phase to compute extra construction debris mess.
+function countAdjacentPathBridgeTiles(record) {
+  const seen = new Set();
+  for (let r = 0; r < record.footprint.length; r++) {
+    for (let c = 0; c < record.footprint[r].length; c++) {
+      if (!record.footprint[r][c]) continue;
+      const gr = record.row + r;
+      const gc = record.col + c;
+      for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+        const nr = gr + dr;
+        const nc = gc + dc;
+        if (nr < 0 || nr >= GRID_ROWS || nc < 0 || nc >= GRID_COLS) continue;
+        const key = `${nr},${nc}`;
+        if (seen.has(key)) continue;
+        // Skip cells that are still inside the ride's own footprint.
+        if (record.footprint[nr - record.row]?.[nc - record.col]) continue;
+        const id = gridState[nr][nc];
+        if (!id) continue;
+        const fac = installedFacilities.find(f => f.instanceId === id);
+        if (fac && (fac.facilityId === FACILITY_ID.PATH || fac.facilityId === FACILITY_ID.BRIDGE)) {
+          seen.add(key);
+        }
+      }
+    }
+  }
+  return seen.size;
 }
 
 function pauseRideConstruction(instanceId) {

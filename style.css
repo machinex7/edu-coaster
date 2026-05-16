@@ -605,6 +605,381 @@ header h1 {
   text-align: justify;
 }
 
+/* ── Construction slot (notification-stack banner) ── */
+#construction-slot {
+  pointer-events: all;
+  background: #0c1a2e;
+  border: 1px solid #1d4ed8;
+  border-left: 3px solid #60a5fa;
+  border-radius: 8px;
+  padding: 10px 14px;
+  min-width: 180px;
+  max-width: 260px;
+  cursor: pointer;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.55);
+  transition: background 0.12s;
+  user-select: none;
+}
+
+#construction-slot:hover { background: #172a4a; }
+
+.con-slot-label {
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #3b82f6;
+  margin-bottom: 4px;
+}
+
+.con-slot-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #93c5fd;
+  margin-bottom: 3px;
+}
+
+.con-slot-subtitle {
+  font-size: 0.72rem;
+  color: #3b82f6;
+}
+
+/* ── Ride grand-opening modal ── */
+.rco-modal-card {
+  position: relative;
+  background: #12090a;
+  border: 1px solid #d97706;
+  border-radius: 4px;
+  padding: 28px 36px 28px;
+  width: 420px;
+  max-width: calc(100vw - 32px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  box-shadow: 0 0 40px rgba(217, 119, 6, 0.3), 0 0 80px rgba(217, 119, 6, 0.08), inset 0 0 60px rgba(217, 119, 6, 0.03);
+  overflow: hidden;
+}
+
+.rco-modal-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(217, 119, 6, 0.025) 3px,
+    rgba(217, 119, 6, 0.025) 4px
+  );
+  pointer-events: none;
+}
+
+.rco-corner {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-color: #d97706;
+  border-style: solid;
+}
+.rco-corner-tl { top: 6px; left: 6px;  border-width: 2px 0 0 2px; }
+.rco-corner-tr { top: 6px; right: 6px; border-width: 2px 2px 0 0; }
+.rco-corner-bl { bottom: 6px; left: 6px;  border-width: 0 0 2px 2px; }
+.rco-corner-br { bottom: 6px; right: 6px; border-width: 0 2px 2px 0; }
+
+/* Decorative stars row */
+.rco-stars {
+  display: flex;
+  gap: 10px;
+  color: #fbbf24;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  margin-bottom: 10px;
+  opacity: 0.7;
+}
+
+.rco-header {
+  margin-bottom: 14px;
+}
+
+.rco-label {
+  font-family: 'Courier New', monospace;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #fbbf24;
+}
+
+.rco-name {
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #fef3c7;
+  text-align: center;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  margin-bottom: 10px;
+  text-shadow: 0 0 24px rgba(251, 191, 36, 0.4);
+}
+
+/* Intensity badge — colour varies by ride intensity */
+.rco-intensity {
+  font-family: 'Courier New', monospace;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 2px 10px;
+  border-radius: 20px;
+  border: 1px solid currentColor;
+  margin-bottom: 14px;
+}
+.rco-intensity-low      { color: #4ade80; }
+.rco-intensity-medium   { color: #fbbf24; }
+.rco-intensity-high     { color: #fb923c; }
+.rco-intensity-extreme  { color: #f87171; }
+
+.rco-divider-line {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #d97706, transparent);
+  margin-bottom: 16px;
+}
+
+.rco-flavor {
+  font-size: 0.83rem;
+  color: #a8a29e;
+  text-align: center;
+  line-height: 1.65;
+  margin-bottom: 24px;
+  font-style: italic;
+}
+
+.rco-btn {
+  width: 100%;
+  padding: 11px;
+  background: transparent;
+  border: 1px solid #d97706;
+  border-radius: 3px;
+  color: #fbbf24;
+  font-family: 'Courier New', monospace;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.rco-btn:hover {
+  background: #d97706;
+  color: #12090a;
+  box-shadow: 0 0 16px rgba(217, 119, 6, 0.5);
+}
+
+/* ── Research completion modal ── */
+.rc-modal-card {
+  position: relative;
+  background: #050d1a;
+  border: 1px solid #0ea5e9;
+  border-radius: 4px;
+  padding: 32px 36px 28px;
+  width: 420px;
+  max-width: calc(100vw - 32px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  box-shadow: 0 0 40px rgba(14, 165, 233, 0.25), 0 0 80px rgba(14, 165, 233, 0.08), inset 0 0 60px rgba(14, 165, 233, 0.03);
+  overflow: hidden;
+}
+
+/* Animated scan-line shimmer across the card */
+.rc-modal-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 3px,
+    rgba(14, 165, 233, 0.03) 3px,
+    rgba(14, 165, 233, 0.03) 4px
+  );
+  pointer-events: none;
+}
+
+/* Corner bracket decorations */
+.rc-corner {
+  position: absolute;
+  width: 12px;
+  height: 12px;
+  border-color: #0ea5e9;
+  border-style: solid;
+}
+.rc-corner-tl { top: 6px; left: 6px;  border-width: 2px 0 0 2px; }
+.rc-corner-tr { top: 6px; right: 6px; border-width: 2px 2px 0 0; }
+.rc-corner-bl { bottom: 6px; left: 6px;  border-width: 0 0 2px 2px; }
+.rc-corner-br { bottom: 6px; right: 6px; border-width: 0 2px 2px 0; }
+
+.rc-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 20px;
+}
+
+.rc-division {
+  font-family: 'Courier New', monospace;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #0ea5e9;
+}
+
+.rc-status-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.rc-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #4ade80;
+  box-shadow: 0 0 6px #4ade80;
+  animation: rc-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes rc-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
+}
+
+.rc-status-label {
+  font-family: 'Courier New', monospace;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #4ade80;
+}
+
+/* Atom spinner */
+.rc-icon-row {
+  margin-bottom: 16px;
+}
+
+.rc-atom {
+  position: relative;
+  width: 56px;
+  height: 56px;
+}
+
+.rc-atom-nucleus {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #0ea5e9;
+  box-shadow: 0 0 10px #0ea5e9, 0 0 20px rgba(14, 165, 233, 0.5);
+}
+
+.rc-atom-orbit {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  border: 1px solid rgba(14, 165, 233, 0.5);
+  border-radius: 50%;
+  animation: rc-orbit linear infinite;
+}
+
+.rc-orbit-1 {
+  width: 30px; height: 30px;
+  margin: -15px 0 0 -15px;
+  animation-duration: 1.8s;
+  transform-origin: center;
+  border-top-color: #0ea5e9;
+}
+
+.rc-orbit-2 {
+  width: 46px; height: 46px;
+  margin: -23px 0 0 -23px;
+  animation-duration: 2.8s;
+  animation-direction: reverse;
+  border-right-color: #38bdf8;
+}
+
+.rc-orbit-3 {
+  width: 56px; height: 56px;
+  margin: -28px 0 0 -28px;
+  animation-duration: 4s;
+  border-bottom-color: #7dd3fc;
+}
+
+@keyframes rc-orbit {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.rc-name {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #f0f9ff;
+  text-align: center;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+  margin-bottom: 14px;
+  text-shadow: 0 0 20px rgba(14, 165, 233, 0.4);
+}
+
+.rc-divider-line {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #0ea5e9, transparent);
+  margin-bottom: 16px;
+}
+
+.rc-flavor {
+  font-size: 0.83rem;
+  color: #94a3b8;
+  text-align: center;
+  line-height: 1.65;
+  margin-bottom: 24px;
+  font-style: italic;
+}
+
+.rc-btn {
+  width: 100%;
+  padding: 11px;
+  background: transparent;
+  border: 1px solid #0ea5e9;
+  border-radius: 3px;
+  color: #0ea5e9;
+  font-family: 'Courier New', monospace;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s, box-shadow 0.15s;
+}
+
+.rc-btn:hover {
+  background: #0ea5e9;
+  color: #050d1a;
+  box-shadow: 0 0 16px rgba(14, 165, 233, 0.5);
+}
+
 /* ── Notification stack ── */
 #notification-stack {
   position: fixed;
@@ -767,4 +1142,10 @@ header h1 {
 .achievement-pill:hover {
   background: #2563eb;
   color: #fff;
+}
+
+/* Radial progress ring inside achievement pills. */
+.pill-ring {
+  flex-shrink: 0;
+  display: block;
 }

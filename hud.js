@@ -452,21 +452,9 @@ function updateAchievementIndicators() {
       const wksLabel = wks === Infinity
         ? 'No researchers'
         : `${wks} wk${wks !== 1 ? 's' : ''}`;
-      pills.push({ icon: '🔬', text: `${item.name}: ${wksLabel}`, panel: 'research' });
+      const spent = Research.progress[item.id] || 0;
+      pills.push({ icon: '🔬', text: `${item.name}: ${wksLabel}`, panel: 'research', pct: item.cost > 0 ? spent / item.cost : 0 });
     }
-  }
-
-  // Find the actively-building item (not paused) closest to completion.
-  const allInstalled = [...installedRides, ...installedFacilities, ...Shopping.installed];
-  const building = allInstalled
-    .filter(r => r.status === STATUS.UNDER_CONSTRUCTION)
-    .map(r => ({ record: r, weeksLeft: r.weeksTotal - r.weeksCompleted }))
-    .sort((a, b) => a.weeksLeft - b.weeksLeft)[0];
-
-  if (building) {
-    const wks = building.weeksLeft;
-    const wksLabel = `${wks} wk${wks !== 1 ? 's' : ''}`;
-    pills.push({ icon: '🏗️', text: `${building.record.name}: ${wksLabel}`, panel: 'rides' });
   }
 
   // Show a pill when a loan is in the final review stage (cash incoming).
@@ -484,12 +472,123 @@ function updateAchievementIndicators() {
   }
 
   container.innerHTML = pills
-    .map(p => `<button class="achievement-pill" data-panel="${p.panel}">${p.icon} ${p.text}</button>`)
+    .map(p => {
+      let ringHtml = '';
+      if (p.pct != null) {
+        const r   = 6;
+        const circ = 2 * Math.PI * r;
+        const offset = circ * (1 - Math.min(1, Math.max(0, p.pct)));
+        ringHtml = `<svg class="pill-ring" width="18" height="18" viewBox="0 0 18 18" aria-hidden="true">
+          <circle cx="9" cy="9" r="${r}" fill="none" stroke="rgba(59,130,246,0.25)" stroke-width="2.5"/>
+          <circle cx="9" cy="9" r="${r}" fill="none" stroke="#60a5fa" stroke-width="2.5"
+            stroke-dasharray="${circ.toFixed(2)}" stroke-dashoffset="${offset.toFixed(2)}"
+            transform="rotate(-90 9 9)" stroke-linecap="round"/>
+        </svg>`;
+      }
+      return `<button class="achievement-pill" data-panel="${p.panel}">${ringHtml}${p.icon} ${p.text}</button>`;
+    })
     .join('');
 
   container.querySelectorAll('.achievement-pill').forEach(btn => {
     btn.addEventListener('click', () => openPanel(btn.dataset.panel));
   });
+
+  updateConstructionSlot();
+}
+
+// Updates the #construction-slot banner for the ride closest to completion.
+// Hidden when no rides are under construction; mirrors the incident slot pattern.
+function updateConstructionSlot() {
+  const slot = document.getElementById('construction-slot');
+  if (!slot) return;
+
+  const building = installedRides
+    .filter(r => r.status === STATUS.UNDER_CONSTRUCTION)
+    .map(r => ({ record: r, weeksLeft: r.weeksTotal - r.weeksCompleted }))
+    .sort((a, b) => a.weeksLeft - b.weeksLeft)[0];
+
+  if (!building) {
+    slot.classList.add('hidden');
+    return;
+  }
+
+  const { record, weeksLeft } = building;
+  const { label } = getConstructionPhase(record);
+  slot.classList.remove('hidden');
+  slot.innerHTML = `
+    <div class="con-slot-label">Under Construction</div>
+    <div class="con-slot-title">
+      <span>🏗️</span>
+      <span>${record.name}</span>
+    </div>
+    <div class="con-slot-subtitle">${label} &bull; ${weeksLeft} wk${weeksLeft !== 1 ? 's' : ''} left</div>
+  `;
+  slot.onclick = () => openConstructionModal(record);
+}
+
+// Opens the construction site-report modal for the given ride record.
+function openConstructionModal(record) {
+  const modal = document.getElementById('construction-modal');
+  const body  = document.getElementById('construction-modal-body');
+  if (!modal || !body) return;
+
+  const { phase, label, pct } = getConstructionPhase(record);
+  const weeksLeft = record.weeksTotal - record.weeksCompleted;
+
+  const PHASE_FLAVOR = {
+    foundation: 'Excavators and groundwork crews have broken ground. The footprint is being prepared with foundations, drainage, and underground utilities. Expect dust and debris on adjacent paths while this phase is underway.',
+    framework:  'The structural skeleton is rising. Steel and timber frames are taking shape above the treeline, giving curious visitors their first real glimpse of what\'s coming. Construction noise is at its peak.',
+    completion: 'Finishing crews are working through the site — paint, lighting rigs, signage, seat assemblies, and safety restraint systems. The ride looks increasingly like the renders. It\'s almost time.',
+    test_runs:  'The machinery is live. The ride is cycling with sandbag passengers while engineers make final calibrations and safety checks. Visitors are already gathering at the fence to watch.',
+  };
+
+  const PHASE_EFFECTS = {
+    foundation: 'Generates extra debris mess on adjacent path tiles while this phase lasts.',
+    framework:  null,
+    completion: null,
+    test_runs:  '+4% visitor demand from curious onlookers gathering at the fence.',
+  };
+
+  const r    = 15;
+  const circ = +(2 * Math.PI * r).toFixed(2);
+  const off  = +(circ * (1 - Math.min(1, pct))).toFixed(2);
+  const ringHtml = `<svg class="con-modal-ring-svg" width="48" height="48" viewBox="0 0 48 48" aria-hidden="true">
+    <circle cx="24" cy="24" r="${r}" fill="none" stroke="rgba(245,158,11,0.2)" stroke-width="3.5"/>
+    <circle cx="24" cy="24" r="${r}" fill="none" stroke="#f59e0b" stroke-width="3.5"
+      stroke-dasharray="${circ}" stroke-dashoffset="${off}"
+      transform="rotate(-90 24 24)" stroke-linecap="round"/>
+    <text x="24" y="28" text-anchor="middle" fill="#fbbf24" font-size="9" font-family="monospace" font-weight="bold">${Math.round(pct * 100)}%</text>
+  </svg>`;
+
+  const effectHtml = PHASE_EFFECTS[phase]
+    ? `<div class="con-modal-effect"><span class="con-modal-effect-icon">⚠</span>${PHASE_EFFECTS[phase]}</div>`
+    : '';
+
+  body.innerHTML = `
+    <div class="con-modal-header">
+      <div class="con-modal-ring">${ringHtml}</div>
+      <div class="con-modal-header-text">
+        <div class="con-modal-ride-name">${record.name}</div>
+        <div class="con-modal-phase-badge con-phase-${phase}">${label}</div>
+        <div class="con-modal-countdown">${weeksLeft} week${weeksLeft !== 1 ? 's' : ''} remaining</div>
+      </div>
+    </div>
+    <div class="modal-divider"></div>
+    <div class="con-modal-flavor">${PHASE_FLAVOR[phase]}</div>
+    ${effectHtml}
+  `;
+
+  modal.classList.remove('hidden');
+
+  const btn = document.getElementById('construction-modal-close');
+  const close = () => {
+    modal.classList.add('hidden');
+    btn?.removeEventListener('click', close);
+    modal.removeEventListener('click', onOverlay);
+  };
+  const onOverlay = e => { if (e.target === modal) close(); };
+  btn?.addEventListener('click', close);
+  modal.addEventListener('click', onOverlay);
 }
 
 function updateHUD() {

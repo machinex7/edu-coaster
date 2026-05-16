@@ -3,6 +3,7 @@
     "id": "quarterly_survey_results",
     "name": "Quarterly Survey Results",
     "description": "Compile survey responses into trend-focused quarterly reports with demographic breakdowns.",
+    "flavor": "Raw data is just noise. This initiative processes your survey responses into structured quarterly reports, revealing satisfaction trends and demographic patterns that gut instinct would never catch. Knowledge is power — and now you have both.",
     "cost": 6,
     "requires": []
   },
@@ -10,6 +11,7 @@
     "id": "demographic_survey",
     "name": "Demographic Surveys",
     "description": "Add optional demographic questions to your surveys. Each question you include reveals more about a visitor segment but lowers the response rate — respondents are less likely to complete a longer survey.",
+    "flavor": "Who exactly is walking through your gates? This research lets you ask. Each demographic question you add peels back another layer of the visitor onion — age, income, household size — but every extra question tests the patience of survey-takers. Precision has a cost.",
     "cost": 6,
     "requires": []
   },
@@ -17,6 +19,7 @@
     "id": "survey_coupon_incentive",
     "name": "Coupon Surveys",
     "description": "Offer a discount coupon as a survey incentive. Raises response rates to 25% at $2/survey.",
+    "flavor": "Science confirms what marketers have always known: people will do almost anything for a discount. By attaching a coupon to each completed survey, response rates jump to 25%. It costs $2 per survey, but the data intelligence you gain is worth far more.",
     "cost": 6,
     "requires": ["quarterly_survey_results"]
   },
@@ -24,6 +27,7 @@
     "id": "survey_prize_incentive",
     "name": "Prize Entry Surveys",
     "description": "Offer a prize entry as a survey incentive. Raises response rates to 35% at $3/survey.",
+    "flavor": "The lottery effect is real: the mere possibility of winning dramatically changes human behavior. Prize entry surveys push response rates to an industry-leading 35%. At $3 per survey you're paying more, but the sample size is now statistically significant enough to trust.",
     "cost": 8,
     "requires": ["survey_coupon_incentive"]
   },
@@ -31,6 +35,7 @@
     "id": "weather_sensor",
     "name": "Weather Sensor",
     "description": "Install an on-site weather sensor to generate short-range forecasts. Provides a 1-week attendance outlook.",
+    "flavor": "A barometer, a thermometer, and a humidity gauge walk into a theme park. The result: your first real-time atmospheric reading station. The sensor talks directly to your operations dashboard, giving you a one-week attendance outlook so you can prepare for sunny windfalls — or rainy write-offs.",
     "cost": 6,
     "requires": []
   },
@@ -38,6 +43,7 @@
     "id": "weather_station",
     "name": "Weather Station",
     "description": "Upgrade to a full weather station with extended modelling. Extends the forecast window to 2 weeks.",
+    "flavor": "Doppler radar. Atmospheric pressure analysis. Numerical weather prediction models. Your humble sensor has evolved into a proper meteorological installation, pushing forecast accuracy out to two full weeks. You'll see the storm — or the sunshine — coming from a mile away.",
     "cost": 10,
     "requires": ["weather_sensor"]
   },
@@ -45,6 +51,7 @@
     "id": "demographic_population",
     "name": "Population Census Data",
     "description": "Commission a regional demographic study to reveal the true population size of each visitor segment. Unlocks population counts in the Visitor Profile.",
+    "flavor": "You've been estimating your market in percentages, but percentages of what? This census commission answers that question with hard numbers: exact population counts for every visitor segment in your regional draw area. Now you can calculate true market penetration — and see exactly how much growth potential remains.",
     "cost": 6,
     "requires": []
   },
@@ -52,6 +59,7 @@
     "id": "demographic_segmentation_display",
     "name": "Demographic Segmentation Display",
     "description": "Restructure visitor profile charts so icons are grouped by sentiment: unfavorable (red) first, unknown (grey) in the middle, and favorable (green) last. Makes the health of each segment instantly scannable.",
+    "flavor": "Information architecture is its own discipline. By reorganizing visitor icons into sentiment-based clusters — red skeptics on the left, grey unknowns in the center, green supporters on the right — your Visitor Profile becomes scannable in seconds. The data hasn't changed; your ability to act on it has.",
     "cost": 4,
     "requires": ["demographic_population"]
   },
@@ -59,6 +67,7 @@
     "id": "parking_fees",
     "name": "Parking Fees",
     "description": "Establish a paid parking program. Unlocks the Parking panel where you can set per-vehicle fees and track how pricing affects visitor attendance and in-park spending.",
+    "flavor": "The humble parking lot: prime real estate that's been giving away value for free. Establishing a paid parking program transforms asphalt into a revenue stream. Price it too high and visitors reconsider the trip; price it right and you've found money that was always there.",
     "cost": 5,
     "requires": []
   },
@@ -66,6 +75,7 @@
     "id": "parking_lot_amenities",
     "name": "Parking Lot Amenities",
     "description": "Invest in the parking experience with music, art, and murals. Each one-time purchase permanently raises the fee threshold at which visitors start to feel overcharged.",
+    "flavor": "First impressions are formed in the parking lot. Music piped through outdoor speakers, murals on the retaining walls, and sculptural way-finding art don't just make the lot prettier — they shift the psychological anchor point at which visitors decide your fees are 'too much.' Perceived value is engineered, not discovered.",
     "cost": 4,
     "requires": ["parking_fees"]
   },
@@ -73,14 +83,15 @@
     "id": "bus_service",
     "name": "Bus Service",
     "description": "Run a free shuttle bus from distant pick-up points. Visitors priced out of parking who would have skipped the trip take the bus instead, paying full gate admission and spending normally inside. Costs a weekly operating fee.",
+    "flavor": "Not every visitor owns a car, and not every car owner can absorb a parking fee. The shuttle bus program closes that gap: a free ride from regional pick-up points converts would-be no-shows into paying guests who spend normally inside the park. You absorb the operating cost; they deliver the gate revenue.",
     "cost": 6,
     "requires": ["parking_fees"]
   },
-
   {
     "id": "employee_benefits",
     "name": "Employee Benefits",
     "description": "Establish a formal benefits program. Prerequisite for all staff benefit research.",
+    "flavor": "A salary gets someone in the door. Benefits keep them there. Establishing a formal benefits framework is the foundation on which every subsequent HR initiative will be built — without it, there's nothing to hang parental leave, retirement plans, or health coverage on. Consider this the infrastructure layer of your human capital stack.",
     "cost": 6,
     "feature": "STAFFING",
     "requires": []
@@ -89,6 +100,7 @@
     "id": "parental_leave",
     "name": "Parental Leave",
     "description": "Offer paid parental leave to staff. Improves employee retention and morale.",
+    "flavor": "Research across industries is unambiguous: organizations that support employees through major life events earn loyalty that no salary bump can buy. Paid parental leave signals that the park treats staff as whole people. Retention improves, morale rises, and your recruiting pitch gets a lot more compelling.",
     "cost": 8,
     "feature": "STAFFING",
     "requires": ["employee_benefits"]
@@ -97,6 +109,7 @@
     "id": "401k",
     "name": "401k",
     "description": "Provide a 401k retirement plan. Improves long-term staff retention.",
+    "flavor": "Compound interest: the only force in finance Albert Einstein allegedly called the eighth wonder of the world. Whether he said it or not, the math checks out — and your employees know it. A 401k retirement plan gives staff a concrete reason to think about their future here rather than somewhere else.",
     "cost": 8,
     "feature": "STAFFING",
     "requires": ["employee_benefits"]
@@ -105,6 +118,7 @@
     "id": "medical_coverage",
     "name": "Medical Coverage",
     "description": "Offer employer-sponsored health insurance. Significantly boosts staff morale and reduces turnover.",
+    "flavor": "Healthcare costs are the single largest driver of personal financial anxiety for working adults. When your park absorbs that burden through employer-sponsored insurance, it removes a stress that nothing else in the compensation package can. The morale lift is significant and the turnover drop is measurable.",
     "cost": 12,
     "feature": "STAFFING",
     "requires": ["401k"]
@@ -113,6 +127,7 @@
     "id": "wash_hands_policy",
     "name": "Wash Hands Policy",
     "description": "Mandate handwashing procedures and post hygiene reminders throughout staff areas. Cuts the staff sickness rate in half.",
+    "flavor": "Ignaz Semmelweis proved in 1847 that handwashing saves lives — and was largely ignored for it. You will not make the same mistake. Mandatory handwashing protocols and hygiene signage throughout staff areas cut illness transmission rates dramatically. The sickness rate among your team drops by half. Sometimes the most advanced solution is soap.",
     "cost": 6,
     "feature": "STAFFING",
     "requires": ["employee_benefits"]
@@ -121,33 +136,34 @@
     "id": "workplace_safety_protocols",
     "name": "Workplace Safety Protocols",
     "description": "Introduce formal safety training, equipment checks, and incident reporting procedures. Cuts the staff injury rate in half.",
+    "flavor": "Workplace injuries aren't random — they follow patterns that formal safety systems are designed to interrupt. Structured training sessions, pre-shift equipment inspections, and a clear incident reporting chain create a feedback loop that catches hazards before they become harm. Your staff injury rate is cut in half.",
     "cost": 8,
     "feature": "STAFFING",
     "requires": ["employee_benefits"]
   },
-
   {
     "id": "bulk_ordering",
     "name": "Bulk Ordering",
     "description": "Negotiate volume purchasing agreements with suppliers. Unlocks the +100 unit order size for merchandise restocking.",
+    "flavor": "Economies of scale: the principle that doing more of something makes each unit of it cheaper. By negotiating volume purchasing agreements with your merchandise suppliers, you unlock the 100-unit order tier — larger batches, better per-unit margins, and fewer frantic restock runs when a souvenir goes viral.",
     "cost": 6,
     "feature": "MERCHANDISE",
     "requires": []
   },
-
   {
     "id": "license_plate_monitoring",
     "name": "License Plate Monitoring",
     "description": "Cross-reference parking data with regional records to estimate visitor origin and repeat visit rates.",
+    "flavor": "Every vehicle in your parking lot is a data point waiting to be read. By cross-referencing license plates against regional records, you can triangulate where your visitors are coming from and how often they return. Origin data sharpens your marketing radius; repeat visit rates tell you whether your park is a destination or a one-time curiosity.",
     "cost": 8,
     "feature": "SECURITY",
     "requires": []
   },
-
   {
     "id": "mkt_emotional_messaging",
     "name": "Emotional Messaging",
     "description": "Train your team to craft emotionally resonant campaigns. Unlocks the Emotional message type.",
+    "flavor": "Decades of neuroscience back it up: purchasing decisions are emotional first and rational second. Training your team in emotional messaging means learning to tell stories that activate memory, nostalgia, excitement, and belonging — not just listing amenities. When a campaign makes someone feel something, it's already halfway to a conversion.",
     "cost": 4,
     "feature": "MARKETING",
     "requires": []
@@ -156,6 +172,7 @@
     "id": "mkt_household_targeting",
     "name": "Household Segmentation",
     "description": "Analyze campaigns by household size to reach families and couples more effectively. Unlocks Household as a demographic axis.",
+    "flavor": "A solo traveler, a couple, and a family of five do not visit a theme park for the same reasons — and they absolutely should not receive the same advertisement. Household segmentation lets you carve the market along this axis, calibrating messaging and channel selection to where each group actually lives and what they actually want.",
     "cost": 4,
     "feature": "MARKETING",
     "requires": ["mkt_emotional_messaging"]
@@ -164,6 +181,7 @@
     "id": "mkt_urgency_messaging",
     "name": "Urgency Marketing",
     "description": "Design time-limited campaigns that drive immediate action. Unlocks the Urgency-Driven message type.",
+    "flavor": "FOMO — the Fear Of Missing Out — is not a character flaw; it's a documented cognitive bias your marketing team can now weaponize ethically. Time-limited offers and countdown-based campaigns convert browsers into buyers by closing the gap between 'I should go sometime' and 'I need to book this weekend.' Urgency is manufactured. Results are real.",
     "cost": 6,
     "feature": "MARKETING",
     "requires": ["mkt_household_targeting"]
@@ -172,6 +190,7 @@
     "id": "mkt_distance_targeting",
     "name": "Geographic Reach Analysis",
     "description": "Segment your market by travel distance to calibrate regional advertising spend. Unlocks Distance as a demographic axis.",
+    "flavor": "Distance is a filter, not just a variable. A visitor ninety minutes away needs a different pitch — and a different media buy — than one who lives twenty minutes from your gate. Geographic reach analysis maps your draw area into concentric zones, letting you allocate advertising spend where the conversion potential per dollar is highest.",
     "cost": 6,
     "feature": "MARKETING",
     "requires": ["mkt_urgency_messaging"]
@@ -180,6 +199,7 @@
     "id": "mkt_celebrity_hook",
     "name": "Celebrity Partnerships",
     "description": "Build industry relationships needed to negotiate celebrity endorsements. Unlocks Celebrity Cameo as a campaign hook.",
+    "flavor": "Parasocial trust is the most powerful force in modern marketing. When a face that millions follow tells those millions that your park is worth visiting, the signal cuts through noise that no amount of conventional advertising can penetrate. This research builds the industry relationships and legal frameworks needed to negotiate and execute celebrity partnerships at scale.",
     "cost": 8,
     "feature": "MARKETING",
     "requires": ["mkt_distance_targeting"]
@@ -188,6 +208,7 @@
     "id": "mkt_area_targeting",
     "name": "Urban/Rural Segmentation",
     "description": "Tailor campaigns to urban and rural audiences with different travel and leisure habits. Unlocks Area as a demographic axis.",
+    "flavor": "Urban and rural audiences don't just live in different places — they have structurally different relationships with leisure, travel, and discretionary spending. Urban visitors want escapism; rural visitors often seek the specific amenities that aren't local to them. Segmenting by area lets your campaigns speak to each group's actual motivation rather than a blended average of both.",
     "cost": 8,
     "feature": "MARKETING",
     "requires": ["mkt_celebrity_hook"]
