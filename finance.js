@@ -113,6 +113,12 @@ const Finance = {
     ).length;
     const testRunsFactor    = 1 + testRunsCount * 0.04;
     const result            = base * eventFactor * demandMultiplier * weatherFactor * incidentFactor * testRunsFactor;
+
+    if (weatherFactor < 1) {
+      const guestCount = Math.round((1 - weatherFactor) * result);
+      this.feedback.push({ guestCount, comment: "Wish the weather was better today!" });
+    }
+
     console.log(
       '[demand]',
       'excitement:', this.parkSatisfaction.toFixed(2),
