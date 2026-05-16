@@ -1017,6 +1017,21 @@ Trash is drawn before people dots; coins are drawn last (on top of everything). 
 | `TRASH_RADIUS` | 3 px | Starting radius of a trash piece |
 | `TRASH_DURATION` | 2000 ms | Time for trash to shrink away |
 
+### Speech bubbles (feedback)
+
+`Finance.feedback` is an array of `{ guestCount, comment }` objects. It is cleared at the start of every `processRound()` and populated by various parts of the simulation whenever a notable condition affects visitors. Each entry represents a number of affected guests and a natural-language comment they might overhear.
+
+Every ~20 seconds (±5 s jitter) while the park is in Play view mode, `Animations._triggerBubble()` fires. It picks one feedback item from `Finance.feedback` using weighted-random selection (weight = `guestCount`), then attaches a speech bubble to a random walking visitor sprite. The bubble follows the person for **5 seconds**, fading in over 300 ms and out over 500 ms, then disappears. Only one bubble is shown at a time.
+
+Bubbles are drawn on the `#people-overlay` canvas, above coins, using a rounded-rectangle body with a downward-pointing tail. Long comments word-wrap at 160 px.
+
+### Key constants (feedback bubbles)
+
+| Constant | Value | Effect |
+|---|---|---|
+| `BUBBLE_INTERVAL` | 20 000 ms | Base delay between bubble triggers (±5 s jitter) |
+| `BUBBLE_DURATION` | 5 000 ms | How long each bubble stays visible |
+
 ---
 
 ## Rides panel (master-detail)

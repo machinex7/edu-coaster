@@ -23,6 +23,12 @@ const Animations = {
   // Milliseconds between gate spawns.
   SPAWN_INTERVAL: 3000,
 
+  // Milliseconds between feedback bubble triggers (±5 s jitter applied).
+  BUBBLE_INTERVAL: 20000,
+
+  // Milliseconds a feedback bubble stays visible.
+  BUBBLE_DURATION: 5000,
+
   // Number of destinations a visitor makes before returning to the gate.
   MAX_STOPS: 6,
 
@@ -52,15 +58,19 @@ const Animations = {
   // Each entry: { x, y, vy, age, maxAge }.
   coins: [],
 
+  // Active speech bubbles: { personRef, lastX, lastY, comment, age, maxAge }.
+  bubbles: [],
+
   // Canvas overlay element and 2-D context.
   canvas: null,
   ctx:    null,
 
   // Internal handles and counters.
-  _spawnTimer: null,
-  _animFrame:  null,
-  _lastTime:   null,
-  _nextId:     0,
+  _spawnTimer:  null,
+  _animFrame:   null,
+  _lastTime:    null,
+  _nextId:      0,
+  _bubbleTimer: null,
 
   // ── initialisation ───────────────────────────────────────────────────────
 
@@ -84,6 +94,7 @@ const Animations = {
       this._lastTime  = null;
       this._animFrame = requestAnimationFrame(t => this._tick(t));
     }
+    if (!this._bubbleTimer) this._scheduleBubble();
   },
 
   // Stops the gate spawn timer. Sprites already in-flight finish naturally.
@@ -91,6 +102,10 @@ const Animations = {
     if (this._spawnTimer) {
       clearInterval(this._spawnTimer);
       this._spawnTimer = null;
+    }
+    if (this._bubbleTimer) {
+      clearTimeout(this._bubbleTimer);
+      this._bubbleTimer = null;
     }
   },
 
@@ -283,6 +298,112 @@ const Animations = {
     this._despawn(person);
   },
 
+  // ── feedback speech bubbles ──────────────────────────────────────────────
+
+  // Weighted-random pick from Finance.feedback, weighted by guestCount.
+  _pickFeedbackItem() {
+    const items = Finance.feedback;
+    if (!items || items.length === 0) return null;
+    const total = items.reduce((s, f) => s + f.guestCount, 0);
+    let r = Math.random() * total;
+    for (const item of items) {
+      r -= item.guestCount;
+      if (r <= 0) return item;
+    }
+    return items[items.length - 1];
+  },
+
+  // Queues the next bubble trigger with ±5 s jitter around BUBBLE_INTERVAL.
+  _scheduleBubble() {
+    const delay = this.BUBBLE_INTERVAL + (Math.random() - 0.5) * 10000;
+    this._bubbleTimer = setTimeout(() => {
+      this._triggerBubble();
+      this._bubbleTimer = null;
+      this._scheduleBubble();
+    }, delay);
+  },
+
+  // Picks a visible walking person and a feedback item, spawns a bubble above them.
+  _triggerBubble() {
+    if (currentViewMode !== 'play') return;
+    if (this.bubbles.length > 0) return;
+    const item = this._pickFeedbackItem();
+    if (!item) return;
+    const visible = this.people.filter(p => p.state !== 'visiting');
+    if (visible.length === 0) return;
+    const person = visible[Math.floor(Math.random() * visible.length)];
+    this.bubbles.push({
+      personRef: person,
+      lastX:     person.x,
+      lastY:     person.y,
+      comment:   item.comment,
+      age:       0,
+      maxAge:    this.BUBBLE_DURATION,
+    });
+  },
+
+  // Draws a speech bubble with a downward tail pointing toward (bx, by).
+  _drawBubble(ctx, bx, by, comment) {
+    const padding  = 8;
+    const cornerR  = 6;
+    const tailH    = 10;
+    const tailW    = 9;
+    const maxTextW = 160;
+    const lineH    = 15;
+
+    ctx.font = '11px sans-serif';
+    const words = comment.split(' ');
+    const lines = [];
+    let cur = '';
+    for (const word of words) {
+      const test = cur ? cur + ' ' + word : word;
+      if (ctx.measureText(test).width > maxTextW) {
+        if (cur) lines.push(cur);
+        cur = word;
+      } else {
+        cur = test;
+      }
+    }
+    if (cur) lines.push(cur);
+
+    const textW = Math.max(...lines.map(l => ctx.measureText(l).width));
+    const boxW  = textW + padding * 2;
+    const boxH  = lines.length * lineH + padding * 2;
+
+    const boxX = bx - boxW / 2;
+    const boxY = by - tailH - boxH - this.DOT_RADIUS - 3;
+
+    // Rounded rectangle body with a downward-pointing tail.
+    ctx.beginPath();
+    ctx.moveTo(boxX + cornerR, boxY);
+    ctx.lineTo(boxX + boxW - cornerR, boxY);
+    ctx.arcTo(boxX + boxW, boxY,          boxX + boxW, boxY + cornerR,       cornerR);
+    ctx.lineTo(boxX + boxW, boxY + boxH - cornerR);
+    ctx.arcTo(boxX + boxW, boxY + boxH,   boxX + boxW - cornerR, boxY + boxH, cornerR);
+    ctx.lineTo(bx + tailW / 2, boxY + boxH);
+    ctx.lineTo(bx,             by - this.DOT_RADIUS - 2);
+    ctx.lineTo(bx - tailW / 2, boxY + boxH);
+    ctx.lineTo(boxX + cornerR, boxY + boxH);
+    ctx.arcTo(boxX, boxY + boxH, boxX, boxY + boxH - cornerR,               cornerR);
+    ctx.lineTo(boxX, boxY + cornerR);
+    ctx.arcTo(boxX, boxY,        boxX + cornerR, boxY,                      cornerR);
+    ctx.closePath();
+
+    ctx.fillStyle   = 'rgba(255,255,255,0.95)';
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.18)';
+    ctx.lineWidth   = 1;
+    ctx.stroke();
+
+    ctx.fillStyle    = '#1e293b';
+    ctx.font         = '11px sans-serif';
+    ctx.textAlign    = 'left';
+    ctx.textBaseline = 'top';
+    for (let i = 0; i < lines.length; i++) {
+      ctx.fillText(lines[i], boxX + padding, boxY + padding + i * lineH);
+    }
+  },
+
   // Spawns a piece of brown trash at (x, y) that shrinks to nothing.
   _dropTrash(x, y) {
     this.trash.push({ x, y, age: 0, maxAge: this.TRASH_DURATION, maxRadius: this.TRASH_RADIUS });
@@ -371,6 +492,17 @@ const Animations = {
       if (c.age >= c.maxAge) this.coins.splice(i, 1);
     }
 
+    // Age speech bubbles; track person position so the bubble follows them.
+    for (let i = this.bubbles.length - 1; i >= 0; i--) {
+      const b = this.bubbles[i];
+      b.age += dt;
+      if (b.age >= b.maxAge) { this.bubbles.splice(i, 1); continue; }
+      if (this.people.includes(b.personRef)) {
+        b.lastX = b.personRef.x;
+        b.lastY = b.personRef.y;
+      }
+    }
+
     this._draw();
     this._animFrame = requestAnimationFrame(t => this._tick(t));
   },
@@ -423,6 +555,14 @@ const Animations = {
     for (const c of this.coins) {
       ctx.globalAlpha = 1 - (c.age / c.maxAge);
       ctx.fillText('$', c.x, c.y);
+    }
+    ctx.restore();
+
+    // Draw speech bubbles on top of everything with a fade-in and fade-out.
+    ctx.save();
+    for (const b of this.bubbles) {
+      ctx.globalAlpha = Math.min(b.age / 300, 1, (b.maxAge - b.age) / 500);
+      this._drawBubble(ctx, b.lastX, b.lastY, b.comment);
     }
     ctx.restore();
   },
