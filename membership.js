@@ -153,7 +153,7 @@ const Membership = {
         // each visit.  annualVisits tells us how often a household at this
         // distance actually comes, so it determines whether the plan pays off.
         const admissionSavings = D.annualVisits * Finance.gatePrice * plan.guestCount;
-        const parkingSavings   = plan.freeParking ? D.annualVisits * Finance.parkingPrice : 0;
+        const parkingSavings   = plan.freeParking ? D.annualVisits * Parking.parkingPrice : 0;
         const netValue         = admissionSavings + parkingSavings - plan.annualPrice;
 
         // No financial incentive for this distance band — skip entirely.

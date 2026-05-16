@@ -1130,7 +1130,7 @@ function buildParkingPanel() {
   if (!body) return;
 
   const inflation  = Population.cumulativeInflation;
-  const price      = Finance.parkingPrice;
+  const price      = Parking.parkingPrice;
   const brackets   = Population.INCOME_BRACKETS;
 
   // Returns the displayed max-price string for one income bracket.
@@ -1168,8 +1168,8 @@ function buildParkingPanel() {
     <div class="parking-section">
       <div class="parking-section-title">Lot Amenities</div>
       <div class="parking-amenity-note">Each purchased amenity increases how much guests are willing to spend on parking.</div>
-      ${Finance.PARKING_AMENITIES.map(a => {
-        const owned = Finance.purchasedAmenities.has(a.id);
+      ${Parking.PARKING_AMENITIES.map(a => {
+        const owned = Parking.purchasedAmenities.has(a.id);
         const canAfford = money >= a.cost;
         return `
           <div class="parking-amenity-row${owned ? ' parking-amenity-owned' : ''}">
@@ -1193,18 +1193,18 @@ function buildParkingPanel() {
       <div class="parking-amenity-note">
         Runs a free shuttle from distant pick-up points. Visitors who would skip the trip
         due to parking prices take the bus instead — they pay full gate admission and spend
-        normally inside. Costs $${Finance.BUS_WEEKLY_COST.toLocaleString()}/week to operate.
+        normally inside. Costs $${Parking.BUS_WEEKLY_COST.toLocaleString()}/week to operate.
       </div>
       <div class="parking-bus-row">
         <span class="parking-stat-label">Status</span>
-        <button class="parking-bus-toggle ${Finance.busEnabled ? 'parking-bus-on' : 'parking-bus-off'}"
+        <button class="parking-bus-toggle ${Parking.busEnabled ? 'parking-bus-on' : 'parking-bus-off'}"
                 id="parking-bus-toggle">
-          ${Finance.busEnabled ? 'Running — click to stop' : 'Stopped — click to run'}
+          ${Parking.busEnabled ? 'Running — click to stop' : 'Stopped — click to run'}
         </button>
       </div>
       <div class="parking-stat-row">
         <span class="parking-stat-label">Bus riders last round</span>
-        <span class="parking-stat-value">${Finance.busRiders.toLocaleString()}</span>
+        <span class="parking-stat-value">${Parking.busRiders.toLocaleString()}</span>
       </div>
     </div>` : '';
 
@@ -1220,9 +1220,9 @@ function buildParkingPanel() {
         </div>
       </div>
       <div class="parking-threshold-note">
-        ${Finance.knownFreeZone === null
+        ${Parking.knownFreeZone === null
           ? `Free zone: <span class="parking-limit-unknown">?</span> — charge a low price to find out.`
-          : `Free zone: at least <strong>$${Finance.knownFreeZone}</strong> — last confirmed safe price.`}
+          : `Free zone: at least <strong>$${Parking.knownFreeZone}</strong> — last confirmed safe price.`}
       </div>
     </div>
     <div class="parking-section">
@@ -1234,11 +1234,11 @@ function buildParkingPanel() {
     <div class="parking-section">
       <div class="parking-stat-row">
         <span class="parking-stat-label">Alt-transport visitors last round</span>
-        <span class="parking-stat-value">${Finance.altTransportVisitors.toLocaleString()}</span>
+        <span class="parking-stat-value">${Parking.altTransportVisitors.toLocaleString()}</span>
       </div>
       <div class="parking-stat-row">
         <span class="parking-stat-label">Spending multiplier last round</span>
-        <span class="parking-stat-value">${(Finance.parkingSpendingMultiplier * 100).toFixed(1)}%</span>
+        <span class="parking-stat-value">${(Parking.parkingSpendingMultiplier * 100).toFixed(1)}%</span>
       </div>
     </div>
   `;
@@ -1246,19 +1246,19 @@ function buildParkingPanel() {
   document.getElementById('parking-apply-btn').addEventListener('click', () => {
     const v = parseFloat(document.getElementById('parking-price-input').value);
     if (!isNaN(v) && v >= 0) {
-      Finance.parkingPrice = v;
+      Parking.parkingPrice = v;
       buildParkingPanel();
     }
   });
 
   body.querySelectorAll('.parking-amenity-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-      if (Finance.buyParkingAmenity(btn.dataset.amenity)) buildParkingPanel();
+      if (Parking.buyParkingAmenity(btn.dataset.amenity)) buildParkingPanel();
     });
   });
 
   document.getElementById('parking-bus-toggle')?.addEventListener('click', () => {
-    Finance.busEnabled = !Finance.busEnabled;
+    Parking.busEnabled = !Parking.busEnabled;
     buildParkingPanel();
   });
 }
