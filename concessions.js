@@ -143,7 +143,7 @@ const Concessions = {
     const demanded = options.map(() => 0);
 
     // parkingSpendingMultiplier reduces food purchasing propensity when parking fees eat into visitor budgets.
-    const parkingMult = Finance.parkingSpendingMultiplier ?? 1;
+    const parkingMult = Parking.parkingSpendingMultiplier ?? 1;
     Population.HOUSEHOLD_SIZES.forEach(bracket => {
       const groupVisits = weeklyAttendance * (bracket.chance / totalHouseholdChance) * this.FOOD_PURCHASE_RATE * parkingMult;
       const weights = options.map(opt => {

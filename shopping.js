@@ -164,7 +164,7 @@ const Shopping = {
 
       const weatherMult  = weatherItemMults[item.id] ?? 1;
       // parkingSpendingMultiplier reduces purchasing propensity when parking fees eat into visitor budgets.
-      const parkingMult  = Finance.parkingSpendingMultiplier ?? 1;
+      const parkingMult  = Parking.parkingSpendingMultiplier ?? 1;
       const rawAttempts  = desire[item.category] * afford * weeklyAttendance * Population.BUYER_RATE * staffRatio * weatherMult * parkingMult;
       const attempts = Math.round(rawAttempts);
       console.log(
