@@ -192,4 +192,13 @@ const Population = {
       });
   },
 
+  // Records a direct demographic observation from a discount redemption.
+  // Discount visitors self-identify by presenting ID, so each observed visitor
+  // contributes the same weight as passive observation but for a single bracket.
+  observeDiscount(catKey, bracketIdx, affectedCount) {
+    const arr = this.confidence[catKey];
+    if (!arr || bracketIdx < 0 || bracketIdx >= arr.length) return;
+    arr[bracketIdx] = Math.min(100, arr[bracketIdx] + (affectedCount / this.CONFIDENCE_VISIT_CAPACITY) * 100);
+  },
+
 };

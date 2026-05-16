@@ -62,6 +62,8 @@ const Discounts = {
     for (const rule of this.rules) {
       if (!this.isActiveThisRound(rule)) continue;
 
+      const sched = DISCOUNT_SCHEDULES.find(s => s.value === rule.schedule) ?? DISCOUNT_SCHEDULES[0];
+
       let fraction;
       if (rule.demoKey === null) {
         fraction = 1;
@@ -70,12 +72,16 @@ const Discounts = {
         const brackets    = Population[arrayKey] || [];
         const totalWeight = brackets.reduce((s, b) => s + b.chance * b.favor, 0);
         if (totalWeight === 0) continue;
-        const bracket = brackets.find(b => b.name === rule.bracketName);
-        if (!bracket) continue;
+        const bracketIdx = brackets.findIndex(b => b.name === rule.bracketName);
+        if (bracketIdx < 0) continue;
+        const bracket = brackets[bracketIdx];
         fraction = (bracket.chance * bracket.favor) / totalWeight;
+
+        // Visitors who redeemed the discount presented ID — direct demographic observation.
+        const affected = Math.round(weeklyAttendance * fraction * sched.dayMult);
+        Population.observeDiscount(rule.demoKey, bracketIdx, affected);
       }
 
-      const sched        = DISCOUNT_SCHEDULES.find(s => s.value === rule.schedule) ?? DISCOUNT_SCHEDULES[0];
       const costFraction = DISCOUNT_TYPES.find(t => t.value === rule.discountType)?.costFraction ?? 0;
       const cost         = Math.round(weeklyAttendance * fraction * gatePrice * costFraction * sched.dayMult);
 
