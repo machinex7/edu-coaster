@@ -141,7 +141,7 @@ const Finance = {
     const appealBonus          = this.calcParkAppeal() / (100 * Population.DESIRED_RIDES);
     // Incident ride multiplier suppresses ride interest (e.g. nausea plague); clamped to [0, 1].
     const rideIncidentMult     = Math.min(1, Math.max(0, Incidents.rideExcitementMultiplier));
-    const effectiveRideOpinion = Math.min(1, (this.rideOpinion + appealBonus) * rideIncidentMult);
+    const effectiveRideOpinion = Math.min(1, (Math.sqrt(this.rideOpinion) + appealBonus) * rideIncidentMult);
     const securityFactor       = Unlock.SECURITY ? Math.max(0, 1 - Math.sqrt(Security.opinion) / 100) : 1;
     const messFactor           = Unlock.MESSES   ? this.calcMessFactor() : 1;
     const rawExcitement        = Math.max(0, (weeklyAttendance * effectiveRideOpinion * securityFactor * this.mealSatisfaction) / messFactor);
@@ -167,6 +167,7 @@ const Finance = {
       '[excitement]',
       'attendance:', weeklyAttendance.toFixed(2),
       '| rideOpinion:', this.rideOpinion.toFixed(4),
+      '| sqrtRideOpinion:', Math.sqrt(this.rideOpinion).toFixed(4),
       '| appealBonus:', appealBonus.toFixed(4),
       '| rideIncidentMult:', rideIncidentMult.toFixed(4),
       '| effectiveRideOpinion:', effectiveRideOpinion.toFixed(4),
