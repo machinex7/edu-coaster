@@ -43,8 +43,8 @@ const FinanceMenu = {
   // Each entry is a flat object mapping ITEMS keys to whole-dollar amounts.
   _budgets: {},
 
-  // Key of the currently graphed metric in the Graphs tab.
-  _selectedMetric: 'attendance',
+  // Keys of the currently graphed metrics (up to 2) in the Graphs tab.
+  _selectedMetrics: ['attendance'],
 
   // Metric groups shown as a pill cloud in the Graphs tab.
   GRAPH_METRICS: [
@@ -431,9 +431,13 @@ const FinanceMenu = {
   // Builds the Graphs tab: line chart + pill cloud selector.
   _buildGraphsTab() {
     const container = document.getElementById('fm-graphs-view');
-    const metricKey = this._selectedMetric || 'attendance';
-    const metric    = this._findMetric(metricKey);
-    const data      = History.rounds.slice(-13);
+    const keys    = this._selectedMetrics.length ? this._selectedMetrics : ['attendance'];
+    const metrics = keys.map(k => this._findMetric(k));
+    const data    = History.rounds.slice(-13);
+
+    const titleLabel = metrics.length === 2
+      ? `${metrics[0].label} vs ${metrics[1].label}`
+      : metrics[0].label;
 
     const graphHTML = data.length < 2
       ? `<div class="fg-graph-empty">Not enough data yet — play more rounds to see a graph.</div>`
@@ -441,23 +445,35 @@ const FinanceMenu = {
 
     container.innerHTML = `
       <div class="fg-graph-area">
-        <div class="fg-graph-title">${metric.label} — Last ${data.length} Week${data.length !== 1 ? 's' : ''}</div>
+        <div class="fg-graph-title">${titleLabel} — Last ${data.length} Week${data.length !== 1 ? 's' : ''}</div>
         ${graphHTML}
       </div>
-      <div class="fg-pill-cloud">${this._pillCloudHTML(metricKey)}</div>`;
+      <div class="fg-pill-cloud">${this._pillCloudHTML(keys)}</div>`;
 
     container.querySelectorAll('.fg-pill').forEach(pill => {
       pill.addEventListener('click', () => {
-        this._selectedMetric = pill.dataset.metric;
+        const key = pill.dataset.metric;
+        const idx = this._selectedMetrics.indexOf(key);
+        if (idx !== -1 && this._selectedMetrics.length > 1) {
+          // Deselect only if another metric remains.
+          this._selectedMetrics.splice(idx, 1);
+        } else if (idx === -1) {
+          if (this._selectedMetrics.length < 2) {
+            this._selectedMetrics.push(key);
+          } else {
+            // Rotate out the oldest, add the new one.
+            this._selectedMetrics = [this._selectedMetrics[1], key];
+          }
+        }
         this._buildGraphsTab();
       });
     });
 
-    if (data.length >= 2) this._drawChart(data, metric);
+    if (data.length >= 2) this._drawChart(data, metrics);
   },
 
-  // Draws the line chart onto the canvas element.
-  _drawChart(data, metric) {
+  // Draws the line chart onto the canvas element. metrics is an array of 1 or 2 descriptors.
+  _drawChart(data, metrics) {
     const canvas = document.getElementById('fg-chart');
     if (!canvas) return;
     const wrap = canvas.parentElement;
@@ -467,38 +483,59 @@ const FinanceMenu = {
     canvas.height = H;
     const ctx = canvas.getContext('2d');
 
-    const LP = 66, RP = 16, TP = 18, BP = 42;
+    const two = metrics.length === 2;
+    const LP = 66, RP = two ? 66 : 16, TP = 18, BP = 42;
     const cW = W - LP - RP;
     const cH = H - TP - BP;
 
-    const vals  = data.map(r => typeof r[metric.key] === 'number' ? r[metric.key] : 0);
-    const { yMin, yMax } = this._niceScale(vals, metric.fmt);
-    const range = yMax - yMin || 1;
+    // Blue for metric 0, amber for metric 1.
+    const PALETTE = [
+      { line: '#3b82f6', fill: 'rgba(59, 130, 246, 0.10)' },
+      { line: '#f59e0b', fill: 'rgba(245, 158, 11, 0.10)'  },
+    ];
 
-    // Maps data index → canvas X coordinate.
+    // Pre-compute per-metric values, scale, and Y mapper.
+    const mds = metrics.map((m, mi) => {
+      const vals          = data.map(r => typeof r[m.key] === 'number' ? r[m.key] : 0);
+      const { yMin, yMax } = this._niceScale(vals, m.fmt);
+      const range         = yMax - yMin || 1;
+      const yOf           = v => TP + (1 - (v - yMin) / range) * cH;
+      return { m, vals, yMin, yMax, yOf, ...PALETTE[mi] };
+    });
+
     const xOf = i => LP + (data.length < 2 ? cW / 2 : i / (data.length - 1) * cW);
-    // Maps value → canvas Y coordinate.
-    const yOf = v => TP + (1 - (v - yMin) / range) * cH;
 
-    // Background fill.
+    // Background.
     ctx.fillStyle = '#111827';
     ctx.fillRect(0, 0, W, H);
 
-    // Horizontal grid lines + Y-axis labels.
+    // Grid lines driven by metric 0's scale.
     ctx.font = '11px system-ui, -apple-system, sans-serif';
     const gridCount = 5;
+    const md0 = mds[0];
     for (let t = 0; t <= gridCount; t++) {
-      const v = yMin + (yMax - yMin) * t / gridCount;
-      const y = yOf(v);
+      const v = md0.yMin + (md0.yMax - md0.yMin) * t / gridCount;
+      const y = md0.yOf(v);
       ctx.strokeStyle = '#1f2937';
       ctx.lineWidth   = 1;
       ctx.beginPath(); ctx.moveTo(LP, y); ctx.lineTo(LP + cW, y); ctx.stroke();
-      ctx.fillStyle  = '#6b7280';
+      ctx.fillStyle  = md0.line;
       ctx.textAlign  = 'right';
-      ctx.fillText(this._fmtMetricLabel(v, metric.fmt), LP - 6, y + 4);
+      ctx.fillText(this._fmtMetricLabel(v, md0.m.fmt), LP - 6, y + 4);
     }
 
-    // X-axis week labels — skip alternate labels when dense.
+    // Right-side Y-axis labels for metric 1 (its own independent scale).
+    if (two) {
+      const md1 = mds[1];
+      for (let t = 0; t <= gridCount; t++) {
+        const v = md1.yMin + (md1.yMax - md1.yMin) * t / gridCount;
+        ctx.fillStyle = md1.line;
+        ctx.textAlign = 'left';
+        ctx.fillText(this._fmtMetricLabel(v, md1.m.fmt), LP + cW + 6, md1.yOf(v) + 4);
+      }
+    }
+
+    // X-axis week labels — skip alternates when dense.
     ctx.fillStyle = '#6b7280';
     ctx.textAlign = 'center';
     data.forEach((r, i) => {
@@ -506,45 +543,46 @@ const FinanceMenu = {
         ctx.fillText(this._xLabel(r), xOf(i), H - BP + 16);
     });
 
-    // Shaded area under the line.
-    ctx.beginPath();
-    ctx.moveTo(xOf(0), yOf(vals[0]));
-    vals.forEach((v, i) => ctx.lineTo(xOf(i), yOf(v)));
-    ctx.lineTo(xOf(vals.length - 1), TP + cH);
-    ctx.lineTo(xOf(0), TP + cH);
-    ctx.closePath();
-    ctx.fillStyle = 'rgba(59, 130, 246, 0.10)';
-    ctx.fill();
+    // Draw each metric: shaded fill → line → dots.
+    mds.forEach(({ vals, yOf, line, fill }) => {
+      ctx.beginPath();
+      ctx.moveTo(xOf(0), yOf(vals[0]));
+      vals.forEach((v, i) => ctx.lineTo(xOf(i), yOf(v)));
+      ctx.lineTo(xOf(vals.length - 1), TP + cH);
+      ctx.lineTo(xOf(0), TP + cH);
+      ctx.closePath();
+      ctx.fillStyle = fill;
+      ctx.fill();
 
-    // Line.
-    ctx.beginPath();
-    ctx.moveTo(xOf(0), yOf(vals[0]));
-    vals.forEach((v, i) => ctx.lineTo(xOf(i), yOf(v)));
-    ctx.strokeStyle = '#3b82f6';
-    ctx.lineWidth   = 2;
-    ctx.lineJoin    = 'round';
-    ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(xOf(0), yOf(vals[0]));
+      vals.forEach((v, i) => ctx.lineTo(xOf(i), yOf(v)));
+      ctx.strokeStyle = line;
+      ctx.lineWidth   = 2;
+      ctx.lineJoin    = 'round';
+      ctx.stroke();
 
-    // Axis borders.
+      vals.forEach((v, i) => {
+        ctx.beginPath();
+        ctx.arc(xOf(i), yOf(v), 4, 0, Math.PI * 2);
+        ctx.fillStyle   = line;
+        ctx.fill();
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth   = 1.5;
+        ctx.stroke();
+      });
+    });
+
+    // Axis borders; add right border when two metrics share the canvas.
     ctx.strokeStyle = '#374151';
     ctx.lineWidth   = 1;
     ctx.beginPath();
     ctx.moveTo(LP, TP); ctx.lineTo(LP, TP + cH + 1);
     ctx.moveTo(LP, TP + cH); ctx.lineTo(LP + cW, TP + cH);
+    if (two) { ctx.moveTo(LP + cW, TP); ctx.lineTo(LP + cW, TP + cH + 1); }
     ctx.stroke();
 
-    // Data point dots.
-    vals.forEach((v, i) => {
-      ctx.beginPath();
-      ctx.arc(xOf(i), yOf(v), 4, 0, Math.PI * 2);
-      ctx.fillStyle   = '#3b82f6';
-      ctx.fill();
-      ctx.strokeStyle = '#0f172a';
-      ctx.lineWidth   = 1.5;
-      ctx.stroke();
-    });
-
-    // Hover tooltip.
+    // Hover tooltip — shows all active metrics.
     const tooltip = document.getElementById('fg-tooltip');
     if (!tooltip) return;
     const stepW = data.length > 1 ? cW / (data.length - 1) : cW;
@@ -555,14 +593,14 @@ const FinanceMenu = {
       const mx     = (e.clientX - rect.left) * scaleX;
       const idx    = Math.round((mx - LP) / stepW);
       if (idx >= 0 && idx < data.length) {
-        const v = vals[idx];
-        tooltip.innerHTML =
-          `<span class="fg-tt-date">${data[idx].date}</span>` +
-          `<span class="fg-tt-val">${this._fmtMetricVal(v, metric.fmt)}</span>`;
+        const lines = mds.map(({ m, vals, line }) =>
+          `<span class="fg-tt-metric" style="color:${line}">● ${m.label}: ${this._fmtMetricVal(vals[idx], m.fmt)}</span>`
+        ).join('');
+        tooltip.innerHTML = `<span class="fg-tt-date">${data[idx].date}</span>${lines}`;
         const tipX = xOf(idx) / scaleX;
-        const tipY = yOf(v) / (H / rect.height);
-        tooltip.style.left = Math.min(tipX + 10, rect.width - 130) + 'px';
-        tooltip.style.top  = Math.max(tipY - 44, 0) + 'px';
+        const tipY = md0.yOf(md0.vals[idx]) / (H / rect.height);
+        tooltip.style.left = Math.min(tipX + 10, rect.width - 160) + 'px';
+        tooltip.style.top  = Math.max(tipY - (two ? 58 : 44), 0) + 'px';
         tooltip.classList.remove('hidden');
       } else {
         tooltip.classList.add('hidden');
@@ -571,12 +609,15 @@ const FinanceMenu = {
     canvas.addEventListener('mouseleave', () => tooltip.classList.add('hidden'));
   },
 
-  // Returns the pill cloud HTML for the Graphs tab, grouped by metric category.
-  _pillCloudHTML(selectedKey) {
+  // Returns the pill cloud HTML. selectedKeys is an array of 1–2 active metric keys.
+  // The first selected pill gets class active-1 (blue), the second active-2 (amber).
+  _pillCloudHTML(selectedKeys) {
     return this.GRAPH_METRICS.map(group => {
-      const pills = group.items.map(m =>
-        `<button class="fg-pill${m.key === selectedKey ? ' active' : ''}" data-metric="${m.key}">${m.label}</button>`
-      ).join('');
+      const pills = group.items.map(m => {
+        const pos = selectedKeys.indexOf(m.key);
+        const cls = pos === 0 ? ' active-1' : pos === 1 ? ' active-2' : '';
+        return `<button class="fg-pill${cls}" data-metric="${m.key}">${m.label}</button>`;
+      }).join('');
       return `<div class="fg-pill-group">
         <div class="fg-pill-group-label">${group.group}</div>
         <div class="fg-pills">${pills}</div>

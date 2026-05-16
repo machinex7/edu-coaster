@@ -2471,10 +2471,10 @@ thead tr th {
   font-size: 0.72rem;
 }
 
-.fg-tt-val {
-  color: #60a5fa;
+/* Color set inline per-metric via style="color:…" */
+.fg-tt-metric {
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 0.82rem;
 }
 
 /* Scrollable pill cloud below the chart. */
@@ -2511,8 +2511,9 @@ thead tr th {
   cursor: pointer;
   transition: border-color 0.12s, color 0.12s, background 0.12s;
 }
-.fg-pill:hover  { border-color: #60a5fa; color: #e2e8f0; }
-.fg-pill.active { background: #1e3a5f; border-color: #3b82f6; color: #93c5fd; font-weight: 600; }
+.fg-pill:hover    { border-color: #60a5fa; color: #e2e8f0; }
+.fg-pill.active-1 { background: #1e3a5f; border-color: #3b82f6; color: #93c5fd; font-weight: 600; }
+.fg-pill.active-2 { background: #2d2008; border-color: #f59e0b; color: #fbbf24; font-weight: 600; }
 
 /* ── Construction site-report modal ── */
 .con-modal-card {
