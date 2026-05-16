@@ -26,7 +26,7 @@ python3 -m http.server
 | `constants.js` | Frozen enum objects shared across all scripts |
 | `unlock.js` | Progressive feature unlock system — `Unlock` flags and `UnlockWeeks` countdown table |
 | `population.js` | Visitor behavior rates and external economic conditions (`Population` object) |
-| `game.js` | Core state, grid constants, placement logic, construction queue, ride actions |
+| `game.js` | Core state, grid constants, placement logic, construction queue, ride actions, construction phase helpers (`getConstructionPhase`, `countAdjacentPathBridgeTiles`) |
 | `grid.js` | Grid DOM, cell painting, mouse/touch event handlers |
 | `shopping.js` | Shop catalog, installed shops, revenue and theft calculations (`Shopping` object) |
 | `finance.js` | Attendance model, park metrics, all income/cost sources, round processing (`Finance` object) |
@@ -44,12 +44,13 @@ python3 -m http.server
 | `animations.js` | Visual-only visitor animation system — path caching, sprite movement, trash and coin particles (`Animations` object) |
 | `hud.js` | HUD display, stage transitions, panel management, view mode toolbar, construction bottom bar, security SVG overlay, round summary modal, pricing panel |
 | `incidents.js` | Random multi-phase incident system — spawn logic, phase management, computed property outputs, panel rendering (`Incidents` object) |
-| `rides.json` | Ride catalogue |
+| `rides.json` | Ride catalogue (includes `flavor` taglines shown in the grand-opening modal) |
 | `facilities.json` | Facility catalogue |
 | `shops.json` | Shop catalogue |
 | `merchandise.json` | Merchandise item catalogue (12 items: 3 price tiers × 4 categories) |
 | `suppliers.json` | Supplier catalogue (delivery time, surcharge; first entry unlocked at start) |
 | `concessions.json` | Concessions menu item catalogue (7 items: id, name, cost, mealValue; water cup is `alwaysAvailable`) |
+| `research.json` | Research node catalogue (includes `flavor` text shown in the completion modal) |
 | `incidents.json` | Incident definitions — all incidents, their phases, effects, and challenge conditions |
 | `reqs.md` | Full game design document — read before adding features |
 
@@ -147,6 +148,25 @@ Centralises all tunable rates so game balance changes are made in one place.
 |---|---|
 | `STAGE.SETUP` | Items placed instantly at full cost. No income. Park opens once a Park Entrance and at least one connected ride exist. |
 | `STAGE.PLAY` | Items under construction pay `buildCost / buildWeeks` per round. All income and expenses process on each round advance. |
+
+---
+
+## Construction phases (`game.js`)
+
+Rides under construction during play are divided into four named phases based on completion percentage. Facilities and shops are not phased.
+
+| Phase | Range | Mechanical effect |
+|---|---|---|
+| Foundation | 0–24% | Generates `FOUNDATION_MESS_PER_PATH` (2) extra mess units per round per adjacent path/bridge tile — only when `Unlock.MESSES` |
+| Framework | 25–49% | None |
+| Completion | 50–74% | None |
+| Test Runs | 75–100% | +4% daily demand per ride in this phase (`testRunsFactor` in `Finance.calcDailyDemand()`) |
+
+The phase is computed by `getConstructionPhase(record)` — a global function that returns `{ phase, label, pct }`. Foundation mess is computed by `countAdjacentPathBridgeTiles(record)`, which counts unique path/bridge tiles that are 4-directionally adjacent to (but not part of) the ride's footprint; the result feeds `Finance.calcFoundationMess()`, which is called from `calcMessGenerated()`.
+
+On construction completion during play (not setup), `completeConstruction()` pushes a `populationEvents` attendance buzz scaled by intensity (low +12 → extreme +28, decaying 4 pts/round) and fires the **grand-opening modal** — a dark amber card with the ride name, intensity badge, flavor text from `rides.json`, and an "Open the Gates" dismiss button.
+
+The **construction slot** (`#construction-slot` in `#notification-stack`) mirrors the incident slot — label, ride name, phase name, and weeks remaining — and is updated by `updateConstructionSlot()` (called from `updateAchievementIndicators()`). Clicking it opens the **site-report modal** showing the progress ring, phase badge, phase-specific flavor text, and an effect callout for Foundation and Test Runs phases.
 
 ---
 
@@ -294,7 +314,7 @@ Demolishing structures are excluded from all game calculations. Demolition takes
 
 ### Attendance model
 
-`Finance.calcDailyDemand()` — key signals: `parkSatisfaction`, price exhaustion, population events, demographic favor, weather forecast (`WEATHER_DEMAND_REDUCTION`).
+`Finance.calcDailyDemand()` — key signals: `parkSatisfaction`, price exhaustion, population events, demographic favor, weather forecast (`WEATHER_DEMAND_REDUCTION`), and `testRunsFactor` (+4% per ride currently in the Test Runs construction phase).
 
 `Finance.calcGateThroughput()` — key signals: working booth attendant count, mood, experience tier, skill modifier.
 
@@ -321,6 +341,7 @@ All revenue is recorded at **gross** (full-price) amounts. The cost of membershi
 | Ride utilities | running connected rides × `Population.utilityMultiplier` |
 | Facility utilities | active facilities with a `utilityCost` field × `Population.utilityMultiplier` |
 | Construction | weekly installment per item under construction |
+| Foundation debris | `Finance.calcFoundationMess()` — extra mess per adjacent path/bridge tile while a ride is in Foundation phase (requires `Unlock.MESSES`; `FOUNDATION_MESS_PER_PATH = 2` units per tile) |
 | Theft loss | unhandled shop incidents × `THEFT_LOSS_PER` |
 | Membership benefits | sum of: free admission value (memberAttendance × gatePrice), free parking value (freeParkingVehicles × parkingPrice, only when PARKING_FEES unlocked), food discount loss, merch discount loss |
 
@@ -1022,6 +1043,7 @@ Trash is drawn before people dots; coins are drawn last (on top of everything). 
 |---|---|---|
 | `id` | string | Unique, snake_case |
 | `name` | string | Display name |
+| `flavor` | string | Tagline shown in the grand-opening modal on construction completion (play stage only) |
 | `footprint` | `number[][]` | `1` = occupied, `0` = empty |
 | `buildCost` | number | Dollars |
 | `buildWeeks` | number | Construction time |
@@ -1257,6 +1279,11 @@ On successful submission, `TaxForm.taxOwed` and `TaxForm.taxDueRound` are set. `
 - Annual balance sheet exercise: drag-and-drop modal every 52 rounds (chained after the year-end P&L); point-in-time snapshot of assets (cash, merchandise inventory, food stock, park equipment, construction in progress) and liabilities (outstanding loans); Owner's Equity revealed on completion
 - Two-phase quarterly budget exercise: Phase 1 (tentative, round 11 of each quarter) fires before the P&L — player forecasts blind with prior quarter's revised budget as a reference, inputs start at $0; Phase 2 (revised, round 1 of the next quarter) fires after the P&L — shows tentative budget and last quarter's actuals side by side, inputs pre-populated from Phase 1; live-updating section subtotals and projected net bar; both phases saved as separate cards in the Forms review panel
 - Visitor animation system: white-dot sprites spawn at the gate every 5 s (capped at 10), walk A* routes between rides and shops, hide at each stop for 5 s, then return home after 6 visits; brown shrinking trash particles drop every 8 tile crossings (interval scales with mess factor); green rising `$` coin particles appear on spawn and on leaving food/merch shops; all rendered on a canvas overlay with no simulation impact
+- Construction phases: rides under construction pass through Foundation (0–24%), Framework (25–49%), Completion (50–74%), and Test Runs (75–100%); Foundation generates extra debris mess on adjacent path/bridge tiles when Messes is unlocked; Test Runs add +4% daily demand from curious onlookers per ride in that phase
+- Construction slot: replaces the former construction achievement pill with a persistent `#construction-slot` banner in `#notification-stack` (same pattern as the incident slot); shows ride name, phase, and countdown; clicking opens a site-report modal with a progress ring, phase badge, phase flavor text, and an effect callout for mechanically active phases
+- Grand-opening modal: fires when a ride finishes construction during play; pushes a population buzz event (low +12 → extreme +28, decaying 4 pts/round) and shows a dark amber modal with the ride name, intensity badge, and flavor text from `rides.json`
+- Research completion modal: sci-fi themed dark card (cyan glow, corner brackets, animated atom spinner, pulsing status dots) displayed when any research finishes; shows the item name and its `flavor` field from `research.json`
+- Radial progress rings on achievement pills: research and construction pills show a small SVG ring (dim track + bright arc) that fills as the project advances
 - Banking panel split into three sub-tabs: **Investment** (savings account, money market), **Debt** (line of credit, loans), **Giving** (charitable donations)
 - Charitable giving system: four charities (Shelter First, Kids Against Hunger, Save the Trees, Veterans United) with YTD and all-time donation tracking; cash donations in $100 increments via the Banking Giving tab; sponsorship tiers (Bronze/Silver/Gold/Platinum/Diamond at $100/$1k/$10k/$100k/$1M all-time) displayed as badges on each charity card; charities unlocked progressively via `Banking.unlockCharity(id)` (Shelter First unlocked at start, others hidden until unlocked)
 - Charity sponsorship excitement boost: each unlocked charity's tier contributes 1–5% to `parkSatisfaction` (max 20% at all four charities at Diamond); boost is applied to the smoothed satisfaction value in `Finance.calcExcitement()`
