@@ -29,6 +29,10 @@ const Finance = {
   // Starts at 1.0 (perfect); degrades when operators can't keep up with demand.
   rideOpinion: 1.0,
 
+  // Overheard guest comments collected during the round. Each entry is
+  // { guestCount, comment }. Cleared at the start of every round.
+  feedback: [],
+
   // instanceId of the security guard drafted as a booth attendant this round, or null.
   // Set by calcGateThroughput() when all booth attendants are out; cleared when they return.
   // Security.calcIncidents() and calcCoverage() skip this guard to avoid double-counting.
@@ -69,6 +73,13 @@ const Finance = {
     const ridesPerPerson = weeklyAttendance > 0 ? totalWeeklyRiders / weeklyAttendance : 0;
     // No visitors this round means no bad experiences — keep opinion at perfect.
     this.rideOpinion = weeklyAttendance === 0 ? 1 : Math.min(1, ridesPerPerson / Population.DESIRED_RIDES);
+
+    // Guests who didn't get enough rides become overheard complaints.
+    if (weeklyAttendance > 0 && ridesPerPerson < Population.DESIRED_RIDES) {
+      const guestCount = Math.round((Population.DESIRED_RIDES - ridesPerPerson) * weeklyAttendance);
+      this.feedback.push({ guestCount, comment: "We didn't get to ride as much as we wanted to." });
+    }
+
     console.log(
       '[rides]',
       'weeklyAttendance (param):', weeklyAttendance,
@@ -672,6 +683,8 @@ const Finance = {
   // Called once per round advancement. Order matters: collect income before
   // deducting costs so the budget display reflects net change.
   processRound() {
+    this.feedback = [];               // clear overheard comments from previous round
+
     this.processEngineers();          // repair broken rides / reduce wear before anything else
 
     const dailyDemand     = this.calcDailyDemand();
