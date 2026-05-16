@@ -2416,3 +2416,76 @@ thead tr th {
   cursor: not-allowed;
 }
 
+/* ── Construction site-report modal ── */
+.con-modal-card {
+  width: 460px;
+  max-width: calc(100vw - 32px);
+}
+
+.con-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.con-modal-ring { flex-shrink: 0; }
+
+.con-modal-header-text { flex: 1; }
+
+.con-modal-ride-name {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #f3f4f6;
+  margin-bottom: 5px;
+}
+
+/* Phase badge — colour varies by phase */
+.con-modal-phase-badge {
+  display: inline-block;
+  font-family: 'Courier New', monospace;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 20px;
+  border: 1px solid currentColor;
+  margin-bottom: 5px;
+}
+.con-phase-foundation { color: #f59e0b; }
+.con-phase-framework  { color: #60a5fa; }
+.con-phase-completion { color: #4ade80; }
+.con-phase-test_runs  { color: #a78bfa; }
+
+.con-modal-countdown {
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.con-modal-flavor {
+  font-size: 0.83rem;
+  color: #9ca3af;
+  line-height: 1.65;
+  font-style: italic;
+  margin-bottom: 12px;
+}
+
+.con-modal-effect {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  font-size: 0.78rem;
+  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.08);
+  border: 1px solid rgba(245, 158, 11, 0.2);
+  border-radius: 5px;
+  padding: 7px 10px;
+  margin-top: 4px;
+}
+
+.con-modal-effect-icon {
+  flex-shrink: 0;
+  font-size: 0.82rem;
+}
+

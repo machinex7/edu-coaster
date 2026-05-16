@@ -605,6 +605,48 @@ header h1 {
   text-align: justify;
 }
 
+/* ── Construction slot (notification-stack banner) ── */
+#construction-slot {
+  pointer-events: all;
+  background: #0c1a2e;
+  border: 1px solid #1d4ed8;
+  border-left: 3px solid #60a5fa;
+  border-radius: 8px;
+  padding: 10px 14px;
+  min-width: 180px;
+  max-width: 260px;
+  cursor: pointer;
+  box-shadow: 0 3px 12px rgba(0,0,0,0.55);
+  transition: background 0.12s;
+  user-select: none;
+}
+
+#construction-slot:hover { background: #172a4a; }
+
+.con-slot-label {
+  font-size: 0.58rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #3b82f6;
+  margin-bottom: 4px;
+}
+
+.con-slot-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #93c5fd;
+  margin-bottom: 3px;
+}
+
+.con-slot-subtitle {
+  font-size: 0.72rem;
+  color: #3b82f6;
+}
+
 /* ── Ride grand-opening modal ── */
 .rco-modal-card {
   position: relative;

@@ -624,6 +624,49 @@ function showRideCompleteModal(rideName, rideDef) {
   modal.addEventListener('click', onOverlay);
 }
 
+// Extra mess per adjacent path/bridge tile generated during the Foundation construction phase.
+const FOUNDATION_MESS_PER_PATH = 2;
+
+// Returns the current construction phase descriptor for a ride record.
+// Phases are evenly divided across the build duration:
+//   foundation (0–25%), framework (25–50%), completion (50–75%), test_runs (75–100%)
+function getConstructionPhase(record) {
+  const pct = record.weeksTotal > 0 ? record.weeksCompleted / record.weeksTotal : 0;
+  if (pct < 0.25) return { phase: 'foundation', label: 'Foundation', pct };
+  if (pct < 0.50) return { phase: 'framework',  label: 'Framework',  pct };
+  if (pct < 0.75) return { phase: 'completion', label: 'Completion', pct };
+  return               { phase: 'test_runs',  label: 'Test Runs',  pct };
+}
+
+// Counts unique path/bridge tiles adjacent (4-directional) to a ride's footprint.
+// Used during Foundation phase to compute extra construction debris mess.
+function countAdjacentPathBridgeTiles(record) {
+  const seen = new Set();
+  for (let r = 0; r < record.footprint.length; r++) {
+    for (let c = 0; c < record.footprint[r].length; c++) {
+      if (!record.footprint[r][c]) continue;
+      const gr = record.row + r;
+      const gc = record.col + c;
+      for (const [dr, dc] of [[-1, 0], [1, 0], [0, -1], [0, 1]]) {
+        const nr = gr + dr;
+        const nc = gc + dc;
+        if (nr < 0 || nr >= GRID_ROWS || nc < 0 || nc >= GRID_COLS) continue;
+        const key = `${nr},${nc}`;
+        if (seen.has(key)) continue;
+        // Skip cells that are still inside the ride's own footprint.
+        if (record.footprint[nr - record.row]?.[nc - record.col]) continue;
+        const id = gridState[nr][nc];
+        if (!id) continue;
+        const fac = installedFacilities.find(f => f.instanceId === id);
+        if (fac && (fac.facilityId === FACILITY_ID.PATH || fac.facilityId === FACILITY_ID.BRIDGE)) {
+          seen.add(key);
+        }
+      }
+    }
+  }
+  return seen.size;
+}
+
 function pauseRideConstruction(instanceId) {
   const record = installedRides.find(r => r.instanceId === instanceId);
   if (record?.status === STATUS.UNDER_CONSTRUCTION)

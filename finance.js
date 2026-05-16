@@ -96,7 +96,12 @@ const Finance = {
     // audience over time. Grows as sqrt so early visits matter most and the bonus tapers off.
     const renownBonus       = Math.sqrt(this.cumulativeAttendance);
     const base              = this.parkSatisfaction + renownBonus;
-    const result            = base * eventFactor * demandMultiplier * weatherFactor * incidentFactor;
+    // Test Runs phase: curious onlookers watching the ride cycle boost attendance slightly.
+    const testRunsCount     = installedRides.filter(r =>
+      r.status === STATUS.UNDER_CONSTRUCTION && getConstructionPhase(r).phase === 'test_runs'
+    ).length;
+    const testRunsFactor    = 1 + testRunsCount * 0.04;
+    const result            = base * eventFactor * demandMultiplier * weatherFactor * incidentFactor * testRunsFactor;
     console.log(
       '[demand]',
       'excitement:', this.parkSatisfaction.toFixed(2),
@@ -106,6 +111,7 @@ const Finance = {
       '| demandMult:', demandMultiplier.toFixed(4),
       '| weather:', weatherFactor.toFixed(4),
       '| incident:', incidentFactor.toFixed(4),
+      '| testRuns:', testRunsFactor.toFixed(4),
       '| dailyDemand:', result.toFixed(2)
     );
     return result;
@@ -442,7 +448,18 @@ const Finance = {
         return sum + (r.lastRoundRiders ?? 0) * Population.MESS_HIGH_RIDER_RATE * dist;
       }, 0);
 
-    return Math.floor(fromGuests + fromShoppers + fromFood + fromExtremeRides + fromHighRides);
+    const fromConstruction = this.calcFoundationMess();
+
+    return Math.floor(fromGuests + fromShoppers + fromFood + fromExtremeRides + fromHighRides + fromConstruction);
+  },
+
+  // Extra mess from rides in Foundation phase: debris on adjacent path/bridge tiles.
+  // Only active when the Messes system is unlocked.
+  calcFoundationMess() {
+    if (!Unlock.MESSES) return 0;
+    return installedRides
+      .filter(r => r.status === STATUS.UNDER_CONSTRUCTION && getConstructionPhase(r).phase === 'foundation')
+      .reduce((sum, record) => sum + countAdjacentPathBridgeTiles(record) * FOUNDATION_MESS_PER_PATH, 0);
   },
 
   // Distributes mess to path tiles each round.
