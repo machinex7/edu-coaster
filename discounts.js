@@ -275,22 +275,13 @@ const Discounts = {
     });
   },
 
-  // Pushes a visitor-voice notification for a bracket discount that fired this round.
-  // Picks a random quote from DISCOUNT_QUOTES for the bracket, and shows the
-  // approximate number of visitors who used the discount as context.
+  // Adds a visitor-voice item to Finance.feedback for the round.
+  // Weighted by affectedCount so busier discount groups appear more in speech bubbles.
   _pushFeedback(rule, affectedCount) {
     const quotes = DISCOUNT_QUOTES[rule.bracketName];
     if (!quotes || affectedCount < 1) return;
-    const quote = quotes[Math.floor(Math.random() * quotes.length)];
-    // Derive a short chip label from the bracket name (strip the age-range parenthetical).
-    const label = rule.bracketName.includes('(')
-      ? rule.bracketName.slice(0, rule.bracketName.indexOf('(')).trim()
-      : rule.bracketName;
-    const n = affectedCount.toLocaleString();
-    Notifications.push({
-      label,
-      message: `~${n} ${rule.targetLabel} visitors used the ${rule.discountLabel} discount. "${quote}"`,
-    });
+    const comment = quotes[Math.floor(Math.random() * quotes.length)];
+    Finance.feedback.push({ guestCount: affectedCount, comment });
   },
 
   // Returns the HTML string for a single discount rule card.
