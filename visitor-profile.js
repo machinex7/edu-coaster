@@ -1,7 +1,7 @@
 // visitor-profile.js — Visitor Profile panel.
-// Shows each demographic category as a row of person icons per bracket.
-// Icon colour (green/amber/red) reflects chance; grey icons are still unknown.
-// The coloured-to-grey ratio tracks Population.confidence for that bracket.
+// Each bracket shows two dot rows: person icons (chance = propensity to visit any park)
+// and small circles (favor = appeal of this park specifically, unlocked at 25% confidence).
+// Green/red ratio encodes the metric; colored-to-gray ratio encodes confidence.
 
 const VisitorProfile = {
 
@@ -50,33 +50,52 @@ const VisitorProfile = {
   },
 
   // Render one bracket row: label + population count + confidence % + dot field.
+  // The dot field has two rows: person icons (chance) and circles (favor, unlocked at 25% confidence).
   _buildBracketRow(bracket, bracketIndex, confidence, maxCount, showPopulation, seed) {
     // When population research is unlocked, scale dots to bracket size.
     // Otherwise every bracket gets MAX_DOTS so relative sizes are not revealed.
     const dotCount = showPopulation
       ? Math.max(1, Math.round((bracket.count / maxCount) * this.MAX_DOTS))
       : this.MAX_DOTS;
+    // Colored (non-gray) icons scale with confidence so unknown brackets stay mostly gray.
     const coloredCount = Math.round(dotCount * (confidence / 100));
-
-    // Green fraction = chance / 2: chance 1.0 → 50/50, chance 2.0 → all green, 0 → all red.
-    const greenCount = Math.round(coloredCount * (bracket.chance / 2));
-    const redCount   = coloredCount - greenCount;
 
     // When segmentation display research is unlocked, icons are grouped by colour
     // (red → gray → green) instead of shuffled, so the breakdown is scannable at a glance.
     const ordered = Research.completed.has(RESEARCH_ID.DEMOGRAPHIC_SEGMENTATION_DISPLAY);
-    const states = ordered
-      ? [
-          ...Array(redCount).fill('red'),
-          ...Array(dotCount - coloredCount).fill('gray'),
-          ...Array(greenCount).fill('green'),
-        ]
-      : this._seededShuffle([
-          ...Array(greenCount).fill('green'),
-          ...Array(redCount).fill('red'),
-          ...Array(dotCount - coloredCount).fill('gray'),
-        ], seed);
-    const dots = states.map(c => this._personSvg(c)).join('');
+
+    // Chance row: green fraction = chance / 2 (chance 1.0 → 50/50, 2.0 → all green, 0 → all red).
+    const chanceGreen = Math.round(coloredCount * (bracket.chance / 2));
+    const chanceRed   = coloredCount - chanceGreen;
+    const chanceStates = ordered
+      ? [...Array(chanceRed).fill('red'), ...Array(dotCount - coloredCount).fill('gray'), ...Array(chanceGreen).fill('green')]
+      : this._seededShuffle([...Array(chanceGreen).fill('green'), ...Array(chanceRed).fill('red'), ...Array(dotCount - coloredCount).fill('gray')], seed);
+    const chanceDots = chanceStates.map(c => this._personSvg(c)).join('');
+
+    // Favor row: visible once confidence reaches 25%.
+    // Three-tier encoding across two linear ranges:
+    //   favor 0–2: red → green (favor/2 green fraction, same scale as chance)
+    //   favor 2–4: green → gold (gold replaces from the top; red goes to 0 at favor=2)
+    //   favor 4+:  all gold (saturated exceptional)
+    let favorRow = '';
+    if (confidence >= 25) {
+      const fav = bracket.favor;
+      let favorGreen, favorRed, favorGold;
+      if (fav <= 2) {
+        favorGreen = Math.round(coloredCount * (fav / 2));
+        favorRed   = coloredCount - favorGreen;
+        favorGold  = 0;
+      } else {
+        favorGold  = Math.round(coloredCount * Math.min(1, (fav - 2) / 2));
+        favorGreen = coloredCount - favorGold;
+        favorRed   = 0;
+      }
+      const favorStates = ordered
+        ? [...Array(favorRed).fill('red'), ...Array(dotCount - coloredCount).fill('gray'), ...Array(favorGreen).fill('green'), ...Array(favorGold).fill('gold')]
+        : this._seededShuffle([...Array(favorGold).fill('gold'), ...Array(favorGreen).fill('green'), ...Array(favorRed).fill('red'), ...Array(dotCount - coloredCount).fill('gray')], seed + 1000);
+      const favorDots = favorStates.map(c => this._circleSvg(c)).join('');
+      favorRow = `<div class="vp-dot-row vp-dot-row--favor">${favorDots}</div>`;
+    }
 
     const popLabel = showPopulation
       ? `<span class="vp-bracket-pop">${bracket.count.toLocaleString()} people</span>`
@@ -88,14 +107,21 @@ const VisitorProfile = {
         ${popLabel}
         <span class="vp-bracket-conf">${Math.round(confidence)}% observed</span>
       </div>
-      <div class="vp-dot-field">${dots}</div>
+      <div class="vp-dot-field">
+        <div class="vp-dot-row">${chanceDots}</div>
+        ${favorRow}
+      </div>
     </div>`;
   },
 
-  // Tiny SVG person silhouette. fill="currentColor" makes the shapes inherit
-  // the CSS color property set by the vp-person--* class.
+  // Tiny SVG person silhouette. fill="currentColor" inherits the vp-person--* color class.
   _personSvg(color) {
     return `<svg class="vp-person vp-person--${color}" viewBox="0 0 10 16" width="11" height="17" fill="currentColor" aria-hidden="true"><circle cx="5" cy="3.5" r="2.8"/><path d="M0.5 16 Q0.5 9.5 5 9.5 Q9.5 9.5 9.5 16 Z"/></svg>`;
+  },
+
+  // Small filled circle for the favor row. fill="currentColor" inherits the vp-circle--* color class.
+  _circleSvg(color) {
+    return `<svg class="vp-circle vp-circle--${color}" viewBox="0 0 8 8" width="8" height="8" fill="currentColor" aria-hidden="true"><circle cx="4" cy="4" r="4"/></svg>`;
   },
 
   // Deterministic Fisher-Yates shuffle using a seed so layout is stable across redraws.

@@ -211,9 +211,16 @@
             <div class="panel-header">
               Visitor Profile
               <div class="vp-legend">
-                <span class="vp-legend-item"><span class="vp-legend-swatch vp-legend-swatch--green"></span>Likely to visit</span>
-                <span class="vp-legend-item"><span class="vp-legend-swatch vp-legend-swatch--red"></span>Unlikely to visit</span>
-                <span class="vp-legend-item"><span class="vp-legend-swatch vp-legend-swatch--gray"></span>Unknown</span>
+                <div class="vp-legend-row">
+                  <span class="vp-legend-item"><span class="vp-legend-swatch vp-legend-swatch--green"></span>Favorable</span>
+                  <span class="vp-legend-item"><span class="vp-legend-swatch vp-legend-swatch--amber"></span>Exceptional</span>
+                  <span class="vp-legend-item"><span class="vp-legend-swatch vp-legend-swatch--red"></span>Unfavorable</span>
+                  <span class="vp-legend-item"><span class="vp-legend-swatch vp-legend-swatch--gray"></span>Unknown</span>
+                </div>
+                <div class="vp-legend-row">
+                  <span class="vp-legend-item"><svg viewBox="0 0 10 16" width="8" height="13" fill="#9ca3af" aria-hidden="true"><circle cx="5" cy="3.5" r="2.8"/><path d="M0.5 16 Q0.5 9.5 5 9.5 Q9.5 9.5 9.5 16 Z"/></svg>Visits parks</span>
+                  <span class="vp-legend-item"><svg viewBox="0 0 8 8" width="8" height="8" fill="#9ca3af" aria-hidden="true"><circle cx="4" cy="4" r="4"/></svg>Likes yours <span class="vp-legend-unlock">(25%+ observed)</span></span>
+                </div>
               </div>
               <button class="panel-close-btn" onclick="closePanels()">✕</button>
             </div>
