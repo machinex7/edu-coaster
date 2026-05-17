@@ -73,14 +73,26 @@ const VisitorProfile = {
     const chanceDots = chanceStates.map(c => this._personSvg(c)).join('');
 
     // Favor row: visible once confidence reaches 25%.
-    // Green fraction = favor / 2 (same scale as chance; favor starts at 1.0 = neutral = 50/50).
+    // Three-tier encoding across two linear ranges:
+    //   favor 0–2: red → green (favor/2 green fraction, same scale as chance)
+    //   favor 2–4: green → gold (gold replaces from the top; red goes to 0 at favor=2)
+    //   favor 4+:  all gold (saturated exceptional)
     let favorRow = '';
     if (confidence >= 25) {
-      const favorGreen = Math.round(coloredCount * Math.min(1, bracket.favor / 2));
-      const favorRed   = coloredCount - favorGreen;
+      const fav = bracket.favor;
+      let favorGreen, favorRed, favorGold;
+      if (fav <= 2) {
+        favorGreen = Math.round(coloredCount * (fav / 2));
+        favorRed   = coloredCount - favorGreen;
+        favorGold  = 0;
+      } else {
+        favorGold  = Math.round(coloredCount * Math.min(1, (fav - 2) / 2));
+        favorGreen = coloredCount - favorGold;
+        favorRed   = 0;
+      }
       const favorStates = ordered
-        ? [...Array(favorRed).fill('red'), ...Array(dotCount - coloredCount).fill('gray'), ...Array(favorGreen).fill('green')]
-        : this._seededShuffle([...Array(favorGreen).fill('green'), ...Array(favorRed).fill('red'), ...Array(dotCount - coloredCount).fill('gray')], seed + 1000);
+        ? [...Array(favorRed).fill('red'), ...Array(dotCount - coloredCount).fill('gray'), ...Array(favorGreen).fill('green'), ...Array(favorGold).fill('gold')]
+        : this._seededShuffle([...Array(favorGold).fill('gold'), ...Array(favorGreen).fill('green'), ...Array(favorRed).fill('red'), ...Array(dotCount - coloredCount).fill('gray')], seed + 1000);
       const favorDots = favorStates.map(c => this._circleSvg(c)).join('');
       favorRow = `<div class="vp-dot-row vp-dot-row--favor">${favorDots}</div>`;
     }

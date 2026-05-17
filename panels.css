@@ -1224,9 +1224,10 @@
 .vp-person--green     { color: #22c55e; }
 .vp-person--amber     { color: #f59e0b; }
 
-/* Favor circles */
+/* Favor circles — gold tier indicates favor > 2 (exceptional appeal) */
 .vp-circle            { flex-shrink: 0; display: block; }
 .vp-circle--green     { color: #22c55e; }
+.vp-circle--gold      { color: #f59e0b; }
 .vp-circle--red       { color: #ef4444; }
 .vp-circle--gray      { color: #4b5563; }
 .vp-person--red       { color: #ef4444; }
