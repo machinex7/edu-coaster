@@ -41,6 +41,7 @@ python3 -m http.server
 | `tax-form.js` | Annual business income tax return exercise — drag-and-drop sorting modal with live progressive-bracket calculation (`TaxForm` object) |
 | `concessions.js` | Concessions panel: ingredient ordering, menu pricing, combo meals, food revenue calculation (`Concessions` object) |
 | `membership.js` | Membership plan definitions, sales simulation, member attendance contribution, Admission-panel UI (`Membership` object) |
+| `discounts.js` | Gate discount rules — schedule, discount type, ID-verifiable demographic targeting, gate cost calculation, demographic confidence observation, visitor speech-bubble feedback (`Discounts` object) |
 | `animations.js` | Visual-only visitor animation system — path caching, sprite movement, trash and coin particles (`Animations` object) |
 | `hud.js` | HUD display, stage transitions, panel management, view mode toolbar, construction bottom bar, security SVG overlay, round summary modal, pricing panel |
 | `incidents.js` | Random multi-phase incident system — spawn logic, phase management, computed property outputs, panel rendering (`Incidents` object) |
@@ -1263,7 +1264,8 @@ On successful submission, `TaxForm.taxOwed` and `TaxForm.taxDueRound` are set. `
 - Side panels: Rides, Staffing, Security, Admission, Banking, Inventory, Customer Surveys, Research, Marketing, Visitor Profile, Awards
 - HUD: budget, date (Week W, QN, YYYY), stage badge
 - Finance: gate/parking/shop revenue; staff/utility/construction/theft costs; round summary modal
-- Admission panel: gate price control; price exhaustion suppresses demand
+- Admission panel: three tabs — Pricing (gate/concession price controls), Membership, and Discounts; active tab persists across open/close
+- Discount rules: player creates rules with a Schedule (Weekends / Weekdays / One Day a Month) and discount type (20% off / Half off / BOGO / Free); targeting restricted to ID-verifiable groups — Everyone, five Age brackets, or named Visitor Status brackets (Disabled, Veteran, Disabled Veteran); each active rule deducts gate revenue proportional to the bracket's chance × favor share and the schedule's day multiplier; named-bracket rules also increment `Population.confidence` for that bracket (visitors present ID = direct observation) and push a weighted quote onto `Finance.feedback` so it surfaces as a visitor speech bubble
 - Banking panel: loan application flow
 - Merchandise upcharge control in Inventory → Stock tab
 - Park metrics: `parkSatisfaction`, `rideOpinion`, `mealSatisfaction`
