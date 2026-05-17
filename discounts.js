@@ -86,13 +86,12 @@ const Discounts = {
   _formOpen: false,
 
   // Returns the additive favor boost for a bracket this round, summed across all
-  // active rules that target it (or target Everyone).
+  // active rules that target it.
   getFavorBoost(catKey, bracketName) {
     let boost = 0;
     for (const rule of this.rules) {
       if (!this.isActiveThisRound(rule)) continue;
-      // null demoKey means Everyone — boost every bracket.
-      if (rule.demoKey !== null && (rule.demoKey !== catKey || rule.bracketName !== bracketName)) continue;
+      if (rule.demoKey !== catKey || rule.bracketName !== bracketName) continue;
       boost += DISCOUNT_TYPES.find(t => t.value === rule.discountType)?.favorBoost ?? 0;
     }
     return boost;
@@ -107,34 +106,27 @@ const Discounts = {
   },
 
   // Calculates the total gate revenue lost this round across all discount rules.
-  // "Everyone" rules (demoKey null) apply to the full attendance. Bracket rules
-  // estimate the affected slice via chance × favor weighting within that category.
+  // Estimates the affected-visitor slice via chance × favor weighting within the bracket's category.
   calcGateCost(weeklyAttendance, gatePrice) {
     let totalCost = 0;
 
     for (const rule of this.rules) {
       if (!this.isActiveThisRound(rule)) continue;
 
-      const sched = DISCOUNT_SCHEDULES.find(s => s.value === rule.schedule) ?? DISCOUNT_SCHEDULES[0];
+      const sched       = DISCOUNT_SCHEDULES.find(s => s.value === rule.schedule) ?? DISCOUNT_SCHEDULES[0];
+      const arrayKey    = rule.demoKey === 'AGE' ? 'AGE_BRACKETS' : 'VISITOR_STATUS';
+      const brackets    = Population[arrayKey] || [];
+      const totalWeight = brackets.reduce((s, b) => s + b.chance * b.favor, 0);
+      if (totalWeight === 0) continue;
+      const bracketIdx = brackets.findIndex(b => b.name === rule.bracketName);
+      if (bracketIdx < 0) continue;
+      const bracket    = brackets[bracketIdx];
+      const fraction   = (bracket.chance * bracket.favor) / totalWeight;
 
-      let fraction;
-      if (rule.demoKey === null) {
-        fraction = 1;
-      } else {
-        const arrayKey    = rule.demoKey === 'AGE' ? 'AGE_BRACKETS' : 'VISITOR_STATUS';
-        const brackets    = Population[arrayKey] || [];
-        const totalWeight = brackets.reduce((s, b) => s + b.chance * b.favor, 0);
-        if (totalWeight === 0) continue;
-        const bracketIdx = brackets.findIndex(b => b.name === rule.bracketName);
-        if (bracketIdx < 0) continue;
-        const bracket = brackets[bracketIdx];
-        fraction = (bracket.chance * bracket.favor) / totalWeight;
-
-        // Visitors who redeemed the discount presented ID — direct demographic observation.
-        const affected = Math.round(weeklyAttendance * fraction * sched.dayMult);
-        Population.observeDiscount(rule.demoKey, bracketIdx, affected);
-        this._pushFeedback(rule, affected);
-      }
+      // Visitors who redeemed the discount presented ID — direct demographic observation.
+      const affected = Math.round(weeklyAttendance * fraction * sched.dayMult);
+      Population.observeDiscount(rule.demoKey, bracketIdx, affected);
+      this._pushFeedback(rule, affected);
 
       const costFraction = DISCOUNT_TYPES.find(t => t.value === rule.discountType)?.costFraction ?? 0;
       const cost         = Math.round(weeklyAttendance * fraction * gatePrice * costFraction * sched.dayMult);
@@ -153,18 +145,28 @@ const Discounts = {
     this._render(body);
   },
 
+  // Returns true when every eligible bracket already has a rule.
+  _allBracketsTaken() {
+    const eligible = Population.AGE_BRACKETS.length
+      + Population.VISITOR_STATUS.filter(b => b.name !== 'None').length;
+    return this.rules.length >= eligible;
+  },
+
   // Rebuilds the full panel content and re-wires all event listeners.
   _render(body) {
-    const listHtml = this.rules.length === 0
+    const allTaken  = this._allBracketsTaken();
+    const listHtml  = this.rules.length === 0
       ? '<p class="empty-note">No discounts set up yet.</p>'
       : this.rules.map(r => this._ruleCardHtml(r)).join('');
 
+    // Hide the add button when every bracket is already in use.
+    const addBtn = allTaken && !this._formOpen ? '' : `
+      <button id="new-discount-btn" class="new-discount-btn${this._formOpen ? ' open' : ''}">
+        ${this._formOpen ? '✕ Cancel' : '+ New Discount'}
+      </button>`;
+
     body.innerHTML = `
-      <div class="discounts-toolbar">
-        <button id="new-discount-btn" class="new-discount-btn${this._formOpen ? ' open' : ''}">
-          ${this._formOpen ? '✕ Cancel' : '+ New Discount'}
-        </button>
-      </div>
+      <div class="discounts-toolbar">${addBtn}</div>
       ${this._formOpen ? this._formHtml() : ''}
       <div class="discounts-list">${listHtml}</div>
     `;
@@ -188,9 +190,10 @@ const Discounts = {
   },
 
   // Returns the HTML string for the new-discount form.
-  // The "Who" selector is a flat list of verifiable targets: Everyone, each Age bracket,
-  // and each named Visitor Status bracket (excluding the unverifiable "None" entry).
+  // Brackets that already have an active rule are excluded from the selector.
   _formHtml() {
+    const usedNames = new Set(this.rules.map(r => r.bracketName));
+
     const schedOpts = DISCOUNT_SCHEDULES.map(s =>
       `<option value="${s.value}">${s.label}</option>`
     ).join('');
@@ -199,12 +202,13 @@ const Discounts = {
       `<option value="${t.value}">${t.label}</option>`
     ).join('');
 
-    const ageOpts = Population.AGE_BRACKETS.map(b =>
-      `<option value="AGE__${b.name}">${b.name}</option>`
-    ).join('');
+    const ageOpts = Population.AGE_BRACKETS
+      .filter(b => !usedNames.has(b.name))
+      .map(b => `<option value="AGE__${b.name}">${b.name}</option>`)
+      .join('');
 
     const statusOpts = Population.VISITOR_STATUS
-      .filter(b => b.name !== 'None')
+      .filter(b => b.name !== 'None' && !usedNames.has(b.name))
       .map(b => `<option value="STATUS__${b.name}">${b.name}</option>`)
       .join('');
 
@@ -223,9 +227,8 @@ const Discounts = {
         <div class="form-field">
           <label>Who qualifies</label>
           <select id="df-target">
-            <option value="all">Everyone</option>
-            <optgroup label="Age">${ageOpts}</optgroup>
-            <optgroup label="Visitor Status">${statusOpts}</optgroup>
+            ${ageOpts ? `<optgroup label="Age">${ageOpts}</optgroup>` : ''}
+            ${statusOpts ? `<optgroup label="Visitor Status">${statusOpts}</optgroup>` : ''}
           </select>
         </div>
         <div class="form-actions">
@@ -250,13 +253,12 @@ const Discounts = {
       const targetVal    = document.getElementById('df-target').value;
       const discountType = DISCOUNT_TYPES.find(t => t.value === typeVal);
 
-      let demoKey = null, bracketName = null, targetLabel = 'Everyone';
-      if (targetVal !== 'all') {
-        const sep = targetVal.indexOf('__');
-        demoKey     = targetVal.slice(0, sep);
-        bracketName = targetVal.slice(sep + 2);
-        targetLabel = bracketName;
-      }
+      const sep         = targetVal.indexOf('__');
+      const demoKey     = targetVal.slice(0, sep);
+      const bracketName = targetVal.slice(sep + 2);
+
+      // Guard against duplicate (shouldn't be reachable via UI, but defensive).
+      if (this.rules.some(r => r.bracketName === bracketName)) return;
 
       this.rules.push({
         id:            this._nextId++,
@@ -265,7 +267,7 @@ const Discounts = {
         discountLabel: discountType.label,
         demoKey,
         bracketName,
-        targetLabel,
+        targetLabel:   bracketName,
         roundCreated:  round,
         moneyLost:     0,
       });
