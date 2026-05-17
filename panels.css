@@ -1103,16 +1103,26 @@
 /* Legend in panel header */
 .vp-legend {
   display: flex;
-  gap: 14px;
-  align-items: center;
+  flex-direction: column;
+  gap: 4px;
   font-size: 0.72rem;
   color: #9ca3af;
+}
+
+.vp-legend-row {
+  display: flex;
+  gap: 14px;
+  align-items: center;
 }
 
 .vp-legend-item {
   display: flex;
   align-items: center;
   gap: 5px;
+}
+
+.vp-legend-unlock {
+  color: #4b5563;
 }
 
 .vp-legend-swatch {
@@ -1190,17 +1200,35 @@
   font-variant-numeric: tabular-nums;
 }
 
-/* Dot field — wrapping row of person SVGs */
+/* Dot field — column of dot rows (chance on top, favor below) */
 .vp-dot-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Each row wraps its icons */
+.vp-dot-row {
   display: flex;
   flex-wrap: wrap;
   gap: 3px;
   align-content: flex-start;
 }
 
+/* Favor row sits slightly closer to the chance row */
+.vp-dot-row--favor {
+  margin-top: 1px;
+}
+
 .vp-person            { flex-shrink: 0; display: block; }
 .vp-person--green     { color: #22c55e; }
 .vp-person--amber     { color: #f59e0b; }
+
+/* Favor circles */
+.vp-circle            { flex-shrink: 0; display: block; }
+.vp-circle--green     { color: #22c55e; }
+.vp-circle--red       { color: #ef4444; }
+.vp-circle--gray      { color: #4b5563; }
 .vp-person--red       { color: #ef4444; }
 
 /* ── Discount Days panel ── */
