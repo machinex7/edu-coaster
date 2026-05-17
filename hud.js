@@ -870,7 +870,7 @@ function refreshRidesPanel() {
 const PRICE_ITEMS = [
   {
     key:       'gate',
-    label:     'Gate Admission',
+    label:     'Regular Admission',
     unit:      '$/visitor',
     getValue:  () => Finance.gatePrice,
     setValue:  v => {
@@ -1265,7 +1265,7 @@ function buildParkingPanel() {
 /* Active tab in the Admission panel; persists across panel close/reopen. */
 let _financialActiveTab = 'pricing';
 
-/* buildFinancialPanel - renders the Admission panel with Pricing, Membership, and Discounts tabs */
+/* buildFinancialPanel - renders the Admission panel with Pricing and Membership tabs */
 function buildFinancialPanel() {
   document.querySelectorAll('.fin-tab-btn').forEach(btn => {
     btn.addEventListener('click', () => _switchFinancialTab(btn.dataset.finTab));
@@ -1282,10 +1282,9 @@ function _switchFinancialTab(tab) {
   document.getElementById(`fin-${tab}-view`).classList.remove('hidden');
   if (tab === 'pricing')    _buildPricingTab();
   if (tab === 'membership') Membership.buildSection();
-  if (tab === 'discounts')  Discounts.buildPanel();
 }
 
-/* _buildPricingTab - renders gate and concession price controls into the Pricing tab */
+/* _buildPricingTab - renders admission price controls then the discounts section below */
 function _buildPricingTab() {
   const rows = PRICE_ITEMS.map(item => `
     <div class="price-row">
@@ -1298,7 +1297,7 @@ function _buildPricingTab() {
         <button class="price-apply-btn" data-key="${item.key}">Apply</button>
       </div>
     </div>`).join('');
-  document.getElementById('fin-pricing-view').innerHTML = `
+  document.getElementById('fin-pricing-controls').innerHTML = `
     <div class="financial-section">
       <div class="financial-section-header">Pricing Controls</div>
       <div class="price-list">${rows}</div>
@@ -1313,6 +1312,7 @@ function _buildPricingTab() {
       input.value = item.getValue();
     });
   });
+  Discounts.buildPanel();
 }
 
 /* buildBankingPanel - renders the Banking panel: loan application and active loan status */
