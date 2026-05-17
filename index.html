@@ -63,7 +63,6 @@
           <button class="tool-btn" data-panel="inventory">Inventory</button>
           <button class="tool-btn" data-panel="survey" disabled>Customer Surveys</button>
           <button class="tool-btn" data-panel="research">Research</button>
-          <button class="tool-btn" data-panel="discounts">Discount Days</button>
           <button class="tool-btn" data-panel="marketing">Marketing</button>
           <button class="tool-btn" data-panel="visitor-profile">Visitor Profile</button>
           <button class="tool-btn hidden" data-panel="awards">Awards</button>
@@ -145,14 +144,6 @@
           </div>
         </div>
 
-        <!-- Discount Days slide panel -->
-        <div id="panel-discounts" class="side-panel closed">
-          <div class="side-panel-inner">
-            <div class="panel-header">Discount Days</div>
-            <div id="discounts-panel-body"></div>
-          </div>
-        </div>
-
         <!-- Marketing slide panel -->
         <div id="panel-marketing" class="side-panel closed">
           <div class="side-panel-inner">
@@ -165,7 +156,17 @@
         <div id="panel-financial" class="side-panel closed">
           <div class="side-panel-inner">
             <div class="panel-header">Admission</div>
-            <div id="financial-panel-body"></div>
+            <div id="financial-sub-tabs" class="fin-sub-tabs">
+              <button class="fin-tab-btn active" data-fin-tab="pricing">Pricing</button>
+              <button class="fin-tab-btn" data-fin-tab="membership">Membership</button>
+            </div>
+            <div id="fin-pricing-view" class="fin-view">
+              <div id="fin-pricing-controls"></div>
+              <div id="discounts-panel-body"></div>
+            </div>
+            <div id="fin-membership-view" class="fin-view hidden">
+              <div id="membership-section"></div>
+            </div>
           </div>
         </div>
 

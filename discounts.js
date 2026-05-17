@@ -10,25 +10,66 @@ const DISCOUNT_TYPES = [
   { value: 'free',  label: 'Free Admission', costFraction: 1.00, favorBoost: 0.50 },
 ];
 
-// Each frequency entry carries its display label and how many rounds elapse between
-// applications (period: 1 = every round, 4 = roughly once a month, etc.).
-const DISCOUNT_FREQS = [
-  { value: 'weekly',   label: 'Every week',      period: 1  },
-  { value: 'biweekly', label: 'Every 2 weeks',   period: 2  },
-  { value: 'monthly',  label: 'Once a month',    period: 4  },
-  { value: 'seasonal', label: 'Once per season', period: 13 },
+// Schedule options combine day coverage and frequency into one choice.
+// dayMult is the fraction of the week the discount covers; period is rounds between activations.
+const DISCOUNT_SCHEDULES = [
+  { value: 'weekends', label: 'Weekends',        period: 1, dayMult: 2 / 7 },
+  { value: 'weekdays', label: 'Weekdays',        period: 1, dayMult: 5 / 7 },
+  { value: 'monthly',  label: 'One Day a Month', period: 4, dayMult: 1 / 7 },
 ];
 
-// Ordered Sun–Sat entries for the day-of-week checkbox row.
-const DISCOUNT_DAYS = [
-  { value: 'sun', short: 'Sun' },
-  { value: 'mon', short: 'Mon' },
-  { value: 'tue', short: 'Tue' },
-  { value: 'wed', short: 'Wed' },
-  { value: 'thu', short: 'Thu' },
-  { value: 'fri', short: 'Fri' },
-  { value: 'sat', short: 'Sat' },
-];
+// Visitor quote pools keyed by bracket name.
+// Picked randomly when a discount fires to give texture to the round summary.
+const DISCOUNT_QUOTES = {
+  'Child (0–12)': [
+    "Glad I could get my kids in free today!",
+    "My little ones would never let me skip this place — the deal helps a lot.",
+    "This is how you build a family tradition.",
+    "Four kids is expensive. This discount makes it possible.",
+  ],
+  'Teen (13–17)': [
+    "Finally, a place that doesn't charge us adult prices.",
+    "Brought my whole friend group because of this deal.",
+    "Nice to feel welcome for once.",
+    "Told everyone at school about the teen discount.",
+  ],
+  'Young Adult (18–34)': [
+    "Would not have come today at full price, honestly.",
+    "This is how you get young people through the door.",
+    "Great deal — I'm telling everyone about this.",
+    "Came back again this month because of the deal.",
+  ],
+  'Adult (35–54)': [
+    "Appreciate the deal — makes it worth the drive.",
+    "Good value makes all the difference.",
+    "We come every time there's a discount weekend.",
+    "Nice that the park rewards people who actually show up.",
+  ],
+  'Senior (55+)': [
+    "The senior discount really makes a difference on a fixed income.",
+    "I always mention this to people at my community center.",
+    "My friends and I plan our whole month around deals like this.",
+    "At my age I appreciate every dollar saved.",
+  ],
+  'Disabled': [
+    "It means a lot that this park offers an accessibility discount.",
+    "The discount makes it possible for me to visit more often.",
+    "Really appreciate being recognized — thank you.",
+    "Not every park does this. Glad you do.",
+  ],
+  'Veteran': [
+    "I appreciate the Veterans discount.",
+    "Thank you for recognizing my service.",
+    "Brought the whole family today because of this offer.",
+    "A lot of places do this now — always means something.",
+  ],
+  'Disabled Veteran': [
+    "This discount means more than you know.",
+    "Thank you for honoring those who served.",
+    "I appreciate every park that offers this.",
+    "Told my VA group about this place.",
+  ],
+};
 
 const Discounts = {
 
@@ -44,62 +85,59 @@ const Discounts = {
   // Whether the new-discount form is currently expanded.
   _formOpen: false,
 
-  // Maps demographic category keys to their Population array name and display label.
-  DEMO_CATEGORIES: [
-    { key: 'AGE',        label: 'Age Group',         arrayKey: 'AGE_BRACKETS'      },
-    { key: 'INCOME',     label: 'Income Level',      arrayKey: 'INCOME_BRACKETS'   },
-    { key: 'DISTANCE',   label: 'Home Distance',     arrayKey: 'DISTANCE_BRACKETS' },
-    { key: 'HOUSEHOLD',  label: 'Household Size',    arrayKey: 'HOUSEHOLD_SIZES'   },
-    { key: 'AREA',       label: 'Area Type',         arrayKey: 'AREA_TYPES'        },
-    { key: 'EMPLOYMENT', label: 'Employment Status', arrayKey: 'EMPLOYMENT_STATUS' },
-    { key: 'STATUS',     label: 'Visitor Status',    arrayKey: 'VISITOR_STATUS'    },
-  ],
-
   // Returns the additive favor boost for a bracket this round, summed across all
-  // active discount rules that target it. Returns 0 if none apply.
+  // active rules that target it (or target Everyone).
   getFavorBoost(catKey, bracketName) {
     let boost = 0;
     for (const rule of this.rules) {
-      if (rule.demoKey !== catKey || rule.bracketName !== bracketName) continue;
       if (!this.isActiveThisRound(rule)) continue;
+      // null demoKey means Everyone — boost every bracket.
+      if (rule.demoKey !== null && (rule.demoKey !== catKey || rule.bracketName !== bracketName)) continue;
       boost += DISCOUNT_TYPES.find(t => t.value === rule.discountType)?.favorBoost ?? 0;
     }
     return boost;
   },
 
-  // Returns true if rule should apply this round based on its frequency.
+  // Returns true if rule should apply this round based on its schedule's period.
   // Uses (round - roundCreated) % period so the rule fires on the round it was
   // created and then repeats at the correct cadence from that anchor point.
   isActiveThisRound(rule) {
-    const period = DISCOUNT_FREQS.find(f => f.value === rule.freq)?.period ?? 1;
-    return (round - rule.roundCreated) % period === 0;
+    const sched = DISCOUNT_SCHEDULES.find(s => s.value === rule.schedule) ?? DISCOUNT_SCHEDULES[0];
+    return (round - rule.roundCreated) % sched.period === 0;
   },
 
   // Calculates the total gate revenue lost this round across all discount rules.
-  // For each rule: estimates the fraction of weeklyAttendance in that bracket using
-  // chance × favor weights, then applies the discount's cost fraction to that slice.
-  // Increments rule.moneyLost and returns the total deduction.
+  // "Everyone" rules (demoKey null) apply to the full attendance. Bracket rules
+  // estimate the affected slice via chance × favor weighting within that category.
   calcGateCost(weeklyAttendance, gatePrice) {
     let totalCost = 0;
 
     for (const rule of this.rules) {
       if (!this.isActiveThisRound(rule)) continue;
 
-      const cat = this.DEMO_CATEGORIES.find(c => c.key === rule.demoKey);
-      if (!cat) continue;
+      const sched = DISCOUNT_SCHEDULES.find(s => s.value === rule.schedule) ?? DISCOUNT_SCHEDULES[0];
 
-      const brackets    = Population[cat.arrayKey] || [];
-      const totalWeight = brackets.reduce((s, b) => s + b.chance * b.favor, 0);
-      if (totalWeight === 0) continue;
+      let fraction;
+      if (rule.demoKey === null) {
+        fraction = 1;
+      } else {
+        const arrayKey    = rule.demoKey === 'AGE' ? 'AGE_BRACKETS' : 'VISITOR_STATUS';
+        const brackets    = Population[arrayKey] || [];
+        const totalWeight = brackets.reduce((s, b) => s + b.chance * b.favor, 0);
+        if (totalWeight === 0) continue;
+        const bracketIdx = brackets.findIndex(b => b.name === rule.bracketName);
+        if (bracketIdx < 0) continue;
+        const bracket = brackets[bracketIdx];
+        fraction = (bracket.chance * bracket.favor) / totalWeight;
 
-      const bracket = brackets.find(b => b.name === rule.bracketName);
-      if (!bracket) continue;
+        // Visitors who redeemed the discount presented ID — direct demographic observation.
+        const affected = Math.round(weeklyAttendance * fraction * sched.dayMult);
+        Population.observeDiscount(rule.demoKey, bracketIdx, affected);
+        this._pushFeedback(rule, affected);
+      }
 
-      const dayMultiplier = rule.days.length / 7;
-      const fraction      = (bracket.chance * bracket.favor) / totalWeight;
-      const affected      = weeklyAttendance * fraction;
-      const costFraction  = DISCOUNT_TYPES.find(t => t.value === rule.discountType)?.costFraction ?? 0;
-      const cost          = Math.round(affected * gatePrice * costFraction * dayMultiplier);
+      const costFraction = DISCOUNT_TYPES.find(t => t.value === rule.discountType)?.costFraction ?? 0;
+      const cost         = Math.round(weeklyAttendance * fraction * gatePrice * costFraction * sched.dayMult);
 
       rule.moneyLost += cost;
       totalCost      += cost;
@@ -137,7 +175,6 @@ const Discounts = {
     });
 
     if (this._formOpen) {
-      this._wireCategoryChange();
       this._wireFormActions();
     }
 
@@ -150,68 +187,47 @@ const Discounts = {
     });
   },
 
-  // Returns the brackets for a category, excluding any that make no sense as discount targets.
-  _bracketsFor(cat) {
-    const brackets = Population[cat.arrayKey] || [];
-    if (cat.key === 'STATUS') return brackets.filter(b => b.name !== 'None');
-    return brackets;
-  },
-
   // Returns the HTML string for the new-discount form.
+  // The "Who" selector is a flat list of verifiable targets: Everyone, each Age bracket,
+  // and each named Visitor Status bracket (excluding the unverifiable "None" entry).
   _formHtml() {
-    const firstCat = this.DEMO_CATEGORIES[0];
-    const brackets = this._bracketsFor(firstCat);
-
-    const dayChips = DISCOUNT_DAYS.map(d =>
-      `<label class="day-chip">
-        <input type="checkbox" name="df-day" value="${d.value}">
-        <span>${d.short}</span>
-      </label>`
-    ).join('');
-
-    const freqOpts = DISCOUNT_FREQS.map(f =>
-      `<option value="${f.value}">${f.label}</option>`
+    const schedOpts = DISCOUNT_SCHEDULES.map(s =>
+      `<option value="${s.value}">${s.label}</option>`
     ).join('');
 
     const typeOpts = DISCOUNT_TYPES.map(t =>
       `<option value="${t.value}">${t.label}</option>`
     ).join('');
 
-    const catOpts = this.DEMO_CATEGORIES.map(c =>
-      `<option value="${c.key}">${c.label}</option>`
+    const ageOpts = Population.AGE_BRACKETS.map(b =>
+      `<option value="AGE__${b.name}">${b.name}</option>`
     ).join('');
 
-    const bracketOpts = brackets.map(b =>
-      `<option value="${b.name}">${b.name}</option>`
-    ).join('');
+    const statusOpts = Population.VISITOR_STATUS
+      .filter(b => b.name !== 'None')
+      .map(b => `<option value="STATUS__${b.name}">${b.name}</option>`)
+      .join('');
 
     return `
       <div class="posting-form discount-form" id="discount-form">
-        <div class="form-field">
-          <label>Days</label>
-          <div class="discount-day-picker">${dayChips}</div>
-        </div>
         <div class="discount-form-row">
           <div class="form-field">
-            <label>Frequency</label>
-            <select id="df-freq">${freqOpts}</select>
+            <label>Schedule</label>
+            <select id="df-schedule">${schedOpts}</select>
           </div>
           <div class="form-field">
             <label>Discount Type</label>
             <select id="df-type">${typeOpts}</select>
           </div>
         </div>
-        <div class="discount-form-row">
-          <div class="form-field">
-            <label>Demographic Group</label>
-            <select id="df-category">${catOpts}</select>
-          </div>
-          <div class="form-field">
-            <label>Bracket</label>
-            <select id="df-bracket">${bracketOpts}</select>
-          </div>
+        <div class="form-field">
+          <label>Who qualifies</label>
+          <select id="df-target">
+            <option value="all">Everyone</option>
+            <optgroup label="Age">${ageOpts}</optgroup>
+            <optgroup label="Visitor Status">${statusOpts}</optgroup>
+          </select>
         </div>
-        <div class="form-error hidden" id="df-error"></div>
         <div class="form-actions">
           <button id="df-save-btn" class="df-save-btn">Save Discount</button>
           <button id="df-cancel-btn" class="df-cancel-btn">Cancel</button>
@@ -220,24 +236,8 @@ const Discounts = {
     `;
   },
 
-  // Wires the demographic category dropdown to repopulate the bracket dropdown.
-  _wireCategoryChange() {
-    const catSelect     = document.getElementById('df-category');
-    const bracketSelect = document.getElementById('df-bracket');
-    if (!catSelect || !bracketSelect) return;
-
-    catSelect.addEventListener('change', () => {
-      const cat      = this.DEMO_CATEGORIES.find(c => c.key === catSelect.value);
-      const brackets = cat ? this._bracketsFor(cat) : [];
-      bracketSelect.innerHTML = brackets.map(b =>
-        `<option value="${b.name}">${b.name}</option>`
-      ).join('');
-    });
-  },
-
   // Wires the Save and Cancel buttons on the form.
   _wireFormActions() {
-    const errorEl = document.getElementById('df-error');
 
     document.getElementById('df-cancel-btn').addEventListener('click', () => {
       this._formOpen = false;
@@ -245,36 +245,27 @@ const Discounts = {
     });
 
     document.getElementById('df-save-btn').addEventListener('click', () => {
-      const days = Array.from(
-        document.querySelectorAll('input[name="df-day"]:checked')
-      ).map(cb => cb.value);
-
-      const freq        = document.getElementById('df-freq').value;
-      const typeVal     = document.getElementById('df-type').value;
-      const catKey      = document.getElementById('df-category').value;
-      const bracketName = document.getElementById('df-bracket').value;
-
-      if (days.length === 0) {
-        errorEl.textContent = 'Select at least one day.';
-        errorEl.classList.remove('hidden');
-        return;
-      }
-
-      const cat          = this.DEMO_CATEGORIES.find(c => c.key === catKey);
-      const bracket      = cat ? (Population[cat.arrayKey] || []).find(b => b.name === bracketName) : null;
-      if (!bracket) return;
-
+      const schedule     = document.getElementById('df-schedule').value;
+      const typeVal      = document.getElementById('df-type').value;
+      const targetVal    = document.getElementById('df-target').value;
       const discountType = DISCOUNT_TYPES.find(t => t.value === typeVal);
+
+      let demoKey = null, bracketName = null, targetLabel = 'Everyone';
+      if (targetVal !== 'all') {
+        const sep = targetVal.indexOf('__');
+        demoKey     = targetVal.slice(0, sep);
+        bracketName = targetVal.slice(sep + 2);
+        targetLabel = bracketName;
+      }
 
       this.rules.push({
         id:            this._nextId++,
-        days,
-        freq,
+        schedule,
         discountType:  discountType.value,
         discountLabel: discountType.label,
-        demoKey:       catKey,
-        demoLabel:     cat.label,
-        bracketName:   bracket.name,
+        demoKey,
+        bracketName,
+        targetLabel,
         roundCreated:  round,
         moneyLost:     0,
       });
@@ -284,15 +275,18 @@ const Discounts = {
     });
   },
 
-  // Returns a short human-readable summary of which days are active.
-  _daysLabel(days) {
-    if (days.length === 7) return 'Every day';
-    return days.map(v => DISCOUNT_DAYS.find(d => d.value === v)?.short || v).join(', ');
+  // Adds a visitor-voice item to Finance.feedback for the round.
+  // Weighted by affectedCount so busier discount groups appear more in speech bubbles.
+  _pushFeedback(rule, affectedCount) {
+    const quotes = DISCOUNT_QUOTES[rule.bracketName];
+    if (!quotes || affectedCount < 1) return;
+    const comment = quotes[Math.floor(Math.random() * quotes.length)];
+    Finance.feedback.push({ guestCount: affectedCount, comment });
   },
 
   // Returns the HTML string for a single discount rule card.
   _ruleCardHtml(rule) {
-    const freqLabel = DISCOUNT_FREQS.find(f => f.value === rule.freq)?.label || rule.freq;
+    const schedLabel = DISCOUNT_SCHEDULES.find(s => s.value === rule.schedule)?.label || rule.schedule;
 
     return `
       <div class="discount-card">
@@ -302,15 +296,11 @@ const Discounts = {
         <div class="discount-card-details">
           <div class="discount-detail-row">
             <span class="discount-detail-key">Who</span>
-            <span class="discount-detail-val">${rule.demoLabel}: ${rule.bracketName}</span>
+            <span class="discount-detail-val">${rule.targetLabel}</span>
           </div>
           <div class="discount-detail-row">
-            <span class="discount-detail-key">Days</span>
-            <span class="discount-detail-val">${this._daysLabel(rule.days)}</span>
-          </div>
-          <div class="discount-detail-row">
-            <span class="discount-detail-key">Freq</span>
-            <span class="discount-detail-val">${freqLabel}</span>
+            <span class="discount-detail-key">Schedule</span>
+            <span class="discount-detail-val">${schedLabel}</span>
           </div>
           <div class="discount-detail-row">
             <span class="discount-detail-key">Since</span>

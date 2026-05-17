@@ -301,6 +301,16 @@
 .inv-view { display: flex; flex-direction: column; flex: 1; overflow-y: auto; min-height: 0; }
 .inv-view.hidden { display: none; }
 
+/* Admission panel tabs (Pricing / Membership / Discounts) */
+.fin-sub-tabs { display: flex; border-bottom: 2px solid #374151; flex-shrink: 0; }
+.fin-tab-btn  { flex: 1; padding: 9px 6px; background: none; border: none;
+  border-bottom: 2px solid transparent; margin-bottom: -2px; color: #6b7280;
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.05em;
+  text-transform: uppercase; cursor: pointer; }
+.fin-tab-btn.active { color: #f3f4f6; border-bottom-color: #fbbf24; }
+.fin-view { display: flex; flex-direction: column; flex: 1; overflow-y: auto; min-height: 0; }
+.fin-view.hidden { display: none; }
+
 /* ── Stock tab ── */
 .inv-capacity-wrap { padding: 10px 12px 14px; border-bottom: 1px solid #374151; margin-bottom: 4px; }
 .inv-capacity-label { font-size: 0.75rem; color: #9ca3af; margin-bottom: 5px; }
@@ -1195,10 +1205,8 @@
 
 /* ── Discount Days panel ── */
 
-/* Scrollable body container */
+/* Body container — scroll is handled by the parent .fin-view */
 #discounts-panel-body {
-  flex: 1;
-  overflow-y: auto;
   display: flex;
   flex-direction: column;
 }
@@ -1236,46 +1244,6 @@
 /* The create-discount form (extends existing .posting-form) */
 .discount-form {
   margin: 0 10px 10px;
-}
-
-/* Row of day-of-week chip checkboxes */
-.discount-day-picker {
-  display: flex;
-  gap: 5px;
-  flex-wrap: wrap;
-}
-
-/* Individual day chip — wraps a hidden checkbox + visible label */
-.day-chip {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4px 0;
-  width: 36px;
-  border: 1px solid #374151;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: #6b7280;
-  background: #1f2937;
-  transition: background 0.1s, color 0.1s, border-color 0.1s;
-  user-select: none;
-}
-
-/* Hide the native checkbox — the chip label is the visual control */
-.day-chip input[type="checkbox"] {
-  position: absolute;
-  opacity: 0;
-  width: 0;
-  height: 0;
-}
-
-/* Checked state: amber highlight matching the game's active-button colour */
-.day-chip:has(input:checked) {
-  background: #92400e;
-  border-color: #d97706;
-  color: #fde68a;
 }
 
 /* Two-column row layout inside the form */

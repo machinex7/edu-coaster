@@ -708,7 +708,6 @@ function openPanel(panelId) {
   if (panelId === 'survey')     Survey.buildPanel();
   if (panelId === 'research')        Research.buildPanel();
   if (panelId === 'awards')          Awards.buildPanel();
-  if (panelId === 'discounts')        Discounts.buildPanel();
   if (panelId === 'marketing')       Marketing.buildPanel();
   if (panelId === 'visitor-profile') VisitorProfile.buildPanel();
   if (panelId === 'concessions')     Concessions.buildPanel();
@@ -871,7 +870,7 @@ function refreshRidesPanel() {
 const PRICE_ITEMS = [
   {
     key:       'gate',
-    label:     'Gate Admission',
+    label:     'Regular Admission',
     unit:      '$/visitor',
     getValue:  () => Finance.gatePrice,
     setValue:  v => {
@@ -1263,8 +1262,30 @@ function buildParkingPanel() {
   });
 }
 
-/* buildFinancialPanel - renders the Admission panel: gate price control */
+/* Active tab in the Admission panel; persists across panel close/reopen. */
+let _financialActiveTab = 'pricing';
+
+/* buildFinancialPanel - renders the Admission panel with Pricing and Membership tabs */
 function buildFinancialPanel() {
+  document.querySelectorAll('.fin-tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => _switchFinancialTab(btn.dataset.finTab));
+  });
+  _switchFinancialTab(_financialActiveTab);
+}
+
+/* _switchFinancialTab - activates the given tab and builds its content */
+function _switchFinancialTab(tab) {
+  _financialActiveTab = tab;
+  document.querySelectorAll('.fin-tab-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.finTab === tab));
+  document.querySelectorAll('.fin-view').forEach(v => v.classList.add('hidden'));
+  document.getElementById(`fin-${tab}-view`).classList.remove('hidden');
+  if (tab === 'pricing')    _buildPricingTab();
+  if (tab === 'membership') Membership.buildSection();
+}
+
+/* _buildPricingTab - renders admission price controls then the discounts section below */
+function _buildPricingTab() {
   const rows = PRICE_ITEMS.map(item => `
     <div class="price-row">
       <div class="price-label">${item.label}</div>
@@ -1276,14 +1297,11 @@ function buildFinancialPanel() {
         <button class="price-apply-btn" data-key="${item.key}">Apply</button>
       </div>
     </div>`).join('');
-
-  document.getElementById('financial-panel-body').innerHTML = `
+  document.getElementById('fin-pricing-controls').innerHTML = `
     <div class="financial-section">
       <div class="financial-section-header">Pricing Controls</div>
       <div class="price-list">${rows}</div>
-    </div>
-    <div class="financial-section" id="membership-section"></div>`;
-
+    </div>`;
   document.querySelectorAll('.price-apply-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const item   = PRICE_ITEMS.find(p => p.key === btn.dataset.key);
@@ -1294,8 +1312,7 @@ function buildFinancialPanel() {
       input.value = item.getValue();
     });
   });
-
-  Membership.buildSection();
+  Discounts.buildPanel();
 }
 
 /* buildBankingPanel - renders the Banking panel: loan application and active loan status */
