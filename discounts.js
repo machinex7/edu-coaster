@@ -18,6 +18,59 @@ const DISCOUNT_SCHEDULES = [
   { value: 'monthly',  label: 'One Day a Month', period: 4, dayMult: 1 / 7 },
 ];
 
+// Visitor quote pools keyed by bracket name.
+// Picked randomly when a discount fires to give texture to the round summary.
+const DISCOUNT_QUOTES = {
+  'Child (0–12)': [
+    "Glad I could get my kids in free today!",
+    "My little ones would never let me skip this place — the deal helps a lot.",
+    "This is how you build a family tradition.",
+    "Four kids is expensive. This discount makes it possible.",
+  ],
+  'Teen (13–17)': [
+    "Finally, a place that doesn't charge us adult prices.",
+    "Brought my whole friend group because of this deal.",
+    "Nice to feel welcome for once.",
+    "Told everyone at school about the teen discount.",
+  ],
+  'Young Adult (18–34)': [
+    "Would not have come today at full price, honestly.",
+    "This is how you get young people through the door.",
+    "Great deal — I'm telling everyone about this.",
+    "Came back again this month because of the deal.",
+  ],
+  'Adult (35–54)': [
+    "Appreciate the deal — makes it worth the drive.",
+    "Good value makes all the difference.",
+    "We come every time there's a discount weekend.",
+    "Nice that the park rewards people who actually show up.",
+  ],
+  'Senior (55+)': [
+    "The senior discount really makes a difference on a fixed income.",
+    "I always mention this to people at my community center.",
+    "My friends and I plan our whole month around deals like this.",
+    "At my age I appreciate every dollar saved.",
+  ],
+  'Disabled': [
+    "It means a lot that this park offers an accessibility discount.",
+    "The discount makes it possible for me to visit more often.",
+    "Really appreciate being recognized — thank you.",
+    "Not every park does this. Glad you do.",
+  ],
+  'Veteran': [
+    "I appreciate the Veterans discount.",
+    "Thank you for recognizing my service.",
+    "Brought the whole family today because of this offer.",
+    "A lot of places do this now — always means something.",
+  ],
+  'Disabled Veteran': [
+    "This discount means more than you know.",
+    "Thank you for honoring those who served.",
+    "I appreciate every park that offers this.",
+    "Told my VA group about this place.",
+  ],
+};
+
 const Discounts = {
 
   // All active discount rules defined by the player.
@@ -80,6 +133,7 @@ const Discounts = {
         // Visitors who redeemed the discount presented ID — direct demographic observation.
         const affected = Math.round(weeklyAttendance * fraction * sched.dayMult);
         Population.observeDiscount(rule.demoKey, bracketIdx, affected);
+        this._pushFeedback(rule, affected);
       }
 
       const costFraction = DISCOUNT_TYPES.find(t => t.value === rule.discountType)?.costFraction ?? 0;
@@ -218,6 +272,24 @@ const Discounts = {
 
       this._formOpen = false;
       this.buildPanel();
+    });
+  },
+
+  // Pushes a visitor-voice notification for a bracket discount that fired this round.
+  // Picks a random quote from DISCOUNT_QUOTES for the bracket, and shows the
+  // approximate number of visitors who used the discount as context.
+  _pushFeedback(rule, affectedCount) {
+    const quotes = DISCOUNT_QUOTES[rule.bracketName];
+    if (!quotes || affectedCount < 1) return;
+    const quote = quotes[Math.floor(Math.random() * quotes.length)];
+    // Derive a short chip label from the bracket name (strip the age-range parenthetical).
+    const label = rule.bracketName.includes('(')
+      ? rule.bracketName.slice(0, rule.bracketName.indexOf('(')).trim()
+      : rule.bracketName;
+    const n = affectedCount.toLocaleString();
+    Notifications.push({
+      label,
+      message: `~${n} ${rule.targetLabel} visitors used the ${rule.discountLabel} discount. "${quote}"`,
     });
   },
 
