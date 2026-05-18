@@ -1,0 +1,115 @@
+[
+  {
+    "key": "investor",
+    "title": "Angel Investor",
+    "description": "A wealthy investor has seeded your park with startup capital — but she expects measurable results, on her schedule.",
+    "flavorText": "Venture capitalist Margaret Chen has agreed to back your park with $1,000,000 in seed capital. She believes in you — for now. In exchange she expects periodic repayments, performance milestones, and a path to a strong return on her investment. Miss the targets and she'll tighten the terms. Hit them and she may bring even more to the table.",
+
+    "steps": [
+      {
+        "round": 13,
+        "title": "Q1 Check-In",
+        "flavor": "Margaret stops by for an informal walkthrough. She's pleased with what you've built so far and says she's been talking the park up to her network. No demands today — just a reminder that the real reviews are coming."
+      },
+
+      {
+        "round": 26,
+        "title": "First Repayment",
+        "flavor": "As agreed in your original terms, $150,000 is due back to Margaret at the six-month mark. She wires you a brief note: 'A deal is a deal. Looking forward to seeing what you do with the rest.'",
+        "effect": {
+          "type": "cash_delta",
+          "value": -150000,
+          "description": "First repayment installment to investor."
+        }
+      },
+
+      {
+        "round": 39,
+        "title": "Q3 Performance Review",
+        "flavor": "Margaret has been watching your revenue numbers closely. She set a benchmark before she wrote the check, and now she wants to know if you've hit it.",
+        "condition": {
+          "type": "quarterly_revenue_gte",
+          "value": 250000,
+          "successFlavor": "Strong numbers. Margaret is visibly impressed and immediately starts forwarding your park's profile to her corporate contacts for team events. You feel the extra foot traffic before the week is out.",
+          "failFlavor": "Revenue fell short of Margaret's benchmark. She sends over a 'helpful' team of financial consultants to audit operations. Their fees and disruption push your ongoing costs up permanently."
+        },
+        "effect": {
+          "type": "demand_multiplier_set",
+          "value": 1.12,
+          "description": "Investor's corporate referral network produces a lasting 12% demand lift."
+        },
+        "failEffect": {
+          "type": "inflation_rate_set",
+          "value": 0.035,
+          "description": "Consultant fees and compliance overhead raise the effective inflation rate from 2% to 3.5% annually."
+        }
+      },
+
+      {
+        "round": 52,
+        "title": "Year-End Valuation",
+        "flavor": "One full year in. Margaret is hosting a formal board dinner and has hired an independent appraiser to value the park. She's deciding whether to double down or start planning her exit.",
+        "condition": {
+          "type": "park_value_gte",
+          "value": 1750000,
+          "successFlavor": "The appraisal comes in above Margaret's target. She's so confident in the trajectory that she's brought in a second investor, injecting another $400,000 into the park. The catch: two investors means more eyes on the numbers.",
+          "failFlavor": "The park hasn't appreciated enough to justify Margaret's confidence. She renegotiates the terms, adding a clause that increases your utility and operating overhead until valuations recover."
+        },
+        "effect": {
+          "type": "cash_delta",
+          "value": 400000,
+          "description": "Second investor injects $400,000 in fresh capital."
+        },
+        "failEffect": {
+          "type": "utility_multiplier_set",
+          "value": 1.25,
+          "description": "Renegotiated terms include an operations oversight surcharge, raising all utility costs 25% permanently."
+        }
+      },
+
+      {
+        "round": 78,
+        "title": "Expansion Decision",
+        "flavor": "Margaret and her co-investor are deciding whether to back a major marketing push to grow the park's reach. They want to see that attendance is real and growing before they commit.",
+        "condition": {
+          "type": "weekly_attendance_gte",
+          "value": 900,
+          "successFlavor": "The attendance figures seal the deal. The investors fund a sustained marketing campaign through their networks, and your park's reputation expands well beyond the local market.",
+          "failFlavor": "Turnout hasn't justified an expansion play. The investors quietly reduce their advocacy. Without their referral network, some of the goodwill you'd built in the market quietly fades."
+        },
+        "effect": {
+          "type": "demand_multiplier_set",
+          "value": 1.2,
+          "description": "Investor-backed marketing campaign produces a lasting 20% baseline demand increase."
+        },
+        "failEffect": {
+          "type": "demand_multiplier_set",
+          "value": 0.9,
+          "description": "Loss of investor referral network permanently reduces baseline demand by 10%."
+        }
+      },
+
+      {
+        "round": 104,
+        "title": "Final Reckoning",
+        "flavor": "Two years. The original agreement is up. Margaret is ready to either sell her stake back to you at the agreed price or exercise her buyout clause and take a controlling interest. The park's valuation tells the whole story.",
+        "condition": {
+          "type": "park_value_gte",
+          "value": 3500000,
+          "successFlavor": "The park is worth more than Margaret ever projected. She sells her stake back to you at the agreed price, shakes your hand, and tells you she'll be recommending you to every entrepreneur she meets. The park is fully yours.",
+          "failFlavor": "The valuation falls short. Margaret exercises her buyout clause. You still run the park day-to-day, but you now answer to a board that mandates cost controls across every department."
+        },
+        "effect": {
+          "type": "cash_delta",
+          "value": 300000,
+          "description": "Margaret returns a $300,000 success bonus as part of the agreed buyback terms."
+        },
+        "failEffect": {
+          "type": "inflation_rate_set",
+          "value": 0.05,
+          "description": "Board-mandated cost controls and compliance requirements drive the effective inflation rate to 5% annually."
+        }
+      }
+    ]
+  }
+]
