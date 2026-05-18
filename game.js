@@ -2,16 +2,17 @@
 const GRID_COLS = 20;
 const GRID_ROWS = 20;
 
+
 // Lot geometry: five axis-aligned rectangles that tile most of the 20×20 grid.
 // r1/c1 are inclusive upper-left; r2/c2 are inclusive lower-right.
-// Side lots deliberately overlap at the four corners; the small gaps between
-// the center lot and the side lots are permanently outside all lots.
+// 0-indexed.
+const LOT_WIDTH = 6;
 const LOTS = [
-  { id: LOT_ID.CENTER, r1:  7, c1:  7, r2: 12, c2: 12 }, // 6×6 center
-  { id: LOT_ID.NORTH,  r1:  0, c1:  3, r2:  5, c2: 16 }, // 6×14 top strip
-  { id: LOT_ID.SOUTH,  r1: 14, c1:  3, r2: 19, c2: 16 }, // 6×14 bottom strip
-  { id: LOT_ID.WEST,   r1:  3, c1:  0, r2: 16, c2:  5 }, // 14×6 left strip
-  { id: LOT_ID.EAST,   r1:  3, c1: 14, r2: 16, c2: 19 }, // 14×6 right strip
+  { id: LOT_ID.CENTER, r1:  LOT_WIDTH+1, c1:  LOT_WIDTH+1, r2: GRID_ROWS-LOT_WIDTH-1, c2: GRID_COLS-LOT_WIDTH-1 }, // 6×6 center
+  { id: LOT_ID.NORTH,  r1:  0, c1:  0, r2:  LOT_WIDTH-1, c2: GRID_COLS-LOT_WIDTH-1 }, // 6×14 top strip
+  { id: LOT_ID.SOUTH,  r1: GRID_ROWS-LOT_WIDTH, c1: LOT_WIDTH, r2: GRID_ROWS-1, c2: GRID_COLS-1 }, // 6×14 bottom strip
+  { id: LOT_ID.WEST,   r1:  LOT_WIDTH, c1:  0, r2: GRID_ROWS-1, c2:  LOT_WIDTH-1}, // 14×6 left strip
+  { id: LOT_ID.EAST,   r1:  0, c1: GRID_COLS-LOT_WIDTH, r2: GRID_ROWS-LOT_WIDTH-1, c2: GRID_COLS-1 }, // 14×6 right strip
 ];
 
 // The set of lot IDs the player currently owns. Populated in initGame().
