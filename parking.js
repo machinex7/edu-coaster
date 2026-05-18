@@ -3,7 +3,7 @@
 const Parking = {
 
   // $ per vehicle; set by player in the Parking panel.
-  parkingPrice: 10,
+  parkingPrice: 1,
 
   // Highest parking price confirmed to be within the free zone (≤ inflation-adjusted threshold).
   // null = never confirmed. Advances each round the current price triggers no spending penalty.
