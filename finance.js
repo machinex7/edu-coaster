@@ -16,6 +16,8 @@ const Finance = {
   parkSatisfaction:        500,  // satisfied-visitor count from last round; drives next round's demand
   cumulativeAttendance:  0,    // total visitors ever; sqrt of this adds a renown bonus to daily demand
   weeklyNetMess:         0,    // unhandled mess from last round; subtracted from excitement
+  // Per-source mess totals from last round (before janitor cleaning).
+  messBreakdown: { guests: 0, food: 0, merchandise: 0, extremeRides: 0, highRides: 0, construction: 0, total: 0 },
   mealSatisfaction:      1,    // 0.5–1; penalises excitement when food supply < demand
 
   // Accumulates campaign launch costs paid between round advances; reset each round.
@@ -363,7 +365,16 @@ const Finance = {
 
     const fromConstruction = this.calcFoundationMess();
 
-    return Math.floor(fromGuests + fromShoppers + fromFood + fromExtremeRides + fromHighRides + fromConstruction);
+    const total = Math.floor(fromGuests + fromShoppers + fromFood + fromExtremeRides + fromHighRides + fromConstruction);
+    return {
+      guests:        Math.floor(fromGuests),
+      food:          Math.floor(fromFood),
+      merchandise:   Math.floor(fromShoppers),
+      extremeRides:  Math.floor(fromExtremeRides),
+      highRides:     Math.floor(fromHighRides),
+      construction:  Math.floor(fromConstruction),
+      total,
+    };
   },
 
   // Extra mess from rides in Foundation phase: debris on adjacent path/bridge tiles.
@@ -689,7 +700,8 @@ const Finance = {
       Staff.advanceCandidates();        // withdrawal check, then increment weeksAsCandidate
     }
     const merchItemsSold = Unlock.MERCHANDISE ? shopItemsSold : 0;
-    this.weeklyNetMess = Math.max(0, this.calcMessGenerated(totalAttendance, food.mealsSold, merchItemsSold) - Staff.calcJanitorCapacity());
+    this.messBreakdown = this.calcMessGenerated(totalAttendance, food.mealsSold, merchItemsSold);
+    this.weeklyNetMess = Math.max(0, this.messBreakdown.total - Staff.calcJanitorCapacity());
     this.distributeMessToTiles(
       totalAttendance * Population.MESS_GUEST_RATE,
       merchItemsSold * Population.MESS_ITEM_RATE,
