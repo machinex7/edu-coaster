@@ -8,7 +8,7 @@ const GRID_ROWS = 20;
 // 0-indexed.
 const LOT_WIDTH = 6;
 const LOTS = [
-  { id: LOT_ID.CENTER, r1:  LOT_WIDTH+1, c1:  LOT_WIDTH+1, r2: GRID_ROWS-LOT_WIDTH-1, c2: GRID_COLS-LOT_WIDTH-1 }, // 6×6 center
+  { id: LOT_ID.CENTER, r1:  LOT_WIDTH, c1:  LOT_WIDTH, r2: GRID_ROWS-LOT_WIDTH-1, c2: GRID_COLS-LOT_WIDTH-1 }, // 6×6 center
   { id: LOT_ID.NORTH,  r1:  0, c1:  0, r2:  LOT_WIDTH-1, c2: GRID_COLS-LOT_WIDTH-1 }, // 6×14 top strip
   { id: LOT_ID.SOUTH,  r1: GRID_ROWS-LOT_WIDTH, c1: LOT_WIDTH, r2: GRID_ROWS-1, c2: GRID_COLS-1 }, // 6×14 bottom strip
   { id: LOT_ID.WEST,   r1:  LOT_WIDTH, c1:  0, r2: GRID_ROWS-1, c2:  LOT_WIDTH-1}, // 14×6 left strip
