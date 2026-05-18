@@ -30,7 +30,7 @@ const Staff = {
 
   POSTING_WEEKLY_COST: 75,
   SICKNESS_RATE:       0.01,   // per-round chance of 1-week illness
-  INJURY_RATE:         0.002,  // per-round chance of 4-week critical injury
+  INJURY_RATE:         0.001,  // per-round chance of 4-week critical injury
   VACATION_RATE:        0.04,  // per-round base chance of taking a vacation
   VACATION_WEEKS:       1,     // vacation duration in weeks; effective chance = VACATION_RATE × VACATION_WEEKS
   PARENTAL_LEAVE_RATE:  0.003, // per-round chance a healthy employee goes on parental leave
@@ -198,8 +198,7 @@ const Staff = {
       if (s.weeksOut > 0) {
         s.weeksOut--;
       } else {
-        const roll              = Math.random();
-        const moodPenalty       = (100 - s.mood) / 2000; // low mood raises injury/sickness chance
+        const moodPenalty       = (100 - s.mood) / 4000; // low mood raises injury/sickness chance
         // Workplace Safety Protocols research halves the base injury rate.
         const injuryBase        = Research.completed.has(RESEARCH_ID.WORKPLACE_SAFETY_PROTOCOLS)
                                   ? this.INJURY_RATE * 0.5
@@ -213,16 +212,16 @@ const Staff = {
         const sicknessRate      = sicknessBase * Incidents.staffSickMultiplier + moodPenalty;
         const vacationChance    = this.VACATION_RATE * this.VACATION_WEEKS;
         const parentalThreshold = injuryRate + sicknessRate + vacationChance + this.PARENTAL_LEAVE_RATE;
-        if (roll < injuryRate) {
+        if (Math.random() < injuryRate) {
           s.weeksOut = 4;
           s.events.push({ moodModifier: -20 - this._insuranceMoodReduction(4), comment: 'I got seriously injured...' });
-        } else if (roll < injuryRate + sicknessRate) {
+        } else if (Math.random() < sicknessRate) {
           s.weeksOut = 1;
           s.events.push({ moodModifier: -10 - this._insuranceMoodReduction(1), comment: 'I feel sick...' });
-        } else if (roll < injuryBase + sicknessBase + vacationChance) {
+        } else if (Math.random() < vacationChance) {
           s.weeksOut = this.VACATION_WEEKS;
           s.events.push({ moodModifier: 10, comment: 'Taking a vacation!' });
-        } else if (roll < parentalThreshold) {
+        } else if (Math.random() < parentalThreshold) {
           s.weeksOut = this.PARENTAL_LEAVE_WEEKS;
           s.kids++;
           const parentalBase = 5 * (this.PARENTAL_LEAVE_WEEKS + 2);
