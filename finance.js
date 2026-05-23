@@ -17,7 +17,7 @@ const Finance = {
   cumulativeAttendance:  0,    // total visitors ever; sqrt of this adds a renown bonus to daily demand
   weeklyNetMess:         0,    // unhandled mess from last round; subtracted from excitement
   // Per-source mess totals from last round (before janitor cleaning).
-  messBreakdown: { guests: 0, food: 0, merchandise: 0, extremeRides: 0, highRides: 0, construction: 0, total: 0 },
+  messBreakdown: { guests: 0, food: 0, merchandise: 0, rideNausea: 0, construction: 0, total: 0 },
   mealSatisfaction:      1,    // 0.5–1; penalises excitement when food supply < demand
 
   // Accumulates campaign launch costs paid between round advances; reset each round.
@@ -158,8 +158,7 @@ const Finance = {
       if (b.guests > 0)       this.feedback.push({ guestCount, comment: "There was trash everywhere — I get that it's a busy park, but still." });
       if (b.food > 0)         this.feedback.push({ guestCount, comment: "Food wrappers and spills all over the place. Someone needs to clean up after the food stands." });
       if (b.merchandise > 0)  this.feedback.push({ guestCount, comment: "The shopping areas were a mess — packaging left all over the ground." });
-      if (b.extremeRides > 0) this.feedback.push({ guestCount, comment: "The area around the intense rides was absolutely disgusting. People need bathrooms nearby!" });
-      if (b.highRides > 0)    this.feedback.push({ guestCount, comment: "Messy paths near the rides. A few more trash cans would really help." });
+      if (b.rideNausea > 0)   this.feedback.push({ guestCount, comment: "Some guests got sick near the intense rides. Bathrooms closer to the rides would really help." });
       if (b.construction > 0) this.feedback.push({ guestCount, comment: "Debris and dust from the construction zones was all over the walkways." });
     }
 
@@ -373,12 +372,11 @@ const Finance = {
 
     const total = Math.floor(fromGuests + fromShoppers + fromFood + fromExtremeRides + fromHighRides + fromConstruction);
     return {
-      guests:        Math.floor(fromGuests),
-      food:          Math.floor(fromFood),
-      merchandise:   Math.floor(fromShoppers),
-      extremeRides:  Math.floor(fromExtremeRides),
-      highRides:     Math.floor(fromHighRides),
-      construction:  Math.floor(fromConstruction),
+      guests:       Math.floor(fromGuests),
+      food:         Math.floor(fromFood),
+      merchandise:  Math.floor(fromShoppers),
+      rideNausea:   Math.floor(fromExtremeRides + fromHighRides),
+      construction: Math.floor(fromConstruction),
       total,
     };
   },
