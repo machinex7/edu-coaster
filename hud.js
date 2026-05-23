@@ -150,6 +150,10 @@ function refreshSecurityOverlay() {
 
 // Maximum number of speck circles drawn per path tile.
 const DIRT_MAX_SPECKS = 8;
+// Multiplier converting unhandled mess-per-tile into a speck count.
+// Mess values are small decimals (e.g. 0.1–2.0), so we scale up so even
+// low-mess tiles produce at least one visible speck when mess is unhandled.
+const DIRT_SPECK_SCALE = 10;
 
 // Deterministic pseudo-random in [0,1) from an integer seed.
 // Using sine-hash so speck positions stay consistent across redraws.
@@ -158,41 +162,45 @@ const _dirtRand = seed => {
   return x - Math.floor(x);
 };
 
-// Draws brown speck circles on each path tile. Count = floor(f.mess), capped
-// at DIRT_MAX_SPECKS. Positions are deterministic per tile so they don't shift
-// on each redraw.
+// Draws brown speck circles on each path tile representing unhandled mess.
+// Speck count per tile is proportional to the tile's share of unhandled mess:
+//   unhandledPerTile = f.mess * (weeklyNetMess / totalGenerated)
+//   specks = ceil(unhandledPerTile * DIRT_SPECK_SCALE), capped at DIRT_MAX_SPECKS
+// This avoids the floor-to-zero problem when per-tile mess is < 1, and avoids
+// the inaccurate uniform-cleaning assumption of the old approach.
 function drawDirtOverlay() {
   const svg = document.getElementById('dirt-overlay');
   svg.setAttribute('width',  OVERLAY_W);
   svg.setAttribute('height', OVERLAY_H);
   svg.innerHTML = '';
 
-  const NS     = 'http://www.w3.org/2000/svg';
+  if (Finance.weeklyNetMess <= 0) return;
+
+  const totalGenerated = Finance.messBreakdown.total;
+  const netFraction    = totalGenerated > 0 ? Finance.weeklyNetMess / totalGenerated : 0;
+
+  const NS      = 'http://www.w3.org/2000/svg';
   const SPECK_R = 3;
   const SPREAD  = CELL_SIZE / 2 - SPECK_R - 2;
 
   const pathFacilities = installedFacilities.filter(f => f.facilityId === FACILITY_ID.PATH);
-  const cleaningPerTile = pathFacilities.length > 0
-    ? Staff.calcJanitorCapacity() / pathFacilities.length
-    : 0;
 
   for (const f of pathFacilities) {
-    const total   = Math.min(Math.floor(f.mess ?? 0), DIRT_MAX_SPECKS);
-    if (total <= 0) continue;
-    const cleaned = Math.min(total, Math.floor(cleaningPerTile));
+    const unhandled = (f.mess ?? 0) * netFraction;
+    const count     = Math.min(Math.ceil(unhandled * DIRT_SPECK_SCALE), DIRT_MAX_SPECKS);
+    if (count <= 0) continue;
 
     const { x, y } = _cellCentre(f.row, f.col);
     const seed = f.row * 997 + f.col * 31;
 
-    for (let i = 0; i < total; i++) {
-      const ox   = (_dirtRand(seed + i * 2)     * 2 - 1) * SPREAD;
-      const oy   = (_dirtRand(seed + i * 2 + 1) * 2 - 1) * SPREAD;
-      const color = i < cleaned ? 'rgba(160,160,160,0.7)' : 'rgba(120,60,20,0.7)';
+    for (let i = 0; i < count; i++) {
+      const ox     = (_dirtRand(seed + i * 2)     * 2 - 1) * SPREAD;
+      const oy     = (_dirtRand(seed + i * 2 + 1) * 2 - 1) * SPREAD;
       const circle = document.createElementNS(NS, 'circle');
       circle.setAttribute('cx',   x + ox);
       circle.setAttribute('cy',   y + oy);
       circle.setAttribute('r',    SPECK_R);
-      circle.setAttribute('fill', color);
+      circle.setAttribute('fill', 'rgba(120,60,20,0.7)');
       svg.appendChild(circle);
     }
   }
