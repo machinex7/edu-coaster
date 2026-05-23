@@ -176,6 +176,18 @@ const Shopping = {
       totalSold    += sold;
       this._roundItemStats[i].salesRevenue += sold * shelfPrice;
       this._roundItemStats[i].salesCount   += sold;
+
+      // When weather boosts demand for this item, surface visitor reactions.
+      if (weatherMult > 1 && attempts > 0) {
+        if (attempts <= inv.count + sold) {
+          // Stock was sufficient — happy buyers.
+          Finance.feedback.push({ guestCount: sold, comment: `Glad I was able to buy a ${item.name}.` });
+        } else {
+          // More visitors wanted this item than stock could cover.
+          const missed = attempts - sold;
+          Finance.feedback.push({ guestCount: missed, comment: `I wish they hadn't run out of ${item.name} stock before I could buy one.` });
+        }
+      }
     }
 
     return { revenue: Math.round(totalRevenue), itemsSold: totalSold };
