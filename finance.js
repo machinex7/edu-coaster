@@ -154,7 +154,13 @@ const Finance = {
     }
     if (Unlock.MESSES && messFactor > 1) {
       const guestCount = Math.round((1 - 1 / messFactor) * weeklyAttendance);
-      this.feedback.push({ guestCount, comment: "Could use a good cleaning around here." });
+      const b = this.messBreakdown;
+      if (b.guests > 0)       this.feedback.push({ guestCount, comment: "There was trash everywhere — I get that it's a busy park, but still." });
+      if (b.food > 0)         this.feedback.push({ guestCount, comment: "Food wrappers and spills all over the place. Someone needs to clean up after the food stands." });
+      if (b.merchandise > 0)  this.feedback.push({ guestCount, comment: "The shopping areas were a mess — packaging left all over the ground." });
+      if (b.extremeRides > 0) this.feedback.push({ guestCount, comment: "The area around the intense rides was absolutely disgusting. People need bathrooms nearby!" });
+      if (b.highRides > 0)    this.feedback.push({ guestCount, comment: "Messy paths near the rides. A few more trash cans would really help." });
+      if (b.construction > 0) this.feedback.push({ guestCount, comment: "Debris and dust from the construction zones was all over the walkways." });
     }
 
     // Smooth excitement changes by averaging with the prior week's value.
