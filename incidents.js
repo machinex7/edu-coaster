@@ -383,6 +383,19 @@ const Incidents = {
         });
         break;
       }
+
+      case 'spawn_flood_water': {
+        // Spreads flood water one tile out from the river, demolishing paths and bridges.
+        // Flooded tiles block all path construction until removeFloodWater() clears them.
+        applyFloodWater();
+        break;
+      }
+
+      case 'remove_flood_water': {
+        // Clears all temporary flood tiles, restoring them to buildable land.
+        removeFloodWater();
+        break;
+      }
     }
   },
 

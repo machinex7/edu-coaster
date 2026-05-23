@@ -24,6 +24,14 @@ const WATER_COLOR = '#1e6db5';
 // Set of "row,col" keys for every tile occupied by the river. Populated by
 // generateRiver() and never mutated afterwards; bridges read it to validate placement.
 let riverTiles = new Set();
+
+// Set of "row,col" keys for tiles temporarily flooded during the flood incident.
+// Populated by applyFloodWater() when "The Flood" phase begins; cleared by
+// removeFloodWater() when the Recovery phase starts.
+let floodTiles = new Set();
+
+// Lighter blue used for temporary flood water tiles (distinguishable from the river).
+const FLOOD_WATER_COLOR = '#2980b9';
 // Euclidean tile radius covered by each staffed guard post.
 const GUARD_RADIUS = 5;
 // Divisor for converting observed ride tiles × surplus capacity into an intensity-observation delta.
@@ -251,6 +259,77 @@ function placeWaterTiles() {
     cell.classList.add('occupied');
     cell.title = 'River';
   }
+}
+
+// Spreads flood water one tile outward from every river tile, demolishing any
+// path tiles it encounters. Called as a one-shot effect when "The Flood" begins.
+// Flood tiles are stored in floodTiles and block all construction until removed.
+function applyFloodWater() {
+  let tilesFlooded = 0;
+  let tilesDestroyed = 0;
+  const DIRS = [[-1, 0], [1, 0], [0, -1], [0, 1]];
+
+  for (const key of riverTiles) {
+    const [r, c] = key.split(',').map(Number);
+    for (const [dr, dc] of DIRS) {
+      const nr = r + dr;
+      const nc = c + dc;
+      if (nr < 0 || nr >= GRID_ROWS || nc < 0 || nc >= GRID_COLS) continue;
+      if (riverTiles.has(`${nr},${nc}`)) continue;
+      if (floodTiles.has(`${nr},${nc}`)) continue;
+
+      const instanceId = gridState[nr][nc];
+      if (instanceId) {
+        // Demolish paths and bridges; skip rides, shops, and other permanent structures.
+        const record = installedFacilities.find(f => f.instanceId === instanceId);
+        if (record && (record.facilityId === FACILITY_ID.PATH || record.facilityId === FACILITY_ID.BRIDGE)) {
+          completeDemolition(record);
+          tilesDestroyed++;
+        } else {
+          // Tile is occupied by a structure the flood cannot wash away — skip it.
+          continue;
+        }
+      }
+
+      // Paint the tile as flood water.
+      floodTiles.add(`${nr},${nc}`);
+      gridState[nr][nc] = `flood_${nr}_${nc}`;
+      const cell = gridCells[nr][nc];
+      cell.style.backgroundColor = FLOOD_WATER_COLOR;
+      cell.classList.add('occupied');
+      cell.title = 'Flooded';
+      tilesFlooded++;
+    }
+  }
+
+  // Rebuild after completeDemolition may have already cleared routes.
+  Animations.paths = [];
+
+  Notifications.push({
+    label:   '🌊',
+    message: `Floodwaters spread to ${tilesFlooded} tiles. ${tilesDestroyed} paths and bridges destroyed.`,
+  });
+}
+
+// Clears all temporary flood tiles, restoring them to empty buildable land.
+// Called as a one-shot effect when the Recovery phase begins (waters have receded).
+function removeFloodWater() {
+  if (floodTiles.size === 0) return;
+  for (const key of floodTiles) {
+    const [r, c] = key.split(',').map(Number);
+    gridState[r][c] = null;
+    const cell = gridCells[r][c];
+    cell.style.backgroundColor = '';
+    cell.classList.remove('occupied');
+    cell.title = '';
+    cell.classList.toggle('out-of-bounds', !isTileOwned(r, c));
+  }
+  floodTiles.clear();
+  Animations.paths = [];
+  Notifications.push({
+    label:   '🌊',
+    message: 'Floodwaters have fully receded. Affected tiles are now clear for rebuilding.',
+  });
 }
 
 // Returns true if tile (r, c) falls within at least one owned lot's rectangle.
@@ -703,6 +782,8 @@ function startDemolition(row, col) {
   if (!record) {
     if (riverTiles.has(`${row},${col}`)) {
       Notifications.push({ label: 'River', message: 'River tiles cannot be demolished. Build a Bridge over the water instead.' });
+    } else if (floodTiles.has(`${row},${col}`)) {
+      Notifications.push({ label: '🌊', message: 'This tile is currently flooded. Wait for the waters to recede.' });
     }
     return;
   }

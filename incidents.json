@@ -211,11 +211,12 @@
         "name": "The Flood",
         "durationWeeks": 1,
         "flavor": [
-          "🌊 Floodwaters have surged through the park. Half your path infrastructure has been washed away or rendered unsafe and demolished. Every ride has sustained 100 wear points of water damage. The park is closed until further notice."
+          "🌊 Floodwaters have surged through the park. The river has overflowed its banks, swamping the surrounding land and washing away paths and bridges in its path. Every ride has sustained 100 wear points of water damage. The park is closed until further notice."
         ],
         "effects": [
           { "type": "wear_all_rides", "amount": 100, "timing": "on_start" },
           { "type": "demolish_paths_fraction", "fraction": 0.5, "timing": "on_start" },
+          { "type": "spawn_flood_water", "timing": "on_start" },
           { "type": "demand_multiplier", "value": 0.05 }
         ]
       },
@@ -223,8 +224,8 @@
         "name": "Drainage",
         "durationWeeks": 2,
         "flavor": [
-          "🌊 Waters are receding. The scale of the path damage is becoming clear — rebuilding the park's walkways will require significant investment and planning.",
-          "🌊 Drainage is complete. Engineers can now safely assess ride damage. Reconstruction of lost paths can begin immediately."
+          "🌊 The river is retreating but the surrounding land remains submerged. Flooded tiles along the riverbanks are impassable — no path construction is possible there until the water fully clears.",
+          "🌊 Water levels are dropping noticeably. Drainage crews are working around the clock. Another week before the riverbanks are clear enough to rebuild."
         ],
         "effects": [
           { "type": "demand_multiplier", "value": 0.5 }
@@ -234,10 +235,11 @@
         "name": "Recovery",
         "durationWeeks": 2,
         "flavor": [
-          "🌊 The park is reopening in stages as paths and rides are restored. Visitors are returning cautiously.",
+          "🌊 The floodwaters have fully receded. The riverbank tiles are clear and open for reconstruction. The scale of the path damage is now fully visible — rebuilding will require significant investment and planning.",
           "🌊 Flood recovery is complete. Operations are fully restored. The experience has given your team a new appreciation for infrastructure resilience."
         ],
         "effects": [
+          { "type": "remove_flood_water", "timing": "on_start" },
           { "type": "demand_multiplier", "value": 0.8 }
         ]
       }
