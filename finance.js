@@ -110,7 +110,7 @@ const Finance = {
       r.status === STATUS.UNDER_CONSTRUCTION && getConstructionPhase(r).phase === 'test_runs'
     ).length;
     const testRunsFactor    = 1 + testRunsCount * 0.04;
-    const result            = base * eventFactor * demandMultiplier * weatherFactor * incidentFactor * testRunsFactor;
+    const result            = base * eventFactor * demandMultiplier * weatherFactor * incidentFactor * testRunsFactor * Population.scenarioDemandMultiplier;
 
     if (weatherFactor < 1) {
       const guestCount = Math.round((1 - weatherFactor) * result);
@@ -127,6 +127,7 @@ const Finance = {
       '| weather:', weatherFactor.toFixed(4),
       '| incident:', incidentFactor.toFixed(4),
       '| testRuns:', testRunsFactor.toFixed(4),
+      '| scenario:', Population.scenarioDemandMultiplier.toFixed(4),
       '| dailyDemand:', result.toFixed(2)
     );
     return result;

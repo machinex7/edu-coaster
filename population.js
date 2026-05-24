@@ -38,9 +38,11 @@ const Population = {
   FAVOR_RECOVERY_RATE: 0.10,  // fraction of deficit below 1 recovered per round
 
   // ── External economic conditions ───────────────────────────────────────────
-  utilityMultiplier:    1,     // applied to all ride utility costs each round
-  inflationRate:        0.02,  // annual rate; applied weekly to staff cost-of-living
-  cumulativeInflation:  1,     // starts at 1; multiplied each round by (1 + inflationRate/52)
+  utilityMultiplier:          1,     // applied to all ride utility costs each round
+  inflationRate:              0.02,  // annual rate; applied weekly to staff cost-of-living
+  cumulativeInflation:        1,     // starts at 1; multiplied each round by (1 + inflationRate/52)
+  // Permanent demand multiplier set by scenario effects (e.g. investor marketing push or backlash).
+  scenarioDemandMultiplier:   1,
 
   // ── Parking behavior ──────────────────────────────────────────────────────
   // Maximum parking price (before inflation) each income bracket will pay before being "priced out".

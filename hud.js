@@ -247,6 +247,7 @@ function initHUD() {
   initCbarTabs();
   updateLockedPanels();
   Animations.init();
+  Scenario.init();
 }
 
 function canOpenPark() {
@@ -279,6 +280,7 @@ function advanceRound() {
   // quarter's budget has been submitted in the Finance menu.
   if (FinanceMenu._isGateActive()) return;
   round++;
+  Scenario.tick(round);
   // Reset per-round tax tracker before any finance processing so History always
   // sees a fresh value even on rounds where no payment is made.
   TaxForm._taxPaidThisRound = 0;
