@@ -19,7 +19,7 @@ python3 -m http.server   # must be HTTP — fetch() won't work over file://
 ## Script load order (matters)
 
 ```
-constants.js → unlock.js → population.js → game.js → grid.js → pathfinding.js → shopping.js → banking.js → parking.js → finance.js → staff.js → staff-panel.js → security.js → history.js → notifications.js → charts.js → survey.js → research.js → awards.js → discounts.js → marketing.js → visitor-profile.js → pl-statement.js → balance-sheet.js → cash-flow.js → budget.js → forms-panel.js → tax-form.js → concessions.js → incidents.js → membership.js → animations.js → hud.js
+constants.js → unlock.js → population.js → game.js → grid.js → pathfinding.js → shopping.js → banking.js → parking.js → finance.js → staff.js → staff-panel.js → security.js → history.js → notifications.js → charts.js → survey.js → research.js → awards.js → discounts.js → marketing.js → visitor-profile.js → pl-statement.js → balance-sheet.js → cash-flow.js → budget.js → forms-panel.js → tax-form.js → concessions.js → incidents.js → membership.js → animations.js → finance-menu.js → scenario.js → hud.js
 ```
 
 ---
@@ -122,6 +122,8 @@ Permanent effects (competing park, free childcare, embezzlement) mutate `Populat
 
 To add an incident: add an entry to `incidents.json`. No code changes required unless you need a new effect type (add a case to `_applyOneShotEffect` or `_applyRecurringEffect`) or a new challenge condition (add a case to `_evalChallenge`). See README.md for the full JSON schema.
 
+**Scenario system (`scenario.js` + `scenario.json`):** Long-term narrative arcs — a story premise with milestone steps spaced across a full play session. `Scenario.activeScenario` holds the loaded scenario or `null`. `Scenario.init()` (called from `initHUD()`) fetches `scenario.json` and activates the first entry. `Scenario.tick(round)` (called from `advanceRound()` after `round++`) fires any step whose `round` matches, evaluates an optional condition against live game state, and applies a permanent `effect` or `failEffect`. Each step fires a notification with flavor text. A **calendar bar** (second row of `<header>`, `#scenario-bar`) shows each upcoming step as a 30 px circle that drifts leftward each round via `transition: left 0.6s ease`; circles turn amber within 13 rounds. `Population.scenarioDemandMultiplier` (default `1`) is wired into `Finance.calcDailyDemand()` and is set by `demand_multiplier_set` effects. See README.md for the full `scenario.json` schema, condition types, and effect types. To add a new scenario: add an entry to `scenario.json`; no code changes needed unless you require a new condition or effect type.
+
 ---
 
 ## What's not yet implemented (priority candidates)
@@ -131,6 +133,6 @@ To add an incident: add an entry to `incidents.json`. No code changes required u
 - Ride breakdown / repair
 - Reports / graphs
 - Marketing and reputation
-- `Population.inflationRate` wired to cost adjustments
+- `Population.inflationRate` automatic round-by-round escalation (currently static; scenario effects can set it permanently but it doesn't self-escalate)
 - `Population.utilityMultiplier` wired to round-by-round increases
 - Supplier unlock triggers (currently only first supplier is ever unlocked)

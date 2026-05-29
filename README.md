@@ -53,11 +53,12 @@ python3 -m http.server
 | `concessions.json` | Concessions menu item catalogue (7 items: id, name, cost, mealValue; water cup is `alwaysAvailable`) |
 | `research.json` | Research node catalogue (includes `flavor` text shown in the completion modal) |
 | `incidents.json` | Incident definitions — all incidents, their phases, effects, and challenge conditions |
+| `scenario.json` | Scenario definitions — narrative premises with milestone steps, conditions, and permanent effects |
 | `reqs.md` | Full game design document — read before adding features |
 
 **Script load order:**
 ```
-constants.js → unlock.js → population.js → game.js → grid.js → pathfinding.js → shopping.js → banking.js → finance.js → staff.js → staff-panel.js → security.js → history.js → notifications.js → charts.js → survey.js → research.js → awards.js → discounts.js → marketing.js → visitor-profile.js → pl-statement.js → balance-sheet.js → cash-flow.js → budget.js → forms-panel.js → tax-form.js → concessions.js → incidents.js → membership.js → animations.js → hud.js
+constants.js → unlock.js → population.js → game.js → grid.js → pathfinding.js → shopping.js → banking.js → finance.js → staff.js → staff-panel.js → security.js → history.js → notifications.js → charts.js → survey.js → research.js → awards.js → discounts.js → marketing.js → visitor-profile.js → pl-statement.js → balance-sheet.js → cash-flow.js → budget.js → forms-panel.js → tax-form.js → concessions.js → incidents.js → membership.js → animations.js → finance-menu.js → scenario.js → hud.js
 ```
 
 All cross-file calls happen at runtime (not parse time), so forward references inside method bodies are safe.
@@ -92,6 +93,7 @@ const Foo = {
 | `TaxForm` | `tax-form.js` | Annual business income tax return exercise |
 | `FormsPanel` | `forms-panel.js` | Review panel — stores and renders the latest completed submission for each form type |
 | `Incidents` | `incidents.js` | Random multi-phase incident system — spawn logic, phase management, computed property outputs, panel rendering |
+| `Scenario` | `scenario.js` | Long-term narrative scenario system — loads `scenario.json`, tracks `activeScenario`, drives the calendar bar, fires milestone steps with permanent game-state effects |
 
 ---
 
@@ -1090,6 +1092,98 @@ Same shape as `facilities.json` plus:
 | Field | Type | Notes |
 |---|---|---|
 | `shopType` | string | `"merchandise"` or `"food"` — gates which revenue/staffing calculations apply |
+
+---
+
+## Scenario system (`scenario.js` + `scenario.json`)
+
+Scenarios provide a long-term narrative arc — a story premise that frames the player's goals and fires milestone events at predetermined rounds. A horizontal **calendar bar** in the header shows upcoming milestones as circle indicators that drift leftward each round and turn amber within one quarter (13 rounds) of firing.
+
+### Calendar bar
+
+The bar is a second row inside `<header>`, revealed when `Scenario.init()` completes. Each step gets a 30 px circle labelled with the title's initials. Circles are positioned with a fixed-denominator formula so all dots drift at the same rate:
+
+```
+left% = ((step.round − currentRound) / lastStepRound) × 92 + 2
+```
+
+`lastStepRound` is always the last step's round, anchoring the scale for the full session. A thin vertical "now" marker sits at the left edge of the track. The CSS `transition: left 0.6s ease` animates the drift each round.
+
+### `Scenario` object (`scenario.js`)
+
+| Property / method | Description |
+|---|---|
+| `activeScenario` | The loaded scenario object, or `null` if none |
+| `init()` | Async; fetches `scenario.json`, sets `activeScenario` to the first entry, builds the bar, re-measures `--header-h` so side panels remain offset correctly |
+| `tick(round)` | Called from `advanceRound()` immediately after `round++`; fires due steps and refreshes bar positions |
+| `_checkSteps(round)` | Evaluates any step whose `round` matches; evaluates optional condition; applies `effect` or `failEffect`; pushes a notification |
+| `_evalCondition(condition)` | Returns `true` if the condition is satisfied by current game state |
+| `_applyEffect(effect)` | Permanently mutates game state according to the effect descriptor |
+| `_refreshBar(round)` | Recalculates `left %` for all circles and toggles `.scenario-dot-approaching` |
+
+### `scenario.json` schema
+
+Top level is an array. The first entry is activated at load time.
+
+```json
+[
+  {
+    "key": "investor",
+    "title": "Angel Investor",
+    "description": "Short description for a future scenario picker.",
+    "flavorText": "Startup text shown to the player when the game loads.",
+    "steps": [ ... ]
+  }
+]
+```
+
+**Step object:**
+
+```json
+{
+  "round": 26,
+  "title": "First Repayment",
+  "flavor": "Shown as a notification when no condition is present.",
+  "condition": {
+    "type": "cash_gte",
+    "value": 150000,
+    "successFlavor": "Notification text on success.",
+    "failFlavor":    "Notification text on failure."
+  },
+  "effect":     { "type": "cash_delta", "value": -150000 },
+  "failEffect": { "type": "inflation_rate_set", "value": 0.035 }
+}
+```
+
+- If a step has no `condition`, `effect` fires unconditionally and `flavor` is used for the notification.
+- If a step has no `effect` at all, only the notification fires (pure narrative beat).
+- `failEffect` is optional; omitting it means a failed condition has no mechanical consequence.
+
+### Condition types
+
+| Type | Passes when |
+|---|---|
+| `cash_gte` | `money >= value` |
+| `park_value_gte` | `Finance.parkValue() >= value` |
+| `weekly_attendance_gte` | Last recorded `History.rounds[].attendance >= value` |
+| `quarterly_revenue_gte` | Sum of gate + parking + shop + food + membership income over the last 13 rounds |
+
+### Effect types
+
+All effects are **permanent** — they mutate game state directly and never revert.
+
+| Type | What it does |
+|---|---|
+| `cash_delta` | `money += value` (positive = gain, negative = loss) |
+| `inflation_rate_set` | `Population.inflationRate = value` — raises wages and costs faster |
+| `utility_multiplier_set` | `Population.utilityMultiplier = value` — scales all ride utility costs |
+| `demand_multiplier_set` | `Population.scenarioDemandMultiplier = value` — permanent multiplier in `Finance.calcDailyDemand()` |
+
+### Adding a new scenario
+
+Add an entry to `scenario.json`. No code changes required unless you need a new condition type (add a case to `Scenario._evalCondition`) or a new effect type (add a case to `Scenario._applyEffect`).
+
+To change which scenario activates at load, reorder the array — `init()` always picks `data[0]`. A teacher-selectable scenario picker at game start is a planned future addition.
 
 ---
 
