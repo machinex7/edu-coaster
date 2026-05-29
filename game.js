@@ -801,9 +801,18 @@ function startDemolition(row, col) {
   if (record.status === STATUS.DEMOLISHING) return;
 
   // In setup stage demolition is instant and refunds the full build cost.
-  // Trees are pre-placed obstacles, not player purchases, so no refund.
+  // Trees are pre-placed landscape obstacles — always cost money to remove regardless of stage.
   if (gameStage === STAGE.SETUP) {
-    if (record.facilityId !== FACILITY_ID.TREE) money += record.buildCost ?? 0;
+    if (record.facilityId === FACILITY_ID.TREE) {
+      const treeDemolishCost = Math.ceil((record.buildCost ?? 0) / 10);
+      if (treeDemolishCost > 0 && money < treeDemolishCost) {
+        Notifications.push({ label: 'Demolish', message: `Not enough funds. Demolishing ${record.name} costs $${treeDemolishCost.toLocaleString()}.` });
+        return;
+      }
+      money -= treeDemolishCost;
+    } else {
+      money += record.buildCost ?? 0;
+    }
     completeDemolition(record);
     return;
   }
