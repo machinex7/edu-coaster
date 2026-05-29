@@ -706,6 +706,7 @@ const Finance = {
     const merchItemsSold = Unlock.MERCHANDISE ? shopItemsSold : 0;
     this.messBreakdown = this.calcMessGenerated(totalAttendance, food.mealsSold, merchItemsSold);
     this.weeklyNetMess = Math.max(0, this.messBreakdown.total - Staff.calcJanitorCapacity());
+    console.log("messBreakdown:", this.messBreakdown);
     this.distributeMessToTiles(
       totalAttendance * Population.MESS_GUEST_RATE,
       merchItemsSold * Population.MESS_ITEM_RATE,
