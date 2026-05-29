@@ -24,12 +24,87 @@ body {
 
 header {
   background: #1f2937;
-  padding: 8px 20px;
   border-bottom: 2px solid #374151;
   flex-shrink: 0;
   display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+/* Top row: title + HUD stats */
+#header-top {
+  padding: 8px 20px;
+  display: flex;
   align-items: center;
   justify-content: space-between;
+}
+
+/* Calendar bar: second row, hidden until a scenario is loaded */
+#scenario-bar {
+  border-top: 1px solid #374151;
+  padding: 0 16px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+#scenario-bar-track {
+  position: relative;
+  flex: 1;
+  height: 32px;
+}
+
+/* Faint horizontal timeline rule */
+#scenario-bar-track::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: #374151;
+  transform: translateY(-50%);
+}
+
+/* "Now" marker: thin vertical line at the left edge */
+#scenario-bar-track::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  background: #6b7280;
+  border-radius: 1px;
+}
+
+.scenario-dot {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #111827;
+  border: 2px solid #4b5563;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.5rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #9ca3af;
+  cursor: default;
+  transition: left 0.6s ease;
+  user-select: none;
+  z-index: 1;
+}
+
+/* Amber warning when within one quarter */
+.scenario-dot-approaching {
+  border-color: #f59e0b;
+  background: #1c1100;
+  color: #fbbf24;
 }
 
 header h1 {
